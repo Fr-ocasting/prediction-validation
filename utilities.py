@@ -2,7 +2,44 @@
 import pandas as pd
 import torch
 import numpy as np
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
+def str2neg(x):
+    # Convert string values into '-1'. Keep the nan values
+    try:
+        return(int(x))
+    except:
+        if x is np.nan :
+            return(x)
+        else:
+          return(-1)
+
+def str_xa2int(x):
+    # Convert string values with a space '\xa0' into int values
+    try:
+        return(int(x.replace('\xa0','')))
+    except:
+        return(x)
+    
+
+
+def date_from_month_offset(n):
+    n = int(n)
+    reference_date = datetime(2019, 10, 1)
+    years, months = divmod(n, 12)
+    result_date = reference_date + timedelta(days=365 * years) + relativedelta(months=months)
+    return f'{result_date.date().month}-{result_date.date().year}'
+
+def get_mode_date2path(df_list,df_names):
+    ''' Return a dic which associate a Mode and a date to the csv_path'''
+    dic = {}
+    for list_paths,mode in zip(df_list,df_names):
+        dic[mode] = {}
+        for csv_path in list_paths:
+            month = csv_path.split('/')[2].split('_')[0]
+            dic[mode][date_from_month_offset(month)] = csv_path 
+    return(dic)
 
 # Commit innutile 
 def get_batch(X,Y,batch_size,shuffle = True):
