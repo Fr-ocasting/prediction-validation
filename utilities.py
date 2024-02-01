@@ -37,6 +37,7 @@ def get_mode_date2path(df_list,df_names):
     for list_paths,mode in zip(df_list,df_names):
         dic[mode] = {}
         for csv_path in list_paths:
+            csv_path = csv_path.replace('\\','/')
             month = csv_path.split('/')[2].split('_')[0]
             dic[mode][date_from_month_offset(month)] = csv_path 
     return(dic)
