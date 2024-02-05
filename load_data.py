@@ -30,3 +30,29 @@ def load_subway_15_min(txt_path, dates = None):
         df = df[(df.datetime >= start) & (df.datetime < end)]
 
     return(df)
+
+
+def load_CRITER(txt_path):
+    df = pd.read_csv(txt_path, sep=';',infer_datetime_format=True)
+    format = "%d/%m/%Y %H:%M:%S"
+    format_without_time = "%d/%m/%Y"
+    format_hour = pd.to_datetime(df.HORODATE,format=format,errors = 'coerce')
+    format_day = pd.to_datetime(df.HORODATE,format=format_without_time,errors = 'coerce')
+    df.HORODATE = format_hour.combine_first(format_day)
+    df['day'] = df.HORODATE.dt.day
+    df['str_hour_min'] = df.HORODATE.dt.hour.astype(str) + pd.Series([':']*len(df)) + df.HORODATE.dt.minute.astype(str)
+    df['hour_min'] = 10*df.HORODATE.dt.hour +  (df.HORODATE.dt.minute)/6
+    return(df)
+
+def load_netmob(txt_path,day):
+    # let's make a list of 15 min time intervals to use as column names
+    day_str = str(day)
+    day = datetime.strptime(day_str, '%Y%m%d')
+    times = [day + timedelta(minutes=15*i) for i in range(96)]
+    times_str = [t.strftime('%H:%M') for t in times]
+
+    # column names
+    columns = ['tile_id'] + times_str
+
+    df = pd.read_csv(txt_path, sep = ' ', names = columns).set_index(['tile_id'])
+    return(df)
