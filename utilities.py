@@ -57,6 +57,7 @@ class DataSet(object):
     def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None):
         self.length = len(df)
         self.df = df
+        self.columns = df.columns
         self.normalized = normalized
         self.time_step_per_hour = time_step_per_hour
         self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
@@ -87,6 +88,10 @@ class DataSet(object):
         else:
             self.init_df = df
         
+    def bijection_name_indx(self):
+        colname2indx = {c:k for k,c in enumerate(self.columns)}
+        indx2colname = {k:c for k,c in enumerate(self.columns)}
+        return(colname2indx,indx2colname)
     def normalize(self):
         if self.normalized:
             print('The df might be already normalized')
