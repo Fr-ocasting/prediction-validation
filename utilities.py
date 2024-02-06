@@ -54,6 +54,12 @@ def get_batch(X,Y,batch_size,shuffle = True):
     for idx in range(0,n,batch_size):
         yield X[indices[idx:min(idx+batch_size,n)]], Y[indices[idx:min(idx+batch_size,n)]]
 
+def unormalize_tensor(tensor,mini,maxi):
+    mini = torch.Tensor(mini.values).unsqueeze(1)
+    maxi = torch.Tensor(maxi.values).unsqueeze(1)   
+    return tensor*(maxi- mini)+mini
+
+
 class DataSet(object):
     def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None):
         self.length = len(df)
