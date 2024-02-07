@@ -132,6 +132,7 @@ class DataSet(object):
         else:
             self.init_df = df
 
+        self.shift_from_first_elmt = None
         
     def bijection_name_indx(self):
         colname2indx = {c:k for k,c in enumerate(self.columns)}
@@ -173,21 +174,17 @@ class DataSet(object):
 
         return(shifted_values,shifted_dates)
     
-    def get_invalid_indx(self,invalid_dates:list,df_verif:pd.DataFrame,step_ahead,historical_len,Weeks,Days):
+    def get_invalid_indx(self,invalid_dates:list,df_verif:pd.DataFrame):
         # Get all the row were the invalid dates are used 
         df_verif_forbiden = pd.concat([df_verif[df_verif[c].isin(invalid_dates)] for c in df_verif.columns])
 
         # Get the associated index 
-        invalid_indx = df_verif_forbiden.index
+        invalid_indx_without_shift = df_verif_forbiden.index
 
         # Shift them in relation to the tensor 
-        shift_from_first_elmt = max(Weeks*24*7*self.time_step_per_hour,
-                                    Days*24*self.time_step_per_hour,
-                                    historical_len+step_ahead-1
-                                    )
-        invalid_indx - shift_from_first_elmt
+        invalid_indx = invalid_indx_without_shift - self.shift_from_first_elmt
 
-        return(invalid_indx)
+        return(invalid_indx,invalid_indx_without_shift)
 
 
     def get_feature_vect(self,step_ahead,historical_len,Days,Weeks):
@@ -195,15 +192,19 @@ class DataSet(object):
             raise Exception('Number of time steps per hour as not been defined. Please use FeatureVector.time_step_per_hour ')
         
         else : 
+            self.shift_from_first_elmt = max(Weeks*24*7*self.time_step_per_hour,
+                                    Days*24*self.time_step_per_hour,
+                                    historical_len+step_ahead-1
+                                    )
             # Get the shifted "Dates" of Feature Vector and Target
             (shifted_values,shifted_dates) = self.shift_data(step_ahead,historical_len,Weeks,Days)
             L_shifted_dates = shifted_dates + [self.df_dates]
-            Names = [f't-{str(self.Week_nb_steps*(Weeks-w))}' for w in range(Weeks)] + [f't-{str(self.Day_nb_steps*(Days-d))}' for d in range(Days)] + [f't-{str(historical_len-t)}' for t in range(historical_len)]+ ['t']
-            df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.Week_nb_steps+Weeks-1:]
+            Names = [f't-{str(self.Week_nb_steps*(Weeks-w))}' for w in range(Weeks)] + [f't-{str(self.Day_nb_steps*(Days-d))}' for d in range(Days)] + [f't-{str(historical_len-t)}' for t in range(historical_len)]+ [f't+{step_ahead-1}']
+            df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:]
 
             # Get Feature Vector and Target 
-            U = torch.cat(shifted_values,dim=2)[:][self.Week_nb_steps+Weeks-1:]
-            Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.Week_nb_steps+Weeks-1:]
+            U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
+            Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
             return(U,Utarget,df_verif)
     
 
