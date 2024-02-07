@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html>
+<head>
+    
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+    
+        <script>
+            L_NO_TOUCH = false;
+            L_DISABLE_3D = false;
+        </script>
+    
+    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
+    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css"/>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.6.3/css/font-awesome.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
+    
+            <meta name="viewport" content="width=device-width,
+                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+            <style>
+                #map_48a5f23e3a4092b09a6fc9324d28c106 {
+                    position: relative;
+                    width: 100.0%;
+                    height: 100.0%;
+                    left: 0.0%;
+                    top: 0.0%;
+                }
+            </style>
+        
+</head>
+<body>
+    
+    
+            <div class="folium-map" id="map_48a5f23e3a4092b09a6fc9324d28c106" ></div>
+        
+</body>
+<script>
+    
+    
+            var map_48a5f23e3a4092b09a6fc9324d28c106 = L.map(
+                "map_48a5f23e3a4092b09a6fc9324d28c106",
+                {
+                    center: [45.75594333974937, 4.850251441699954],
+                    crs: L.CRS.EPSG3857,
+                    zoom: 12,
+                    zoomControl: true,
+                    preferCanvas: false,
+                }
+            );
+
+            
+
+        
+    
+            var tile_layer_2c48f6877aadab30a35a1d4bda392f96 = L.tileLayer(
+                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                {"attribution": "Data by \u0026copy; \u003ca href=\"http://openstreetmap.org\"\u003eOpenStreetMap\u003c/a\u003e, under \u003ca href=\"http://www.openstreetmap.org/copyright\"\u003eODbL\u003c/a\u003e.", "detectRetina": false, "maxNativeZoom": 18, "maxZoom": 18, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+            var marker_20d032761f0bf9481e9f038f06433951 = L.marker(
+                [45.7531144787, 4.82921154622425],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_bdefe9270223e2b03ca4cfa0c16e01cf = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_898989783c33376a2bcd8ff5ac943c42 = $(`<div id="html_898989783c33376a2bcd8ff5ac943c42" style="width: 100.0%; height: 100.0%;"><b>Station Ampère Victor Hugo</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Ampère Victor Hugo.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_bdefe9270223e2b03ca4cfa0c16e01cf.setContent(html_898989783c33376a2bcd8ff5ac943c42);
+            
+        
+
+        marker_20d032761f0bf9481e9f038f06433951.bindPopup(popup_bdefe9270223e2b03ca4cfa0c16e01cf)
+        ;
+
+        
+    
+    
+            marker_20d032761f0bf9481e9f038f06433951.bindTooltip(
+                `<div>
+                     Station Ampère Victor Hugo
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_b5f7f7902fdf1e63b7f36422c07c11f4 = L.marker(
+                [45.75726300953784, 4.8333967216878335],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_5e7b5efd217d1feb4e6d93b49e5aa32e = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_3a0acde64d25cf5e189153364613b27c = $(`<div id="html_3a0acde64d25cf5e189153364613b27c" style="width: 100.0%; height: 100.0%;"><b>Station Bellecour</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Bellecour.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_5e7b5efd217d1feb4e6d93b49e5aa32e.setContent(html_3a0acde64d25cf5e189153364613b27c);
+            
+        
+
+        marker_b5f7f7902fdf1e63b7f36422c07c11f4.bindPopup(popup_5e7b5efd217d1feb4e6d93b49e5aa32e)
+        ;
+
+        
+    
+    
+            marker_b5f7f7902fdf1e63b7f36422c07c11f4.bindTooltip(
+                `<div>
+                     Station Bellecour
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_a4edea1cd84e141b6df5543a2b2879cc = L.marker(
+                [45.7668919840635, 4.85942856899675],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_8fcf00c9d2f765a6aaea17fa5f173369 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_a542a1e1db3a77caf5de80e480e4ef8a = $(`<div id="html_a542a1e1db3a77caf5de80e480e4ef8a" style="width: 100.0%; height: 100.0%;"><b>Station Brotteaux</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Brotteaux.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_8fcf00c9d2f765a6aaea17fa5f173369.setContent(html_a542a1e1db3a77caf5de80e480e4ef8a);
+            
+        
+
+        marker_a4edea1cd84e141b6df5543a2b2879cc.bindPopup(popup_8fcf00c9d2f765a6aaea17fa5f173369)
+        ;
+
+        
+    
+    
+            marker_a4edea1cd84e141b6df5543a2b2879cc.bindTooltip(
+                `<div>
+                     Station Brotteaux
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_6bdbe9b6eb117afa5ed7529fb0a38fc6 = L.marker(
+                [45.763448860006, 4.835812786493],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_03a1b22fea4552d7f7339986367621a7 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_682e28c50fbff3dad72b71e149ab814b = $(`<div id="html_682e28c50fbff3dad72b71e149ab814b" style="width: 100.0%; height: 100.0%;"><b>Station Cordeliers</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Cordeliers.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_03a1b22fea4552d7f7339986367621a7.setContent(html_682e28c50fbff3dad72b71e149ab814b);
+            
+        
+
+        marker_6bdbe9b6eb117afa5ed7529fb0a38fc6.bindPopup(popup_03a1b22fea4552d7f7339986367621a7)
+        ;
+
+        
+    
+    
+            marker_6bdbe9b6eb117afa5ed7529fb0a38fc6.bindTooltip(
+                `<div>
+                     Station Cordeliers
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_554c8c00f53f3c4d5f9a304ec67b4831 = L.marker(
+                [45.785257727111, 4.832498299107],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_e55069ab026bd3591bdca209f644d924 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_4da83e994c91b9873af5205479a87c02 = $(`<div id="html_4da83e994c91b9873af5205479a87c02" style="width: 100.0%; height: 100.0%;"><b>Station Cuire</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Cuire.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_e55069ab026bd3591bdca209f644d924.setContent(html_4da83e994c91b9873af5205479a87c02);
+            
+        
+
+        marker_554c8c00f53f3c4d5f9a304ec67b4831.bindPopup(popup_e55069ab026bd3591bdca209f644d924)
+        ;
+
+        
+    
+    
+            marker_554c8c00f53f3c4d5f9a304ec67b4831.bindTooltip(
+                `<div>
+                     Station Cuire
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_898757217d6317b715207317879556de = L.marker(
+                [45.7657088174085, 4.9002879782975],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_04c6b0187bf3cc837f46cd2352693b59 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_1a99546fd9747d7379140cd0d06cf61c = $(`<div id="html_1a99546fd9747d7379140cd0d06cf61c" style="width: 100.0%; height: 100.0%;"><b>Station Cusset</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Cusset.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_04c6b0187bf3cc837f46cd2352693b59.setContent(html_1a99546fd9747d7379140cd0d06cf61c);
+            
+        
+
+        marker_898757217d6317b715207317879556de.bindPopup(popup_04c6b0187bf3cc837f46cd2352693b59)
+        ;
+
+        
+    
+    
+            marker_898757217d6317b715207317879556de.bindTooltip(
+                `<div>
+                     Station Cusset
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_59d5fadcc771d60bbb8b56a28b11b436 = L.marker(
+                [45.7675904762535, 4.890049382058249],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_27393dc2b85a7b22634e4fae9c0fa5d8 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_d1d12504e2ab634429ca0364a69f4263 = $(`<div id="html_d1d12504e2ab634429ca0364a69f4263" style="width: 100.0%; height: 100.0%;"><b>Station Flachet</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Flachet.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_27393dc2b85a7b22634e4fae9c0fa5d8.setContent(html_d1d12504e2ab634429ca0364a69f4263);
+            
+        
+
+        marker_59d5fadcc771d60bbb8b56a28b11b436.bindPopup(popup_27393dc2b85a7b22634e4fae9c0fa5d8)
+        ;
+
+        
+    
+    
+            marker_59d5fadcc771d60bbb8b56a28b11b436.bindTooltip(
+                `<div>
+                     Station Flachet
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_f1134dfcbd6fc3456e979c624ab6a45f = L.marker(
+                [45.766429850425496, 4.8054918959765],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_22c133d55316bdb1dfc6f1a687530956 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_6bb2d00e0c92f1d90d361acebc519ed3 = $(`<div id="html_6bb2d00e0c92f1d90d361acebc519ed3" style="width: 100.0%; height: 100.0%;"><b>Station Gorge de Loup</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Gorge de Loup.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_22c133d55316bdb1dfc6f1a687530956.setContent(html_6bb2d00e0c92f1d90d361acebc519ed3);
+            
+        
+
+        marker_f1134dfcbd6fc3456e979c624ab6a45f.bindPopup(popup_22c133d55316bdb1dfc6f1a687530956)
+        ;
+
+        
+    
+    
+            marker_f1134dfcbd6fc3456e979c624ab6a45f.bindTooltip(
+                `<div>
+                     Station Gorge de Loup
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_dec300cb78c7d70ab8204abbf464a796 = L.marker(
+                [45.74289103361, 4.878945399659],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_972de37f11bdb2c9b01ef51c2edc83da = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_dd5fd5cce4b3ca6e4ba88442a9750628 = $(`<div id="html_dd5fd5cce4b3ca6e4ba88442a9750628" style="width: 100.0%; height: 100.0%;"><b>Station Grange Blanche</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Grange Blanche.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_972de37f11bdb2c9b01ef51c2edc83da.setContent(html_dd5fd5cce4b3ca6e4ba88442a9750628);
+            
+        
+
+        marker_dec300cb78c7d70ab8204abbf464a796.bindPopup(popup_972de37f11bdb2c9b01ef51c2edc83da)
+        ;
+
+        
+    
+    
+            marker_dec300cb78c7d70ab8204abbf464a796.bindTooltip(
+                `<div>
+                     Station Grange Blanche
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_6f3b6127189ebae3b3a874f016382bd6 = L.marker(
+                [45.769036891172, 4.8821854763705],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_d00e2cd5535ee72074c46034fb399f90 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_4b98e1a2c2e4f5bbc27ced2a3af52875 = $(`<div id="html_4b98e1a2c2e4f5bbc27ced2a3af52875" style="width: 100.0%; height: 100.0%;"><b>Station Gratte Ciel</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Gratte Ciel.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_d00e2cd5535ee72074c46034fb399f90.setContent(html_4b98e1a2c2e4f5bbc27ced2a3af52875);
+            
+        
+
+        marker_6f3b6127189ebae3b3a874f016382bd6.bindPopup(popup_d00e2cd5535ee72074c46034fb399f90)
+        ;
+
+        
+    
+    
+            marker_6f3b6127189ebae3b3a874f016382bd6.bindTooltip(
+                `<div>
+                     Station Gratte Ciel
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_9f9116f99c072bed3955e3a4e2867676 = L.marker(
+                [45.75940220410225, 4.84760771559775],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_76c9828e5e562e1f2b935a4b06d93615 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_38eab139621ad76cebc6d78c77603043 = $(`<div id="html_38eab139621ad76cebc6d78c77603043" style="width: 100.0%; height: 100.0%;"><b>Station Place Guichard</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Place Guichard.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_76c9828e5e562e1f2b935a4b06d93615.setContent(html_38eab139621ad76cebc6d78c77603043);
+            
+        
+
+        marker_9f9116f99c072bed3955e3a4e2867676.bindPopup(popup_76c9828e5e562e1f2b935a4b06d93615)
+        ;
+
+        
+    
+    
+            marker_9f9116f99c072bed3955e3a4e2867676.bindTooltip(
+                `<div>
+                     Station Place Guichard
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_4e2b76870f81e072f71a1846f6c92df8 = L.marker(
+                [45.7554420135035, 4.8425530454715],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_3a0cd41b83cf5e55c3d25a1695c9a4c3 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_7893897876f82867412a2aea6d532f60 = $(`<div id="html_7893897876f82867412a2aea6d532f60" style="width: 100.0%; height: 100.0%;"><b>Station Guillotière</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Guillotière.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_3a0cd41b83cf5e55c3d25a1695c9a4c3.setContent(html_7893897876f82867412a2aea6d532f60);
+            
+        
+
+        marker_4e2b76870f81e072f71a1846f6c92df8.bindPopup(popup_3a0cd41b83cf5e55c3d25a1695c9a4c3)
+        ;
+
+        
+    
+    
+            marker_4e2b76870f81e072f71a1846f6c92df8.bindTooltip(
+                `<div>
+                     Station Guillotière
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_eb6760c619f5fc78688a4dc215b4a5d8 = L.marker(
+                [45.779266136898, 4.827520617775],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_26e2a741a25bb31876e010aeb17d1d08 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_f6e729e23c51ab30db98ff8808f64484 = $(`<div id="html_f6e729e23c51ab30db98ff8808f64484" style="width: 100.0%; height: 100.0%;"><b>Station Hénon</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Hénon.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_26e2a741a25bb31876e010aeb17d1d08.setContent(html_f6e729e23c51ab30db98ff8808f64484);
+            
+        
+
+        marker_eb6760c619f5fc78688a4dc215b4a5d8.bindPopup(popup_26e2a741a25bb31876e010aeb17d1d08)
+        ;
+
+        
+    
+    
+            marker_eb6760c619f5fc78688a4dc215b4a5d8.bindTooltip(
+                `<div>
+                     Station Hénon
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_e702414559eeeab307e8bd9be3df762b = L.marker(
+                [45.7674837874868, 4.836023571019799],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_8846cf5e8469611e73e80cfaa9436276 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_894d995464a0faae0644aeec99009cff = $(`<div id="html_894d995464a0faae0644aeec99009cff" style="width: 100.0%; height: 100.0%;"><b>Station Hôtel de ville - Louis Pradel</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Hôtel de ville - Louis Pradel.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_8846cf5e8469611e73e80cfaa9436276.setContent(html_894d995464a0faae0644aeec99009cff);
+            
+        
+
+        marker_e702414559eeeab307e8bd9be3df762b.bindPopup(popup_8846cf5e8469611e73e80cfaa9436276)
+        ;
+
+        
+    
+    
+            marker_e702414559eeeab307e8bd9be3df762b.bindTooltip(
+                `<div>
+                     Station Hôtel de ville - Louis Pradel
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_7b7d1e3d6df41bc3f2ce83ba252d3a89 = L.marker(
+                [45.7386923348385, 4.886296431518501],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_de1868f92391489168463d0bab8be970 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_b70d2e9ff22781514c0992c09d109105 = $(`<div id="html_b70d2e9ff22781514c0992c09d109105" style="width: 100.0%; height: 100.0%;"><b>Station Laënnec</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Laënnec.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_de1868f92391489168463d0bab8be970.setContent(html_b70d2e9ff22781514c0992c09d109105);
+            
+        
+
+        marker_7b7d1e3d6df41bc3f2ce83ba252d3a89.bindPopup(popup_de1868f92391489168463d0bab8be970)
+        ;
+
+        
+    
+    
+            marker_7b7d1e3d6df41bc3f2ce83ba252d3a89.bindTooltip(
+                `<div>
+                     Station Laënnec
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_9a1c2f8ae7554952a5acf584f4af1a4f = L.marker(
+                [45.758589087367, 4.8214501987485],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_53572570f79a33e994a640314324807d = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_40f57cac94229754310342a27cdeaf51 = $(`<div id="html_40f57cac94229754310342a27cdeaf51" style="width: 100.0%; height: 100.0%;"><b>Station Les Minimes - Théâtres Romains</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Les Minimes - Théâtres Romains.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_53572570f79a33e994a640314324807d.setContent(html_40f57cac94229754310342a27cdeaf51);
+            
+        
+
+        marker_9a1c2f8ae7554952a5acf584f4af1a4f.bindPopup(popup_53572570f79a33e994a640314324807d)
+        ;
+
+        
+    
+    
+            marker_9a1c2f8ae7554952a5acf584f4af1a4f.bindTooltip(
+                `<div>
+                     Station Les Minimes - Théâtres Romains
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_da758f2042b316df4fca5ed792b506f6 = L.marker(
+                [45.7695841135585, 4.85337171075],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_ce55cb8bf08eace893e809c41b123120 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_ccf0c85dafddbafcb7d583198fdd5a7e = $(`<div id="html_ccf0c85dafddbafcb7d583198fdd5a7e" style="width: 100.0%; height: 100.0%;"><b>Station Masséna</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Masséna.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_ce55cb8bf08eace893e809c41b123120.setContent(html_ccf0c85dafddbafcb7d583198fdd5a7e);
+            
+        
+
+        marker_da758f2042b316df4fca5ed792b506f6.bindPopup(popup_ce55cb8bf08eace893e809c41b123120)
+        ;
+
+        
+    
+    
+            marker_da758f2042b316df4fca5ed792b506f6.bindTooltip(
+                `<div>
+                     Station Masséna
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_c78d1799217b96a8dd8993e150ca1fdb = L.marker(
+                [45.730482813474, 4.8872478990085],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_b52aaf990e358b2a30e8111d3477e020 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_33a4f96e1124f9f33c3d8a0fc95eb228 = $(`<div id="html_33a4f96e1124f9f33c3d8a0fc95eb228" style="width: 100.0%; height: 100.0%;"><b>Station Mermoz - Pinel</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Mermoz - Pinel.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_b52aaf990e358b2a30e8111d3477e020.setContent(html_33a4f96e1124f9f33c3d8a0fc95eb228);
+            
+        
+
+        marker_c78d1799217b96a8dd8993e150ca1fdb.bindPopup(popup_b52aaf990e358b2a30e8111d3477e020)
+        ;
+
+        
+    
+    
+            marker_c78d1799217b96a8dd8993e150ca1fdb.bindTooltip(
+                `<div>
+                     Station Mermoz - Pinel
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_305770d10cd462dd8682a4c11214b943 = L.marker(
+                [45.7453573571195, 4.8718339057835],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_ab204365fa6e21db4cedcc1db67422da = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_c9403a82ccb617971a2d22dc48177327 = $(`<div id="html_c9403a82ccb617971a2d22dc48177327" style="width: 100.0%; height: 100.0%;"><b>Station Monplaisir Lumière</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Monplaisir Lumière.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_ab204365fa6e21db4cedcc1db67422da.setContent(html_c9403a82ccb617971a2d22dc48177327);
+            
+        
+
+        marker_305770d10cd462dd8682a4c11214b943.bindPopup(popup_ab204365fa6e21db4cedcc1db67422da)
+        ;
+
+        
+    
+    
+            marker_305770d10cd462dd8682a4c11214b943.bindTooltip(
+                `<div>
+                     Station Monplaisir Lumière
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_d118e0dba4031a571c5aceb87e8764e4 = L.marker(
+                [45.719763672732, 4.8874543622535],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_10e4e279132982cf428bb823a0b56479 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_17827a26ee3868fb93ccad3a1a7b2f22 = $(`<div id="html_17827a26ee3868fb93ccad3a1a7b2f22" style="width: 100.0%; height: 100.0%;"><b>Station Parilly</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Parilly.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_10e4e279132982cf428bb823a0b56479.setContent(html_17827a26ee3868fb93ccad3a1a7b2f22);
+            
+        
+
+        marker_d118e0dba4031a571c5aceb87e8764e4.bindPopup(popup_10e4e279132982cf428bb823a0b56479)
+        ;
+
+        
+    
+    
+            marker_d118e0dba4031a571c5aceb87e8764e4.bindTooltip(
+                `<div>
+                     Station Parilly
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_6a5b90e11c0027289db15154a7afc259 = L.marker(
+                [45.749782303351, 4.8269512126275],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_4e7636d2f3dcbc8292f580e832fab722 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_730cfe74a36ab3fca54b64ab47733779 = $(`<div id="html_730cfe74a36ab3fca54b64ab47733779" style="width: 100.0%; height: 100.0%;"><b>Station Perrache</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Perrache.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_4e7636d2f3dcbc8292f580e832fab722.setContent(html_730cfe74a36ab3fca54b64ab47733779);
+            
+        
+
+        marker_6a5b90e11c0027289db15154a7afc259.bindPopup(popup_4e7636d2f3dcbc8292f580e832fab722)
+        ;
+
+        
+    
+    
+            marker_6a5b90e11c0027289db15154a7afc259.bindTooltip(
+                `<div>
+                     Station Perrache
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_668afdbca5795f1dd55f347e21ec0a65 = L.marker(
+                [45.747769496982, 4.864823512074],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_284b60e7a670e64870528221213f037e = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_55a40997c8881d760dcda4a2d8dda302 = $(`<div id="html_55a40997c8881d760dcda4a2d8dda302" style="width: 100.0%; height: 100.0%;"><b>Station Sans Souci</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Sans Souci.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_284b60e7a670e64870528221213f037e.setContent(html_55a40997c8881d760dcda4a2d8dda302);
+            
+        
+
+        marker_668afdbca5795f1dd55f347e21ec0a65.bindPopup(popup_284b60e7a670e64870528221213f037e)
+        ;
+
+        
+    
+    
+            marker_668afdbca5795f1dd55f347e21ec0a65.bindTooltip(
+                `<div>
+                     Station Sans Souci
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_bc55de85374f66571f9d41536c259514 = L.marker(
+                [45.7537600511092, 4.8469662507116],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_da3c9c010c101f7a289a02c8deacbbb7 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_7ebd63e94a427509db9af4f26afdb67b = $(`<div id="html_7ebd63e94a427509db9af4f26afdb67b" style="width: 100.0%; height: 100.0%;"><b>Station Saxe - Gambetta</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Saxe - Gambetta.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_da3c9c010c101f7a289a02c8deacbbb7.setContent(html_7ebd63e94a427509db9af4f26afdb67b);
+            
+        
+
+        marker_bc55de85374f66571f9d41536c259514.bindPopup(popup_da3c9c010c101f7a289a02c8deacbbb7)
+        ;
+
+        
+    
+    
+            marker_bc55de85374f66571f9d41536c259514.bindTooltip(
+                `<div>
+                     Station Saxe - Gambetta
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_8b6c0c765e977e2e1ed9cd136aff22eb = L.marker(
+                [45.756959141802, 4.816139440422],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_96ac4d8225b3ae5b1679d850dd834546 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_eb8da18dcab0d15baf7629c2e4c8f683 = $(`<div id="html_eb8da18dcab0d15baf7629c2e4c8f683" style="width: 100.0%; height: 100.0%;"><b>Station St Just</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/St Just.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_96ac4d8225b3ae5b1679d850dd834546.setContent(html_eb8da18dcab0d15baf7629c2e4c8f683);
+            
+        
+
+        marker_8b6c0c765e977e2e1ed9cd136aff22eb.bindPopup(popup_96ac4d8225b3ae5b1679d850dd834546)
+        ;
+
+        
+    
+    
+            marker_8b6c0c765e977e2e1ed9cd136aff22eb.bindTooltip(
+                `<div>
+                     Station St Just
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_1a9802dfb80b5527f994df7c36d39733 = L.marker(
+                [45.774779864545, 4.8054281139755],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_fcc966fdc006322033e138e62b353d75 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_f5fdbcec74022da7f9c8f4cc8afb4054 = $(`<div id="html_f5fdbcec74022da7f9c8f4cc8afb4054" style="width: 100.0%; height: 100.0%;"><b>Station Valmy</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Valmy.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_fcc966fdc006322033e138e62b353d75.setContent(html_f5fdbcec74022da7f9c8f4cc8afb4054);
+            
+        
+
+        marker_1a9802dfb80b5527f994df7c36d39733.bindPopup(popup_fcc966fdc006322033e138e62b353d75)
+        ;
+
+        
+    
+    
+            marker_1a9802dfb80b5527f994df7c36d39733.bindTooltip(
+                `<div>
+                     Station Valmy
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_4e7256f824dcd4d10923dc0fb9ad7755 = L.marker(
+                [45.760030984836334, 4.826484002472333],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_68e10b50429c00dcff0b595de46f9cff = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_38450fa3111b355137c7b88b543c8538 = $(`<div id="html_38450fa3111b355137c7b88b543c8538" style="width: 100.0%; height: 100.0%;"><b>Station Vieux Lyon</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Vieux Lyon.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_68e10b50429c00dcff0b595de46f9cff.setContent(html_38450fa3111b355137c7b88b543c8538);
+            
+        
+
+        marker_4e7256f824dcd4d10923dc0fb9ad7755.bindPopup(popup_68e10b50429c00dcff0b595de46f9cff)
+        ;
+
+        
+    
+    
+            marker_4e7256f824dcd4d10923dc0fb9ad7755.bindTooltip(
+                `<div>
+                     Station Vieux Lyon
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_da375184c157086bb4f617788e49f90e = L.marker(
+                [45.7639691857738, 4.9095735250564],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_7cc9f943b671da7f79a110cde191e077 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_f2b799dbd0cffb06a4e484635cb98423 = $(`<div id="html_f2b799dbd0cffb06a4e484635cb98423" style="width: 100.0%; height: 100.0%;"><b>Station Laurent Bonnevay</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Laurent Bonnevay.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_7cc9f943b671da7f79a110cde191e077.setContent(html_f2b799dbd0cffb06a4e484635cb98423);
+            
+        
+
+        marker_da375184c157086bb4f617788e49f90e.bindPopup(popup_7cc9f943b671da7f79a110cde191e077)
+        ;
+
+        
+    
+    
+            marker_da375184c157086bb4f617788e49f90e.bindTooltip(
+                `<div>
+                     Station Laurent Bonnevay
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_9168f0d81a22f944f0c76fe677929010 = L.marker(
+                [45.770506425925205, 4.863969330631599],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_1b25c0d761ed552e44e351fccc0d7327 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_4d5e2ca33d6e0845a4e6c4704b983300 = $(`<div id="html_4d5e2ca33d6e0845a4e6c4704b983300" style="width: 100.0%; height: 100.0%;"><b>Station Charpennes</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Charpennes.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_1b25c0d761ed552e44e351fccc0d7327.setContent(html_4d5e2ca33d6e0845a4e6c4704b983300);
+            
+        
+
+        marker_9168f0d81a22f944f0c76fe677929010.bindPopup(popup_1b25c0d761ed552e44e351fccc0d7327)
+        ;
+
+        
+    
+    
+            marker_9168f0d81a22f944f0c76fe677929010.bindTooltip(
+                `<div>
+                     Station Charpennes
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_747fcd7e2c675b685aefa4ce27d43500 = L.marker(
+                [45.7797982541165, 4.803794788763],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_ef83f448668af18cb34cd6dcf58f24c8 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_b1086fe9e79fe463f1a73ce3f6394eef = $(`<div id="html_b1086fe9e79fe463f1a73ce3f6394eef" style="width: 100.0%; height: 100.0%;"><b>Station Gare de Vaise</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Gare de Vaise.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_ef83f448668af18cb34cd6dcf58f24c8.setContent(html_b1086fe9e79fe463f1a73ce3f6394eef);
+            
+        
+
+        marker_747fcd7e2c675b685aefa4ce27d43500.bindPopup(popup_ef83f448668af18cb34cd6dcf58f24c8)
+        ;
+
+        
+    
+    
+            marker_747fcd7e2c675b685aefa4ce27d43500.bindTooltip(
+                `<div>
+                     Station Gare de Vaise
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_2bcbdbf8681b5dda15f5245958fd8bb6 = L.marker(
+                [45.705585639102, 4.888020812215],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_71ac876abac1f4753f5328d97fc935b9 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_237a4721d98262e333b942174a42dec4 = $(`<div id="html_237a4721d98262e333b942174a42dec4" style="width: 100.0%; height: 100.0%;"><b>Station Gare de Vénissieux</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Gare de Vénissieux.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_71ac876abac1f4753f5328d97fc935b9.setContent(html_237a4721d98262e333b942174a42dec4);
+            
+        
+
+        marker_2bcbdbf8681b5dda15f5245958fd8bb6.bindPopup(popup_71ac876abac1f4753f5328d97fc935b9)
+        ;
+
+        
+    
+    
+            marker_2bcbdbf8681b5dda15f5245958fd8bb6.bindTooltip(
+                `<div>
+                     Station Gare de Vénissieux
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_093444ead1702c043a19492a262f2557 = L.marker(
+                [45.746023567394005, 4.84237582167],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_2375d664bce5f6c6f271102afae2f022 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_10b694422797cd8f2a4a00c2dceb6f53 = $(`<div id="html_10b694422797cd8f2a4a00c2dceb6f53" style="width: 100.0%; height: 100.0%;"><b>Station Jean Macé</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Jean Macé.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_2375d664bce5f6c6f271102afae2f022.setContent(html_10b694422797cd8f2a4a00c2dceb6f53);
+            
+        
+
+        marker_093444ead1702c043a19492a262f2557.bindPopup(popup_2375d664bce5f6c6f271102afae2f022)
+        ;
+
+        
+    
+    
+            marker_093444ead1702c043a19492a262f2557.bindTooltip(
+                `<div>
+                     Station Jean Macé
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_20c0de60ca3ceb1f10a2a7c810d68174 = L.marker(
+                [45.751426085686, 4.854206535802],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_1a40c108ac05c1b82372ec40d5c9efcd = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_8ee87e58fefa40308a092bb462b57aca = $(`<div id="html_8ee87e58fefa40308a092bb462b57aca" style="width: 100.0%; height: 100.0%;"><b>Station Garibaldi</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Garibaldi.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_1a40c108ac05c1b82372ec40d5c9efcd.setContent(html_8ee87e58fefa40308a092bb462b57aca);
+            
+        
+
+        marker_20c0de60ca3ceb1f10a2a7c810d68174.bindPopup(popup_1a40c108ac05c1b82372ec40d5c9efcd)
+        ;
+
+        
+    
+    
+            marker_20c0de60ca3ceb1f10a2a7c810d68174.bindTooltip(
+                `<div>
+                     Station Garibaldi
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_b87c93a450a31360820745cbdb200550 = L.marker(
+                [45.76876598198575, 4.8444778681565],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_15e0b884df5c4e5df358feeaae35c2ce = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_0920c840b0e29027743681b9a576ae80 = $(`<div id="html_0920c840b0e29027743681b9a576ae80" style="width: 100.0%; height: 100.0%;"><b>Station Foch</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Foch.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_15e0b884df5c4e5df358feeaae35c2ce.setContent(html_0920c840b0e29027743681b9a576ae80);
+            
+        
+
+        marker_b87c93a450a31360820745cbdb200550.bindPopup(popup_15e0b884df5c4e5df358feeaae35c2ce)
+        ;
+
+        
+    
+    
+            marker_b87c93a450a31360820745cbdb200550.bindTooltip(
+                `<div>
+                     Station Foch
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_3862364178db2496dcdb6bb65566705f = L.marker(
+                [45.770607857223, 4.8736705908785],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_15bb2402f8769164c3d6feaa7951aa1d = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_36263e151bf2bfffd0e1695a4f2e6c9e = $(`<div id="html_36263e151bf2bfffd0e1695a4f2e6c9e" style="width: 100.0%; height: 100.0%;"><b>Station République Villeurbanne</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/République Villeurbanne.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_15bb2402f8769164c3d6feaa7951aa1d.setContent(html_36263e151bf2bfffd0e1695a4f2e6c9e);
+            
+        
+
+        marker_3862364178db2496dcdb6bb65566705f.bindPopup(popup_15bb2402f8769164c3d6feaa7951aa1d)
+        ;
+
+        
+    
+    
+            marker_3862364178db2496dcdb6bb65566705f.bindTooltip(
+                `<div>
+                     Station République Villeurbanne
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_30eed39aa4c088c31f5e0487d24f49a0 = L.marker(
+                [45.72740336687, 4.831305621243599],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_3f1cef85922af5a9c40b035f12b022b5 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_5bcca8e608233f43456e116fd408ec13 = $(`<div id="html_5bcca8e608233f43456e116fd408ec13" style="width: 100.0%; height: 100.0%;"><b>Station Stade de Gerland</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Stade de Gerland.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_3f1cef85922af5a9c40b035f12b022b5.setContent(html_5bcca8e608233f43456e116fd408ec13);
+            
+        
+
+        marker_30eed39aa4c088c31f5e0487d24f49a0.bindPopup(popup_3f1cef85922af5a9c40b035f12b022b5)
+        ;
+
+        
+    
+    
+            marker_30eed39aa4c088c31f5e0487d24f49a0.bindTooltip(
+                `<div>
+                     Station Stade de Gerland
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_840cbb3b2e715e93c06932ed1bad7ed9 = L.marker(
+                [45.73194543270675, 4.83397275743075],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_4997b1867a48f0c592c156332ac32b57 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_c2135561b0951373950b31ec96ab6fde = $(`<div id="html_c2135561b0951373950b31ec96ab6fde" style="width: 100.0%; height: 100.0%;"><b>Station Debourg</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Debourg.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_4997b1867a48f0c592c156332ac32b57.setContent(html_c2135561b0951373950b31ec96ab6fde);
+            
+        
+
+        marker_840cbb3b2e715e93c06932ed1bad7ed9.bindPopup(popup_4997b1867a48f0c592c156332ac32b57)
+        ;
+
+        
+    
+    
+            marker_840cbb3b2e715e93c06932ed1bad7ed9.bindTooltip(
+                `<div>
+                     Station Debourg
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_237fdc7af0d03518710eb29c09974844 = L.marker(
+                [45.737842723376666, 4.837512299291],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_9df224ca1003eb91632bd499f5b5f81b = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_3f60ae90c26480fe2f291e80c4e1f2e7 = $(`<div id="html_3f60ae90c26480fe2f291e80c4e1f2e7" style="width: 100.0%; height: 100.0%;"><b>Station Place Jean Jaurès</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Place Jean Jaurès.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_9df224ca1003eb91632bd499f5b5f81b.setContent(html_3f60ae90c26480fe2f291e80c4e1f2e7);
+            
+        
+
+        marker_237fdc7af0d03518710eb29c09974844.bindPopup(popup_9df224ca1003eb91632bd499f5b5f81b)
+        ;
+
+        
+    
+    
+            marker_237fdc7af0d03518710eb29c09974844.bindTooltip(
+                `<div>
+                     Station Place Jean Jaurès
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_d5ee4ef9bd1b3cfd4ee5f915729be9f5 = L.marker(
+                [45.7709433306005, 4.8362383602075],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_8ab1afcbeaf7e481bb5fb1f672240882 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_60ec1b2e5269f8fa5dcf9cde5196d251 = $(`<div id="html_60ec1b2e5269f8fa5dcf9cde5196d251" style="width: 100.0%; height: 100.0%;"><b>Station Croix Paquet</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Croix Paquet.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_8ab1afcbeaf7e481bb5fb1f672240882.setContent(html_60ec1b2e5269f8fa5dcf9cde5196d251);
+            
+        
+
+        marker_d5ee4ef9bd1b3cfd4ee5f915729be9f5.bindPopup(popup_8ab1afcbeaf7e481bb5fb1f672240882)
+        ;
+
+        
+    
+    
+            marker_d5ee4ef9bd1b3cfd4ee5f915729be9f5.bindTooltip(
+                `<div>
+                     Station Croix Paquet
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_279a8ec7acca93985da86658131986d7 = L.marker(
+                [45.774530249397, 4.831823906977],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_287b431496c332373d53f7083b7b2931 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_cdf4a95fc97262d992eef324f12180f7 = $(`<div id="html_cdf4a95fc97262d992eef324f12180f7" style="width: 100.0%; height: 100.0%;"><b>Station Croix-Rousse</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Croix-Rousse.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_287b431496c332373d53f7083b7b2931.setContent(html_cdf4a95fc97262d992eef324f12180f7);
+            
+        
+
+        marker_279a8ec7acca93985da86658131986d7.bindPopup(popup_287b431496c332373d53f7083b7b2931)
+        ;
+
+        
+    
+    
+            marker_279a8ec7acca93985da86658131986d7.bindTooltip(
+                `<div>
+                     Station Croix-Rousse
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_69868664c5f2827275400184b0e28685 = L.marker(
+                [45.762108827525, 4.82138703295],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_c5f8e55ca7a9775729efc7a13200d8b9 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_d1188b2cc64e3bdbec7efda490fa193d = $(`<div id="html_d1188b2cc64e3bdbec7efda490fa193d" style="width: 100.0%; height: 100.0%;"><b>Station Fourvière</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Fourvière.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_c5f8e55ca7a9775729efc7a13200d8b9.setContent(html_d1188b2cc64e3bdbec7efda490fa193d);
+            
+        
+
+        marker_69868664c5f2827275400184b0e28685.bindPopup(popup_c5f8e55ca7a9775729efc7a13200d8b9)
+        ;
+
+        
+    
+    
+            marker_69868664c5f2827275400184b0e28685.bindTooltip(
+                `<div>
+                     Station Fourvière
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_7207a3197085b047381ed2588873d528 = L.marker(
+                [45.761660352089606, 4.857446875553199],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_998d27a6e7dbae629aa170441a341edf = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_298883f7249a075e87974caac753f681 = $(`<div id="html_298883f7249a075e87974caac753f681" style="width: 100.0%; height: 100.0%;"><b>Station Part-Dieu</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Part-Dieu.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_998d27a6e7dbae629aa170441a341edf.setContent(html_298883f7249a075e87974caac753f681);
+            
+        
+
+        marker_7207a3197085b047381ed2588873d528.bindPopup(popup_998d27a6e7dbae629aa170441a341edf)
+        ;
+
+        
+    
+    
+            marker_7207a3197085b047381ed2588873d528.bindTooltip(
+                `<div>
+                     Station Part-Dieu
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_6503a7c8b29cc51491318dd2d41603e2 = L.marker(
+                [45.760975236509, 4.921070027404999],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_cdf7e45645ba15171d2d79d65caf57c1 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_ca82a919a79e2d0e09c6ee7462de551b = $(`<div id="html_ca82a919a79e2d0e09c6ee7462de551b" style="width: 100.0%; height: 100.0%;"><b>Station La soie</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/La soie.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_cdf7e45645ba15171d2d79d65caf57c1.setContent(html_ca82a919a79e2d0e09c6ee7462de551b);
+            
+        
+
+        marker_6503a7c8b29cc51491318dd2d41603e2.bindPopup(popup_cdf7e45645ba15171d2d79d65caf57c1)
+        ;
+
+        
+    
+    
+            marker_6503a7c8b29cc51491318dd2d41603e2.bindTooltip(
+                `<div>
+                     Station La soie
+                 </div>`,
+                {"sticky": true}
+            );
+        
+    
+            var marker_58aaf6705b3e348190539f1f72eb9a34 = L.marker(
+                [45.716692600949, 4.814505793787],
+                {}
+            ).addTo(map_48a5f23e3a4092b09a6fc9324d28c106);
+        
+    
+        var popup_e84917f304766ee1743ca1d509f97828 = L.popup({"maxWidth": 300});
+
+        
+            
+                var html_8f63b82f9186b57cadd7864dca29fd7e = $(`<div id="html_8f63b82f9186b57cadd7864dca29fd7e" style="width: 100.0%; height: 100.0%;"><b>Station Gare d'Oullins</b><br><a href="save/16_03_2019_31_05_2019/bokeh_plots/Gare d'Oullins.html" target="_blank">Click here for detailed plot</a></div>`)[0];
+                popup_e84917f304766ee1743ca1d509f97828.setContent(html_8f63b82f9186b57cadd7864dca29fd7e);
+            
+        
+
+        marker_58aaf6705b3e348190539f1f72eb9a34.bindPopup(popup_e84917f304766ee1743ca1d509f97828)
+        ;
+
+        
+    
+    
+            marker_58aaf6705b3e348190539f1f72eb9a34.bindTooltip(
+                `<div>
+                     Station Gare d'Oullins
+                 </div>`,
+                {"sticky": true}
+            );
+        
+</script>
+</html>
