@@ -131,6 +131,7 @@ class DataSet(object):
             self.init_df = init_df
         else:
             self.init_df = df
+
         
     def bijection_name_indx(self):
         colname2indx = {c:k for k,c in enumerate(self.columns)}
@@ -171,6 +172,23 @@ class DataSet(object):
         shifted_dates = Dwt+Ddt+Dt
 
         return(shifted_values,shifted_dates)
+    
+    def get_invalid_indx(self,invalid_dates:list,df_verif:pd.DataFrame,step_ahead,historical_len,Weeks,Days):
+        # Get all the row were the invalid dates are used 
+        df_verif_forbiden = pd.concat([df_verif[df_verif[c].isin(invalid_dates)] for c in df_verif.columns])
+
+        # Get the associated index 
+        invalid_indx = df_verif_forbiden.index
+
+        # Shift them in relation to the tensor 
+        shift_from_first_elmt = max(Weeks*24*7*self.time_step_per_hour,
+                                    Days*24*self.time_step_per_hour,
+                                    historical_len+step_ahead-1
+                                    )
+        invalid_indx - shift_from_first_elmt
+
+        return(invalid_indx)
+
 
     def get_feature_vect(self,step_ahead,historical_len,Days,Weeks):
         if self.time_step_per_hour is None :
