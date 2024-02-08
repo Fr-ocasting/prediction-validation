@@ -19,7 +19,7 @@ class DictDataLoader(object):
     def train_test_split(self):
         n = self.U.shape[0]
         train_idx,valid_idx = int(n*self.train_prop),int(n*(self.train_prop+self.valid_prop))
-        train_set,valid_set,test_set = U[:train_idx],U[train_idx:valid_idx],U[valid_idx:]
+        train_set,valid_set,test_set = self.U[:train_idx],self.U[train_idx:valid_idx],self.U[valid_idx:]
         train_target, valid_target, test_target = self.Utarget[:train_idx],self.Utarget[train_idx:valid_idx],self.Utarget[valid_idx:]
         return(train_set,valid_set,test_set,train_target, valid_target, test_target)
 
@@ -133,19 +133,57 @@ class DataSet(object):
             self.init_df = df
 
         self.shift_from_first_elmt = None
+        self.U = None
+        self.Utarget = None
+        self.df_verif = None
+        self.invalid_indx_df = None
+        self.remaining_dates = None
+        self.step_ahead = None
+        self.Weeks = None
+        self.Days = None
+        self.historical_len = None
         
     def bijection_name_indx(self):
         colname2indx = {c:k for k,c in enumerate(self.columns)}
         indx2colname = {k:c for k,c in enumerate(self.columns)}
         return(colname2indx,indx2colname)
-    def normalize(self):
+    
+    def minmaxnorm(self,x):
+        return(x-self.mini)/(self.maxi-self.mini)
+    
+    def normalize_df(self, train_prop, invalid_dates = None, minmaxnorm = True):
         if self.normalized:
             print('The df might be already normalized')
-        minmaxnorm = lambda x : (x-self.mini)/(self.maxi-self.mini)
-        normalized_df = minmaxnorm(self.init_df)
-        normalized_Xt = DataSet(normalized_df,init_df = self.init_df,mini = self.mini, maxi = self.maxi, mean = self.mean,normalized=True,time_step_per_hour=self.time_step_per_hour)
-        return(normalized_Xt)
+        else:
+            if minmaxnorm:
+                tmps_df = self.init_df[:int(train_prop*self.length)]
+                if invalid_dates is not None:
+                    tmps_df = tmps_df.drop(invalid_dates)
+                self.mini = tmps_df.min()
+                self.maxi = tmps_df.max()
+                self.mean = tmps_df.mean()
+                normalized_df = minmaxnorm(self.init_df)
+            normalized_dataset = DataSet(normalized_df,init_df = self.init_df,mini = self.mini, maxi = self.maxi, mean = self.mean,normalized=True,time_step_per_hour=self.time_step_per_hour)
+            return(normalized_dataset)
     
+    def normalize_tensor(self, minmaxnorm = True):
+        if self.normalized:
+            print('The df might be already normalized')
+
+    def remove_indices(self,invalid_indices_tensor):
+        ''' Remove the invalid sequences matching to invalid dates.
+        Sequences have already been shifted, so there is (len(df_init)-shift_from_first_elmt elements) elements left.
+        - The first index of df_verif is 0+shift_from_first_elmt
+        - The last index of df_verif is len(df_init)
+        We then have to remove the invalid sequences from U, and keep the remaining dates from 'df_verif'
+        '''
+        selected_indices = [e for e in np.arange(self.U.shape[0]) if e not in invalid_indices_tensor]  
+        selected_dates_index = [e for e in np.arange(self.shift_from_first_elmt,self.U.shape[0]+self.shift_from_first_elmt) if e not in self.invalid_indx_df]
+        self.U = self.U[selected_indices]
+        self.Utarget = self.Utarget[selected_indices]
+        self.remaining_dates = self.df_verif.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
+        return(self.U,self.Utarget,self.remaining_dates)
+
     def unormalize(self,timeserie):
         if not(self.normalized):
             print('The df might be already unormalized')
@@ -175,16 +213,19 @@ class DataSet(object):
         return(shifted_values,shifted_dates)
     
     def get_invalid_indx(self,invalid_dates:list,df_verif:pd.DataFrame):
+        '''invalid_dates:  list of Tmestamp dates 
+        from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
+        and return 'invalid_indx_df' which correspond to the forbidden index within the dataframe (where the first index can be > 0)'''
         # Get all the row were the invalid dates are used 
         df_verif_forbiden = pd.concat([df_verif[df_verif[c].isin(invalid_dates)] for c in df_verif.columns])
 
         # Get the associated index 
-        invalid_indx_without_shift = df_verif_forbiden.index
+        self.invalid_indx_df = df_verif_forbiden.index
 
         # Shift them in relation to the tensor 
-        invalid_indx = invalid_indx_without_shift - self.shift_from_first_elmt
+        invalid_indices_tensor = self.invalid_indx_df - self.shift_from_first_elmt
 
-        return(invalid_indx,invalid_indx_without_shift)
+        return(invalid_indices_tensor,self.invalid_indx_df)
 
 
     def get_feature_vect(self,step_ahead,historical_len,Days,Weeks):
@@ -192,10 +233,17 @@ class DataSet(object):
             raise Exception('Number of time steps per hour as not been defined. Please use FeatureVector.time_step_per_hour ')
         
         else : 
+             # Update Dataset attributes
+            self.step_ahead = step_ahead
+            self.historical_len = historical_len
+            self.Days = Days
+            self.Weeks = Weeks
+             
             self.shift_from_first_elmt = max(Weeks*24*7*self.time_step_per_hour,
                                     Days*24*self.time_step_per_hour,
                                     historical_len+step_ahead-1
                                     )
+            
             # Get the shifted "Dates" of Feature Vector and Target
             (shifted_values,shifted_dates) = self.shift_data(step_ahead,historical_len,Weeks,Days)
             L_shifted_dates = shifted_dates + [self.df_dates]
@@ -205,6 +253,13 @@ class DataSet(object):
             # Get Feature Vector and Target 
             U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
             Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
+
+            # Update Dataset attributes
+            self.U = U
+            self.Utarget = Utarget
+            self.df_verif = df_verif
+            self.remaining_dates = df_verif[[f't+{step_ahead-1}']]
+
             return(U,Utarget,df_verif)
     
 
