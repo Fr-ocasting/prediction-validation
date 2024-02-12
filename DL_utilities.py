@@ -156,13 +156,13 @@ class DataSet(object):
             print('The df might be already normalized')
         else:
             if minmaxnorm:
-                tmps_df = self.init_df[:int(train_prop*self.length)]
+                tmps_df = self.init_df[:int(train_prop*self.length)]  # Slicing to comput min max on training df
                 if invalid_dates is not None:
                     tmps_df = tmps_df.drop(invalid_dates)
                 self.mini = tmps_df.min()
                 self.maxi = tmps_df.max()
                 self.mean = tmps_df.mean()
-                normalized_df = minmaxnorm(self.init_df)
+                normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
             normalized_dataset = DataSet(normalized_df,init_df = self.init_df,mini = self.mini, maxi = self.maxi, mean = self.mean,normalized=True,time_step_per_hour=self.time_step_per_hour)
             return(normalized_dataset)
     
