@@ -98,13 +98,14 @@ class Trainer(object):
 
 
 class DataSet(object):
-    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None):
+    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,df_train = None):
         self.length = len(df)
         self.df = df
         self.columns = df.columns
         self.normalized = normalized
         self.time_step_per_hour = time_step_per_hour
         self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
+        self.df_train = df_train
         if time_step_per_hour is not None :
             self.Week_nb_steps = int(7*24*self.time_step_per_hour)
             self.Day_nb_steps = int(24*self.time_step_per_hour)
@@ -162,8 +163,9 @@ class DataSet(object):
                 self.mini = tmps_df.min()
                 self.maxi = tmps_df.max()
                 self.mean = tmps_df.mean()
+                self.df_train = tmps_df
                 normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
-            normalized_dataset = DataSet(normalized_df,init_df = self.init_df,mini = self.mini, maxi = self.maxi, mean = self.mean,normalized=True,time_step_per_hour=self.time_step_per_hour)
+            normalized_dataset = DataSet(normalized_df,init_df = self.init_df,mini = self.mini, maxi = self.maxi, mean = self.mean,normalized=True,time_step_per_hour=self.time_step_per_hour,df_train = self.df_train)
             return(normalized_dataset)
     
     def normalize_tensor(self, minmaxnorm = True):
@@ -188,6 +190,12 @@ class DataSet(object):
         if not(self.normalized):
             print('The df might be already unormalized')
         return(timeserie*(self.maxi - self.mini)+self.mini)
+    
+    def unormalize_tensor(self,tensor, axis = -1):
+        maxi_ = torch.Tensor(self.maxi.values).unsqueeze(axis)
+        mini_ = torch.Tensor(self.mini.values).unsqueeze(axis)
+        unormalized = tensor*(maxi_ - mini_)+mini_
+        return unormalized
     
     def get_time_serie(self,station):
         timeserie = TimeSerie(ts = self.df[[station]],init_ts = self.init_df[[station]],mini = self.mini[station],maxi = self.maxi[station],mean = self.mean[station], normalized = self.normalized)

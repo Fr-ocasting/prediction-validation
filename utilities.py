@@ -5,6 +5,8 @@ import numpy as np
 import random
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import torch.nn as nn
+from scipy.spatial.distance import cdist 
 
 def str2neg(x):
     # Convert string values into '-1'. Keep the nan values
@@ -23,6 +25,24 @@ def str_xa2int(x):
     except:
         return(x)
     
+def get_distance_matrix(centroids1,centroids2, inv = True):
+    ''' return the distance matrix, and even the inverse if we need it too '''
+    dist_matrix = cdist(centroids1, centroids2, metric='euclidean')
+    dist_matrix = dist_matrix/1e3
+
+    if inv :
+        sigma = np.std(dist_matrix)
+        matrix = np.empty((dist_matrix.shape[0],dist_matrix.shape[1]))
+        
+        for i in range(matrix.shape[0]):
+            for j in range(matrix.shape[1]):
+                if dist_matrix[i,j] != 0 :
+                    matrix[i,j] = np.exp(-(dist_matrix[i,j]/sigma)**2)
+                else : 
+                    matrix[i,j] = 1
+    else : 
+        matrix = dist_matrix
+    return(matrix)
 
 
 def date_from_month_offset(n):
