@@ -48,7 +48,10 @@ def get_trigram_correspondance():
 
 
 def load_subway_shp(folder_path,station_location_name):
-    ref_subway = pd.read_csv(f'{folder_path}{station_location_name}')[['MEAN_X','MEAN_Y','COD_TRG','LIB_STA_SIFO']]
+    try:
+        ref_subway = pd.read_csv(f'{folder_path}{station_location_name}')[['MEAN_X','MEAN_Y','COD_TRG','LIB_STA_SIFO']]
+    except:
+        ref_subway = pd.read_csv(f'{folder_path}{station_location_name}')[['lon','lat','COD_TRG','LIB_STA_SIFO']].rename(columns={'lon':'MEAN_X','lat':'MEAN_Y'})
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ShapelyDeprecationWarning)
         ref_subway['geometry'] = ref_subway.apply(lambda row : Point(row.MEAN_X,row.MEAN_Y),axis = 1)

@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn 
 import pandas as pd 
 import numpy as np
+import time
 
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
@@ -44,8 +45,10 @@ class Trainer(object):
         self.valid_loss = []
         self.epochs = epochs
 
-    def train_and_valid(self,):
+    def train_and_valid(self,mod = 10):
+        print(f'start training')
         for epoch in range(self.epochs):
+            t0 = time.time()
             # Train and Valid each epoch 
             self.training_mode = 'train'
             self.model.train()   #Activate Dropout 
@@ -57,6 +60,9 @@ class Trainer(object):
             # Update scheduler after each Epoch 
             if self.scheduler is not None:
                self.scheduler.step()
+
+            if epoch%mod==0:
+                print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
 
     def loop(self,):
         loss_epoch,nb_samples = 0,0
