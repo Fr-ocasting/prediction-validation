@@ -5,6 +5,18 @@ import pandas as pd
 import numpy as np
 import time
 
+def evaluate_metrics(Pred,Y_true,metrics = ['mse','mae']):
+    dic_metric = {}
+    for metric in metrics :
+        if metric == 'mse':
+            fun = nn.MSELoss()
+        if metric == 'mae':
+            fun = nn.L1Loss()
+
+        error = fun(Pred,Y_true)
+        dic_metric[metric] = error
+    return(dic_metric)
+
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
     def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True):
@@ -63,6 +75,8 @@ class Trainer(object):
 
             if epoch%mod==0:
                 print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
+                if epoch == 0:
+                    print(f"Estimated time for training: {'{0:.1f}'.format(self.epochs*(time.time()-t0)/60)}min ")
 
     def loop(self,):
         loss_epoch,nb_samples = 0,0
@@ -88,13 +102,27 @@ class Trainer(object):
         self.optimizer.step()
         return(loss)
     
-    def test(self):
+    def test_prediction(self,allow_dropout = False):
         self.training_mode = 'test'
-        self.model.eval()
+        if allow_dropout:
+            self.model.train()
+        else: 
+            self.model.eval()
         with torch.no_grad():
             Pred = torch.cat([self.model(x_b) for x_b,y_b in self.dataloader[self.training_mode]])
             Y_true = torch.cat([y_b for x_b,y_b in self.dataloader[self.training_mode]])
         return(Pred,Y_true)
+    
+
+    def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
+        (test_pred,Y_true) = self.test_prediction(allow_dropout)  # Get Normalized Pred and Y_true
+
+        test_pred = dataset.unormalize_tensor(test_pred)
+        Y_true = dataset.unormalize_tensor(Y_true)
+
+        df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
+
+        return(test_pred,Y_true,df_metrics)  
     
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):
         if training_mode == 'train':
@@ -169,10 +197,16 @@ class DataSet(object):
                 self.mini = tmps_df.min()
                 self.maxi = tmps_df.max()
                 self.mean = tmps_df.mean()
+
+                # Keep track on data used for training : 
                 self.df_train = tmps_df
+
+                # Normalize : 
                 normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
-            normalized_dataset = DataSet(normalized_df,init_df = self.init_df,mini = self.mini, maxi = self.maxi, mean = self.mean,normalized=True,time_step_per_hour=self.time_step_per_hour,df_train = self.df_train)
-            return(normalized_dataset)
+
+                # Update state : 
+                self.df = normalized_df
+                self.normalized = True
     
     def normalize_tensor(self, minmaxnorm = True):
         if self.normalized:

@@ -3,6 +3,32 @@ import mpl_toolkits.axes_grid1 as axes_grid1
 import pandas as pd
 import numpy as np
 
+def plot_loss(trainer,test_pred,Y_true,window_pred = None):
+    fig, (ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
+
+    ax1.plot(np.arange(len(trainer.train_loss)),trainer.train_loss, label = 'train_loss')
+    ax1.plot(np.arange(len(trainer.valid_loss)),trainer.valid_loss,label = 'Valid_loss')
+    ax1.set_xlabel('Epochs')
+    ax1.set_ylabel('MSE Loss')
+    ax1.legend()
+
+    try:
+        pred = test_pred[:,0,0,0]
+    except:
+        pred = test_pred[:,0,0]
+    if window_pred is not None:
+        pred = pred[window_pred]
+        Y_true = Y_true[window_pred]
+
+    ax2.plot(np.arange(len(pred)),pred, label = 'prediction')
+    ax2.plot(np.arange(len(Y_true)),Y_true[:,0,0],label = 'True')
+    ax2.set_xlabel('Time-slots')
+    ax2.set_ylabel('Flow')
+    ax2.legend()
+
+    plt.show()
+
+
 def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, cmap ="afmhot", save = None, cbar_label =  "Number of Data"):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
