@@ -19,7 +19,7 @@ def evaluate_metrics(Pred,Y_true,metrics = ['mse','mae']):
 
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
-    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True):
+    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None):
         super().__init__()
         self.validation = validation
         self.train_prop = train_prop
@@ -28,6 +28,7 @@ class DictDataLoader(object):
         self.Utarget = Utarget 
         self.dataloader = {}
         self.shuffle = shuffle
+        self.calib_prop = calib_prop
 
     def train_test_split(self):
         n = self.U.shape[0]
@@ -38,8 +39,17 @@ class DictDataLoader(object):
 
     def get_dictdataloader(self,batch_size:int):
         train_set,valid_set,test_set,train_target, valid_target, test_target= self.train_test_split()
-        for dataset,target,training_mode in zip([train_set,valid_set,test_set],[train_target,valid_target,test_target],['train','validate','test']):
-            self.dataloader[training_mode] = DataLoader(list(zip(dataset,target)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))
+        if self.calib_prop is None: 
+            for dataset,target,training_mode in zip([train_set,valid_set,test_set],[train_target,valid_target,test_target],['train','validate','test']):
+                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))
+        else : 
+            indices = torch.randperm(train_set.size(0))
+            split = int(train_set.size(0)*self.calib_prop)
+            proper_set_x,proper_set_y = train_set[indices[:split]],train_target[indices[:split]]
+            calib_set_x,calib_set_y = train_set[indices[split:]],train_target[indices[split:]]
+            for dataset,target,training_mode in zip([proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],['train','validate','test','cal']):
+                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))         
+
         return(self.dataloader)
     
 
@@ -55,6 +65,7 @@ class Trainer(object):
         self.scheduler = scheduler
         self.train_loss = []
         self.valid_loss = []
+        self.calib_loss =[]
         self.epochs = epochs
 
     def train_and_valid(self,mod = 10):
@@ -95,6 +106,26 @@ class Trainer(object):
                 loss_epoch += loss.item()*nb_samples
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
+    def calibration(self,prop_coverage):
+        ''' 
+        - Conformity scores obtained using quantile estimator (i.e : the deep neural network model) on the proper set  
+        - Then 'Q', the empirical quantile is computed with the conformity scores (on the calibration set), for each channel (dim = 0)
+        '''
+        self.model.eval()
+        with torch.no_grad():
+            for x_cal,y_cal in self.dataloader['cal']:  # Only one x_cal and y_cal 
+                preds = self.model(x_cal)
+                lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
+                conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
+                empirical_quantil = torch.Tensor([np.ceil((1 - prop_coverage)*(1 + 1/x_cal.size(0)))])    # inutile ? 
+                self.Q = torch.quantile(conformity_scores, empirical_quantil, dim = 0) #interpolation = 'higher'
+        return(self.Q)
+    
+    def CQR_PI(self,preds):
+        pi_bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q, 'upper': preds[...,1].unsqueeze(-1)+self.Q}
+        self.PI_test = pi_bands
+        return(pi_bands)
+
 
     def backpropagation(self,loss):
         self.optimizer.zero_grad()
@@ -112,7 +143,6 @@ class Trainer(object):
             Pred = torch.cat([self.model(x_b) for x_b,y_b in self.dataloader[self.training_mode]])
             Y_true = torch.cat([y_b for x_b,y_b in self.dataloader[self.training_mode]])
         return(Pred,Y_true)
-    
 
     def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
         (test_pred,Y_true) = self.test_prediction(allow_dropout)  # Get Normalized Pred and Y_true
@@ -129,6 +159,8 @@ class Trainer(object):
             self.train_loss.append(loss_epoch/nb_samples)
         elif training_mode == 'validate':
             self.valid_loss.append(loss_epoch/nb_samples)
+        elif training_mode == 'calibrate':
+            self.calib_loss.append(loss_epoch/nb_samples)
 
 
 class DataSet(object):
