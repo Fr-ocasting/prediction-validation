@@ -17,6 +17,27 @@ def evaluate_metrics(Pred,Y_true,metrics = ['mse','mae']):
         dic_metric[metric] = error
     return(dic_metric)
 
+class PI_object(object):
+    def __init__(self,preds,Y_true,alpha, type = 'CQR',Q = None):
+        super(PI_object,self).__init__()
+        self.Q = Q
+        self.alpha = alpha
+        self.Y_true = Y_true
+        if type == 'CQR':
+            self.bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q, 'upper': preds[...,1].unsqueeze(-1)+self.Q}
+            self.lower = preds[...,0].unsqueeze(-1)-self.Q
+            self.upper = preds[...,1].unsqueeze(-1)+self.Q
+    
+    def MPIW(self):
+        self.mpiw = torch.mean(self.bands['upper']-self.bands['lower']).item()
+        return(self.mpiw)
+    def PICP(self):
+        self.picp = torch.sum((self.lower<self.Y_true)&(self.Y_true<self.upper)).item()/torch.prod(torch.Tensor([s for s in self.lower.size()])).item()
+        return(self.picp)
+
+        
+        
+
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
     def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None):
@@ -117,14 +138,14 @@ class Trainer(object):
                 preds = self.model(x_cal)
                 lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
                 conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-                empirical_quantil = torch.Tensor([np.ceil((1 - prop_coverage)*(1 + 1/x_cal.size(0)))])    # inutile ? 
+                #empirical_quantil = torch.Tensor([np.ceil((1 - prop_coverage)*(1 + 1/x_cal.size(0)))])    # inutile ? 
+                empirical_quantil = torch.Tensor([np.ceil((1 - prop_coverage)*(x_cal.size(0)+1))/x_cal.size(0)])
                 self.Q = torch.quantile(conformity_scores, empirical_quantil, dim = 0) #interpolation = 'higher'
         return(self.Q)
     
-    def CQR_PI(self,preds):
-        pi_bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q, 'upper': preds[...,1].unsqueeze(-1)+self.Q}
-        self.PI_test = pi_bands
-        return(pi_bands)
+    def CQR_PI(self,preds,Y_true,alpha,Q):
+        pi = PI_object(preds,Y_true,alpha, type = 'CQR',Q=Q)
+        return(pi)
 
 
     def backpropagation(self,loss):
