@@ -17,6 +17,26 @@ def evaluate_metrics(Pred,Y_true,metrics = ['mse','mae']):
         dic_metric[metric] = error
     return(dic_metric)
 
+class QuantileLoss(nn.Module):
+    def __init__(self,quantiles):
+        super().__init__()
+        self.quantiles = quantiles
+    
+    def forward(self, preds, target):
+        assert not target.requires_grad
+        assert preds.size(0) == target.size(0)
+        losses = []
+
+        # y-^y 
+        errors = target - preds       #Soustraction sur la dernière dimension, à priori target 1 sortie et prediction len(quantiles) sorties
+        losses = torch.max(self.quantiles*errors,(self.quantiles-1)*errors) # Récupère le plus grand des deux écart 
+        
+        # Prends la moyenne de toute les erreurs
+        loss = torch.mean(torch.sum(losses,dim = -1))   #  Loss commune pour toutes les stations. sinon loss par stations : torch.mean(torch.sum(losses,dim = -1),dim = 0)
+
+        return(loss)
+
+
 class PI_object(object):
     def __init__(self,preds,Y_true,alpha, type = 'CQR',Q = None):
         super(PI_object,self).__init__()
@@ -27,6 +47,14 @@ class PI_object(object):
             self.bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q, 'upper': preds[...,1].unsqueeze(-1)+self.Q}
             self.lower = preds[...,0].unsqueeze(-1)-self.Q
             self.upper = preds[...,1].unsqueeze(-1)+self.Q
+        if type =='conformal':
+            self.bands = {'lower':preds[...,0].unsqueeze(-1), 'upper': preds[...,1].unsqueeze(-1)}
+            self.lower = preds[...,0].unsqueeze(-1)
+            self.upper = preds[...,1].unsqueeze(-1)
+
+        self.MPIW()
+        self.PICP()
+    
     
     def MPIW(self):
         self.mpiw = torch.mean(self.bands['upper']-self.bands['lower']).item()
@@ -127,20 +155,39 @@ class Trainer(object):
                 loss_epoch += loss.item()*nb_samples
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def calibration(self,prop_coverage):
+    def conformal_calibration(self,alpha,dataset):
         ''' 
-        - Conformity scores obtained using quantile estimator (i.e : the deep neural network model) on the proper set  
-        - Then 'Q', the empirical quantile is computed with the conformity scores (on the calibration set), for each channel (dim = 0)
+        Quantile estimator (i.e NN model) is trained on the proper set
+        Conformity scores computed with quantile estimator on the calibration set
+        And then the empirical th-quantile Q is computed with the conformity scores and quantile function
+
+        inputs
+        -------
+        - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
+        - dataset : DataSet object. Allow us to unormalize tensor
         '''
         self.model.eval()
         with torch.no_grad():
             for x_cal,y_cal in self.dataloader['cal']:  # Only one x_cal and y_cal 
-                preds = self.model(x_cal)
-                lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
+
+                # prediction
+                preds = self.model(x_cal) # x_cal is normalized
+
+                # get lower and upper band
+                if preds.size(-1) == 2:
+                   lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
+                elif preds.size(-1) == 1:
+                   lower_q,upper_q = preds,preds 
+                else:
+                    raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
+                
+                # unormalized lower and upper band 
+                lower_q, upper_q = dataset.unormalize_tensor(lower_q),dataset.unormalize_tensor(upper_q)
+
+                # Confority scores and quantiles
                 conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-                #empirical_quantil = torch.Tensor([np.ceil((1 - prop_coverage)*(1 + 1/x_cal.size(0)))])    # inutile ? 
-                empirical_quantil = torch.Tensor([np.ceil((1 - prop_coverage)*(x_cal.size(0)+1))/x_cal.size(0)])
-                self.Q = torch.quantile(conformity_scores, empirical_quantil, dim = 0) #interpolation = 'higher'
+                self.empirical_quantile = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)])
+                self.Q = torch.quantile(conformity_scores, self.empirical_quantile, dim = 0) #interpolation = 'higher'
         return(self.Q)
     
     def CQR_PI(self,preds,Y_true,alpha,Q):
