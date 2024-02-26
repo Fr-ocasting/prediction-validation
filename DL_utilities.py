@@ -143,7 +143,6 @@ class Trainer(object):
                 preds,Y_true = self.test_prediction(training_mode = 'validate')
                 # get PI
                 pi = self.CQR_PI(preds,Y_true,alpha,Q)
-
                 # Report usefull metrics
                 tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
 
