@@ -5,6 +5,11 @@ import pandas as pd
 import numpy as np
 import time
 
+try: 
+    from ray import tune, train
+except : 
+    print('Training and Hyper-parameter tuning with Ray is not possible')
+
 def evaluate_metrics(Pred,Y_true,metrics = ['mse','mae']):
     dic_metric = {}
     for metric in metrics :
@@ -104,7 +109,7 @@ class DictDataLoader(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,model,dataloader,epochs,optimizer,loss_function,scheduler = None):
+    def __init__(self,model,dataloader,epochs,optimizer,loss_function,scheduler = None, ray = False):
         super().__init__()
         self.dataloader = dataloader
         self.training_mode = 'train'
@@ -116,8 +121,9 @@ class Trainer(object):
         self.valid_loss = []
         self.calib_loss =[]
         self.epochs = epochs
+        self.ray = ray
 
-    def train_and_valid(self,mod = 10):
+    def train_and_valid(self,mod = 10, alpha = None,dataset = None):
         print(f'start training')
         for epoch in range(self.epochs):
             t0 = time.time()
@@ -129,6 +135,18 @@ class Trainer(object):
             self.model.eval()   # Desactivate Dropout 
             self.loop()
 
+            # Keep track on Metrics
+            if self.ray : 
+                # Calibration 
+                Q = self.conformal_calibration(alpha,dataset)  
+                # Testing
+                preds,Y_true = self.test_prediction(training_mode = 'validate')
+                # get PI
+                pi = self.CQR_PI(preds,Y_true,alpha,Q)
+
+                # Report usefull metrics
+                tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
+
             # Update scheduler after each Epoch 
             if self.scheduler is not None:
                self.scheduler.step()
@@ -137,6 +155,7 @@ class Trainer(object):
                 print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
                 if epoch == 0:
                     print(f"Estimated time for training: {'{0:.1f}'.format(self.epochs*(time.time()-t0)/60)}min ")
+
 
     def loop(self,):
         loss_epoch,nb_samples = 0,0
@@ -201,8 +220,8 @@ class Trainer(object):
         self.optimizer.step()
         return(loss)
     
-    def test_prediction(self,allow_dropout = False):
-        self.training_mode = 'test'
+    def test_prediction(self,allow_dropout = False,training_mode = 'test'):
+        self.training_mode = training_mode
         if allow_dropout:
             self.model.train()
         else: 
