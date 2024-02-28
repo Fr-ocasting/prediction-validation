@@ -34,7 +34,9 @@ class QuantileLoss(nn.Module):
 
         # y-^y 
         errors = target - preds       #Soustraction sur la dernière dimension, à priori target 1 sortie et prediction len(quantiles) sorties
-        losses = torch.max(self.quantiles*errors,(self.quantiles-1)*errors) # Récupère le plus grand des deux écart 
+
+        # Errors : [B,N,2]  cause target [B,N,1] and preds [B,N,2]  
+        losses = torch.max(self.quantiles*errors,(self.quantiles-1)*errors) # Récupère le plus grand des deux écart, pour chacune des estimations de quantile
         
         # Prends la moyenne de toute les erreurs
         loss = torch.mean(torch.sum(losses,dim = -1))   #  Loss commune pour toutes les stations. sinon loss par stations : torch.mean(torch.sum(losses,dim = -1),dim = 0)
@@ -43,16 +45,16 @@ class QuantileLoss(nn.Module):
 
 
 class PI_object(object):
-    def __init__(self,preds,Y_true,alpha, type = 'CQR',Q = None):
+    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None):
         super(PI_object,self).__init__()
         self.Q = Q
         self.alpha = alpha
         self.Y_true = Y_true
-        if type == 'CQR':
+        if type_calib == 'CQR':
             self.bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q, 'upper': preds[...,1].unsqueeze(-1)+self.Q}
             self.lower = preds[...,0].unsqueeze(-1)-self.Q
             self.upper = preds[...,1].unsqueeze(-1)+self.Q
-        if type =='conformal':
+        if type_calib =='conformal':
             self.bands = {'lower':preds[...,0].unsqueeze(-1), 'upper': preds[...,1].unsqueeze(-1)}
             self.lower = preds[...,0].unsqueeze(-1)
             self.upper = preds[...,1].unsqueeze(-1)
@@ -173,7 +175,7 @@ class Trainer(object):
                 loss_epoch += loss.item()*nb_samples
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def conformal_calibration(self,alpha,dataset):
+    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual'):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -203,13 +205,17 @@ class Trainer(object):
                 lower_q, upper_q = dataset.unormalize_tensor(lower_q),dataset.unormalize_tensor(upper_q)
 
                 # Confority scores and quantiles
-                conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-                self.empirical_quantile = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)])
-                self.Q = torch.quantile(conformity_scores, self.empirical_quantile, dim = 0) #interpolation = 'higher'
+                if conformity_scores_type == 'max_residual':
+                    self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
+                if conformity_scores_type == 'max_residual_plus_middle':
+                    self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) + ((lower_q>y)(upper_q<y))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function 
+
+                self.quantile_order = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)])
+                self.Q = torch.quantile(self.conformity_scores, self.quantile_order, dim = 0) #interpolation = 'higher'
         return(self.Q)
     
     def CQR_PI(self,preds,Y_true,alpha,Q):
-        pi = PI_object(preds,Y_true,alpha, type = 'CQR',Q=Q)
+        pi = PI_object(preds,Y_true,alpha, type_calib = 'CQR',Q=Q)
         return(pi)
 
 
