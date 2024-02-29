@@ -208,7 +208,8 @@ class Trainer(object):
                 if conformity_scores_type == 'max_residual':
                     self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
                 if conformity_scores_type == 'max_residual_plus_middle':
-                    self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) + ((lower_q>y)(upper_q<y))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function 
+                    print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
+                    self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) + ((lower_q>y_cal)(upper_q<y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function 
 
                 self.quantile_order = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)])
                 self.Q = torch.quantile(self.conformity_scores, self.quantile_order, dim = 0) #interpolation = 'higher'

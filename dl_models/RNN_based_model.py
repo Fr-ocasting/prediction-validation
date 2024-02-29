@@ -6,17 +6,12 @@ class RNN(nn.Module):
         super().__init__()
 
         # Parameters
-        self.c_in = c_in
-        self.h_dim = h_dim
         self.C_outs = C_outs
         self.num_layers = num_layers
-        self.nonlinearity = nonlinearity
-        self.bias = bias
-        self.dropout = dropout
         self.batch_first = batch_first
-        self.bidirectional = bidirectional
         self.lstm = lstm
-        self.gru = gru
+        self.h_dim = h_dim
+
         # Architecture
         if lstm: 
             self.rnn = nn.LSTM(input_size = c_in, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
@@ -25,7 +20,7 @@ class RNN(nn.Module):
         else : 
             self.rnn = nn.RNN(input_size = c_in, hidden_size = h_dim, num_layers=num_layers,nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)  # tanh or ReLU as non linear activation
           
-        self.D =  2 if self.bidirectional else 1
+        self.D =  2 if bidirectional else 1
         self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([self.D*h_dim]+C_outs[:-1], C_outs)])
         self.relu = nn.ReLU()
 
@@ -63,8 +58,9 @@ class RNN(nn.Module):
         
         # Reshape 
         x = x.reshape(B,C,N,self.C_outs[-1])
+        out = x.squeeze()
 
-        return(x)
+        return(out)
 
 
 
