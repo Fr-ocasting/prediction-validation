@@ -165,3 +165,18 @@ if __name__ == '__main__':
     # Set forbidden dates :
     # Data from  23_03_2019 14:00:00 to 28_04_2019 12:00:00 included should not been taken into account 
     invalid_dates = pd.date_range(datetime(2019,4,23,14),datetime(2019,4,28,14),freq = f'{60/time_step_per_hour}min')
+
+
+    # Load Adj, Dist or Corr matrix : 
+
+    folder_path = 'data/'
+    station_location_name = 'ref_subway.csv'
+    df_locations = load_subway_shp(folder_path,station_location_name)
+
+    adj = load_adjacency_matrix(dataset, type = 'adjacent')
+    corr =  load_adjacency_matrix(dataset, type = 'correlation')
+    dist = load_adjacency_matrix(dataset, type = 'distance', df_locations = df_locations, treshold = 1e-4)
+
+    adj.to_csv('data/subway_adj/adj.csv')
+    corr.to_csv('data/subway_adj/corr.csv')
+    dist.to_csv('data/subway_adj/dist.csv')
