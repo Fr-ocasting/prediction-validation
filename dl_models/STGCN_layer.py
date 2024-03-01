@@ -69,23 +69,31 @@ class TemporalConvLayer(nn.Module):
     
     #param x: tensor, [bs, c_in, ts, n_vertex]
 
-    def __init__(self, Kt, c_in, c_out, n_vertex, act_func):
+    def __init__(self, Kt, c_in, c_out, n_vertex, act_func,enable_padding):
         super(TemporalConvLayer, self).__init__()
         self.Kt = Kt
         self.c_in = c_in
         self.c_out = c_out
         self.n_vertex = n_vertex
+        self.enable_padding = enable_padding
         self.align = Align(c_in, c_out)
         if act_func == 'glu' or act_func == 'gtu':
-            self.causal_conv = CausalConv2d(in_channels=c_in, out_channels=2 * c_out, kernel_size=(Kt, 1), enable_padding=False, dilation=1)
+            self.causal_conv = CausalConv2d(in_channels=c_in, out_channels=2 * c_out, kernel_size=(Kt, 1), enable_padding=enable_padding, dilation=1)
         else:
-            self.causal_conv = CausalConv2d(in_channels=c_in, out_channels=c_out, kernel_size=(Kt, 1), enable_padding=False, dilation=1)
+            self.causal_conv = CausalConv2d(in_channels=c_in, out_channels=c_out, kernel_size=(Kt, 1), enable_padding=enable_padding, dilation=1)
         self.relu = nn.ReLU()
         self.silu = nn.SiLU()
         self.act_func = act_func
 
     def forward(self, x):   
-        x_in = self.align(x)[:, :, self.Kt - 1:, :]
+        # Enable padding permet d'avoir +2 après la causal_conv, mais il faut aussi ajouter +2 à x_in
+        # =========
+        # MODIFICATION EFFECTUEE ICI AVEC LE SELF.ENABLE_PADDING QUI N EXISTAIT PAS 
+        # =========
+        if self.enable_padding:
+            x_in = self.align(x)
+        else: 
+            x_in = self.align(x)[:, :, self.Kt - 1:, :]     
         x_causal_conv = self.causal_conv(x)
 
         if self.act_func == 'glu' or self.act_func == 'gtu':
@@ -142,7 +150,7 @@ class ChebGraphConv(nn.Module):
     
     def forward(self, x):
         #bs, c_in, ts, n_vertex = x.shape
-        x = torch.permute(x, (0, 2, 3, 1))
+        x = x.permute(0, 2, 3, 1)
 
         if self.Ks - 1 < 0:
             raise ValueError(f'ERROR: the graph convolution kernel size Ks has to be a positive integer, but received {self.Ks}.')  
@@ -193,7 +201,7 @@ class GraphConv(nn.Module):
 
     def forward(self, x):
         #bs, c_in, ts, n_vertex = x.shape
-        x = torch.permute(x, (0, 2, 3, 1))
+        x = x.permute(0, 2, 3, 1)
 
         first_mul = torch.einsum('hi,btij->bthj', self.gso, x)
         second_mul = torch.einsum('bthi,ij->bthj', first_mul, self.weight)
@@ -238,22 +246,27 @@ class STConvBlock(nn.Module):
     # N: Layer Normolization
     # D: Dropout
 
-    def __init__(self, Kt, Ks, n_vertex, last_block_channel, channels, act_func, graph_conv_type, gso, bias, droprate):
+    def __init__(self, Kt, Ks, n_vertex, last_block_channel, channels, act_func, graph_conv_type, gso, bias, dropout,enable_padding = False):
         super(STConvBlock, self).__init__()
-        self.tmp_conv1 = TemporalConvLayer(Kt, last_block_channel, channels[0], n_vertex, act_func)
+        self.tmp_conv1 = TemporalConvLayer(Kt, last_block_channel, channels[0], n_vertex, act_func,enable_padding)
         self.graph_conv = GraphConvLayer(graph_conv_type, channels[0], channels[1], Ks, gso, bias)
-        self.tmp_conv2 = TemporalConvLayer(Kt, channels[1], channels[2], n_vertex, act_func)
+        self.tmp_conv2 = TemporalConvLayer(Kt, channels[1], channels[2], n_vertex, act_func,enable_padding)
         self.tc2_ln = nn.LayerNorm([n_vertex, channels[2]])
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=droprate)
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
+        print('Shape avant de rentrer dans tmp_conv1: ',x.shape)
         x = self.tmp_conv1(x)
+        print('Shape après tmp_conv1: ',x.shape)
         x = self.graph_conv(x)
+        print('Shape après graph conv: ',x.shape)
         x = self.relu(x)
         x = self.tmp_conv2(x)
+        print('Shape après tmp_conv2 conv: ',x.shape)
         x = self.tc2_ln(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
         x = self.dropout(x)
+        print('Shape en sortie du STConvBlock: ',x.shape,'\n')
 
         return x
 
@@ -264,21 +277,25 @@ class OutputBlock(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, droprate):
+    def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout):
         super(OutputBlock, self).__init__()
-        self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func)
+        self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding)
         self.fc1 = nn.Linear(in_features=channels[0], out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
         self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
         self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(p=droprate)
+        self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
+        print('Shape en entrée du OutputBlock: ',x.shape)
         x = self.tmp_conv1(x)
+        print('Shape après la conv1: ',x.shape)
         x = self.tc1_ln(x.permute(0, 2, 3, 1))
         x = self.fc1(x)
+        print('Shape après la fc1: ',x.shape)
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x).permute(0, 3, 1, 2)
+        print('Shape après la fc2 + permute: ',x.shape,'\n')
 
         return x

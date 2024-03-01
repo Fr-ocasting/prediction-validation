@@ -30,15 +30,16 @@ def get_config(model_name,learn_graph_structure = None):
             config['gcn_true'],config['buildA_true'] = True,True   
 
     if model_name == 'STGCN':
+        # Utilise la distance adjacency matrix 
         config = dict(model_name= model_name,epochs = [30], lr = [1e-4],batch_size = [64],
                         dropout = [0.2],calib_prop = [0.5], alpha = [0.1]
                         ,enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
                         num_nodes = 40, n_his=8, n_pred = 1, time_intvl = 5, Kt = 3, stblock_num=2,act_func=['glu','gtu'],Ks = [3,2],
                         graph_conv_type = ['cheb_graph_conv', 'graph_conv'],gso_type = ['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj'],
-                        enable_bias = 'True',out_dim = 2,
+                        enable_bias = 'True',out_dim = 2,adj_type = 'dist',enable_padding = True,
 
-                        weight_decay_rate = 0.0005,step_size = 10,gamma = 0.95,patience = 30
+                        threeshold = 0.3,gamma = 0.95,patience = 30
         )
 
 
@@ -48,7 +49,7 @@ def get_config(model_name,learn_graph_structure = None):
                         dropout = [0.2],calib_prop = [0.5], alpha = [0.1],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
-                         c_in = 1, h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
+                          h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
                          bidirectional = [True,False]
         )
         
@@ -57,7 +58,7 @@ def get_config(model_name,learn_graph_structure = None):
                         dropout = [0.2],calib_prop = [0.5], alpha = [0.1],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
-                         c_in = 1, h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
+                         h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
                          bidirectional = [True,False]
         )
 
@@ -66,12 +67,14 @@ def get_config(model_name,learn_graph_structure = None):
                         dropout = [0.2],calib_prop = [0.5], alpha = [0.1],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
-                         c_in = 1, h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
+                        h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
                          bidirectional = [True,False],
         )
         
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config['optimizer'] = ['sgd','adam','admw']
+    config['optimizer'] = ['sgd','adam','adamw']
+    config['weight_decay'] = 0.0005
+    config['momentum'] = 0.
     return(config)
 
 
