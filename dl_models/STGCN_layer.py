@@ -68,7 +68,6 @@ class TemporalConvLayer(nn.Module):
     #
     
     #param x: tensor, [bs, c_in, ts, n_vertex]
-
     def __init__(self, Kt, c_in, c_out, n_vertex, act_func,enable_padding):
         super(TemporalConvLayer, self).__init__()
         self.Kt = Kt
@@ -256,17 +255,17 @@ class STConvBlock(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
-        print('Shape avant de rentrer dans tmp_conv1: ',x.shape)
+        #print('Shape avant de rentrer dans tmp_conv1: ',x.shape)
         x = self.tmp_conv1(x)
-        print('Shape après tmp_conv1: ',x.shape)
+        #print('Shape après tmp_conv1: ',x.shape)
         x = self.graph_conv(x)
-        print('Shape après graph conv: ',x.shape)
+        #print('Shape après graph conv: ',x.shape)
         x = self.relu(x)
         x = self.tmp_conv2(x)
-        print('Shape après tmp_conv2 conv: ',x.shape)
+        #print('Shape après tmp_conv2 conv: ',x.shape)
         x = self.tc2_ln(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
         x = self.dropout(x)
-        print('Shape en sortie du STConvBlock: ',x.shape,'\n')
+        #print('Shape en sortie du STConvBlock: ',x.shape,'\n')
 
         return x
 
@@ -279,7 +278,7 @@ class OutputBlock(nn.Module):
 
     def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout):
         super(OutputBlock, self).__init__()
-        self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding)
+        self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
         self.fc1 = nn.Linear(in_features=channels[0], out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
         self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
@@ -287,15 +286,11 @@ class OutputBlock(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
-        print('Shape en entrée du OutputBlock: ',x.shape)
         x = self.tmp_conv1(x)
-        print('Shape après la conv1: ',x.shape)
         x = self.tc1_ln(x.permute(0, 2, 3, 1))
         x = self.fc1(x)
-        print('Shape après la fc1: ',x.shape)
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x).permute(0, 3, 1, 2)
-        print('Shape après la fc2 + permute: ',x.shape,'\n')
 
         return x

@@ -32,7 +32,10 @@ class STGCNChebGraphConv(nn.Module):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
         Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
+        if args.enable_padding:
+            Ko = args.seq_length
         self.Ko = Ko
+    
         if self.Ko > 1:
             self.output = layers.OutputBlock(Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_func, args.enable_bias, args.dropout)
         elif self.Ko == 0:
@@ -57,7 +60,9 @@ class STGCNChebGraphConv(nn.Module):
             x = self.fc1(x.permute(0, 2, 3, 1))
             x = self.relu(x)
             x = self.fc2(x).permute(0, 3, 1, 2)
-        
+
+        x = x.squeeze()
+        x = x.permute(0,2,1)
         return x
 
 class STGCNGraphConv(nn.Module):
@@ -90,6 +95,12 @@ class STGCNGraphConv(nn.Module):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
         Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
+
+        # Ajout perso, dans le cas ou Ko < 0, on a 'enable padding' obligatoire 
+        # ----
+        if args.enable_padding:
+            Ko = args.seq_length
+        # ----
         self.Ko = Ko
         if self.Ko > 1:
             self.output = layers.OutputBlock(Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_func, args.enable_bias, args.dropout)
@@ -109,6 +120,9 @@ class STGCNGraphConv(nn.Module):
         x = x.permute(0,1,3,2)
 
         x = self.st_blocks(x)
+        # st_blocks outputs: [B, C_out, L-4*nb_blocks, N])
+        # st_blocks outputs: [B, C_out, L-4*nb_blocks, N]) 
+        
         if self.Ko > 1:
             x = self.output(x)
         elif self.Ko == 0:
@@ -116,4 +130,6 @@ class STGCNGraphConv(nn.Module):
             x = self.relu(x)
             x = self.fc2(x).permute(0, 3, 1, 2)
         
+        x = x.squeeze()
+        x = x.permute(0,2,1)
         return x
