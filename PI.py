@@ -9,6 +9,8 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
     lower_band,upper_band = pi.lower[...,0,0][window_pred].cpu(),pi.upper[...,0,0][window_pred].cpu()
     restricted_true = Y_true[window_pred][:,0,0].cpu()
 
+    init_pi = PI_object(preds,Y_true,alpha,type_calib='classic')
+
     xaxis = np.arange(len(restricted_true))
 
     # plot true
@@ -27,8 +29,11 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
     # Lower and upper band 
     ql = preds[window_pred][:,0,0].cpu()
     qu = preds[window_pred][:,0,1].cpu()
-    ax1.plot(np.arange(len(ql)),ql,label = f'Estimated lower {alpha/2}quantile',color = 'red',linestyle = 'dashed')
-    ax1.plot(np.arange(len(qu)),qu,label = f'Estimated upper {1-alpha/2}quantile',color = 'red',linestyle = 'dashed')
+    ax1.plot(np.arange(len(ql)),ql,label = f"Estimated {alpha/2} -  {1-alpha/2} quantile \n\
+                                             PICP:  {'{:.2%}'.format(init_pi.picp)} \n\
+                                             MPIW:  {'{:.2%}'.format(init_pi.picp)}",
+             color = 'red',linestyle = 'dashed')
+    ax1.plot(np.arange(len(qu)),qu,color = 'red',linestyle = 'dashed')
 
     ax1.legend()
     
