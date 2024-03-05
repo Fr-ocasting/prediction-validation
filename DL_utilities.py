@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np
 import time
-
+import itertools
 from torch.utils.data import DataLoader
 import torch 
 import torch.nn as nn 
@@ -114,7 +114,7 @@ class PI_object(object):
 
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
-    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None):
+    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None,time_slots = None):
         super().__init__()
         self.validation = validation
         self.train_prop = train_prop
@@ -124,27 +124,33 @@ class DictDataLoader(object):
         self.dataloader = {}
         self.shuffle = shuffle
         self.calib_prop = calib_prop
+        self.time_slots = time_slots
 
     def train_test_split(self):
         n = self.U.shape[0]
         train_idx,valid_idx = int(n*self.train_prop),int(n*(self.train_prop+self.valid_prop))
+        # Train, Valid, Test set
         train_set,valid_set,test_set = self.U[:train_idx],self.U[train_idx:valid_idx],self.U[valid_idx:]
+        # Target set
         train_target, valid_target, test_target = self.Utarget[:train_idx],self.Utarget[train_idx:valid_idx],self.Utarget[valid_idx:]
-        return(train_set,valid_set,test_set,train_target, valid_target, test_target)
+        # Time_slots set
+        time_slots_train,time_slots_valid,time_slots_test = self.time_slots[:train_idx],self.time_slots[train_idx:valid_idx],self.time_slots[valid_idx:]
+        return(train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test)
 
     def get_dictdataloader(self,batch_size:int):
-        train_set,valid_set,test_set,train_target, valid_target, test_target= self.train_test_split()
+        train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test= self.train_test_split()
         if self.calib_prop is None: 
-            for dataset,target,training_mode in zip([train_set,valid_set,test_set],[train_target,valid_target,test_target],['train','validate','test']):
-                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))
+            for dataset,target,L_time_slot,training_mode in zip([train_set,valid_set,test_set],[train_target,valid_target,test_target],[time_slots_train,time_slots_valid,time_slots_test],['train','validate','test']):
+                    self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))
         else : 
             indices = torch.randperm(train_set.size(0))
             split = int(train_set.size(0)*self.calib_prop)
             proper_set_x,proper_set_y = train_set[indices[:split]],train_target[indices[:split]]
             calib_set_x,calib_set_y = train_set[indices[split:]],train_target[indices[split:]]
-            for dataset,target,training_mode in zip([proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],['train','validate','test','cal']):
-                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))         
+            time_slots_proper,time_slots_calib = time_slots_train[indices[:split]], time_slots_train[indices[split:]]
 
+            for dataset,target,L_time_slot,training_mode in zip([proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],[time_slots_proper,time_slots_valid,time_slots_test,time_slots_calib],['train','validate','test','cal']):
+                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))         
         return(self.dataloader)
     
 
@@ -163,6 +169,8 @@ class Trainer(object):
         self.calib_loss =[]
         self.epochs = args.epochs
         self.device = args.device
+        self.quantile_method = args.quantile_method 
+        self.conformity_scores_type = args.conformity_scores_type
         self.ray = ray
 
     def train_and_valid(self,mod = 10, alpha = None,dataset = None):
@@ -180,7 +188,7 @@ class Trainer(object):
             # Keep track on Metrics
             if self.ray : 
                 # Calibration 
-                Q = self.conformal_calibration(alpha,dataset)  
+                Q = self.conformal_calibration(alpha,dataset,conformity_scores_type = self.conformity_scores_type,quantile_method = self.quantile_method)  
                 # Testing
                 preds,Y_true = self.test_prediction(training_mode = 'validate')
                 # get PI
@@ -201,7 +209,7 @@ class Trainer(object):
     def loop(self,):
         loss_epoch,nb_samples = 0,0
         with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b in self.dataloader[self.training_mode]:
+            for x_b,y_b,_ in self.dataloader[self.training_mode]:
                 x_b,y_b = x_b.to(self.device),y_b.to(self.device)
                 #Forward 
                 pred = self.model(x_b)
@@ -216,7 +224,7 @@ class Trainer(object):
                 loss_epoch += loss.item()*nb_samples
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual'):
+    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',week_group = None, hour_group = None):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -229,32 +237,46 @@ class Trainer(object):
         '''
         self.model.eval()
         with torch.no_grad():
-            for x_cal,y_cal in self.dataloader['cal']:  # Only one x_cal and y_cal 
-                x_cal,y_cal = x_cal.to(self.device),y_cal.to(self.device)
-                # prediction
-                preds = self.model(x_cal) # x_cal is normalized
+            data = [[x_b,y_b,time_slots] for  x_b,y_b,time_slots in self.dataloader['cal']]
+            X_cal,Y_cal = torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device)
+            preds = self.model(X_cal) # x_cal is normalized
 
-                # get lower and upper band
-                if preds.size(-1) == 2:
-                   lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
-          
-                elif preds.size(-1) == 1:
-                   lower_q,upper_q = preds,preds 
-                else:
-                    raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
-                
-                # unormalized lower and upper band 
-                lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.device),dataset.unormalize_tensor(upper_q,device = self.device)
+            # get lower and upper band
+            if preds.size(-1) == 2:
+                lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
+        
+            elif preds.size(-1) == 1:
+                lower_q,upper_q = preds,preds 
+            else:
+                raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
+            
+            # unormalized lower and upper band 
+            lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.device),dataset.unormalize_tensor(upper_q,device = self.device)
+            Y_cal = dataset.unormalize_tensor(Y_cal,device = self.device)
 
-                # Confority scores and quantiles
-                if conformity_scores_type == 'max_residual':
-                    self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-                if conformity_scores_type == 'max_residual_plus_middle':
-                    print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
-                    self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) + ((lower_q>y_cal)(upper_q<y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function 
+            # Confority scores and quantiles
+            if conformity_scores_type == 'max_residual':
+                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
+            if conformity_scores_type == 'max_residual_plus_middle':
+                print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
+                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
 
-                self.quantile_order = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)]).to(self.device)
+
+            self.quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.device)
+            if quantile_method == 'classic':  
                 self.Q = torch.quantile(self.conformity_scores, self.quantile_order, dim = 0) #interpolation = 'higher'
+            if quantile_method == 'weekday_hour':
+                time_slots = pd.DataFrame(list(itertools.chain.from_iterable([time_slot for [_,_,time_slot] in data])),columns = ['datetime'])
+                time_slots['hour'] = time_slots.datetime.dt.hour
+                time_slots['weekday'] = time_slots.datetime.dt.weekday
+                time_slots['minutes'] = time_slots.datetime.dt.minute
+                
+
+                week_group
+                hour_group 
+                self.Q = blabla
+
+
         return(self.Q)
     
     def CQR_PI(self,preds,Y_true,alpha,Q):
@@ -275,8 +297,12 @@ class Trainer(object):
         else: 
             self.model.eval()
         with torch.no_grad():
-            Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]])
-            Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
+            # Au lieu de          Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]]) // Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
+            data = [[x_b,y_b] for  x_b,y_b in self.dataloader[training_mode]]
+            X,Y_true = torch.cat([x_b for [x_b,y_b] in data]).to(self.device),torch.cat([y_b for [x_b,y_b] in data]).to(self.device)
+            Pred = self.model(X)
+            #Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]])
+            #Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
         return(Pred,Y_true)
 
     def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
