@@ -133,9 +133,9 @@ class ChebGraphConv(nn.Module):
         self.c_out = c_out
         self.Ks = Ks
         self.gso = gso
-        self.weight = nn.Parameter(torch.FloatTensor(Ks, c_in, c_out))
+        self.weight = nn.Parameter(torch.cuda.FloatTensor(Ks, c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(Ks, c_in, c_out))
         if bias:
-            self.bias = nn.Parameter(torch.FloatTensor(c_out))
+            self.bias = nn.Parameter(torch.cuda.FloatTensor(c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_out))
         else:
             self.register_parameter('bias', None)
         self.reset_parameters()
@@ -184,9 +184,9 @@ class GraphConv(nn.Module):
         self.c_in = c_in
         self.c_out = c_out
         self.gso = gso
-        self.weight = nn.Parameter(torch.FloatTensor(c_in, c_out))
+        self.weight = nn.Parameter(torch.cuda.FloatTensor(c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_in, c_out))
         if bias:
-            self.bias = nn.Parameter(torch.FloatTensor(c_out))
+            self.bias = nn.Parameter(torch.cuda.FloatTensor(c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_out))
         else:
             self.register_parameter('bias', None)
         self.reset_parameters()

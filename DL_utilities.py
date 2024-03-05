@@ -150,7 +150,7 @@ class DictDataLoader(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,model,dataloader,epochs,optimizer,loss_function,scheduler = None, ray = False):
+    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False):
         super().__init__()
         self.dataloader = dataloader
         self.training_mode = 'train'
@@ -161,7 +161,8 @@ class Trainer(object):
         self.train_loss = []
         self.valid_loss = []
         self.calib_loss =[]
-        self.epochs = epochs
+        self.epochs = args.epochs
+        self.device = args.device
         self.ray = ray
 
     def train_and_valid(self,mod = 10, alpha = None,dataset = None):
@@ -201,6 +202,7 @@ class Trainer(object):
         loss_epoch,nb_samples = 0,0
         with torch.set_grad_enabled(self.training_mode=='train'):
             for x_b,y_b in self.dataloader[self.training_mode]:
+                x_b,y_b = x_b.to(self.device),y_b.to(self.device)
                 #Forward 
                 pred = self.model(x_b)
                 loss = self.loss_function(pred,y_b)
@@ -228,20 +230,21 @@ class Trainer(object):
         self.model.eval()
         with torch.no_grad():
             for x_cal,y_cal in self.dataloader['cal']:  # Only one x_cal and y_cal 
-
+                x_cal,y_cal = x_cal.to(self.device),y_cal.to(self.device)
                 # prediction
                 preds = self.model(x_cal) # x_cal is normalized
 
                 # get lower and upper band
                 if preds.size(-1) == 2:
                    lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
+          
                 elif preds.size(-1) == 1:
                    lower_q,upper_q = preds,preds 
                 else:
                     raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
                 
                 # unormalized lower and upper band 
-                lower_q, upper_q = dataset.unormalize_tensor(lower_q),dataset.unormalize_tensor(upper_q)
+                lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.device),dataset.unormalize_tensor(upper_q,device = self.device)
 
                 # Confority scores and quantiles
                 if conformity_scores_type == 'max_residual':
@@ -250,7 +253,7 @@ class Trainer(object):
                     print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
                     self.conformity_scores = torch.max(lower_q-y_cal,y_cal-upper_q) + ((lower_q>y_cal)(upper_q<y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function 
 
-                self.quantile_order = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)])
+                self.quantile_order = torch.Tensor([np.ceil((1 - alpha)*(x_cal.size(0)+1))/x_cal.size(0)]).to(self.device)
                 self.Q = torch.quantile(self.conformity_scores, self.quantile_order, dim = 0) #interpolation = 'higher'
         return(self.Q)
     
@@ -272,15 +275,15 @@ class Trainer(object):
         else: 
             self.model.eval()
         with torch.no_grad():
-            Pred = torch.cat([self.model(x_b) for x_b,y_b in self.dataloader[self.training_mode]])
-            Y_true = torch.cat([y_b for x_b,y_b in self.dataloader[self.training_mode]])
+            Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]])
+            Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
         return(Pred,Y_true)
 
     def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
         (test_pred,Y_true) = self.test_prediction(allow_dropout)  # Get Normalized Pred and Y_true
 
-        test_pred = dataset.unormalize_tensor(test_pred)
-        Y_true = dataset.unormalize_tensor(Y_true)
+        test_pred = dataset.unormalize_tensor(test_pred, device = self.device)
+        Y_true = dataset.unormalize_tensor(Y_true, device = self.device)
 
         df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
 
@@ -395,9 +398,9 @@ class DataSet(object):
             print('The df might be already unormalized')
         return(timeserie*(self.maxi - self.mini)+self.mini)
     
-    def unormalize_tensor(self,tensor, axis = -1):
-        maxi_ = torch.Tensor(self.maxi.values).unsqueeze(axis)
-        mini_ = torch.Tensor(self.mini.values).unsqueeze(axis)
+    def unormalize_tensor(self,tensor, axis = -1,device = 'cpu'):
+        maxi_ = torch.Tensor(self.maxi.values).unsqueeze(axis).to(device)
+        mini_ = torch.Tensor(self.mini.values).unsqueeze(axis).to(device)
         unormalized = tensor*(maxi_ - mini_)+mini_
         return unormalized
     
