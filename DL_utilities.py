@@ -93,7 +93,7 @@ class PI_object(object):
             self.bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q, 'upper': preds[...,1].unsqueeze(-1)+self.Q}
             self.lower = preds[...,0].unsqueeze(-1)-self.Q
             self.upper = preds[...,1].unsqueeze(-1)+self.Q
-        if type_calib =='conformal':
+        if type_calib =='classic':
             self.bands = {'lower':preds[...,0].unsqueeze(-1), 'upper': preds[...,1].unsqueeze(-1)}
             self.lower = preds[...,0].unsqueeze(-1)
             self.upper = preds[...,1].unsqueeze(-1)
