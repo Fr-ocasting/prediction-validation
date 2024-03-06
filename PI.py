@@ -5,10 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 
-def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,results,bins = 100):
+def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,results,i = 0, bins = 100):
     fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize = (25,8))
-    lower_band,upper_band = pi.lower[...,0,0][window_pred].cpu(),pi.upper[...,0,0][window_pred].cpu()
-    restricted_true = Y_true[window_pred][:,0,0].cpu()
+    lower_band,upper_band = pi.lower[...,i,0][window_pred].cpu(),pi.upper[...,i,0][window_pred].cpu()
+    restricted_true = Y_true[window_pred][:,i,0].cpu()
 
     init_pi = PI_object(preds,Y_true,alpha,type_calib='classic')
 
@@ -18,7 +18,7 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
     ax1.plot(xaxis,restricted_true, label = 'True', color = 'black')
 
     # plot PI
-    ax1.plot([0],[0],label = f"{'{:.2f}'.format(1-alpha)}-th empirical quantile: {'{:.0f}'.format(pi.Q[0,0,0].cpu().item())}",linestyle = 'dashed')
+    ax1.plot([0],[0],label = f"{'{:.2f}'.format(1-alpha)}-th empirical quantile: {'{:.0f}'.format(pi.Q_tensor[:,i,0].cpu().mean().item())}",linestyle = 'dashed')
     grid = xaxis.ravel()
     ax1.fill_between(grid,lower_band,upper_band, label = f"PI {'{:.2f}'.format(1-alpha)}% \n\
                                                         PICP: {'{:.2%}'.format(pi.picp)} \n\
@@ -35,7 +35,6 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
                                              MPIW:  {'{:.2f}'.format(init_pi.mpiw)}",
              color = 'red',linestyle = 'dashed')
     ax1.plot(np.arange(len(qu)),qu,color = 'red',linestyle = 'dashed')
-
     ax1.legend()
     
     
@@ -43,8 +42,8 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
     ax2.plot(np.arange(len(trainer.valid_loss)),trainer.valid_loss, label = 'validation')
     ax2.legend()
 
-    ax3.hist(conformity_scores.cpu(),bins = bins, label = 'Conformity Scores distirbution',density = True)
-    ax3.plot([pi.Q[0,0,0].cpu(),pi.Q[0,0,0].cpu()],[0,0.2],color = 'red', linestyle = 'dashed',label = f"Q={'{:.0f}'.format(pi.Q[0,0,0].cpu().item())} is the {'{:.2f}'.format(1-alpha)}-th quantile")
+    ax3.hist(conformity_scores[:,i,0].cpu(),bins = bins, label = 'Conformity Scores distirbution',density = True)
+    ax3.plot([pi.Q_tensor[:,i,0].mean().cpu(),pi.Q_tensor[:,i,0].mean().cpu()],[0,0.2],color = 'red', linestyle = 'dashed',label = f"Q={'{:.0f}'.format(pi.Q_tensor[:,i,0].cpu().mean().item())} is the {'{:.2f}'.format(1-alpha)}-th quantile")
     #ax3.yaxis.set_major_formatter(PercentFormatter(xmax=1))
     ax3.set_xlabel('Residuals')
     ax3.set_ylabel('Proportion')

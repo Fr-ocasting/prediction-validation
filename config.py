@@ -82,7 +82,7 @@ def get_config(model_name,learn_graph_structure = None):
     config['alpha'] = 0.1
     config['loss_function_type'] = 'quantile'
     config['conformity_scores_type'] = 'max_residual'
-    config['quantile_method'] = 'classic'
+    config['quantile_method'] = 'classic' # weekday_hour
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     return(config)
     
