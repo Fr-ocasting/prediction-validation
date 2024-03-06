@@ -84,13 +84,13 @@ class QuantileLoss(nn.Module):
 
 
 class PI_object(object):
-    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None,T_labels = None):
+    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None,T_labels = None, device = 'cpu'):
         super(PI_object,self).__init__()
         self.alpha = alpha
         self.Y_true = Y_true
 
         if type(Q) == dict:
-            Q_tensor = torch.zeros(preds.size(0),preds.size(1),1)
+            Q_tensor = torch.zeros(preds.size(0),preds.size(1),1).to(device)
             for label in T_labels.unique():
                 indices = torch.nonzero(T_labels == label).squeeze()
                 Q_tensor[indices,:,0] = Q[label.item()]['Q'][0,:,0]
@@ -287,16 +287,19 @@ class Trainer(object):
                 for label in calendar_class.unique():
                     indices = torch.nonzero(calendar_class == label,as_tuple = True)[0]
                     quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.device)  # Quantile for each class, so the quantile order is different as each class has a different length
+                    quantile_order = min(torch.Tensor([1]).to(self.device),quantile_order)
+                    if quantile_order == 1: 
+                        print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
                     conformity_scores_i = self.conformity_scores[indices]
                     scores_counts = conformity_scores_i.size(0)
-                    Q_i = torch.quantile(conformity_scores_i, self.quantile_order, dim = 0)#interpolation = 'higher'
+                    Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
                     dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
                 output = dic_label2Q
 
         return(output)
     
     def CQR_PI(self,preds,Y_true,alpha,Q,T_labels = None):
-        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels)
+        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels,device = self.device)
         self.pi = pi
         return(pi)
 

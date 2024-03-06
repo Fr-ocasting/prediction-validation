@@ -18,7 +18,7 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
     ax1.plot(xaxis,restricted_true, label = 'True', color = 'black')
 
     # plot PI
-    ax1.plot([0],[0],label = f"{'{:.2f}'.format(1-alpha)}-th empirical quantile: {'{:.0f}'.format(pi.Q_tensor[:,i,0].cpu().mean().item())}",linestyle = 'dashed')
+    ax1.plot([0],[0],label = f"{'{:.2f}'.format(1-alpha)}-th empirical quantile: {'{:.1f}'.format(pi.Q_tensor[:,i,0].cpu().mean().item())}",linestyle = 'dashed')
     grid = xaxis.ravel()
     ax1.fill_between(grid,lower_band,upper_band, label = f"PI {'{:.2f}'.format(1-alpha)}% \n\
                                                         PICP: {'{:.2%}'.format(pi.picp)} \n\
@@ -43,7 +43,7 @@ def plot_bands_CQR(trainer,Y_true,preds,pi,window_pred,alpha,conformity_scores,r
     ax2.legend()
 
     ax3.hist(conformity_scores[:,i,0].cpu(),bins = bins, label = 'Conformity Scores distirbution',density = True)
-    ax3.plot([pi.Q_tensor[:,i,0].mean().cpu(),pi.Q_tensor[:,i,0].mean().cpu()],[0,0.2],color = 'red', linestyle = 'dashed',label = f"Q={'{:.0f}'.format(pi.Q_tensor[:,i,0].cpu().mean().item())} is the {'{:.2f}'.format(1-alpha)}-th quantile")
+    ax3.plot([pi.Q_tensor[:,i,0].mean().cpu(),pi.Q_tensor[:,i,0].mean().cpu()],[0,0.2],color = 'red', linestyle = 'dashed',label = f"Q={'{:.1f}'.format(pi.Q_tensor[:,i,0].cpu().mean().item())} is the {'{:.2f}'.format(1-alpha)}-th quantile")
     #ax3.yaxis.set_major_formatter(PercentFormatter(xmax=1))
     ax3.set_xlabel('Residuals')
     ax3.set_ylabel('Proportion')
@@ -174,6 +174,3 @@ class DeepEnsemble(object):
 
     def plot_spatial_unit_i(self,i,output_ind = 0, window_pred = np.arange(2*96), method = 'std_range', Lambda_coeffs =[1,2,3]):
         plot_uncertainty_bands(self.L_predictions,self.Y_true,i,output_ind = output_ind, window_pred = window_pred, method = method, Lambda_coeffs =Lambda_coeffs)
-    
-
-
