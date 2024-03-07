@@ -220,7 +220,7 @@ class Trainer(object):
     def loop(self,):
         loss_epoch,nb_samples = 0,0
         with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b,_ in self.dataloader[self.training_mode]:
+            for x_b,y_b,t_b in self.dataloader[self.training_mode]:
                 x_b,y_b = x_b.to(self.device),y_b.to(self.device)
                 #Forward 
                 pred = self.model(x_b)
@@ -557,9 +557,9 @@ class TimeSerie(object):
             print('The TimeSerie might be already unnormalized')
         return(self.ts*(self.maxi - self.mini)+self.mini)
 
-def load_model(args):
+def load_model(args,args_embedding):
     if args.model_name == 'CNN': 
-        model = CNN(args.c_in, args.H_dims, args.C_outs, kernel_size = (2,), L=args.seq_length, padding = 1,dropout = args.dropout)
+        model = CNN(args.c_in, args.H_dims, args.C_outs, kernel_size = (2,), L=args.seq_length, padding = 1,dropout = args.dropout,time_embedding_args = args_embedding)
     if args.model_name == 'MTGNN': 
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 

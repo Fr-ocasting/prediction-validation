@@ -24,6 +24,7 @@ def find_class(elt, week_group, hour_minute_group):
     return None
 
 def get_week_hour_minute_class(type_class):
+    ''' Group of tuple: '''
     if type_class == 1:
         week_group = [[0,2],[3,3],[4,4],[5,5],[6,6]]
         hour_minute_group = [[(2,0),(5,0)],
@@ -38,6 +39,16 @@ def get_week_hour_minute_class(type_class):
                             [(21,0),(2,0)],
                             ]
         
+    ''' Class where every tuple is independant: '''
+    if type_class == 2:
+        week_group = [[k,k] for k in range(7)]
+        tmps = [[[(h1,0),(h1,15)],[(h1,15),(h1,30)],[(h1,30),(h1,45)],[(h1,45),(h1+1,0)]] for h1 in range(23)]
+        hour_minute_group = []
+        for l in tmps:
+            for elt in l:
+                hour_minute_group.append(elt)
+        hour_minute_group.append([[(23,0),(23,15)],[(23,15),(23,30)],[(23,30),(23,45)],[(23,45),(0,0)]])
+
     return(week_group,hour_minute_group)
 
 def get_time_slots_labels(dataset,type_class = 1):

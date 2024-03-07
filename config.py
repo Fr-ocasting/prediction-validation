@@ -87,8 +87,10 @@ def get_config(model_name,learn_graph_structure = None):
     return(config)
     
 
-def get_parameters(config):
-    parser = argparse.ArgumentParser(description=config['model_name'])
+def get_parameters(config,description = None ):
+    if description is None:
+        description = config['model_name']
+    parser = argparse.ArgumentParser(description=description)
 
     for key in config.keys():
         if type(config[key]) != list:
