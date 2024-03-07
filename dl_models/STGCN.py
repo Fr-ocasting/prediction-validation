@@ -3,6 +3,8 @@ import torch.nn as nn
 
 import dl_models.STGCN_layer as layers
 
+from dl_models.time_embedding import TimeEmbedding
+
 class STGCNChebGraphConv(nn.Module):
     # STGCNChebGraphConv contains 'TGTND TGTND TNFF' structure
     # ChebGraphConv is the graph convolution from ChebyNet.
@@ -25,7 +27,7 @@ class STGCNChebGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex):
+    def __init__(self, args, blocks, n_vertex,time_embedding_args = None):
         super(STGCNChebGraphConv, self).__init__()
         modules = []
         for l in range(len(blocks) - 3):
@@ -45,10 +47,15 @@ class STGCNChebGraphConv(nn.Module):
             self.leaky_relu = nn.LeakyReLU()
             self.silu = nn.SiLU()
             self.dropout = nn.Dropout(p=args.dropout)
+        if time_embedding_args is not None:
+            self.Tembedding = TimeEmbedding(time_embedding_args.Embedding_dims,time_embedding_args.C_outs,time_embedding_args.c_out_embedding)
 
-    def forward(self, x):
+    def forward(self, x, x_time = None):
         if len(x.size())<4:
             x = x.unsqueeze(1)
+        if x_time is not None:
+            x_time = self.Tembedding(x_time)
+            x = torch.cat([x,x_time],dim = -1)
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
         x = x.permute(0,1,3,2)
@@ -88,7 +95,7 @@ class STGCNGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex):
+    def __init__(self, args, blocks, n_vertex,time_embedding_args = None):
         super(STGCNGraphConv, self).__init__()
         modules = []
         for l in range(len(blocks) - 3):
@@ -112,9 +119,15 @@ class STGCNGraphConv(nn.Module):
             self.silu = nn.SiLU()
             self.do = nn.Dropout(p=args.dropout)
 
+        if time_embedding_args is not None:
+            self.Tembedding = TimeEmbedding(time_embedding_args.Embedding_dims,time_embedding_args.C_outs,time_embedding_args.c_out_embedding)
+
     def forward(self, x):
         if len(x.size())<4:
             x = x.unsqueeze(1)
+        if x_time is not None:
+            x_time = self.Tembedding(x_time)
+            x = torch.cat([x,x_time],dim = -1)
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
         x = x.permute(0,1,3,2)
