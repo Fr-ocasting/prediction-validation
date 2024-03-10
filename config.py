@@ -10,7 +10,7 @@ def get_config(model_name,learn_graph_structure = None):
         config = dict(model_name= model_name,epochs = [50], lr = [1e-4],batch_size = [32],
                       dropout = [0.2],enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                       scheduler = None,ray = False,
-                    c_in = 1, C_outs = [[16,2]],H_dims = [[16,16]],out_dim = 2
+                    c_in = 1, C_outs = [[16,2]],H_dims = [[16,16]],out_dim = 2, padding = 0
                     ) 
 
     if model_name== 'MTGNN':
@@ -82,7 +82,8 @@ def get_config(model_name,learn_graph_structure = None):
     config['alpha'] = 0.1
     config['loss_function_type'] = 'quantile'
     config['conformity_scores_type'] = 'max_residual'
-    config['quantile_method'] = 'classic' # weekday_hour
+    config['quantile_method'] =  'weekday_hour' # 'classic'
+    config['calendar_class'] = 2
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     return(config)
     

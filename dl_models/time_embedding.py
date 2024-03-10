@@ -10,7 +10,7 @@ def elt2word_indx(elt,Encoded_dims):
     Encoded_dims_tensor = torch.tensor([1] + Encoded_dims[:-1])
     product_dimension = Encoded_dims_tensor.cumprod(dim=0)
     bijection = torch.dot(torch.Tensor(elt).float(),product_dimension.float())  
-    word_indx = torch.LongTensor([bijection.item()])
+    word_indx = torch.cuda.LongTensor([bijection.item()]) if torch.cuda.is_available() else torch.LongTensor([bijection.item()])
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
@@ -21,7 +21,10 @@ class TimeEmbedding(nn.Module):
         self.Encoded_dims = Encoded_dims
 
     def forward(self,elt): 
-        word_indx = elt2word_indx(elt,self.Encoded_dims)
+        if type(elt) == tuple: 
+            word_indx = elt2word_indx(elt,self.Encoded_dims)
+        else:
+            word_indx = elt
         z = self.embbeding(word_indx)
         return(z)
 

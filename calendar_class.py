@@ -47,7 +47,7 @@ def get_week_hour_minute_class(type_class):
         for l in tmps:
             for elt in l:
                 hour_minute_group.append(elt)
-        hour_minute_group.append([[(23,0),(23,15)],[(23,15),(23,30)],[(23,30),(23,45)],[(23,45),(0,0)]])
+        hour_minute_group = hour_minute_group+[[(23,0),(23,15)],[(23,15),(23,30)],[(23,30),(23,45)],[(23,45),(0,0)]]
 
     return(week_group,hour_minute_group)
 

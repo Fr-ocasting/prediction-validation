@@ -167,7 +167,7 @@ class DictDataLoader(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False):
+    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None):
         super().__init__()
         self.dataloader = dataloader
         self.training_mode = 'train'
@@ -183,6 +183,7 @@ class Trainer(object):
         self.quantile_method = args.quantile_method 
         self.conformity_scores_type = args.conformity_scores_type
         self.ray = ray
+        self.args_embedding = args_embedding
 
     def train_and_valid(self,mod = 10, alpha = None,dataset = None):
         print(f'start training')
@@ -221,9 +222,12 @@ class Trainer(object):
         loss_epoch,nb_samples = 0,0
         with torch.set_grad_enabled(self.training_mode=='train'):
             for x_b,y_b,t_b in self.dataloader[self.training_mode]:
-                x_b,y_b = x_b.to(self.device),y_b.to(self.device)
+                x_b,y_b,t_b = x_b.to(self.device),y_b.to(self.device),t_b.to(self.device)
                 #Forward 
-                pred = self.model(x_b)
+                if self.args_embedding is not None: 
+                    pred = self.model(x_b,t_b.long())
+                else:
+                    pred = self.model(x_b)
                 loss = self.loss_function(pred,y_b)
 
                 # Back propagation (after each mini-batch)
@@ -249,8 +253,13 @@ class Trainer(object):
         self.model.eval()
         with torch.no_grad():
             data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader['cal']]
-            X_cal,Y_cal = torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device)
-            preds = self.model(X_cal) # x_cal is normalized
+            X_cal,Y_cal,T_cal = torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device),torch.cat([t_b for [_,_,t_b] in data]).to(self.device)
+
+            #Forward 
+            if self.args_embedding is not None: 
+                preds = self.model(X_cal,T_cal.long())
+            else:
+                preds = self.model(X_cal) 
 
             # get lower and upper band
             if preds.size(-1) == 2:
@@ -319,10 +328,13 @@ class Trainer(object):
         with torch.no_grad():
             # Au lieu de          Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]]) // Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
             data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
-            X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device), torch.cat([t_b for [_,_,t_b] in data])
-            Pred = self.model(X)
-            #Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]])
-            #Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
+            X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.device)
+            
+            if self.args_embedding is not None: 
+                Pred = self.model(X,T_labels.long())
+            else:
+                Pred = self.model(X) 
+                
         return(Pred,Y_true,T_labels)
 
     def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
@@ -559,7 +571,7 @@ class TimeSerie(object):
 
 def load_model(args,args_embedding):
     if args.model_name == 'CNN': 
-        model = CNN(args.c_in, args.H_dims, args.C_outs, kernel_size = (2,), L=args.seq_length, padding = 1,dropout = args.dropout,time_embedding_args = args_embedding)
+        model = CNN(args.c_in, args.H_dims, args.C_outs, kernel_size = (2,), L=args.seq_length, padding = args.padding,dropout = args.dropout,args_embedding = args_embedding)
     if args.model_name == 'MTGNN': 
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
