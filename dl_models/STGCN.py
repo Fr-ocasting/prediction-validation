@@ -27,7 +27,7 @@ class STGCNChebGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex,time_embedding_args = None):
+    def __init__(self, args, blocks, n_vertex,args_embedding = None):
         super(STGCNChebGraphConv, self).__init__()
         modules = []
         for l in range(len(blocks) - 3):
@@ -36,6 +36,10 @@ class STGCNChebGraphConv(nn.Module):
         Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
         if args.enable_padding:
             Ko = args.seq_length
+
+        if args_embedding is not None:
+            Ko = Ko + args_embedding.embedding_dim
+
         self.Ko = Ko
     
         if self.Ko > 1:
@@ -47,20 +51,39 @@ class STGCNChebGraphConv(nn.Module):
             self.leaky_relu = nn.LeakyReLU()
             self.silu = nn.SiLU()
             self.dropout = nn.Dropout(p=args.dropout)
-        if time_embedding_args is not None:
-            self.Tembedding = TimeEmbedding(time_embedding_args.Embedding_dims,time_embedding_args.C_outs,time_embedding_args.c_out_embedding)
 
-    def forward(self, x, x_time = None):
+
+        if args_embedding is not None:
+            self.Tembedding = TimeEmbedding(args_embedding.Encoded_dims,args_embedding.embedding_dim)
+            self.Tembedding_position = args_embedding.position
+
+    def forward(self, x, time_elt = None):
         if len(x.size())<4:
             x = x.unsqueeze(1)
-        if x_time is not None:
-            x_time = self.Tembedding(x_time)
-            x = torch.cat([x,x_time],dim = -1)
+
+        B,C,N,L = x.size()
+
+        if time_elt is not None:
+            if self.Tembedding_position == 'input':
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
+                x = torch.cat([x,time_elt],dim = -1)
+        else :
+            print("model ne prend pas en compte l'embedding de temps" )
+        
+
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
         x = x.permute(0,1,3,2)
-
         x = self.st_blocks(x)
+
+        B,C,L,N = x.size()
+        if time_elt is not None:
+            if self.Tembedding_position == 'output': 
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
+                x = torch.cat([x,time_elt],dim = 2)
+
         if self.Ko > 1:
             x = self.output(x)
         elif self.Ko == 0:
@@ -95,7 +118,7 @@ class STGCNGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex,time_embedding_args = None):
+    def __init__(self, args, blocks, n_vertex,args_embedding = None):
         super(STGCNGraphConv, self).__init__()
         modules = []
         for l in range(len(blocks) - 3):
@@ -107,6 +130,8 @@ class STGCNGraphConv(nn.Module):
         # ----
         if args.enable_padding:
             Ko = args.seq_length
+        if args_embedding is not None:
+            Ko = Ko + args_embedding.embedding_dim
         # ----
         self.Ko = Ko
         if self.Ko > 1:
@@ -119,30 +144,43 @@ class STGCNGraphConv(nn.Module):
             self.silu = nn.SiLU()
             self.do = nn.Dropout(p=args.dropout)
 
-        if time_embedding_args is not None:
-            self.Tembedding = TimeEmbedding(time_embedding_args.Embedding_dims,time_embedding_args.C_outs,time_embedding_args.c_out_embedding)
+        if args_embedding is not None:
+            self.Tembedding = TimeEmbedding(args_embedding.Encoded_dims,args_embedding.embedding_dim)
+            self.Tembedding_position = args_embedding.position
 
-    def forward(self, x):
+    def forward(self, x,time_elt = None):
         if len(x.size())<4:
             x = x.unsqueeze(1)
-        if x_time is not None:
-            x_time = self.Tembedding(x_time)
-            x = torch.cat([x,x_time],dim = -1)
+        B,C,N,L = x.size()
+    
+        if time_elt is not None:
+            if self.Tembedding_position == 'input':
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
+                x = torch.cat([x,time_elt],dim = -1)
+
+        else :
+            print("model ne prend pas en compte l'embedding de temps" )
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
         x = x.permute(0,1,3,2)
 
         x = self.st_blocks(x)
         # st_blocks outputs: [B, C_out, L-4*nb_blocks, N])
-        # st_blocks outputs: [B, C_out, L-4*nb_blocks, N]) 
-        
+        B,C,L,N = x.size() 
+        if time_elt is not None:
+            if self.Tembedding_position == 'output':
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
+                x = torch.cat([x,time_elt],dim = 2)
+
         if self.Ko > 1:
             x = self.output(x)
         elif self.Ko == 0:
             x = self.fc1(x.permute(0, 2, 3, 1))
             x = self.relu(x)
             x = self.fc2(x).permute(0, 3, 1, 2)
-        
+
         x = x.squeeze()
         x = x.permute(0,2,1)
         return x

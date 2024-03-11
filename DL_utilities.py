@@ -607,9 +607,9 @@ def load_model(args,args_embedding):
         args.gso = torch.from_numpy(gso).to(args.device)
 
         if args.graph_conv_type == 'cheb_graph_conv':
-            model = STGCNChebGraphConv(args, blocks, args.num_nodes).to(args.device)
+            model = STGCNChebGraphConv(args, blocks, args.num_nodes,args_embedding = args_embedding).to(args.device)
         else:
-            model = STGCNGraphConv(args, blocks, args.num_nodes).to(args.device)
+            model = STGCNGraphConv(args, blocks, args.num_nodes,args_embedding = args_embedding).to(args.device)
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.seq_length + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.seq_length} \n you need to increase temporal dimension or add padding in STGCN_layer"
         print(f"Ko: {Ko}, enable padding: {args.enable_padding}")

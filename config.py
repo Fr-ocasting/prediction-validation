@@ -29,7 +29,7 @@ def get_config(model_name,learn_graph_structure = None):
         if learn_graph_structure:
             config['gcn_true'],config['buildA_true'] = True,True   
 
-    if model_name == 'STGCN':
+    if (model_name == 'STGCN') or  (model_name == 'stgcn'):
         # Utilise la distance adjacency matrix 
         config = dict(model_name= model_name,epochs = [3], lr = [1e-4],batch_size = [64],
                         dropout = [0.2],calib_prop = [0.5],

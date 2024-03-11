@@ -65,8 +65,9 @@ class CNN(nn.Module):
 
         if time_elt is not None:
             if self.Tembedding_position == 'output':
+                BN,C,L = x.size()
                 time_elt = self.Tembedding(time_elt)
-                time_elt = time_elt.repeat(B*N,C,1)
+                time_elt = time_elt.repeat(N*C,1).reshape(BN,C,-1)
 
                 x = torch.cat([x,time_elt],dim = -1)
 
