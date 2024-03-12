@@ -14,10 +14,15 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,Encoded_dims,embedding_dim):
+    def __init__(self,Encoded_dims,embedding_dim,embedding_with_dense_layer = True):
         super(TimeEmbedding, self).__init__()
         self.nb_words = int(torch.prod(torch.Tensor(Encoded_dims)).item())
-        self.embbeding = nn.Embedding(self.nb_words,embedding_dim)
+        self.embedding_with_dense_layer = embedding_with_dense_layer
+
+        if embedding_with_dense_layer:
+            self.embedding = nn.Linear(self.nb_words,embedding_dim)
+        else: 
+            self.embedding = nn.Embedding(self.nb_words,embedding_dim)
         self.Encoded_dims = Encoded_dims
 
     def forward(self,elt): 
@@ -25,7 +30,12 @@ class TimeEmbedding(nn.Module):
             word_indx = elt2word_indx(elt,self.Encoded_dims)
         else:
             word_indx = elt
-        z = self.embbeding(word_indx)
+
+        if self.embedding_with_dense_layer:
+            one_hot_encodding_matrix = nn.functional.one_hot(word_indx.long().squeeze(),num_classes =self.nb_words).float()
+            z = self.embedding(one_hot_encodding_matrix)
+        else: 
+            z = self.embedding(word_indx)
         return(z)
 
 if False : 

@@ -38,14 +38,23 @@ def get_loss(loss_function_type,quantiles = None):
     if (loss_function_type == 'quantile') or (loss_function_type == 'Quantile') (loss_function_type == 'quantile loss') or (loss_function_type == 'QunatileLoss') or (loss_function_type == 'Qunatile Loss'):
         return QuantileLoss(quantiles)
 
-def choose_optimizer(model,args):
+def choose_optimizer(model,args,specific_lr = None):
     # Training and Calibration :
     if args.optimizer == 'adam':
-        return Adam(model.parameters(),lr=args.lr,weight_decay= args.weight_decay)
+        if specific_lr is not None: 
+            return Adam(specific_lr,lr=args.lr,weight_decay= args.weight_decay)
+        else:
+            return Adam(model.parameters(),lr=args.lr,weight_decay= args.weight_decay)
     elif args.optimizer == 'sgd':
-        return SGD(model.parameters(),lr=args.lr,weight_decay =args.weight_decay, momentum = args.momentum)
+        if specific_lr is not None: 
+            return SGD(specific_lr,lr=args.lr,weight_decay=args.weight_decay, momentum = args.momentum)
+        else:
+            return SGD(model.parameters(),lr=args.lr,weight_decay =args.weight_decay, momentum = args.momentum)
     elif args.optimizer == "adamw":
-        return AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        if specific_lr is not None: 
+            return AdamW(specific_lr,lr=args.lr,weight_decay= args.weight_decay)
+        else:
+            return AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     else :
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 
@@ -93,7 +102,11 @@ class PI_object(object):
             Q_tensor = torch.zeros(preds.size(0),preds.size(1),1).to(device)
             for label in T_labels.unique():
                 indices = torch.nonzero(T_labels == label).squeeze()
-                Q_tensor[indices,:,0] = Q[label.item()]['Q'][0,:,0]
+                try: 
+                    Q_tensor[indices,:,0] = Q[label.item()]['Q'][0,:,0]
+                except:
+                    print(f"No Conformal Calibration value found for {label.item()}. Will be set to 100") 
+                    Q_tensor[indices,:,0] = 100
         else : 
             Q_tensor = Q
 
@@ -260,6 +273,10 @@ class Trainer(object):
                 preds = self.model(X_cal,T_cal.long())
             else:
                 preds = self.model(X_cal) 
+
+            if len(preds.size()) == 2:
+                preds = preds.unsqueeze(1)
+
 
             # get lower and upper band
             if preds.size(-1) == 2:
