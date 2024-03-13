@@ -5,8 +5,8 @@ from datetime import datetime
 import numpy as np 
 
 # Personnal Import 
-from DL_utilities import DataSet
-
+# from DL_utilities import DataSet
+from DL_class import DataSet
 # ======================================================
 # Function 
 # ======================================================

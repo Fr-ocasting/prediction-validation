@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.axes_grid1 as axes_grid1
 import pandas as pd
 import numpy as np
+import torch 
+from DL_class import PI_object
 
 def plot_loss(trainer,test_pred,Y_true,window_pred = None):
     fig, (ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
@@ -27,6 +29,71 @@ def plot_loss(trainer,test_pred,Y_true,window_pred = None):
     ax2.legend()
 
     plt.show()
+
+
+def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embedding,plot2D = True,plot3D=False):
+    trainer.model.eval()   # pas grad, pas de dropout 
+    with torch.no_grad():
+        #output = trainer.model.Tembedding(T_labels_cal.long())
+        output = trainer.model.Tembedding(torch.arange(int(torch.prod(torch.Tensor(args_embedding.Encoded_dims)).item())).long().to(args.device))
+    
+    print(f"T embedding -> sum: {trainer.model.Tembedding.embedding.weight.grad.sum()}, mean: {trainer.model.Tembedding.embedding.weight.grad.sum()}")
+    #print(f"output 0 -> sum: {trainer.model.Dense_outs[0].weight.grad.sum()}, mean: {trainer.model.Dense_outs[0].weight.grad.mean()}")
+    #print(f"output 1 -> sum: {trainer.model.Dense_outs[1].weight.grad.sum()}, mean: {trainer.model.Dense_outs[1].weight.grad.mean()}")
+    
+
+    # Plot 3D: 
+    if plot3D:
+        X1,Y1,Z1 = output[:,0].numpy(),output[:,1].numpy(),output[:,2].numpy()
+        ax = plt.figure().add_subplot(projection='3d')
+        ax.scatter(X1,Y1,Z1,label = 'embedding')
+        ...
+
+    # PLot 2D: 
+    if plot2D: 
+        # Plotting Temporal Embedding 
+        X1,Y1 = output[:,0].cpu().numpy(),output[:,1].cpu().numpy()
+        fig, (ax1,ax2,ax3) = plt.subplots(1,3,figsize = (15,8))
+        ax1.scatter(X1,Y1,label = 'embedding')
+        ax1.set_xlim([-1,1])
+        ax1.set_ylim([-1,1])
+        ax1.legend()
+        # ...
+
+        # Plotting Loss
+        ax2.plot(np.arange(len(trainer.valid_loss)),trainer.valid_loss,label = f"validation loss: {'{:.4f}'.format(trainer.train_loss[-1])}")
+        ax2.plot(np.arange(len(trainer.train_loss)),trainer.train_loss,label = f"Training loss:  {'{:.4f}'.format(trainer.valid_loss[-1])}")
+        ax2.legend()
+        # ...
+
+        # Prediction Test Set
+        (preds,Y_true,T_labels,df_metrics) = trainer.testing(dataset,metrics= ['mse','mae'])
+        if len(preds.size()) == 2:
+            preds = preds.unsqueeze(1)
+        # ...
+
+        # PI
+        pi = PI_object(preds,Y_true,alpha = args.alpha, type_calib = 'classic')     # PI 'classic' :
+        pi_cqr = PI_object(preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels)      # PI 'CQR' 
+        # str legend
+        str_picp,str_mpiw = f"{'{:.2%}'.format(pi.picp)}" , f"{'{:.2f}'.format(pi.mpiw)}"
+        str_picp_cqr, str_mpiw_cqr = f"{'{:.2%}'.format(pi_cqr.picp)}" , f"{'{:.2f}'.format(pi_cqr.mpiw)}"
+        str_pi_alpha = f"{'{:.2f}'.format(1-args.alpha)}%"
+        # ...
+
+        # Plotting Prediction
+        ax3.plot(np.arange(100),pi_cqr.upper[:100,0,0],color = 'green',linestyle = 'dashed',label = f"PI {str_pi_alpha}, \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}")
+        ax3.plot(np.arange(100),pi_cqr.lower[:100,0,0],color = 'green',linestyle = 'dashed')
+        ax3.plot(np.arange(100),pi.upper[:100,0,0],color = 'red',linestyle = 'dashed',label = f"quantile estimation \n PICP: {str_picp} \n MPIW: {str_mpiw}")
+        ax3.plot(np.arange(100),pi.lower[:100,0,0],color = 'red',linestyle = 'dashed')
+        ax3.plot(np.arange(100),Y_true[:100,0,0],color = 'blue',label = 'True value')
+        ax3.legend()
+        # ...
+
+        plt.show()
+
+
+
 
 
 def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, cmap ="afmhot", save = None, cbar_label =  "Number of Data"):

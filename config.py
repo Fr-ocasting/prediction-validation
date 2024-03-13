@@ -2,9 +2,8 @@ import torch
 import argparse
 import random
 import torch.nn as nn
-from DL_utilities import QuantileLoss
 
-def get_config(model_name,learn_graph_structure = None):
+def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     if model_name== 'CNN':
         config = dict(model_name= model_name,epochs = [50], lr = [1e-4],batch_size = [32],
@@ -26,7 +25,7 @@ def get_config(model_name,learn_graph_structure = None):
                     skip_channels=64, end_channels=128,out_dim=2,layers=3,layer_norm_affline=True, 
                     scheduler = None, ray = False
                     )
-        if learn_graph_structure:
+        if learn_graph_structure is not None:
             config['gcn_true'],config['buildA_true'] = True,True   
 
     if (model_name == 'STGCN') or  (model_name == 'stgcn'):
@@ -71,6 +70,9 @@ def get_config(model_name,learn_graph_structure = None):
                          bidirectional = [True,False], scheduler = None , ray = False
         )
 
+
+    for key in other_params.keys():
+        config[key] = other_params[key]
         
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = ['sgd','adam','adamw']
@@ -84,9 +86,35 @@ def get_config(model_name,learn_graph_structure = None):
     config['conformity_scores_type'] = 'max_residual'
     config['quantile_method'] =  'weekday_hour' # 'classic'
     config['calendar_class'] = 3
+    config['specific_lr'] = [True, False]
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     return(config)
     
+
+def optimizer_specific_lr(model,args):
+    if args.model_name == 'CNN':
+        if args.specific_lr:
+            specific_lr = [{"params": model.Tembedding.parameters(), "lr": 1e-2},
+                    {"params": model.Convs.parameters(), "lr": args.lr},
+                    {"params": model.Dense_outs.parameters(), "lr": args.lr}
+                ]
+            
+    elif args.model_name == 'STGCN':
+        if args.specific_lr:
+            specific_lr = [{"params": model.Tembedding.parameters(), "lr": 1e-2},
+                    {"params": model.st_blocks.parameters(), "lr": args.lr},
+                    {"params": model.output.parameters(), "lr": args.lr}
+                    ]
+    else:
+        raise NotImplementedError(f'A specific lr by layer has been asked but it has not been defined for the model {args.model_name}.')
+    
+    return(specific_lr)
+
+
+def get_config_embed(Encoded_dims = [24,7],embedding_dim = 2,position = 'input'):
+    config_Tembed = dict(Encoded_dims=  [Encoded_dims],embedding_dim = embedding_dim, position=position)
+    return(config_Tembed)
+
 
 def get_parameters(config,description = None ):
     if description is None:
@@ -103,3 +131,15 @@ def get_parameters(config,description = None ):
 
     args = parser.parse_args(args=[])
     return(args)
+
+
+def display_config(args,args_embedding):
+    optimizer = f"Optimizer: {args.optimizer}"
+    lr = 'A specific LR by layer is used' if args.specific_lr else 'The same LR is used for each layer'
+    calendar_class = f"Calendar class: {args.calendar_class}"
+    quantile_method = f"Quantile Method: {args.quantile_method}"
+
+    encoding = f"Encoding dimension: {args_embedding.Encoded_dims}"
+    embedding_dim = f"Embedding dimension: {args_embedding.embedding_dim}"
+    position = f"Position of the Embedding layer: {args_embedding.position}"
+    print(f"{optimizer} \n {lr} \n {calendar_class} \n {quantile_method} \n {encoding} \n {embedding_dim} \n {position} ")

@@ -51,7 +51,7 @@ class CNN(nn.Module):
             x.reshape(B*N,C,L)
 
 
-        if time_elt is not None:
+        if time_elt is not None:  #(week,hour,day)
             if self.Tembedding_position == 'input':
                 time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B*N,C,-1)   # [B,embedding_dim] -> [B*N,C,embedding_dim]
