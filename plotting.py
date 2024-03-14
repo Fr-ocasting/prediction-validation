@@ -35,7 +35,7 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
     trainer.model.eval()   # pas grad, pas de dropout 
     with torch.no_grad():
         #output = trainer.model.Tembedding(T_labels_cal.long())
-        output = trainer.model.Tembedding(torch.arange(int(torch.prod(torch.Tensor(args_embedding.Encoded_dims)).item())).long().to(args.device))
+        output = trainer.model.Tembedding(torch.arange(args_embedding.nb_words_embedding).to(args.device)).long().to(args.device)
     
     print(f"T embedding -> sum: {trainer.model.Tembedding.embedding.weight.grad.sum()}, mean: {trainer.model.Tembedding.embedding.weight.grad.sum()}")
     #print(f"output 0 -> sum: {trainer.model.Dense_outs[0].weight.grad.sum()}, mean: {trainer.model.Dense_outs[0].weight.grad.mean()}")
@@ -44,7 +44,7 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
 
     # Plot 3D: 
     if plot3D:
-        X1,Y1,Z1 = output[:,0].numpy(),output[:,1].numpy(),output[:,2].numpy()
+        X1,Y1,Z1 = output[:,0].cpu().numpy(),output[:,1].cpu().numpy(),output[:,2].cpu().numpy()
         ax = plt.figure().add_subplot(projection='3d')
         ax.scatter(X1,Y1,Z1,label = 'embedding')
         ...
@@ -82,11 +82,11 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
         # ...
 
         # Plotting Prediction
-        ax3.plot(np.arange(100),pi_cqr.upper[:100,0,0],color = 'green',linestyle = 'dashed',label = f"PI {str_pi_alpha}, \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}")
-        ax3.plot(np.arange(100),pi_cqr.lower[:100,0,0],color = 'green',linestyle = 'dashed')
-        ax3.plot(np.arange(100),pi.upper[:100,0,0],color = 'red',linestyle = 'dashed',label = f"quantile estimation \n PICP: {str_picp} \n MPIW: {str_mpiw}")
-        ax3.plot(np.arange(100),pi.lower[:100,0,0],color = 'red',linestyle = 'dashed')
-        ax3.plot(np.arange(100),Y_true[:100,0,0],color = 'blue',label = 'True value')
+        ax3.plot(np.arange(100),pi_cqr.upper[:100,0,0].cpu(),color = 'green',linestyle = 'dashed',label = f"PI {str_pi_alpha}, \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}")
+        ax3.plot(np.arange(100),pi_cqr.lower[:100,0,0].cpu(),color = 'green',linestyle = 'dashed')
+        ax3.plot(np.arange(100),pi.upper[:100,0,0].cpu(),color = 'red',linestyle = 'dashed',label = f"quantile estimation \n PICP: {str_picp} \n MPIW: {str_mpiw}")
+        ax3.plot(np.arange(100),pi.lower[:100,0,0].cpu(),color = 'red',linestyle = 'dashed')
+        ax3.plot(np.arange(100),Y_true[:100,0,0].cpu(),color = 'blue',label = 'True value')
         ax3.legend()
         # ...
 

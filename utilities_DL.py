@@ -30,10 +30,11 @@ def get_dic_results(trainer,pi):
 
 def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     (dataset,U,Utarget) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,step_ahead,H,D,W,invalid_dates)
-    time_slots_labels,dic_class2rpz,dic_rpz2class = get_time_slots_labels(dataset,type_class= args.calendar_class)
+    print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
+    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class)
     data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = 'classic', shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
     data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class)
+    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
 def get_loss(loss_function_type,args = None):
     if (loss_function_type == 'mse') or  (loss_function_type == 'MSE') or (loss_function_type == 'Mse'):
@@ -45,7 +46,6 @@ def get_loss(loss_function_type,args = None):
 
 def choose_optimizer(model,args):
     # Training and Calibration :
-    print(f'optimizer: {args.optimizer}')
     specific_lr = optimizer_specific_lr(model,args) if args.specific_lr else None
 
     if args.optimizer == 'adam':

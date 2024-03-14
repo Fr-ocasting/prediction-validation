@@ -111,8 +111,13 @@ def optimizer_specific_lr(model,args):
     return(specific_lr)
 
 
-def get_config_embed(Encoded_dims = [24,7],embedding_dim = 2,position = 'input'):
-    config_Tembed = dict(Encoded_dims=  [Encoded_dims],embedding_dim = embedding_dim, position=position)
+def get_config_embed(nb_words_embedding,embedding_dim = 2,position = 'input'):
+    '''
+    args
+    -----
+    nb_words_embedding : represent the number of expected class from tuple (weekday,hour,minute) 
+    '''
+    config_Tembed = dict(nb_words_embedding= nb_words_embedding,embedding_dim = embedding_dim, position=position)
     return(config_Tembed)
 
 
@@ -139,7 +144,7 @@ def display_config(args,args_embedding):
     calendar_class = f"Calendar class: {args.calendar_class}"
     quantile_method = f"Quantile Method: {args.quantile_method}"
 
-    encoding = f"Encoding dimension: {args_embedding.Encoded_dims}"
+    encoding = f"Encoding dimension: {args_embedding.nb_words_embedding}. Is related to Dictionnary size of the Temporal Embedding Layer"
     embedding_dim = f"Embedding dimension: {args_embedding.embedding_dim}"
     position = f"Position of the Embedding layer: {args_embedding.position}"
-    print(f"{optimizer} \n {lr} \n {calendar_class} \n {quantile_method} \n {encoding} \n {embedding_dim} \n {position} ")
+    print(f"Model : {args.model_name} \n {optimizer} \n {lr} \n {calendar_class} \n {quantile_method} \n {encoding} \n {embedding_dim} \n {position} ")

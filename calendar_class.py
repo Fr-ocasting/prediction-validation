@@ -85,4 +85,5 @@ def get_time_slots_labels(dataset,type_class = 1):
             df_time_slots['calendar_class_rpz_str'] = df_time_slots.calendar_class_rpz.apply(lambda class_rpz : f"{'_'.join(list(map(str,class_rpz[0])))}-{'_'.join(list(map(str,class_rpz[1])))}" )
             df_time_slots['calendar_class'] = df_time_slots.calendar_class_rpz_str.apply(lambda class_rpz : dic_rpz2class[class_rpz]) 
             time_slots_labels = torch.Tensor(df_time_slots['calendar_class'])
-            return(time_slots_labels,dic_class2rpz,dic_rpz2class)
+            nb_words_embedding = len(df_time_slots['calendar_class'].unique())
+            return(time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)

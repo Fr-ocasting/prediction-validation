@@ -36,7 +36,7 @@ class CNN(nn.Module):
         self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*H_dims[-1]]+C_outs[:-1], C_outs)])
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.Encoded_dims,args_embedding.embedding_dim)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim)
             self.Tembedding_position = args_embedding.position
     
     def forward(self,x,time_elt = None):

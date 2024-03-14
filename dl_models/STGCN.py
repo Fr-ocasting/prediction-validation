@@ -54,7 +54,7 @@ class STGCNChebGraphConv(nn.Module):
 
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.Encoded_dims,args_embedding.embedding_dim)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim)
             self.Tembedding_position = args_embedding.position
 
     def forward(self, x, time_elt = None):
@@ -145,7 +145,7 @@ class STGCNGraphConv(nn.Module):
             self.do = nn.Dropout(p=args.dropout)
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.Encoded_dims,args_embedding.embedding_dim)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim)
             self.Tembedding_position = args_embedding.position
 
     def forward(self, x,time_elt = None):

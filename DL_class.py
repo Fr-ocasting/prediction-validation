@@ -35,13 +35,13 @@ class QuantileLoss(nn.Module):
 
 
 class PI_object(object):
-    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None,T_labels = None, device = 'cpu'):
+    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None,T_labels = None):
         super(PI_object,self).__init__()
         self.alpha = alpha
         self.Y_true = Y_true
 
         if type(Q) == dict:
-            Q_tensor = torch.zeros(preds.size(0),preds.size(1),1).to(device)
+            Q_tensor = torch.zeros(preds.size(0),preds.size(1),1).to(preds)
             for label in T_labels.unique():
                 indices = torch.nonzero(T_labels == label).squeeze()
                 try: 
@@ -235,7 +235,7 @@ class Trainer(object):
 
             # Confority scores and quantiles
             if conformity_scores_type == 'max_residual':
-                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
+                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
             if conformity_scores_type == 'max_residual_plus_middle':
                 print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
@@ -245,7 +245,7 @@ class Trainer(object):
             # Get Quantile :
             if quantile_method == 'classic':  
                 quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.device)
-                Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0) #interpolation = 'higher'
+                Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
                 output = Q
             if quantile_method == 'weekday_hour':
                 calendar_class = torch.cat([t_b for [_,_,t_b] in data])
