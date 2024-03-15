@@ -251,17 +251,21 @@ class Trainer(object):
                 calendar_class = torch.cat([t_b for [_,_,t_b] in data])
                 dic_label2Q = {}
 
+
                 # Compute quantile for each calendar class : 
+                nb_label_with_quantile_1 = 0
                 for label in calendar_class.unique():
                     indices = torch.nonzero(calendar_class == label,as_tuple = True)[0]
                     quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.device)  # Quantile for each class, so the quantile order is different as each class has a different length
                     quantile_order = min(torch.Tensor([1]).to(self.device),quantile_order)
                     if quantile_order == 1: 
-                        print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
+                        nb_label_with_quantile_1 +=1
+                        #print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
                     conformity_scores_i = self.conformity_scores[indices]
                     scores_counts = conformity_scores_i.size(0)
                     Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
                     dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
+                print(f"Proportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(calendar_class.unique()))}")
                 output = dic_label2Q
 
         return(output)
