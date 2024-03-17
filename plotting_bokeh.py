@@ -1,4 +1,5 @@
 import numpy as np 
+import os 
 
 from bokeh.plotting import figure, show, output_file, save,output_notebook
 from bokeh.models import ColumnDataSource, Toggle, CustomJS,HoverTool
@@ -7,6 +8,14 @@ from bokeh.layouts import layout,row,column
 import torch
 from DL_class import PI_object
 # ...
+
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_path,trial_save,station = 0):
+    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station = station)
+    p2 = plot_loss(trainer)
+    p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz)
+    combine_bokeh(p1,p2,p3,save_path,trial_save)
+    return(pi,pi_cqr)
+
 
 def d2day(d):
     days = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
@@ -182,15 +191,17 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     
     p.legend.location = location
     
-    return(p)
+    return(pi,pi_cqr,p)
 
 
-def combine_bokeh(p1,p2,p3,name_save):
+def combine_bokeh(p1,p2,p3,save_path,trial_save):
     # Affichage côte à côte
     l1 = column(p1, p2)
     l = row(l1,p3)
     # Affichage de la figure
     show(l)
     # Pour sauvegarder en HTML (assurez-vous de mettre à jour 'name_save' avec votre nom de fichier désiré)
-    output_file(f"{name_save}.html")
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    output_file(f"{save_path}{trial_save}.html")
     save(l)
