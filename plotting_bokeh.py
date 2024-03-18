@@ -58,19 +58,19 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz):
 
             h1,h2 = rpz[1][0][0],rpz[1][1][0]
             # Morning Peak
-            if (h1 > 6) & (h2 < 10):
+            if (h1 > 6) & (h1 < 10) & (h2 > 6) & (h2 < 10):
                 morning_peak_x.append(x)
                 morning_peak_y.append(y)
                 morning_peak_legend.append(f"{d2day(rpz[0][0])} {hm2hour(rpz[1])}")
 
             # Evening Peak
-            if (h1 > 16) & (h2 < 20):
+            if (h1 > 15) & (h1 < 20) & (h2 > 15) & (h2 < 20):
                 evening_peak_x.append(x)
                 evening_peak_y.append(y)
                 evening_peak_legend.append(f"{d2day(rpz[0][0])} {hm2hour(rpz[1])}")
 
             # Night
-            if (h1 > 0) & (h2 < 6):
+            if (h1 > 0) & (h1 < 6) &  (h2 > 0) & (h2 < 6):
                 night_x.append(x)
                 night_y.append(y)
                 night_legend.append(f"{d2day(rpz[0][0])} {hm2hour(rpz[1])}")
@@ -86,7 +86,7 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz):
     source_total = ColumnDataSource(data=dict(x=X, y=Y, legend=Legend))
     source_morning = ColumnDataSource(data=dict(x=morning_peak_x, y=morning_peak_y, legend=morning_peak_legend))
     source_evening = ColumnDataSource(data=dict(x=evening_peak_x, y=evening_peak_y, legend=evening_peak_legend))
-    source_night =  ColumnDataSource(data=dict(x=X, y=Y, legend=night_legend))
+    source_night =  ColumnDataSource(data=dict(x=night_x, y=night_y, legend=night_legend))
 
     # Création de la figure
     p = figure(title="Visualisation of latent space", x_axis_label='dimension 1', y_axis_label='dimension 2')
