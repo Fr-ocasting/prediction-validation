@@ -8,6 +8,16 @@ from dateutil.relativedelta import relativedelta
 import torch.nn as nn
 from scipy.spatial.distance import cdist 
 
+
+
+def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):
+    assert 0 <= quantile_order <= 1, "Quantile order must be <= 1 and >=0"
+    sorted,_ = torch.sort(conformity_scores,0)
+
+    index = torch.ceil(torch.Tensor([conformity_scores.size(0) * quantile_order])).long() - 1
+    index = torch.clamp(index, 0, conformity_scores.size(0) - 1)  # 0 <= index < len(conformity_scores) 
+    return(sorted[index:index+1,:,:].to(device)) 
+
 def str2neg(x):
     # Convert string values into '-1'. Keep the nan values
     try:

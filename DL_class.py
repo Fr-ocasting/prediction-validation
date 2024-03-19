@@ -7,10 +7,12 @@ import torch.nn as nn
 
 # Personnal import: 
 from metrics import evaluate_metrics
+from utilities import get_higher_quantile
 try: 
     from ray import tune
 except : 
     print('Training and Hyper-parameter tuning with Ray is not possible')
+
 
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
@@ -245,7 +247,8 @@ class Trainer(object):
             # Get Quantile :
             if quantile_method == 'classic':  
                 quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.device)
-                Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
+                #Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
+                Q = get_higher_quantile(self.conformity_scores,quantile_order,device = self.device)
                 output = Q
             if quantile_method == 'weekday_hour':
                 calendar_class = torch.cat([t_b for [_,_,t_b] in data])
@@ -263,7 +266,8 @@ class Trainer(object):
                         #print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
                     conformity_scores_i = self.conformity_scores[indices]
                     scores_counts = conformity_scores_i.size(0)
-                    Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
+                    Q_i = get_higher_quantile(conformity_scores_i,quantile_order,device = self.device)
+                    #Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
                     dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
                 print(f"Proportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(calendar_class.unique()))}")
                 output = dic_label2Q
