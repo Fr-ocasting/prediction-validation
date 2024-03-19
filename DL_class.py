@@ -4,7 +4,6 @@ import time
 from torch.utils.data import DataLoader
 import torch 
 import torch.nn as nn 
-
 # Personnal import: 
 from metrics import evaluate_metrics
 from utilities import get_higher_quantile
@@ -124,7 +123,7 @@ class DictDataLoader(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None):
+    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None, save_path = None):
         super().__init__()
         self.dataloader = dataloader
         self.training_mode = 'train'
@@ -141,9 +140,17 @@ class Trainer(object):
         self.conformity_scores_type = args.conformity_scores_type
         self.ray = ray
         self.args_embedding = args_embedding
+        self.save_path = save_path 
+        self.best_valid = np.inf
+
+    def save_best_model(self,checkpoint,epoch):
+        ''' Save best model in .pkl format'''
+        checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
+        torch.save(checkpoint, f"{self.save_path}")    
 
     def train_and_valid(self,mod = 10, alpha = None,dataset = None):
         print(f'start training')
+        checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
         for epoch in range(self.epochs):
             t0 = time.time()
             # Train and Valid each epoch 
@@ -153,6 +160,11 @@ class Trainer(object):
             self.training_mode = 'validate'
             self.model.eval()   # Desactivate Dropout 
             self.loop()
+
+
+            if (self.valid_loss[-1] < self.best_valid) & (self.save_path is not None):
+                self.best_valid = self.valid_loss[-1]
+                self.save_best_model(checkpoint,epoch)
 
             # Keep track on Metrics
             if self.ray : 
@@ -171,8 +183,8 @@ class Trainer(object):
 
             if epoch%mod==0:
                 print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
-                if epoch == 0:
-                    print(f"Estimated time for training: {'{0:.1f}'.format(self.epochs*(time.time()-t0)/60)}min ")
+            if epoch == 1:
+                print(f"Estimated time for training: {'{0:.1f}'.format(self.epochs*(time.time()-t0)/60)}min ")
 
 
     def loop(self,):

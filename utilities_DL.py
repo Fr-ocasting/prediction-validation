@@ -5,7 +5,7 @@ from torch.optim import SGD,Adam,AdamW
 
 # Personnal import: 
 from load_adj import load_adj
-from config import optimizer_specific_lr
+from config import optimizer_specific_lr, get_config_embed, get_parameters,display_config
 from calendar_class import get_time_slots_labels
 from load_DataSet_subway_15 import load_normalized_dataset
 from DL_class import DictDataLoader,QuantileLoss
@@ -16,6 +16,30 @@ from dl_models.MTGNN import gtnet
 from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
+
+
+def load_all(subway_in,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates,
+             embedding_dim=2,position = 'input',single_station = False):
+    ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
+    df = subway_in[['Ampère Victor Hugo']] if single_station else subway_in
+    dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding = data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates)
+
+    # Time Embedding Config
+    config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding,embedding_dim = embedding_dim,position = position)
+    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
+    # Print config :
+    display_config(args,args_embedding)
+    # Quantile Loss
+    loss_function = get_loss(args.loss_function_type,args)
+
+    # Load Model
+    model = load_model(args,args_embedding).to(args.device)
+
+    # Config optimizer:
+    optimizer = choose_optimizer(model,args)
+
+    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
+
 
 
 def get_dic_results(trainer,pi):
