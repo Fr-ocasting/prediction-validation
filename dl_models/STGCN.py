@@ -68,9 +68,6 @@ class STGCNChebGraphConv(nn.Module):
                 time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
-        else :
-            print("model ne prend pas en compte l'embedding de temps" )
-        
 
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
@@ -159,8 +156,6 @@ class STGCNGraphConv(nn.Module):
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
 
-        else :
-            print("model ne prend pas en compte l'embedding de temps" )
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
         x = x.permute(0,1,3,2)

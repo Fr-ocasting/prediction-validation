@@ -56,8 +56,6 @@ class CNN(nn.Module):
                 time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B*N,C,-1)   # [B,embedding_dim] -> [B*N,C,embedding_dim]
                 x = torch.cat([x,time_elt],dim = -1)
-        else :
-            print("model ne prend pas en compte l'embedding de temps" )
 
         # Conv Layers :        
         for conv in self.Convs:

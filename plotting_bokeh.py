@@ -139,11 +139,11 @@ def plot_loss(trainer,location = "top_right"):
     p = figure(title="Loss over Time", x_axis_label='Epochs', y_axis_label='Loss', width=450, height=400)
 
     # Ajout des données à la première figure
-    p.line(np.arange(len(train_loss)), train_loss, 
-           legend_label=f"Training loss:  {'{:.4f}'.format(valid_loss[-1])}",
-           line_width=2, color="blue")
     p.line(np.arange(len(valid_loss)), valid_loss, 
-           legend_label= f"Validation loss: {'{:.4f}'.format(train_loss[-1])}", 
+           legend_label=f"Validation loss:  {'{:.4f}'.format(valid_loss[-1])}",
+           line_width=2, color="blue")
+    p.line(np.arange(len(train_loss)), train_loss, 
+           legend_label= f"Training loss: {'{:.4f}'.format(train_loss[-1])}", 
            line_width=2, color="green")
 
     # Configuration des légendes
