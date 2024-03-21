@@ -53,11 +53,30 @@ def get_dic_results(trainer,pi):
 
 
 def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
-    (dataset,U,Utarget) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,step_ahead,H,D,W,invalid_dates)
+    (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,step_ahead,H,D,W,invalid_dates)
     print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
     time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class)
     data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = 'classic', shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
     data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
+
+
+    # Print Information
+    training_set =  f"between {str(remaining_dates.iloc[0].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*args.train_prop)].item())} \
+        Contains {int(len(remaining_dates)*args.train_prop)} sequences by spatial unit"
+    validation_set = f"Doesn't exist" if (args.valid_prop == 0) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*args.train_prop)].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*(args.train_prop+args.valid_prop))].item())}.\
+        Contains {int(len(remaining_dates)*args.valid_prop)} sequences by spatial unit"
+    testing_set = f"Doesn't exist" if ((args.valid_prop + args.train_prop == 1) or (args.train_prop == 1 )) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*(args.train_prop+args.valid_prop))].item())} and {str(remaining_dates.iloc[-1].item())}.\
+        Contains {int(len(remaining_dates)*(1-args.valid_prop-args.train_prop))} sequences by spatial unit"
+    
+    print(f"Initial size of the data: {len(dataset.df)}. \
+      \nNumber of forbidden dates: {len(invalid_dates)} which can't be present in any sequence . \
+      \nProportion of remaining data: {'{:.0%}'.format(len(remaining_dates)/len(dataset.df))} \n \
+      \nTrain set {training_set} \
+      \nValid set {validation_set}  \
+      \nTest set {testing_set} \n  \
+      ")
+    # ...
+    
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
 def get_loss(loss_function_type,args = None):

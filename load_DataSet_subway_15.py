@@ -30,7 +30,7 @@ def load_normalized_dataset(df,time_step_per_hour,train_prop,step_ahead,H,D,W,in
     # Remove the Invalid Sequences 
     Uclean,Utarget_clean,remaining_dates = dataset.remove_indices(invalid_indices_tensor)
 
-    return(dataset,Uclean,Utarget_clean)
+    return(dataset,Uclean,Utarget_clean,remaining_dates)
 
 
 # ======================================================
