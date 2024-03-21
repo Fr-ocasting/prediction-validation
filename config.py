@@ -4,7 +4,6 @@ import random
 import torch.nn as nn
 
 def get_config(model_name,learn_graph_structure = None,other_params =  {}):
-
     if model_name== 'CNN':
         config = dict(model_name= model_name,epochs = [50], lr = [1e-4],batch_size = [32],
                       dropout = [0.2],enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',

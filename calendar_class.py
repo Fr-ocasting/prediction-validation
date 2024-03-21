@@ -66,7 +66,7 @@ def get_week_hour_minute_class(type_class):
 
     return(week_group,hour_minute_group)
 
-def get_time_slots_labels(dataset,type_class = 1):
+def get_time_slots_labels(dataset,type_class):
 
     # Dict Label to representation 
     week_group,hour_minute_group = get_week_hour_minute_class(type_class)

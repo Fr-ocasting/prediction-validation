@@ -139,11 +139,11 @@ def plot_loss(trainer,location = "top_right"):
     p = figure(title="Loss over Time", x_axis_label='Epochs', y_axis_label='Loss', width=450, height=400)
 
     # Ajout des données à la première figure
-    p.line(np.arange(len(train_loss)), train_loss, 
-           legend_label=f"Training loss:  {'{:.4f}'.format(valid_loss[-1])}",
-           line_width=2, color="blue")
     p.line(np.arange(len(valid_loss)), valid_loss, 
-           legend_label= f"Validation loss: {'{:.4f}'.format(train_loss[-1])}", 
+           legend_label=f"Validation loss:  {'{:.4f}'.format(valid_loss[-1])}",
+           line_width=2, color="blue")
+    p.line(np.arange(len(train_loss)), train_loss, 
+           legend_label= f"Training loss: {'{:.4f}'.format(train_loss[-1])}", 
            line_width=2, color="green")
 
     # Configuration des légendes
@@ -172,21 +172,21 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     n = len(pi_cqr.upper)
     
     # PI bands 
-    p.line(np.arange(n), pi_cqr.upper[:,station,0].cpu(), 
+    p.line(np.arange(n), pi_cqr.upper[:,station,0].cpu().numpy(), 
            legend_label=f"PI \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}", 
            line_dash="dashed", line_width=1, color="green")
-    p.line(np.arange(n), pi_cqr.lower[:,station,0].cpu(), line_dash="dashed", line_width=1, color="green")
+    p.line(np.arange(n), pi_cqr.lower[:,station,0].cpu().numpy(), line_dash="dashed", line_width=1, color="green")
     # ...
     
     # Quantile Band
-    p.line(np.arange(n), pi.upper[:,station,0].cpu(), 
+    p.line(np.arange(n), pi.upper[:,station,0].cpu().numpy(), 
            legend_label=f"Quantile  {args.alpha/2} - {1-args.alpha/2} \n PICP: {str_picp} \n MPIW: {str_mpiw}", 
            line_dash="dashed", line_width=1, color="red")
-    p.line(np.arange(n), pi.lower[:,station,0].cpu(),line_dash="dashed", line_width=1, color="red")    
+    p.line(np.arange(n), pi.lower[:,station,0].cpu().numpy(),line_dash="dashed", line_width=1, color="red")    
     # ...
     
     # True Value: 
-    p.line(np.arange(n), Y_true[:,station,0].cpu(), legend_label="True Value", line_width=2, color="blue")
+    p.line(np.arange(n), Y_true[:,station,0].cpu().numpy(), legend_label="True Value", line_width=2, color="blue")
     # ...
     
     p.legend.location = location
