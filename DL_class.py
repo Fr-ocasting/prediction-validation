@@ -205,7 +205,7 @@ class Trainer(object):
 
                 # Keep track on metrics 
                 nb_samples += x_b.shape[0]
-                loss_epoch += loss.item()*nb_samples
+                loss_epoch += loss.item()*x_b.shape[0]
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
     def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',week_group = None, hour_group = None):
@@ -397,6 +397,7 @@ class DataSet(object):
             if minmaxnorm:
                 tmps_df = self.init_df[:int(train_prop*self.length)]  # Slicing to comput min max on training df
                 if invalid_dates is not None:
+                    invalid_dates = invalid_dates.intersection(tmps_df.index)
                     tmps_df = tmps_df.drop(invalid_dates)
                 self.mini = tmps_df.min()
                 self.maxi = tmps_df.max()
