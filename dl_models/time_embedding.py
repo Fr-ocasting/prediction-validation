@@ -14,16 +14,22 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,nb_words_embedding,embedding_dim,embedding_with_dense_layer = True):
+    def __init__(self,nb_words_embedding,embedding_dim,type_calendar,embedding_with_dense_layer = True):
         super(TimeEmbedding, self).__init__()
         self.nb_words = nb_words_embedding
         self.embedding_with_dense_layer = embedding_with_dense_layer
+        self.type_calendar = type_calendar
 
         if embedding_with_dense_layer:
             self.embedding = nn.Linear(self.nb_words,embedding_dim)
         else: 
             self.embedding = nn.Embedding(self.nb_words,embedding_dim)
-    def forward(self,elt): 
+    def forward(self,elt,mapping_tensor = None): 
+        if self.type_calendar == 'tuple':
+            elt = mapping_tensor[elt.long()].to(elt)
+            print('elt size: ',elt.size,'\n', elt)
+            nlinlkh
+
         if self.embedding_with_dense_layer:
             one_hot_encodding_matrix = nn.functional.one_hot(elt.long().squeeze(),num_classes =self.nb_words).to(elt).float()
             z = self.embedding(one_hot_encodding_matrix)

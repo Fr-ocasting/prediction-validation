@@ -11,7 +11,6 @@ from DL_class import DataSet
 # Function 
 # ======================================================
 
-
 # Load DataSet object and Sequences : 
 def load_normalized_dataset(df,time_step_per_hour,train_prop,step_ahead,H,D,W,invalid_dates=[]):
 

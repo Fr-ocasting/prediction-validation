@@ -1,13 +1,15 @@
 import numpy as np
 import torch 
 import torch.nn as nn 
+import pandas as pd
+from datetime import datetime 
 from torch.optim import SGD,Adam,AdamW
 
 # Personnal import: 
 from load_adj import load_adj
 from config import optimizer_specific_lr, get_config_embed, get_parameters,display_config
 from calendar_class import get_time_slots_labels
-from load_DataSet_subway_15 import load_normalized_dataset
+from load_DataSet import load_normalized_dataset
 from DL_class import DictDataLoader,QuantileLoss
 
 # Models : 
@@ -18,28 +20,45 @@ from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 
-def load_all(subway_in,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates,
+
+
+def load_all(folder_path,file_name,args,step_ahead,H,D,W,
              embedding_dim=2,position = 'input',single_station = False):
     ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
-    df = subway_in[['Ampère Victor Hugo']] if single_station else subway_in
+    df,invalid_dates,time_step_per_hour = load_raw_data(folder_path,file_name,single_station = False)
+
     dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding = data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates)
 
     # Time Embedding Config
     config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding,embedding_dim = embedding_dim,position = position)
-    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
+    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding') if args.time_embedding else None
     # Print config :
     display_config(args,args_embedding)
+
     # Quantile Loss
     loss_function = get_loss(args.loss_function_type,args)
 
     # Load Model
-    model = load_model(args,args_embedding).to(args.device)
+    model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
 
     # Config optimizer:
     optimizer = choose_optimizer(model,args)
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
 
+
+def load_raw_data(folder_path,file_name,single_station = False,):
+    if file_name == 'preprocessed_subway_15_min.csv':
+        subway_in = pd.read_csv(folder_path+file_name,index_col = 0)
+        subway_in.columns.name = 'Station'
+        subway_in.index = pd.to_datetime(subway_in.index)
+
+        subway_in = subway_in[['Ampère Victor Hugo']] if single_station else subway_in
+        # Invalid dates : 
+        time_step_per_hour = (60*60)/(subway_in.iloc[1].name - subway_in.iloc[0].name).seconds
+        invalid_dates = pd.date_range(datetime(2019,4,23,14),datetime(2019,4,28,14),freq = f'{60/time_step_per_hour}min')
+        print(f"coverage period: {subway_in.index.min()} - {subway_in.index.max()}")
+        return(subway_in,invalid_dates,time_step_per_hour)
 
 
 def get_dic_results(trainer,pi):
@@ -55,7 +74,7 @@ def get_dic_results(trainer,pi):
 def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,step_ahead,H,D,W,invalid_dates)
     print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
-    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class)
+    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
     data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = 'classic', shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
     data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
 
@@ -89,7 +108,7 @@ def get_loss(loss_function_type,args = None):
 
 def choose_optimizer(model,args):
     # Training and Calibration :
-    specific_lr = optimizer_specific_lr(model,args) if args.specific_lr else None
+    specific_lr = optimizer_specific_lr(model,args) if ((args.specific_lr) and (args.time_embedding)) else None
 
     if args.optimizer == 'adam':
         if specific_lr is not None: 
@@ -110,7 +129,7 @@ def choose_optimizer(model,args):
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 
 
-def load_model(args,args_embedding):
+def load_model(args,args_embedding,dic_class2rpz):
     if args.model_name == 'CNN': 
         model = CNN(args.c_in, args.H_dims, args.C_outs, kernel_size = (2,), L=args.seq_length, padding = args.padding,dropout = args.dropout,args_embedding = args_embedding)
     if args.model_name == 'MTGNN': 
@@ -148,9 +167,9 @@ def load_model(args,args_embedding):
         args.gso = torch.from_numpy(gso).to(args.device)
 
         if args.graph_conv_type == 'cheb_graph_conv':
-            model = STGCNChebGraphConv(args, blocks, args.num_nodes,args_embedding = args_embedding).to(args.device)
+            model = STGCNChebGraphConv(args, blocks, args.num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
         else:
-            model = STGCNGraphConv(args, blocks, args.num_nodes,args_embedding = args_embedding).to(args.device)
+            model = STGCNGraphConv(args, blocks, args.num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.seq_length + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.seq_length} \n you need to increase temporal dimension or add padding in STGCN_layer"
         print(f"Ko: {Ko}, enable padding: {args.enable_padding}")

@@ -492,10 +492,10 @@ class DataSet(object):
             self.Days = Days
             self.Weeks = Weeks
              
-            self.shift_from_first_elmt = max(Weeks*24*7*self.time_step_per_hour,
+            self.shift_from_first_elmt = int(max(Weeks*24*7*self.time_step_per_hour,
                                     Days*24*self.time_step_per_hour,
                                     historical_len+step_ahead-1
-                                    )
+                                    ))
             
             # Get the shifted "Dates" of Feature Vector and Target
             (shifted_values,shifted_dates) = self.shift_data(step_ahead,historical_len,Weeks,Days)

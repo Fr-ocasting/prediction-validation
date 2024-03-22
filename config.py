@@ -33,7 +33,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         dropout = [0.2],calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
-                        num_nodes = 40, n_his=8, n_pred = 1, time_intvl = 5, Kt = 3, stblock_num=2,act_func=['glu','gtu'],Ks = [3,2],
+                        num_nodes = 40, n_his=8, n_pred = 1, time_intvl = 5, Kt = 3, stblock_num=2,act_fun=['glu','gtu'],Ks = [3,2],
                         graph_conv_type = ['cheb_graph_conv', 'graph_conv'],gso_type = ['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj'],
                         enable_bias = 'True',out_dim = 2,adj_type = 'dist',enable_padding = True,
 
@@ -86,6 +86,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['quantile_method'] =  'weekday_hour' # 'classic'
     config['calendar_class'] = 3
     config['specific_lr'] = [True, False]
+    config['time_embedding'] = True
+    config['type_calendar'] = 'class_of_tuple'
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     return(config)
     
@@ -138,12 +140,14 @@ def get_parameters(config,description = None ):
 
 
 def display_config(args,args_embedding):
+    # Args 
     optimizer = f"Optimizer: {args.optimizer}"
     lr = 'A specific LR by layer is used' if args.specific_lr else 'The same LR is used for each layer'
     calendar_class = f"Calendar class: {args.calendar_class}"
     quantile_method = f"Quantile Method: {args.quantile_method}"
 
-    encoding = f"Encoding dimension: {args_embedding.nb_words_embedding}. Is related to Dictionnary size of the Temporal Embedding Layer"
-    embedding_dim = f"Embedding dimension: {args_embedding.embedding_dim}"
-    position = f"Position of the Embedding layer: {args_embedding.position}"
-    print(f"Model : {args.model_name} \n {optimizer} \n {lr} \n {calendar_class} \n {quantile_method} \n {encoding} \n {embedding_dim} \n {position} ")
+    # Args Embedding 
+    encoding = f"Encoding dimension: {args_embedding.nb_words_embedding}. Is related to Dictionnary size of the Temporal Embedding Layer \n " if args.time_embedding else '' 
+    embedding_dim = f"Embedding dimension: {args_embedding.embedding_dim} \n " if args.time_embedding else '' 
+    position = f"Position of the Embedding layer: {args_embedding.position}" if args.time_embedding else '' 
+    print(f"Model : {args.model_name} \n {optimizer} \n {lr} \n {calendar_class} \n {quantile_method} \n {encoding} {embedding_dim} {position} ")

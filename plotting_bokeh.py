@@ -12,8 +12,13 @@ from DL_class import PI_object
 def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_path,trial_save,station = 0):
     pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station = station)
     p2 = plot_loss(trainer)
-    p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz)
+    
+    if args.time_embedding:
+        p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz)
+    else:
+        p3 = None
     combine_bokeh(p1,p2,p3,save_path,trial_save)
+
     return(pi,pi_cqr)
 
 
@@ -196,8 +201,9 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
 
 def combine_bokeh(p1,p2,p3,save_path,trial_save):
     # Affichage côte à côte
-    l1 = column(p1, p2)
-    l = row(l1,p3)
+    l = column(p1, p2)
+    if p3 is not None:
+        l = row(l,p3)
     # Affichage de la figure
     show(l)
     # Pour sauvegarder en HTML (assurez-vous de mettre à jour 'name_save' avec votre nom de fichier désiré)

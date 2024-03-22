@@ -27,11 +27,11 @@ class STGCNChebGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex,args_embedding = None):
+    def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz=None):
         super(STGCNChebGraphConv, self).__init__()
         modules = []
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
         Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
         if args.enable_padding:
@@ -43,7 +43,7 @@ class STGCNChebGraphConv(nn.Module):
         self.Ko = Ko
     
         if self.Ko > 1:
-            self.output = layers.OutputBlock(Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_func, args.enable_bias, args.dropout)
+            self.output = layers.OutputBlock(Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_fun, args.enable_bias, args.dropout)
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=blocks[-3][-1], out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)
@@ -54,7 +54,8 @@ class STGCNChebGraphConv(nn.Module):
 
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar)
+            self.mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
             self.Tembedding_position = args_embedding.position
 
     def forward(self, x, time_elt = None):
@@ -65,7 +66,7 @@ class STGCNChebGraphConv(nn.Module):
 
         if time_elt is not None:
             if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
 
@@ -77,7 +78,7 @@ class STGCNChebGraphConv(nn.Module):
         B,C,L,N = x.size()
         if time_elt is not None:
             if self.Tembedding_position == 'output': 
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = 2)
 
@@ -115,11 +116,11 @@ class STGCNGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex,args_embedding = None):
+    def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz =None):
         super(STGCNGraphConv, self).__init__()
         modules = []
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
         Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
 
@@ -132,7 +133,7 @@ class STGCNGraphConv(nn.Module):
         # ----
         self.Ko = Ko
         if self.Ko > 1:
-            self.output = layers.OutputBlock(Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_func, args.enable_bias, args.dropout)
+            self.output = layers.OutputBlock(Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_fun, args.enable_bias, args.dropout)
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=blocks[-3][-1], out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)
@@ -142,7 +143,8 @@ class STGCNGraphConv(nn.Module):
             self.do = nn.Dropout(p=args.dropout)
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar)
+            self.mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
             self.Tembedding_position = args_embedding.position
 
     def forward(self, x,time_elt = None):
@@ -152,7 +154,7 @@ class STGCNGraphConv(nn.Module):
     
         if time_elt is not None:
             if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
 
@@ -165,7 +167,7 @@ class STGCNGraphConv(nn.Module):
         B,C,L,N = x.size() 
         if time_elt is not None:
             if self.Tembedding_position == 'output':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = 2)
 
