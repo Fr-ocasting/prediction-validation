@@ -54,8 +54,8 @@ class STGCNChebGraphConv(nn.Module):
 
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar)
-            self.mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor)
             self.Tembedding_position = args_embedding.position
 
     def forward(self, x, time_elt = None):
@@ -66,7 +66,7 @@ class STGCNChebGraphConv(nn.Module):
 
         if time_elt is not None:
             if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
 
@@ -78,7 +78,7 @@ class STGCNChebGraphConv(nn.Module):
         B,C,L,N = x.size()
         if time_elt is not None:
             if self.Tembedding_position == 'output': 
-                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = 2)
 
@@ -143,8 +143,8 @@ class STGCNGraphConv(nn.Module):
             self.do = nn.Dropout(p=args.dropout)
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar)
-            self.mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor)
             self.Tembedding_position = args_embedding.position
 
     def forward(self, x,time_elt = None):
@@ -154,7 +154,7 @@ class STGCNGraphConv(nn.Module):
     
         if time_elt is not None:
             if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
 
@@ -167,7 +167,7 @@ class STGCNGraphConv(nn.Module):
         B,C,L,N = x.size() 
         if time_elt is not None:
             if self.Tembedding_position == 'output':
-                time_elt = self.Tembedding(time_elt,self.mapping_tensor)   # [B,1] -> [B,embedding_dim]
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = 2)
 

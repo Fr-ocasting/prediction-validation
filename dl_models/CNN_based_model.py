@@ -4,22 +4,22 @@ import torch
 from dl_models.time_embedding import TimeEmbedding
 
 class CNN(nn.Module):
-    def __init__(self,c_in, H_dims, C_outs, kernel_size, L, padding = 0, dilation = 1, stride = 1, dropout = 0.0,args_embedding = None):
+    def __init__(self,args,kernel_size,dilation = 1, stride = 1,args_embedding = None,dic_class2rpz=None):
         super().__init__()
     
-        self.c_out = C_outs[-1]
-        self.dropout = nn.Dropout(dropout)
+        self.c_out = args.C_outs[-1]
+        self.dropout = nn.Dropout(args.dropout)
 
         # List of Conv
-        self.Convs = nn.ModuleList([nn.Conv1d(c_in_, c_out_, kernel_size,padding=padding,dilation=dilation) for c_in_,c_out_ in zip([c_in]+H_dims[:-1], H_dims)])
+        self.Convs = nn.ModuleList([nn.Conv1d(c_in_, c_out_, kernel_size,padding=args.padding,dilation=dilation) for c_in_,c_out_ in zip([args.c_in]+args.H_dims[:-1], args.H_dims)])
 
         # Calculate the last dim of the sequence : 
         if args_embedding is not None:
                 if args_embedding.position == 'input':
-                    L = L+args_embedding.embedding_dim
+                    L = args.seq_length+args_embedding.embedding_dim
 
-        l_out_add = (2*padding - dilation*(kernel_size[0]-1) -1)/stride + 1
-        l_out = int(L/stride**len(H_dims) + sum([l_out_add/stride**k for k in range(len(H_dims))]))
+        l_out_add = (2*args.padding - dilation*(kernel_size[0]-1) -1)/stride + 1
+        l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
 
         if args_embedding is not None:
                 if args_embedding.position == 'output':
@@ -33,12 +33,12 @@ class CNN(nn.Module):
         self.flatten = nn.Flatten()
 
         # Output Module (traditionnaly 1 or 2 linear layers)
-        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*H_dims[-1]]+C_outs[:-1], C_outs)])
+        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*args.H_dims[-1]]+args.C_outs[:-1], args.C_outs)])
 
         if args_embedding is not None:
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim)
+            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor)
             self.Tembedding_position = args_embedding.position
-    
     def forward(self,x,time_elt = None):
         if len(x.shape) == 3:
             B,N,L = x.shape

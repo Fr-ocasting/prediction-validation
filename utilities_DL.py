@@ -131,7 +131,7 @@ def choose_optimizer(model,args):
 
 def load_model(args,args_embedding,dic_class2rpz):
     if args.model_name == 'CNN': 
-        model = CNN(args.c_in, args.H_dims, args.C_outs, kernel_size = (2,), L=args.seq_length, padding = args.padding,dropout = args.dropout,args_embedding = args_embedding)
+        model = CNN(args, kernel_size = (2,),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 

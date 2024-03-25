@@ -14,27 +14,48 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,nb_words_embedding,embedding_dim,type_calendar,embedding_with_dense_layer = True):
+    def __init__(self,nb_words_embedding,embedding_dim,type_calendar,mapping_tensor,embedding_with_dense_layer = True):
         super(TimeEmbedding, self).__init__()
         self.nb_words = nb_words_embedding
         self.embedding_with_dense_layer = embedding_with_dense_layer
         self.type_calendar = type_calendar
+        self.mapping_tensor = mapping_tensor
 
-        if embedding_with_dense_layer:
-            self.embedding = nn.Linear(self.nb_words,embedding_dim)
-        else: 
-            self.embedding = nn.Embedding(self.nb_words,embedding_dim)
-    def forward(self,elt,mapping_tensor = None): 
         if self.type_calendar == 'tuple':
-            elt = mapping_tensor[elt.long()].to(elt)
-            print('elt size: ',elt.size,'\n', elt)
-            nlinlkh
+            nb_embeddings = mapping_tensor.size(1)
+            self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
+            Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
+            self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,Embedding_dims)])
+            self.output1 = nn.Linear(sum(Embedding_dims),embedding_dim*2)
+            self.output2 = nn.Linear(embedding_dim*2,embedding_dim) 
+            self.relu = nn.ReLU()     
 
-        if self.embedding_with_dense_layer:
-            one_hot_encodding_matrix = nn.functional.one_hot(elt.long().squeeze(),num_classes =self.nb_words).to(elt).float()
-            z = self.embedding(one_hot_encodding_matrix)
-        else: 
-            z = self.embedding(elt)
+        else : 
+            if embedding_with_dense_layer:
+                self.embedding = nn.Linear(self.nb_words,embedding_dim)
+            else: 
+                self.embedding = nn.Embedding(self.nb_words,embedding_dim)
+
+    def forward(self,elt): 
+        if self.type_calendar == 'tuple':
+            elt = self.mapping_tensor[elt.long()].to(elt)
+            concat_z = torch.Tensor().to(elt)
+            for i,emb_layer in enumerate(self.embedding):
+                if len(elt.size()) == 1:    # When there is no batch, but just a  single element
+                    elt = elt.unsqueeze(0) 
+                elt_i = elt[:,i].long().squeeze()
+                one_hot_encodding_matrix = nn.functional.one_hot(elt_i,num_classes =self.dic_sizes[i]).to(elt).float()
+                emb_vector = emb_layer(one_hot_encodding_matrix)
+                concat_z = torch.cat([concat_z,emb_vector],dim=-1) # [B,embedding_dim*len(self.dic_sizes)]
+ 
+            z = self.output2(self.relu(self.output1(concat_z)))
+
+        else : 
+            if self.embedding_with_dense_layer:
+                one_hot_encodding_matrix = nn.functional.one_hot(elt.long().squeeze(),num_classes =self.nb_words).to(elt).float()
+                z = self.embedding(one_hot_encodding_matrix)
+            else: 
+                z = self.embedding(elt)
         return(z)
 
 if False : 

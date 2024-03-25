@@ -55,7 +55,8 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz):
     trainer.model.eval()
     with torch.no_grad():
         for label in labels:
-            x,y = trainer.model.Tembedding(label).cpu().detach().numpy()
+            embeded_vector = trainer.model.Tembedding(label).cpu().detach().numpy()
+            x,y = embeded_vector[0],embeded_vector[1]
             rpz = dic_class2rpz[label.item()]
             X.append(x)
             Y.append(y)
