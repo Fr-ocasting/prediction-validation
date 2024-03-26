@@ -75,9 +75,8 @@ def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,step_ahead,H,D,W,invalid_dates)
     print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
     time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
-    data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = 'classic', shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
-    data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
-
+    data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
+    data_loader = data_loader_obj.get_dictdataloader(args.batch_size,args.K_fold)
 
     # Print Information
     training_set =  f"between {str(remaining_dates.iloc[0].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*args.train_prop)].item())} \

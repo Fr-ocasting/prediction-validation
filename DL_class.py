@@ -99,9 +99,16 @@ class DictDataLoader(object):
         self.calib_prop = calib_prop
         self.time_slots = time_slots
 
-    def train_test_split(self,U,Utarget,time_slots):
-        n = self.U.shape[0]
-        train_idx,valid_idx = int(n*self.train_prop),int(n*(self.train_prop+self.valid_prop))
+    def train_test_split(self,U,Utarget,time_slots,validation = 'classic'):
+        n = U.size(0)
+
+        if validation == 'sliding_window':
+            train_prop,valid_prop  = self.train_prop*1/(self.train_prop+self.valid_prop),self.valid_prop*1/(self.train_prop+self.valid_prop)
+        if validation == 'classic':
+            train_prop,valid_prop  = self.train_prop,self.valid_prop     
+
+        train_idx,valid_idx = int(n*train_prop),int(n*(train_prop+valid_prop))
+
         # Train, Valid, Test set
         train_set,valid_set,test_set = U[:train_idx],U[train_idx:valid_idx],U[valid_idx:]
         # Target set
@@ -110,11 +117,16 @@ class DictDataLoader(object):
         time_slots_train,time_slots_valid,time_slots_test = time_slots[:train_idx], time_slots[train_idx:valid_idx], time_slots[valid_idx:]
         return(train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test)
 
-    def get_one_dataloader(self,U,Utarget,time_slots,batch_size:int):
-        train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test= self.train_test_split(U,Utarget,time_slots)
+    def fill_data_loader_dict(self,set_of_dataset,batch_size, only_test = False):
+        train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test = set_of_dataset
+
         if self.calib_prop is None: 
-            for dataset,target,L_time_slot,training_mode in zip([train_set,valid_set,test_set],[train_target,valid_target,test_target],[time_slots_train,time_slots_valid,time_slots_test],['train','validate','test']):
-                    self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))
+            if only_test :
+                Sequences,Targets,Time_slots_list,Names = [test_set],[test_target],[time_slots_test],['test']
+            else:
+                Sequences,Targets,Time_slots_list,Names = [train_set,valid_set,test_set],[train_target,valid_target,test_target],[time_slots_train,time_slots_valid,time_slots_test],['train','validate','test']
+            for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
+                    self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None
         else : 
             indices = torch.randperm(train_set.size(0))
             split = int(train_set.size(0)*self.calib_prop)
@@ -122,147 +134,75 @@ class DictDataLoader(object):
             calib_set_x,calib_set_y = train_set[indices[split:]],train_target[indices[split:]]
             time_slots_proper,time_slots_calib = time_slots_train[indices[:split]], time_slots_train[indices[split:]]
 
-            for dataset,target,L_time_slot,training_mode in zip([proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],[time_slots_proper,time_slots_valid,time_slots_test,time_slots_calib],['train','validate','test','cal']):
-                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False))         
+            if only_test :
+                Sequences,Targets,Time_slots_list,Names = [test_set],[test_target],[time_slots_test],['test']
+            else:
+                Sequences,Targets,Time_slots_list,Names = [proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],[time_slots_proper,time_slots_valid,time_slots_test,time_slots_calib],['train','validate','test','cal']
+
+            for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
+                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None   
+
+    def get_one_dataloader(self,U,Utarget,time_slots,batch_size:int, k = None, K_fold = None, validation = 'classic'):
+        # Il faut gérer les train_prop / valid_prop / calib_prop
+        # Dans le cas de la sliding window, il me faut train_prop + valid_prop = 1  car on ne veut pas de test.
+
+
+        set_of_dataset = self.train_test_split(U,Utarget,time_slots,validation = 'classic')
+
+        if validation == 'sliding_window': 
+            n = U.size(0)
+            U_sliced,Utarget_sliced,time_slots_sliced = U[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],Utarget[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],time_slots[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
+            set_of_sliced_dataset= self.train_test_split(U_sliced,Utarget_sliced,time_slots_sliced,validation)
+
+            # Add full Test DataLoader and a sliced DataLoader
+            self.fill_data_loader_dict(set_of_sliced_dataset,batch_size, only_test = False)
+            self.fill_data_loader_dict(set_of_dataset,batch_size, only_test = True)      
+                
+        elif validation == 'classic':
+            self.fill_data_loader_dict(set_of_dataset,batch_size,only_test = False)
+
         return(self.dataloader)
     
     def get_dictdataloader(self,batch_size:int, K_fold = None):
         if self.validation == 'classic':
             return(self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size))
 
-        if self.validation == 'blocked': # blocked k fold cross validation
-            n = self.U.size(0)
-            return([self.get_one_dataloader(self.U[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],self.Utarget[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],self.time_slots[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],batch_size) for k in range(K_fold)])
+        if self.validation == 'sliding_window': # blocked k fold cross validation
+            return([self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size,k = k, K_fold= K_fold,validation = self.validation) for k in range(K_fold)])
 
-class Blocked_cross_valid(object):
-        ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None, save_path = None):
-        super().__init__()
-        self.dataloader = dataloader
-        self.training_mode = 'train'
-        self.optimizer = optimizer
-        self.loss_function = loss_function
-        self.models = [model for i in range(dataloader)]
-        self.scheduler = scheduler
-        self.train_loss = []
-        self.valid_loss = []
-        self.calib_loss =[]
-        self.epochs = args.epochs
-        self.device = args.device
-        self.quantile_method = args.quantile_method 
-        self.conformity_scores_type = args.conformity_scores_type
-        self.ray = ray
-        self.args_embedding = args_embedding
-        self.save_path = save_path 
-        self.best_valid = np.inf
+class MultiModelTrainer(object):
+    def __init__(self,model,dataloader_list,args,optimizer,loss_function,scheduler,alpha = None):
+        super(MultiModelTrainer).__init__()
+        self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler) for dataloader in dataloader_list]
+        self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
+        self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
+        self.alpha = alpha 
+        self.picp = []   
+        self.mpiw = []
 
-    def save_best_model(self,checkpoint,epoch):
-        ''' Save best model in .pkl format'''
-        checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
-        torch.save(checkpoint, f"{self.save_path}")    
+    def K_fold_validation(self):
+        for k,trainer in enumerate(self.Trainers):
+            # Train valid model 
+            trainer.train_and_valid()
 
-    def train_and_valid(self,mod = 10, alpha = None,dataset = None):
-        print(f'start training')
-        checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
-        for epoch in range(self.epochs):
-            t0 = time.time()
-            # Train and Valid each epoch 
-            self.training_mode = 'train'
-            self.model.train()   #Activate Dropout 
-            self.loop()
-            self.training_mode = 'validate'
-            self.model.eval()   # Desactivate Dropout 
-            self.loop()
+            # Add Loss 
+            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss)],dim =  -1) 
+            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss)],dim =  -1) 
 
+            # Testing
+            if self.alpha is not None:
+                preds,Y_true,_ = trainer.test_prediction(training_mode = 'test')
+                pi = PI_object(preds,Y_true,self.alpha,type_calib = 'classic',device = self.device)
+                self.picp.append(pi.picp)
+                self.picp.append(pi.mpiw)
 
-            if (self.valid_loss[-1] < self.best_valid) & (self.save_path is not None):
-                self.best_valid = self.valid_loss[-1]
-                self.save_best_model(checkpoint,epoch)
+            print(f"Last Train Loss: {trainer.train_loss[-1]},Last Valid Loss: {trainer.valid_loss[-1]},PICP: {pi.picp}, MPIW: {pi.mpiw}")
+        mean_picp = torch.Tensor(self.picp).mean()
+        mean_mpiw = torch.Tensor(self.mpiw).mean() 
+        mean_last_train_loss = self.Loss_train.mean(dim = -1)[-1]  #.item()
+        mean_last_valid_loss = self.Loss_valid.mean(dim = -1)[-1]  #.item()
+        return(mean_picp,mean_mpiw,mean_last_train_loss,mean_last_valid_loss)       
 
-            # Keep track on Metrics
-            if self.ray : 
-                # Calibration 
-                Q = self.conformal_calibration(alpha,dataset,conformity_scores_type = self.conformity_scores_type,quantile_method = self.quantile_method)  
-                # Testing
-                preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
-                # get PI
-                pi = self.CQR_PI(preds,Y_true,alpha,Q,T_labels)
-                # Report usefull metrics
-                tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
-
-            # Update scheduler after each Epoch 
-            if self.scheduler is not None:
-               self.scheduler.step()
-
-            if epoch%mod==0:
-                print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
-            if epoch == 1:
-                print(f"Estimated time for training: {'{0:.1f}'.format(self.epochs*(time.time()-t0)/60)}min ")
-
-
-    def loop(self,):
-        loss_epoch,nb_samples = 0,0
-        with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b,t_b in self.dataloader[self.training_mode]:
-                x_b,y_b,t_b = x_b.to(self.device),y_b.to(self.device),t_b.to(self.device)
-                #Forward 
-                if self.args_embedding is not None: 
-                    pred = self.model(x_b,t_b.long())
-                else:
-                    pred = self.model(x_b)
-                loss = self.loss_function(pred,y_b)
-
-                # Back propagation (after each mini-batch)
-                if self.training_mode == 'train': 
-                    loss = self.backpropagation(loss)
-
-                # Keep track on metrics 
-                nb_samples += x_b.shape[0]
-                loss_epoch += loss.item()*x_b.shape[0]
-        self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
-
-    def backpropagation(self,loss):
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        return(loss)
-    
-    def test_prediction(self,allow_dropout = False,training_mode = 'test'):
-        self.training_mode = training_mode
-        if allow_dropout:
-            self.model.train()
-        else: 
-            self.model.eval()
-        with torch.no_grad():
-            # Au lieu de          Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]]) // Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
-            data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
-            X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.device)
-            
-            if self.args_embedding is not None: 
-                Pred = self.model(X,T_labels.long())
-            else:
-                Pred = self.model(X) 
-                
-        return(Pred,Y_true,T_labels)
-
-    def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
-        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout)  # Get Normalized Pred and Y_true
-
-        test_pred = dataset.unormalize_tensor(test_pred, device = self.device)
-        Y_true = dataset.unormalize_tensor(Y_true, device = self.device)
-
-        df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
-
-        return(test_pred,Y_true,T_labels,df_metrics)  
-    
-    def update_loss_list(self,loss_epoch,nb_samples,training_mode):
-        if training_mode == 'train':
-            self.train_loss.append(loss_epoch/nb_samples)
-        elif training_mode == 'validate':
-            self.valid_loss.append(loss_epoch/nb_samples)
-        elif training_mode == 'calibrate':
-            self.calib_loss.append(loss_epoch/nb_samples)
-        
 
     
 

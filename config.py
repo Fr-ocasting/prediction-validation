@@ -88,6 +88,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['specific_lr'] = [True, False]
     config['time_embedding'] = True
     config['type_calendar'] = 'class_of_tuple'
+    config['validation'] = 'classic'
+    config['position'] = 'input'
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     return(config)
     
