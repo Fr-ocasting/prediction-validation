@@ -18,7 +18,8 @@ def load_normalized_dataset(df,time_step_per_hour,train_prop,step_ahead,H,D,W,in
     dataset = DataSet(df,time_step_per_hour=time_step_per_hour)
 
     # MinMax Normalize, without taking into account the invalid_dates
-    dataset.normalize_df(train_prop,invalid_dates)
+    dataset.remove_invalid_dates(dataset.init_df,invalid_dates)
+    dataset.normalize_df(train_prop,minmaxnorm=True)
 
     # Built Feature Vector 
     (U,Utarget,df_verif) = dataset.get_feature_vect(step_ahead,H,D,W)

@@ -171,9 +171,9 @@ class DictDataLoader(object):
             return([self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size,k = k, K_fold= K_fold,validation = self.validation) for k in range(K_fold)])
 
 class MultiModelTrainer(object):
-    def __init__(self,model,dataloader_list,args,optimizer,loss_function,scheduler,alpha = None):
+    def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,alpha = None):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler) for dataloader in dataloader_list]
+        self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding) for dataloader,model,optimizer in zip(dataloader_list,model_list,optimizer_list)]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = alpha 
@@ -183,25 +183,29 @@ class MultiModelTrainer(object):
     def K_fold_validation(self):
         for k,trainer in enumerate(self.Trainers):
             # Train valid model 
-            trainer.train_and_valid()
+            print(f"K_fold {k}")
+            trainer.train_and_valid(mod = 10000)
 
             # Add Loss 
-            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss)],dim =  -1) 
-            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss)],dim =  -1) 
-
+            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).unsqueeze(0)],axis =  0) 
+            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss).unsqueeze(0)],axis =  0) 
             # Testing
             if self.alpha is not None:
                 preds,Y_true,_ = trainer.test_prediction(training_mode = 'test')
-                pi = PI_object(preds,Y_true,self.alpha,type_calib = 'classic',device = self.device)
+                pi = PI_object(preds,Y_true,self.alpha,type_calib = 'classic')
                 self.picp.append(pi.picp)
-                self.picp.append(pi.mpiw)
+                self.mpiw.append(pi.mpiw)
 
             print(f"Last Train Loss: {trainer.train_loss[-1]},Last Valid Loss: {trainer.valid_loss[-1]},PICP: {pi.picp}, MPIW: {pi.mpiw}")
         mean_picp = torch.Tensor(self.picp).mean()
         mean_mpiw = torch.Tensor(self.mpiw).mean() 
-        mean_last_train_loss = self.Loss_train.mean(dim = -1)[-1]  #.item()
-        mean_last_valid_loss = self.Loss_valid.mean(dim = -1)[-1]  #.item()
-        return(mean_picp,mean_mpiw,mean_last_train_loss,mean_last_valid_loss)       
+        assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
+        mean_last_train_loss = self.Loss_train.mean(dim = 0)[-1]  #.item()
+        mean_last_valid_loss = self.Loss_valid.mean(dim = 0)[-1]  #.item()
+
+        min_mean_train_loss = self.Loss_train.mean(dim = 0).min()  #.item()
+        min_mean_valid_loss = self.Loss_valid.mean(dim = 0).min()  #.item()
+        return(mean_picp,mean_mpiw,mean_last_train_loss,mean_last_valid_loss,min_mean_train_loss,min_mean_valid_loss)       
 
 
     
@@ -421,7 +425,15 @@ class Trainer(object):
 
 
 class DataSet(object):
-    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,df_train = None):
+    '''
+    attributes
+    -------------
+    df : contain the current df you are working on. It's the full df, normalized or not
+    init_df : contain the initial df, no normalized. It's the full initial dataset.
+    cleaned_df : contain the init_df, without the invalid_dates
+    df_train : contain the train_prop fist % of the cleaned_df 
+    '''
+    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,df_train = None,cleaned_df = None):
         self.length = len(df)
         self.df = df
         self.columns = df.columns
@@ -466,41 +478,58 @@ class DataSet(object):
         self.Weeks = None
         self.Days = None
         self.historical_len = None
+        self.cleaned_df = cleaned_df
         
     def bijection_name_indx(self):
         colname2indx = {c:k for k,c in enumerate(self.columns)}
         indx2colname = {k:c for k,c in enumerate(self.columns)}
         return(colname2indx,indx2colname)
     
-    def minmaxnorm(self,x):
-        return(x-self.mini)/(self.maxi-self.mini)
+    def minmaxnorm(self,x,reverse = False):
+        if reverse:
+            x = x*(self.maxi - self.mini) +self.mini
+        else :
+            x = (x-self.mini)/(self.maxi-self.mini)
+        return x 
     
-    def normalize_df(self, train_prop, invalid_dates = None, minmaxnorm = True):
-        if self.normalized:
-            print('The df might be already normalized')
+    def remove_invalid_dates(self,tmps_df,invalid_dates):
+        if invalid_dates is not None:
+            invalid_dates = invalid_dates.intersection(tmps_df.index)
+            tmps_df = tmps_df.drop(invalid_dates)
+        self.cleaned_df = tmps_df
+        return(self.cleaned_df)
+    
+    def minmax_normalize_df(self,tmps_df):
+        self.mini = tmps_df.min()
+        self.maxi = tmps_df.max()
+        self.mean = tmps_df.mean()
+
+        # Keep track on data used for training : 
+        self.df_train = tmps_df
+
+        # Normalize : 
+        normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
+
+        # Update state : 
+        self.df = normalized_df
+        self.normalized = True
+
+    def normalize_df(self, train_prop,minmaxnorm = True):
+        assert self.normalized == False, 'Dataframe might be already normalized'
+        tmps_df = self.cleaned_df if self.cleaned_df is not None else self.init_df
+        tmps_df = tmps_df[:int(train_prop*self.length)]  # Slicing to compute min max on training df
+
+        if minmaxnorm:
+            self.minmax_normalize_df(tmps_df)
         else:
-            if minmaxnorm:
-                tmps_df = self.init_df[:int(train_prop*self.length)]  # Slicing to comput min max on training df
-                if invalid_dates is not None:
-                    invalid_dates = invalid_dates.intersection(tmps_df.index)
-                    tmps_df = tmps_df.drop(invalid_dates)
-                self.mini = tmps_df.min()
-                self.maxi = tmps_df.max()
-                self.mean = tmps_df.mean()
+            raise Exception('Normalization has not been coded')
+        
+    def unormalize_df(self,minmaxnorm):
+        assert self.normalized == True, 'Dataframe might be already UN-normalized'
+        if minmaxnorm:
+            self.df = self.minmaxnorm(self.df,reverse = True)
+        self.normalized = False
 
-                # Keep track on data used for training : 
-                self.df_train = tmps_df
-
-                # Normalize : 
-                normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
-
-                # Update state : 
-                self.df = normalized_df
-                self.normalized = True
-    
-    def normalize_tensor(self, minmaxnorm = True):
-        if self.normalized:
-            print('The df might be already normalized')
 
     def remove_indices(self,invalid_indices_tensor):
         ''' Remove the invalid sequences matching to invalid dates.
@@ -515,6 +544,54 @@ class DataSet(object):
         self.Utarget = self.Utarget[selected_indices]
         self.remaining_dates = self.df_verif.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
         return(self.U,self.Utarget,self.remaining_dates)
+    
+    def split_K_fold(self,K_fold,train_prop,valid_prop,normalized):
+        '''
+        Split la DataSet Initiale en K-fold
+
+        Problème : 
+        Lors qu'on utilise la methode 
+            'get_feature_vect'   (pour obtenir les sequences sur toute la DataFrame)
+        Il va y avoir un shift de 1 semaine (si w = 1), et donc tout va se passer comme si la première semaine de chaque fold était à chaque fois impossible à prédire.
+        - - - Maintenant, si on ajoute cette semaine là dans le dataset, cela veut dire qu'il faut la compter dans les données pour la Normaliser - - - 
+        En fait, avec la sliding-windows, on perd % = = = = K-fold * Semaine de prédiction= = = = %
+
+        1- Lors de la boucle sur les K-fold, il faudrait non pas prendre df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)] 
+           Mais plutôt df[int((k/K_fold)*n)-1 semaine:int(((k+1)/K_fold)*n)]  (- le décalage max).
+
+        2 - On devra alors utiliser dataset.normalize_df sur chacun des dataset
+            en précisant une train_prop = train_prop * 1/(train_prop + Valid_prop), puisqu'on ne voudra pas garder de test_set à côté. (il est déjà conservé sur Novembre/Decembre)
+
+
+        3 - 'get_feature_vect' et les autres sont ensuite bon.  
+            On va ensuite passer dans 'get_invalid_indx'  puis dans  'remove_indices' pour supprimer les séquences qui nous dérange.
+
+        4 - Puis on fera des DataLoader + .get_dict_data_loader()
+
+
+        '''
+        Datasets = []
+        # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
+        df = self.df
+
+        # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
+        df = df[:int((train_prop+valid_prop)*len(df))]  
+
+        # Récupère la Taille de cette DataFrame
+        n = len(df)
+
+        # Découpe la dataframe en K_fold 
+        for k in K_fold:
+            # Slicing 
+            df_tmps = df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
+            # Récupération d'une dataset associée 
+            dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = None,df_train = None)
+            # Ajoute l'objet Dataset-k à la liste 
+            Datasets.append(dataset_tmps)
+
+        return(Datasets)
+
+
 
     def unormalize(self,timeserie):
         if not(self.normalized):

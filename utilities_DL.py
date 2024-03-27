@@ -20,8 +20,6 @@ from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 
-
-
 def load_all(folder_path,file_name,args,step_ahead,H,D,W,
              embedding_dim=2,position = 'input',single_station = False):
     ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
@@ -39,12 +37,23 @@ def load_all(folder_path,file_name,args,step_ahead,H,D,W,
     loss_function = get_loss(args.loss_function_type,args)
 
     # Load Model
-    model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
-
-    # Config optimizer:
-    optimizer = choose_optimizer(model,args)
+    if type(data_loader) == list:
+        model,optimizer = [],[]
+        for i in range(len(data_loader)):
+            mod,opt = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+            model.append(mod)
+            optimizer.append(opt)
+    else:
+        model,optimizer = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
+
+
+def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
+    model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
+    # Config optimizer:
+    optimizer = choose_optimizer(model,args)
+    return(model,optimizer)
 
 
 def load_raw_data(folder_path,file_name,single_station = False,):
