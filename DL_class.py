@@ -85,7 +85,8 @@ class DictDataLoader(object):
     args
     -----
     validation -> classic (basic one, with train_prop first percent of the dataset for training) 
-                  blocked (for Blocked K-fold Cross validation)
+                  wierd_blocked (for Blocked K-fold Cross validation)
+                  sliding_window (for K-fold sliding wodw Validation, there is no Testing set, so there is a modification on train_prop, valid_prop)
     '''
     def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None,time_slots = None):
         super().__init__()
@@ -99,10 +100,10 @@ class DictDataLoader(object):
         self.calib_prop = calib_prop
         self.time_slots = time_slots
 
-    def train_test_split(self,U,Utarget,time_slots,validation = 'classic'):
+    def train_test_split(self,U,Utarget,time_slots,validation):
         n = U.size(0)
 
-        if validation == 'sliding_window':
+        if (validation == 'wierd_blocked') | (validation == 'sliding_window'):
             train_prop,valid_prop  = self.train_prop*1/(self.train_prop+self.valid_prop),self.valid_prop*1/(self.train_prop+self.valid_prop)
         if validation == 'classic':
             train_prop,valid_prop  = self.train_prop,self.valid_prop     
@@ -149,7 +150,7 @@ class DictDataLoader(object):
 
         set_of_dataset = self.train_test_split(U,Utarget,time_slots,validation)
 
-        if validation == 'sliding_window': 
+        if validation == 'wierd_blocked': 
             n = U.size(0)
             U_sliced,Utarget_sliced,time_slots_sliced = U[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],Utarget[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],time_slots[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
             set_of_sliced_dataset= self.train_test_split(U_sliced,Utarget_sliced,time_slots_sliced,validation)
@@ -158,16 +159,16 @@ class DictDataLoader(object):
             self.fill_data_loader_dict(set_of_sliced_dataset,batch_size, only_test = False)
             self.fill_data_loader_dict(set_of_dataset,batch_size, only_test = True)      
                 
-        elif validation == 'classic':
+        elif (validation == 'classic')|(validation == 'sliding_window'):
             self.fill_data_loader_dict(set_of_dataset,batch_size,only_test = False)
 
         return(self.dataloader)
     
     def get_dictdataloader(self,batch_size:int, K_fold = None):
-        if self.validation == 'classic':
-            return(self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size))
+        if (self.validation == 'classic')|(self.validation == 'sliding_window'):
+            return(self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size,validation = self.validation))
 
-        if self.validation == 'sliding_window': # blocked k fold cross validation
+        if self.validation == 'wierd_blocked': # blocked k fold cross validation
             return([self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size,k = k, K_fold= K_fold,validation = self.validation) for k in range(K_fold)])
 
 class MultiModelTrainer(object):
@@ -492,12 +493,15 @@ class DataSet(object):
             x = (x-self.mini)/(self.maxi-self.mini)
         return x 
     
-    def remove_invalid_dates(self,tmps_df,invalid_dates):
+    def remove_invalid_dates(self,tmps_df,invalid_dates,full_df  =True, train_df = False):
         if invalid_dates is not None:
             invalid_dates = invalid_dates.intersection(tmps_df.index)
             tmps_df = tmps_df.drop(invalid_dates)
-        self.cleaned_df = tmps_df
-        return(self.cleaned_df)
+        if full_df:
+            self.cleaned_df = tmps_df
+        if train_df:
+            self.remaining_train = tmps_df
+        return(tmps_df)
     
     def minmax_normalize_df(self,tmps_df):
         self.mini = tmps_df.min()
@@ -514,13 +518,14 @@ class DataSet(object):
         self.df = normalized_df
         self.normalized = True
 
-    def normalize_df(self, train_prop,minmaxnorm = True):
+    def normalize_df(self, train_prop,invalid_dates = None,minmaxnorm = True):
         assert self.normalized == False, 'Dataframe might be already normalized'
-        tmps_df = self.cleaned_df if self.cleaned_df is not None else self.init_df
-        tmps_df = tmps_df[:int(train_prop*self.length)]  # Slicing to compute min max on training df
+        
+        self.train_df = self.df[:int(train_prop*self.length)]  # Slicing to get train_df
+        self.remove_invalid_dates(self.train_df,invalid_dates,full_df = False,train_df = True)  # remove invalid_dates from train_df
 
         if minmaxnorm:
-            self.minmax_normalize_df(tmps_df)
+            self.minmax_normalize_df(self.remaining_train)
         else:
             raise Exception('Normalization has not been coded')
         
@@ -545,7 +550,7 @@ class DataSet(object):
         self.remaining_dates = self.df_verif.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
         return(self.U,self.Utarget,self.remaining_dates)
     
-    def split_K_fold(self,K_fold,train_prop,valid_prop,normalized):
+    def split_K_fold(self,K_fold,train_prop,valid_prop,validation,normalized,invalid_dates = None):
         '''
         Split la DataSet Initiale en K-fold
 
@@ -583,11 +588,24 @@ class DataSet(object):
         # Découpe la dataframe en K_fold 
         for k in range(K_fold):
             # Slicing 
-            df_tmps = df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
-            # Récupération d'une dataset associée 
+            if validation == 'wierd_blocked':
+                df_tmps = df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
+
+            if validation == 'sliding_window':
+                width_dataset = int(n/(1+(K_fold-1)*valid_prop/(train_prop+valid_prop)))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
+                init_pos = int(k*(valid_prop/(train_prop+valid_prop))*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
+                if k == K_fold - 1:
+                    df_tmps = df[init_pos:]             
+                else:
+                    df_tmps = df[init_pos:init_pos+width_dataset]                   
+
+            # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = self.time_step_per_hour,df_train = None)
-            dataset_tmps.normalize_df(train_prop*1/(train_prop+valid_prop),minmaxnorm = True)
-            # Ajoute l'objet Dataset-k à la liste 
+
+            # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train, et on récupère le Min/Max du remaining_train
+            dataset_tmps.normalize_df(train_prop*1/(train_prop+valid_prop),invalid_dates = invalid_dates, minmaxnorm = True)
+
+            # Ajoute l'objet Dataset-k, à la liste 
             Datasets.append(dataset_tmps)
 
         return(Datasets)

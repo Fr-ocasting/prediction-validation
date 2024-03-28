@@ -80,20 +80,27 @@ def get_dic_results(trainer,pi):
     return(results)
 
 def display_info_on_dataset(dataset,train_prop,valid_prop,remaining_dates,invalid_dates):
-    training_set =  f"between {str(remaining_dates.iloc[0].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*train_prop)].item())} \
-        Contains {int(len(remaining_dates)*train_prop)} sequences by spatial unit"
-    validation_set = f"Doesn't exist" if (valid_prop == 0) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*train_prop)].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*(train_prop+valid_prop))].item())}.\
-        Contains {int(len(remaining_dates)*valid_prop)} sequences by spatial unit"
-    testing_set = f"Doesn't exist" if ((valid_prop + train_prop == 1) or (train_prop == 1 )) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*(train_prop+valid_prop))].item())} and {str(remaining_dates.iloc[-1].item())}.\
-        Contains {int(len(remaining_dates)*(1-valid_prop-train_prop))} sequences by spatial unit"
+    if len(remaining_dates) > 0:
+        training_set =  f"between {str(remaining_dates.iloc[0].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*train_prop)].item())} \
+            Contains {int(len(remaining_dates)*train_prop)} sequences by spatial unit" 
+        validation_set = f"Doesn't exist" if (valid_prop == 0) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*train_prop)].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*(train_prop+valid_prop))].item())}.\
+            Contains {int(len(remaining_dates)*valid_prop)} sequences by spatial unit"
+        testing_set = f"Doesn't exist" if ((valid_prop + train_prop == 1) or (train_prop == 1 )) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*(train_prop+valid_prop))].item())} and {str(remaining_dates.iloc[-1].item())}.\
+            Contains {int(len(remaining_dates)*(1-valid_prop-train_prop))} sequences by spatial unit"
+    else:
+        training_set,validation_set,testing_set = f"Doesn't exist",f"Doesn't exist",f"Doesn't exist"
     
+
     print(f"Initial size of the data: {len(dataset.df)}. \
-      \nNumber of forbidden dates: {len(invalid_dates)} which can't be present in any sequence . \
-      \nProportion of remaining data: {'{:.0%}'.format(len(remaining_dates)/len(dataset.df))} \n \
-      \nTrain set {training_set} \
-      \nValid set {validation_set}  \
-      \nTest set {testing_set} \n  \
-      ")
+    \nNumber of remaining dates after shifting lagged feature: {len(dataset.df_verif)}, then  {'{:.0%}'.format(len(dataset.df_verif)/len(dataset.df))}\
+    \nProportion of forbidden dates among remaining dates: {'{:.0%}'.format(1-len(remaining_dates)/len(dataset.df_verif))} which can't be present in any sequence . \
+    \nProportion of remaining sequences from Initial DataFrame: {'{:.0%}'.format(len(remaining_dates)/len(dataset.df))} \n \
+    \nTrain set {training_set} \
+    \nValid set {validation_set}  \
+    \nTest set {testing_set} \n  \
+      "
+      )
+    
     # ...
 
 def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
