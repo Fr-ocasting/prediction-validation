@@ -147,7 +147,7 @@ class DictDataLoader(object):
         # Dans le cas de la sliding window, il me faut train_prop + valid_prop = 1  car on ne veut pas de test.
 
 
-        set_of_dataset = self.train_test_split(U,Utarget,time_slots,validation = 'classic')
+        set_of_dataset = self.train_test_split(U,Utarget,time_slots,validation)
 
         if validation == 'sliding_window': 
             n = U.size(0)
@@ -581,11 +581,12 @@ class DataSet(object):
         n = len(df)
 
         # Découpe la dataframe en K_fold 
-        for k in K_fold:
+        for k in range(K_fold):
             # Slicing 
             df_tmps = df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
             # Récupération d'une dataset associée 
-            dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = None,df_train = None)
+            dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = self.time_step_per_hour,df_train = None)
+            dataset_tmps.normalize_df(train_prop*1/(train_prop+valid_prop),minmaxnorm = True)
             # Ajoute l'objet Dataset-k à la liste 
             Datasets.append(dataset_tmps)
 
