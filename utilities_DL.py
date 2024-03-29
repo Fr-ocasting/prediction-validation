@@ -48,6 +48,14 @@ def load_all(folder_path,file_name,args,step_ahead,H,D,W,
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
 
+def find_nearest_date(remaining_dates,date):
+    diff = remaining_dates.iloc[:,0] - date
+    mini = abs(diff).min()
+    mask = (diff == mini)
+
+    nearest_index = remaining_dates[mask].index.item()
+    nearest_indice = remaining_dates.reset_index()[remaining_dates.reset_index()['index'] == nearest_index].index.item()
+    return(nearest_index,nearest_indice)
 
 def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
@@ -79,28 +87,36 @@ def get_dic_results(trainer,pi):
     results['last valid loss'] = trainer.valid_loss[-1] 
     return(results)
 
-def display_info_on_dataset(dataset,train_prop,valid_prop,remaining_dates,invalid_dates):
+def display_info_on_dataset(dataset,train_prop,valid_prop,remaining_dates,train_indice = None,valid_indice = None):
+    if train_indice is None:
+        train_indice = int(len(remaining_dates)*train_prop)
+        valid_indice = int(len(remaining_dates)*(train_prop+valid_prop))
+
     if len(remaining_dates) > 0:
-        training_set =  f"between {str(remaining_dates.iloc[0].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*train_prop)].item())} \
-            Contains {int(len(remaining_dates)*train_prop)} sequences by spatial unit" 
-        validation_set = f"Doesn't exist" if (valid_prop == 0) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*train_prop)].item())} and {str(remaining_dates.iloc[int(len(remaining_dates)*(train_prop+valid_prop))].item())}.\
-            Contains {int(len(remaining_dates)*valid_prop)} sequences by spatial unit"
-        testing_set = f"Doesn't exist" if ((valid_prop + train_prop == 1) or (train_prop == 1 )) else f"between {str(remaining_dates.iloc[int(len(remaining_dates)*(train_prop+valid_prop))].item())} and {str(remaining_dates.iloc[-1].item())}.\
-            Contains {int(len(remaining_dates)*(1-valid_prop-train_prop))} sequences by spatial unit"
+        train_dates1 =  f"{str(remaining_dates.iloc[0].item())}" 
+        train_dates2 = f"{str(remaining_dates.iloc[train_indice].item())}"
+        len_train = f"{train_indice}"
+
+        valid_dates1 =  None if (valid_prop == 0) else f"{str(remaining_dates.iloc[train_indice].item())}"
+        valid_dates2 =  None if (valid_prop == 0) else f"{str(remaining_dates.iloc[valid_indice].item())}"  
+        len_valid = f"{int(len(remaining_dates)*valid_prop)}"      
+
+        test_dates1 =  None if ((abs(valid_prop + train_prop -1 ) < 1e-4) or (train_prop == 1 )) else f"{str(remaining_dates.iloc[valid_indice].item())}"
+        test_dates2 =  None if ((abs(valid_prop + train_prop -1 ) < 1e-4) or (train_prop == 1 )) else f"{str(remaining_dates.iloc[-1].item())}"  
+        len_test = f"{int(len(remaining_dates)*(1-valid_prop-train_prop))}"        
+
     else:
-        training_set,validation_set,testing_set = f"Doesn't exist",f"Doesn't exist",f"Doesn't exist"
+        train_dates1,train_dates2,valid_dates1,valid_dates2,test_dates1,test_dates2 = f"      None      ",f"      None      ",f"      None      ",f"      None      ",f"      None      ",f"      None      "
     
 
-    print(f"Initial size of the data: {len(dataset.df)}. \
-    \nNumber of remaining dates after shifting lagged feature: {len(dataset.df_verif)}, then  {'{:.0%}'.format(len(dataset.df_verif)/len(dataset.df))}\
-    \nProportion of forbidden dates among remaining dates: {'{:.0%}'.format(1-len(remaining_dates)/len(dataset.df_verif))} which can't be present in any sequence . \
-    \nProportion of remaining sequences from Initial DataFrame: {'{:.0%}'.format(len(remaining_dates)/len(dataset.df))} \n \
-    \nTrain set {training_set} \
-    \nValid set {validation_set}  \
-    \nTest set {testing_set} \n  \
-      "
-      )
-    
+    print(f"Length full df: {len(dataset.df)}. \
+    \n{'{:.0%}'.format(len(dataset.df_verif)/len(dataset.df))} of remaining dates after shifting lagged feature\
+    \n{'{:.0%}'.format(1-len(remaining_dates)/len(dataset.df_verif))} of forbidden dates among remaining dates. \
+    \n{'{:.0%}'.format(len(remaining_dates)/len(dataset.df))} of remaining sequences from Initial DataFrame \n " )
+
+    print('              -- First Train   --   Last Train - First valid    --    Last Valid - First Test    --  Last Test')
+    print(f"            {train_dates1}   --   {train_dates2 if train_dates2 == valid_dates1 else train_dates2 + ' None'}      --     {valid_dates2 if valid_dates2 == test_dates1 else valid_dates2 + ' None'}    --  {test_dates2}" ) 
+    print(f" Len Train/Valid/Test:           {len_train}            ---            {len_valid}             ---             {len_test}\n")
     # ...
 
 def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
@@ -111,7 +127,7 @@ def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     data_loader = data_loader_obj.get_dictdataloader(args.batch_size,args.K_fold)
 
     # Print Information
-    display_info_on_dataset(dataset,args.train_prop,args.valid_prop,remaining_dates,invalid_dates)
+    display_info_on_dataset(dataset,args.train_prop,args.valid_prop,remaining_dates)
 
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)

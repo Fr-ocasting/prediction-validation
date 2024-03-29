@@ -88,7 +88,7 @@ class DictDataLoader(object):
                   wierd_blocked (for Blocked K-fold Cross validation)
                   sliding_window (for K-fold sliding wodw Validation, there is no Testing set, so there is a modification on train_prop, valid_prop)
     '''
-    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None,time_slots = None):
+    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None,time_slots = None,train_idx = None, valid_idx = None):
         super().__init__()
         self.validation = validation
         self.train_prop = train_prop
@@ -99,6 +99,8 @@ class DictDataLoader(object):
         self.shuffle = shuffle
         self.calib_prop = calib_prop
         self.time_slots = time_slots
+        self.train_idx = train_idx
+        self.valid_idx = valid_idx
 
     def train_test_split(self,U,Utarget,time_slots,validation):
         n = U.size(0)
@@ -108,7 +110,12 @@ class DictDataLoader(object):
         if validation == 'classic':
             train_prop,valid_prop  = self.train_prop,self.valid_prop     
 
-        train_idx,valid_idx = int(n*train_prop),int(n*(train_prop+valid_prop))
+        if self.train_idx is None: 
+            train_idx,valid_idx = int(n*train_prop),int(n*(train_prop+valid_prop))
+        else:
+            train_idx,valid_idx = self.train_idx,self.valid_idx
+
+
 
         # Train, Valid, Test set
         train_set,valid_set,test_set = U[:train_idx],U[train_idx:valid_idx],U[valid_idx:]
@@ -431,17 +438,15 @@ class DataSet(object):
     -------------
     df : contain the current df you are working on. It's the full df, normalized or not
     init_df : contain the initial df, no normalized. It's the full initial dataset.
-    cleaned_df : contain the init_df, without the invalid_dates
-    df_train : contain the train_prop fist % of the cleaned_df 
     '''
-    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,df_train = None,cleaned_df = None):
+    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,train_df = None,cleaned_df = None):
         self.length = len(df)
         self.df = df
         self.columns = df.columns
         self.normalized = normalized
         self.time_step_per_hour = time_step_per_hour
         self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
-        self.df_train = df_train
+        self.train_df = train_df
         if time_step_per_hour is not None :
             self.Week_nb_steps = int(7*24*self.time_step_per_hour)
             self.Day_nb_steps = int(24*self.time_step_per_hour)
@@ -493,13 +498,13 @@ class DataSet(object):
             x = (x-self.mini)/(self.maxi-self.mini)
         return x 
     
-    def remove_invalid_dates(self,tmps_df,invalid_dates,full_df  =True, train_df = False):
+    def remove_invalid_dates(self,tmps_df,invalid_dates,full_df  =True, train_df_bool = False):
         if invalid_dates is not None:
             invalid_dates = invalid_dates.intersection(tmps_df.index)
             tmps_df = tmps_df.drop(invalid_dates)
         if full_df:
             self.cleaned_df = tmps_df
-        if train_df:
+        if train_df_bool:
             self.remaining_train = tmps_df
         return(tmps_df)
     
@@ -507,9 +512,6 @@ class DataSet(object):
         self.mini = tmps_df.min()
         self.maxi = tmps_df.max()
         self.mean = tmps_df.mean()
-
-        # Keep track on data used for training : 
-        self.df_train = tmps_df
 
         # Normalize : 
         normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
@@ -522,8 +524,8 @@ class DataSet(object):
         assert self.normalized == False, 'Dataframe might be already normalized'
         
         self.train_df = self.df[:int(train_prop*self.length)]  # Slicing to get train_df
-        self.remove_invalid_dates(self.train_df,invalid_dates,full_df = False,train_df = True)  # remove invalid_dates from train_df
 
+        self.remove_invalid_dates(self.train_df,invalid_dates,full_df = False,train_df_bool = True)  # remove invalid_dates from train_df
         if minmaxnorm:
             self.minmax_normalize_df(self.remaining_train)
         else:
@@ -553,27 +555,6 @@ class DataSet(object):
     def split_K_fold(self,K_fold,train_prop,valid_prop,validation,normalized,invalid_dates = None):
         '''
         Split la DataSet Initiale en K-fold
-
-        Problème : 
-        Lors qu'on utilise la methode 
-            'get_feature_vect'   (pour obtenir les sequences sur toute la DataFrame)
-        Il va y avoir un shift de 1 semaine (si w = 1), et donc tout va se passer comme si la première semaine de chaque fold était à chaque fois impossible à prédire.
-        - - - Maintenant, si on ajoute cette semaine là dans le dataset, cela veut dire qu'il faut la compter dans les données pour la Normaliser - - - 
-        En fait, avec la sliding-windows, on perd % = = = = K-fold * Semaine de prédiction= = = = %
-
-        1- Lors de la boucle sur les K-fold, il faudrait non pas prendre df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)] 
-           Mais plutôt df[int((k/K_fold)*n)-1 semaine:int(((k+1)/K_fold)*n)]  (- le décalage max).
-
-        2 - On devra alors utiliser dataset.normalize_df sur chacun des dataset
-            en précisant une train_prop = train_prop * 1/(train_prop + Valid_prop), puisqu'on ne voudra pas garder de test_set à côté. (il est déjà conservé sur Novembre/Decembre)
-
-
-        3 - 'get_feature_vect' et les autres sont ensuite bon.  
-            On va ensuite passer dans 'get_invalid_indx'  puis dans  'remove_indices' pour supprimer les séquences qui nous dérange.
-
-        4 - Puis on fera des DataLoader + .get_dict_data_loader()
-
-
         '''
         Datasets = []
         # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
@@ -600,10 +581,14 @@ class DataSet(object):
                     df_tmps = df[init_pos:init_pos+width_dataset]                   
 
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
-            dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = self.time_step_per_hour,df_train = None)
+            dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = self.time_step_per_hour,train_df = None)
 
-            # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train, et on récupère le Min/Max du remaining_train
+            # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train (pour obtenir 'remaining-train'), et on récupère le Min/Max du remaining_train
             dataset_tmps.normalize_df(train_prop*1/(train_prop+valid_prop),invalid_dates = invalid_dates, minmaxnorm = True)
+            dataset_tmps.first_date_train = dataset_tmps.train_df.index[0]
+            dataset_tmps.last_date_train = dataset_tmps.train_df.index[-1]
+            dataset_tmps.first_date_valid = dataset_tmps.train_df.index[-1]
+            dataset_tmps.last_date_valid = dataset_tmps.df.index[-1]    
 
             # Ajoute l'objet Dataset-k, à la liste 
             Datasets.append(dataset_tmps)

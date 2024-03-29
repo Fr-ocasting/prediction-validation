@@ -4,6 +4,94 @@ import pandas as pd
 import numpy as np
 import torch 
 from DL_class import PI_object
+import matplotlib.dates as mdates
+
+from datetime import timedelta
+
+
+def plot_k_fold_split(Datasets,invalid_dates):
+    fig,ax = plt.subplots(figsize=(16,9))
+
+    # Forbidden Dates
+    delta_t = timedelta(hours= 1/Datasets[0].time_step_per_hour)
+    already_ploted = []
+    for i,invalid_date in enumerate(invalid_dates):
+        if not invalid_date in already_ploted:   # Avoid to plot too many vbar
+            ax.axvspan(invalid_date, invalid_date+delta_t, alpha=0.3, color='grey',label= 'Invalid dates' if i==0 else None)
+            already_ploted.append(invalid_date)
+            
+    for i,invalid_date in enumerate(invalid_dates):
+        if Datasets[0].Weeks is not None:
+            shift = int(Datasets[0].Weeks*24*7*Datasets[0].time_step_per_hour)
+            if not invalid_date+shift*delta_t in already_ploted:
+                ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
+                already_ploted.append(invalid_date+shift*delta_t)
+
+        if Datasets[0].Days is not None:
+            shift = int(Datasets[0].Days*24*Datasets[0].time_step_per_hour)
+            if not invalid_date+shift*delta_t in already_ploted:
+                ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
+                already_ploted.append(invalid_date+shift*delta_t)
+
+        if Datasets[0].historical_len is not None:
+            shift = int(Datasets[0].historical_len*Datasets[0].time_step_per_hour)
+            if not invalid_date+shift*delta_t in already_ploted:
+                ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted" if i==0 else None)
+                already_ploted.append(invalid_date+shift*delta_t)
+    # ...
+            
+
+    # K-folds : 
+    for i,dset in enumerate(Datasets):
+        
+        mask = (dset.df_verif.iloc[:,-1] == dset.last_date_train)
+        valid_index = dset.df_verif[mask].index.item()
+
+        predicted1 = dset.df_verif.iloc[0,-1]
+        predicted2 = dset.df_verif.loc[valid_index][-1]
+        predicted3 = dset.df_verif.iloc[-1,-1]
+
+        litmit_set_train1=dset.df_verif.iloc[0,0]
+        litmit_set_train2=dset.df_verif.loc[valid_index][-1]
+        litmit_set_valid1=dset.df_verif.loc[valid_index][0]
+        litmit_set_valid2=dset.df_verif.iloc[-1,-1]
+
+        lpt1, lpt2_lpv1,lpv2  = mdates.date2num(predicted1),mdates.date2num(predicted2), mdates.date2num(predicted3)
+        lt1, lt2,lv1,lv2  = mdates.date2num(litmit_set_train1),mdates.date2num(litmit_set_train2), mdates.date2num(litmit_set_valid1),mdates.date2num(litmit_set_valid2)
+
+        # Calculez les différences en jours (t2-t1) et (t3-t2) comme largeurs
+        width_predict_train = lpt2_lpv1 - lpt1
+        width_predict_valid = lpv2 - lpt2_lpv1
+
+        width_train_set = lt2 - lt1
+        width_valid_set = lv2 - lv1   
+
+        # Ajoutez les barres horizontales en utilisant les dates converties
+        ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Time-Slot withinTrain' if i == 0 else None)
+        ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Values in TrainSet' if i == 0 else None)
+
+        ax.barh(i-0.2, width_predict_valid, left=lpt2_lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
+        ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Values ValidSet' if i == 0 else None)
+    # ...
+
+
+
+    #ax.xaxis.set_major_locator(mdates.Locator())
+    #ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%b'))
+    locator = mdates.AutoDateLocator()
+    formatter = mdates.ConciseDateFormatter(locator)
+    ax.xaxis.set_major_locator(locator)
+    ax.xaxis.set_major_formatter(formatter)
+
+
+    # Pour mieux gérer l'affichage des dates, notamment si elles sont très rapprochées ou très éloignées
+    fig.autofmt_xdate()
+
+    ax.legend()
+    plt.show()
+
+
+
 
 def plot_loss(trainer,test_pred,Y_true,window_pred = None):
     fig, (ax1,ax2) = plt.subplots(1,2,figsize = (18,6))

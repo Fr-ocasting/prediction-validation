@@ -9,7 +9,6 @@ import torch.nn as nn
 from scipy.spatial.distance import cdist 
 
 
-
 def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):
     assert 0 <= quantile_order <= 1, "Quantile order must be <= 1 and >=0"
     sorted,_ = torch.sort(conformity_scores,0)
