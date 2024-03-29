@@ -49,12 +49,15 @@ def load_all(folder_path,file_name,args,step_ahead,H,D,W,
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
 
 def find_nearest_date(remaining_dates,date):
-    diff = remaining_dates.iloc[:,0] - date
-    mini = abs(diff).min()
+    diff = abs(remaining_dates.iloc[:,0] - date)
+    mini = diff.min()
     mask = (diff == mini)
 
-    nearest_index = remaining_dates[mask].index.item()
-    nearest_indice = remaining_dates.reset_index()[remaining_dates.reset_index()['index'] == nearest_index].index.item()
+    nearest_df = remaining_dates[mask]
+    nearest_index = nearest_df.index.item() if  len(nearest_df) > 0 else None
+
+    nearest_indice_df  = remaining_dates.reset_index()[remaining_dates.reset_index()['index'] == nearest_index]
+    nearest_indice = nearest_indice_df.index.item() if len(nearest_indice_df) > 0 else None
     return(nearest_index,nearest_indice)
 
 def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
@@ -95,15 +98,15 @@ def display_info_on_dataset(dataset,train_prop,valid_prop,remaining_dates,train_
     if len(remaining_dates) > 0:
         train_dates1 =  f"{str(remaining_dates.iloc[0].item())}" 
         train_dates2 = f"{str(remaining_dates.iloc[train_indice].item())}"
-        len_train = f"{train_indice}"
+        len_train = f"{len(remaining_dates[:train_indice])}"
 
         valid_dates1 =  None if (valid_prop == 0) else f"{str(remaining_dates.iloc[train_indice].item())}"
         valid_dates2 =  None if (valid_prop == 0) else f"{str(remaining_dates.iloc[valid_indice].item())}"  
-        len_valid = f"{int(len(remaining_dates)*valid_prop)}"      
+        len_valid = f"{len(remaining_dates[train_indice:valid_indice])}"      
 
         test_dates1 =  None if ((abs(valid_prop + train_prop -1 ) < 1e-4) or (train_prop == 1 )) else f"{str(remaining_dates.iloc[valid_indice].item())}"
         test_dates2 =  None if ((abs(valid_prop + train_prop -1 ) < 1e-4) or (train_prop == 1 )) else f"{str(remaining_dates.iloc[-1].item())}"  
-        len_test = f"{int(len(remaining_dates)*(1-valid_prop-train_prop))}"        
+        len_test = f"{len(remaining_dates[valid_indice:])}"        
 
     else:
         train_dates1,train_dates2,valid_dates1,valid_dates2,test_dates1,test_dates2 = f"      None      ",f"      None      ",f"      None      ",f"      None      ",f"      None      ",f"      None      "

@@ -19,7 +19,7 @@ def plot_k_fold_split(Datasets,invalid_dates):
         if not invalid_date in already_ploted:   # Avoid to plot too many vbar
             ax.axvspan(invalid_date, invalid_date+delta_t, alpha=0.3, color='grey',label= 'Invalid dates' if i==0 else None)
             already_ploted.append(invalid_date)
-            
+
     for i,invalid_date in enumerate(invalid_dates):
         if Datasets[0].Weeks is not None:
             shift = int(Datasets[0].Weeks*24*7*Datasets[0].time_step_per_hour)
@@ -36,8 +36,9 @@ def plot_k_fold_split(Datasets,invalid_dates):
         if Datasets[0].historical_len is not None:
             shift = int(Datasets[0].historical_len*Datasets[0].time_step_per_hour)
             if not invalid_date+shift*delta_t in already_ploted:
-                ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted" if i==0 else None)
+                ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
+    ax.axvspan(invalid_dates[0], invalid_dates[0], alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted")
     # ...
             
 
@@ -45,32 +46,39 @@ def plot_k_fold_split(Datasets,invalid_dates):
     for i,dset in enumerate(Datasets):
         
         mask = (dset.df_verif.iloc[:,-1] == dset.last_date_train)
-        valid_index = dset.df_verif[mask].index.item()
+        last_train_index = dset.df_verif[mask].index.item()
+    
+        mask = (dset.df_verif.iloc[:,-1] == dset.first_date_valid)
+        try:
+            first_valid_index = dset.df_verif[mask].index.item()
+        except:
+            raise ValueError('Too Many Fold or Lagged Feature is way too significant. Reduce K_fold or W,D,H')
 
-        predicted1 = dset.df_verif.iloc[0,-1]
-        predicted2 = dset.df_verif.loc[valid_index][-1]
-        predicted3 = dset.df_verif.iloc[-1,-1]
+        predicted_train_1 = dset.df_verif.iloc[0,-1]
+        predicted_train_2 = dset.df_verif.loc[last_train_index][-1]
+        predicted_valid_1 = dset.df_verif.loc[first_valid_index][-1]    
+        predicted_valid_2 = dset.df_verif.iloc[-1,-1]
 
         litmit_set_train1=dset.df_verif.iloc[0,0]
-        litmit_set_train2=dset.df_verif.loc[valid_index][-1]
-        litmit_set_valid1=dset.df_verif.loc[valid_index][0]
+        litmit_set_train2=dset.df_verif.loc[last_train_index][-1]
+        litmit_set_valid1=dset.df_verif.loc[first_valid_index][0]
         litmit_set_valid2=dset.df_verif.iloc[-1,-1]
 
-        lpt1, lpt2_lpv1,lpv2  = mdates.date2num(predicted1),mdates.date2num(predicted2), mdates.date2num(predicted3)
+        lpt1, lpt2, lpv1,lpv2  = mdates.date2num(predicted_train_1),mdates.date2num(predicted_train_2),mdates.date2num(predicted_valid_1) ,mdates.date2num(predicted_valid_2)
         lt1, lt2,lv1,lv2  = mdates.date2num(litmit_set_train1),mdates.date2num(litmit_set_train2), mdates.date2num(litmit_set_valid1),mdates.date2num(litmit_set_valid2)
 
         # Calculez les différences en jours (t2-t1) et (t3-t2) comme largeurs
-        width_predict_train = lpt2_lpv1 - lpt1
-        width_predict_valid = lpv2 - lpt2_lpv1
+        width_predict_train = lpt2 - lpt1
+        width_predict_valid = lpv2 - lpv1
 
         width_train_set = lt2 - lt1
         width_valid_set = lv2 - lv1   
 
         # Ajoutez les barres horizontales en utilisant les dates converties
-        ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Time-Slot withinTrain' if i == 0 else None)
+        ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Time-Slot within Train' if i == 0 else None)
         ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Values in TrainSet' if i == 0 else None)
 
-        ax.barh(i-0.2, width_predict_valid, left=lpt2_lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
+        ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
         ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Values ValidSet' if i == 0 else None)
     # ...
 

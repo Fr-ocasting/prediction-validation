@@ -7,6 +7,8 @@ import torch.nn as nn
 # Personnal import: 
 from metrics import evaluate_metrics
 from utilities import get_higher_quantile
+from datetime import timedelta
+
 try: 
     from ray import tune
 except : 
@@ -102,27 +104,37 @@ class DictDataLoader(object):
         self.train_idx = train_idx
         self.valid_idx = valid_idx
 
-    def train_test_split(self,U,Utarget,time_slots,validation):
-        n = U.size(0)
-
-        if (validation == 'wierd_blocked') | (validation == 'sliding_window'):
-            train_prop,valid_prop  = self.train_prop*1/(self.train_prop+self.valid_prop),self.valid_prop*1/(self.train_prop+self.valid_prop)
-        if validation == 'classic':
-            train_prop,valid_prop  = self.train_prop,self.valid_prop     
+    def get_split_indx(self):
 
         if self.train_idx is None: 
-            train_idx,valid_idx = int(n*train_prop),int(n*(train_prop+valid_prop))
+            n = self.U.size(0)
+            if (self.validation == 'sliding_window'):
+                # Work as if there were no Testing Set
+                train_prop,valid_prop  = self.train_prop*1/(self.train_prop+self.valid_prop),self.valid_prop*1/(self.train_prop+self.valid_prop)
+
+            if self.validation == 'classic':
+                train_prop,valid_prop  = self.train_prop,self.valid_prop   
+
+            train_idx,valid_idx = int(n*train_prop),int(n*(train_prop+valid_prop)) 
+
+        # In case we already provided the split indices: 
         else:
-            train_idx,valid_idx = self.train_idx,self.valid_idx
+            train_idx,valid_idx = self.train_idx,self.valid_idx     
+        
+        return(train_idx,valid_idx)
 
+    def train_test_split(self,U,Utarget,time_slots):
 
+        # get Split indx
+        train_idx,valid_idx = self.get_split_indx()
 
         # Train, Valid, Test set
         train_set,valid_set,test_set = U[:train_idx],U[train_idx:valid_idx],U[valid_idx:]
-        # Target set
+        # Targets set
         train_target, valid_target, test_target = Utarget[:train_idx],Utarget[train_idx:valid_idx],Utarget[valid_idx:]
         # Time_slots set
         time_slots_train,time_slots_valid,time_slots_test = time_slots[:train_idx], time_slots[train_idx:valid_idx], time_slots[valid_idx:]
+
         return(train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test)
 
     def fill_data_loader_dict(self,set_of_dataset,batch_size, only_test = False):
@@ -149,34 +161,11 @@ class DictDataLoader(object):
 
             for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
                 self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None   
-
-    def get_one_dataloader(self,U,Utarget,time_slots,batch_size:int, k = None, K_fold = None, validation = 'classic'):
-        # Il faut gérer les train_prop / valid_prop / calib_prop
-        # Dans le cas de la sliding window, il me faut train_prop + valid_prop = 1  car on ne veut pas de test.
-
-
-        set_of_dataset = self.train_test_split(U,Utarget,time_slots,validation)
-
-        if validation == 'wierd_blocked': 
-            n = U.size(0)
-            U_sliced,Utarget_sliced,time_slots_sliced = U[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],Utarget[int((k/K_fold)*n):int(((k+1)/K_fold)*n)],time_slots[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
-            set_of_sliced_dataset= self.train_test_split(U_sliced,Utarget_sliced,time_slots_sliced,validation)
-
-            # Add full Test DataLoader and a sliced DataLoader
-            self.fill_data_loader_dict(set_of_sliced_dataset,batch_size, only_test = False)
-            self.fill_data_loader_dict(set_of_dataset,batch_size, only_test = True)      
-                
-        elif (validation == 'classic')|(validation == 'sliding_window'):
-            self.fill_data_loader_dict(set_of_dataset,batch_size,only_test = False)
-
-        return(self.dataloader)
     
-    def get_dictdataloader(self,batch_size:int, K_fold = None):
-        if (self.validation == 'classic')|(self.validation == 'sliding_window'):
-            return(self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size,validation = self.validation))
 
-        if self.validation == 'wierd_blocked': # blocked k fold cross validation
-            return([self.get_one_dataloader(self.U,self.Utarget,self.time_slots,batch_size,k = k, K_fold= K_fold,validation = self.validation) for k in range(K_fold)])
+    def get_dictdataloader(self,batch_size:int, K_fold = None):
+        set_of_dataset = self.train_test_split(self.U,self.Utarget,self.time_slots)
+        self.fill_data_loader_dict(set_of_dataset,batch_size,only_test = False)
 
 class MultiModelTrainer(object):
     def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,alpha = None):
@@ -439,7 +428,8 @@ class DataSet(object):
     df : contain the current df you are working on. It's the full df, normalized or not
     init_df : contain the initial df, no normalized. It's the full initial dataset.
     '''
-    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,train_df = None,cleaned_df = None):
+    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,
+                 train_df = None,cleaned_df = None,Weeks = None, Days = None, historical_len = None,step_ahead = None):
         self.length = len(df)
         self.df = df
         self.columns = df.columns
@@ -480,10 +470,10 @@ class DataSet(object):
         self.df_verif = None
         self.invalid_indx_df = None
         self.remaining_dates = None
-        self.step_ahead = None
-        self.Weeks = None
-        self.Days = None
-        self.historical_len = None
+        self.step_ahead = step_ahead
+        self.Weeks = Weeks
+        self.Days = Days
+        self.historical_len = historical_len
         self.cleaned_df = cleaned_df
         
     def bijection_name_indx(self):
@@ -552,7 +542,7 @@ class DataSet(object):
         self.remaining_dates = self.df_verif.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
         return(self.U,self.Utarget,self.remaining_dates)
     
-    def split_K_fold(self,K_fold,train_prop,valid_prop,validation,normalized,invalid_dates = None):
+    def split_K_fold(self,K_fold,train_prop,valid_prop,validation,normalized,invalid_dates = None,no_common_dates_between_set = None):
         '''
         Split la DataSet Initiale en K-fold
         '''
@@ -587,7 +577,14 @@ class DataSet(object):
             dataset_tmps.normalize_df(train_prop*1/(train_prop+valid_prop),invalid_dates = invalid_dates, minmaxnorm = True)
             dataset_tmps.first_date_train = dataset_tmps.train_df.index[0]
             dataset_tmps.last_date_train = dataset_tmps.train_df.index[-1]
-            dataset_tmps.first_date_valid = dataset_tmps.train_df.index[-1]
+
+            if no_common_dates_between_set:
+                shift_week = self.Weeks if self.Weeks is not None else 0
+                shift_day = self.Days if self.Days is not None else 0
+                shift_date = max(shift_week*7*24*self.time_step_per_hour,shift_day*24*self.time_step_per_hour,self.historical_len*self.time_step_per_hour) 
+                dataset_tmps.first_date_valid = dataset_tmps.train_df.index[-1] + shift_date*timedelta(hours = 1/self.time_step_per_hour)
+            else:
+                dataset_tmps.first_date_valid = dataset_tmps.train_df.index[-1]
             dataset_tmps.last_date_valid = dataset_tmps.df.index[-1]    
 
             # Ajoute l'objet Dataset-k, à la liste 
@@ -631,12 +628,12 @@ class DataSet(object):
 
         return(shifted_values,shifted_dates)
     
-    def get_invalid_indx(self,invalid_dates:list,df_verif:pd.DataFrame):
+    def get_invalid_indx(self,invalid_dates:list):
         '''invalid_dates:  list of Tmestamp dates 
         from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
         and return 'invalid_indx_df' which correspond to the forbidden index within the dataframe (where the first index can be > 0)'''
         # Get all the row were the invalid dates are used 
-        df_verif_forbiden = pd.concat([df_verif[df_verif[c].isin(invalid_dates)] for c in df_verif.columns])
+        df_verif_forbiden = pd.concat([self.df_verif[self.df_verif[c].isin(invalid_dates)] for c in self.df_verif.columns])
 
         # Get the associated index 
         self.invalid_indx_df = df_verif_forbiden.index
@@ -677,7 +674,6 @@ class DataSet(object):
             self.U = U
             self.Utarget = Utarget
             self.df_verif = df_verif
-            self.remaining_dates = df_verif[[f't+{step_ahead-1}']]
 
             return(U,Utarget,df_verif)
     
