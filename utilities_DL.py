@@ -2,7 +2,7 @@ import numpy as np
 import torch 
 import torch.nn as nn 
 import pandas as pd
-from datetime import datetime 
+from datetime import datetime, timedelta
 from torch.optim import SGD,Adam,AdamW
 
 # Personnal import: 
@@ -48,14 +48,20 @@ def load_all(folder_path,file_name,args,step_ahead,H,D,W,
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
 
-def find_nearest_date(remaining_dates,date):
-    diff = abs(remaining_dates.iloc[:,0] - date)
-    mini = diff.min()
-    mask = (diff == mini)
+def find_nearest_inferior_date(remaining_dates,date):
+    '''
+    Find the nearest TimeStamp <= 'date' among 'remaining_dates'.
+    It return the associated index and indice in 'remaining_dates'
+    '''
+    diff = remaining_dates.iloc[:,0] - date #abs(remaining_dates.iloc[:,0] - date)
+    nearest_inferior_date = max(diff[(diff <= timedelta(0))])
+    mask = (diff == nearest_inferior_date)
 
-    nearest_df = remaining_dates[mask]
-    nearest_index = nearest_df.index.item() if  len(nearest_df) > 0 else None
+    # Get Index
+    nearest_df = remaining_dates[mask]    # Suppose to return a unique element 
+    nearest_index = nearest_df.index.item() if  len(nearest_df) > 0 else None   
 
+    # Get Indice
     nearest_indice_df  = remaining_dates.reset_index()[remaining_dates.reset_index()['index'] == nearest_index]
     nearest_indice = nearest_indice_df.index.item() if len(nearest_indice_df) > 0 else None
     return(nearest_index,nearest_indice)
@@ -127,8 +133,7 @@ def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
     time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
     data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
-    data_loader = data_loader_obj.get_dictdataloader(args.batch_size,args.K_fold)
-
+    data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
     # Print Information
     display_info_on_dataset(dataset,args.train_prop,args.valid_prop,remaining_dates)
 

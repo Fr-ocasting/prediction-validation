@@ -87,10 +87,11 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['calendar_class'] = 3
     config['specific_lr'] = [True, False]
     config['time_embedding'] = True
-    config['type_calendar'] = 'class_of_tuple'
-    config['validation'] = 'classic'
-    config['position'] = 'input'
-    config['no_common_dates_between_set'] = False
+    config['type_calendar'] = 'class_of_tuple'  
+    config['validation'] = 'classic'  # classic / sliding_window / 
+    config['position'] = 'input'  # Position of time_embedding module : before or after the core model
+    config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
+    config['K_fold'] = None  # int. If None : classic validation, Else : validation with K_fold according 'config['validation']
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     return(config)
     

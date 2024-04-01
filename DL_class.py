@@ -137,35 +137,29 @@ class DictDataLoader(object):
 
         return(train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test)
 
-    def fill_data_loader_dict(self,set_of_dataset,batch_size, only_test = False):
+    def fill_data_loader_dict(self,set_of_dataset,batch_size):
         train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test = set_of_dataset
 
         if self.calib_prop is None: 
-            if only_test :
-                Sequences,Targets,Time_slots_list,Names = [test_set],[test_target],[time_slots_test],['test']
-            else:
-                Sequences,Targets,Time_slots_list,Names = [train_set,valid_set,test_set],[train_target,valid_target,test_target],[time_slots_train,time_slots_valid,time_slots_test],['train','validate','test']
-            for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-                    self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None
+            Sequences,Targets,Time_slots_list,Names = [train_set,valid_set,test_set],[train_target,valid_target,test_target],[time_slots_train,time_slots_valid,time_slots_test],['train','validate','test']
+            #for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
+            #        self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None
         else : 
             indices = torch.randperm(train_set.size(0))
             split = int(train_set.size(0)*self.calib_prop)
             proper_set_x,proper_set_y = train_set[indices[:split]],train_target[indices[:split]]
             calib_set_x,calib_set_y = train_set[indices[split:]],train_target[indices[split:]]
             time_slots_proper,time_slots_calib = time_slots_train[indices[:split]], time_slots_train[indices[split:]]
+            
+            Sequences,Targets,Time_slots_list,Names = [proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],[time_slots_proper,time_slots_valid,time_slots_test,time_slots_calib],['train','validate','test','cal']
 
-            if only_test :
-                Sequences,Targets,Time_slots_list,Names = [test_set],[test_target],[time_slots_test],['test']
-            else:
-                Sequences,Targets,Time_slots_list,Names = [proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],[time_slots_proper,time_slots_valid,time_slots_test,time_slots_calib],['train','validate','test','cal']
+        for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
+            self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None   
 
-            for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-                self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None   
-    
 
-    def get_dictdataloader(self,batch_size:int, K_fold = None):
+    def get_dictdataloader(self,batch_size:int):
         set_of_dataset = self.train_test_split(self.U,self.Utarget,self.time_slots)
-        self.fill_data_loader_dict(set_of_dataset,batch_size,only_test = False)
+        self.fill_data_loader_dict(set_of_dataset,batch_size)
 
 class MultiModelTrainer(object):
     def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,alpha = None):
@@ -475,6 +469,7 @@ class DataSet(object):
         self.Days = Days
         self.historical_len = historical_len
         self.cleaned_df = cleaned_df
+
         
     def bijection_name_indx(self):
         colname2indx = {c:k for k,c in enumerate(self.columns)}
@@ -487,6 +482,69 @@ class DataSet(object):
         else :
             x = (x-self.mini)/(self.maxi-self.mini)
         return x 
+    
+    def get_shift_between_set(self,no_common_dates_between_set):
+        if no_common_dates_between_set:
+            shift_week = self.Weeks if self.Weeks is not None else 0
+            shift_day = self.Days if self.Days is not None else 0
+            shift_date = max(shift_week*7*24*self.time_step_per_hour,shift_day*24*self.time_step_per_hour,self.historical_len*self.time_step_per_hour) 
+            self.shift_between_set = shift_date*timedelta(hours = 1/self.time_step_per_hour)
+        else:
+            self.shift_between_set = timedelta(0)
+
+    def train_valid_test_limits(self,train_prop,valid_prop,no_common_dates_between_set):
+        # Split df
+        self.train_df = self.df[:int(train_prop*self.length)]  # Slicing 
+        self.valid_df = self.df[int(train_prop*self.length):int((train_prop+valid_prop)*self.length)]        
+        self.test_df = self.df[int((train_prop+valid_prop)*self.length):]   
+
+        # Get Shift if needed
+        self.get_shift_between_set(no_common_dates_between_set) 
+
+        # Keep track on 'Full Set' limits:
+
+        # Train
+        self.first_date_train = self.train_df.index[0] 
+        self.last_date_train = self.train_df.index[-1]
+
+        # Valid (if exists)
+        try:
+            self.first_date_valid = self.valid_df.index[0] #self.train_df.index[-1] + self.shift_between_set
+            self.last_date_valid = self.valid_df.index[-1]
+        except:
+            self.first_date_valid,self.last_date_valid = None, None
+
+        # Test (if exists)
+        try:
+            self.first_date_test = self.test_df.index[0]
+            self.last_date_test = self.test_df.index[-1] 
+        except:
+            self.first_date_test,self.last_date_test = None, None
+        # ...
+ 
+        # Keep track on 'Predicted Set' Limits:
+            
+        # Train
+        self.first_predicted_date_train = self.train_df.index[0] + self.shift_between_set
+        self.last_predicted_date_train = self.train_df.index[-1]
+
+        # Valid
+        try:
+            self.first_predicted_date_valid = self.valid_df.index[0] + self.shift_between_set
+            self.last_predicted_date_valid = self.valid_df.index[-1]
+        except:
+            self.first_predicted_date_valid,self.last_predicted_date_valid = None, None
+        
+        # Test
+        try:
+            self.first_predicted_date_test = self.test_df.index[0] + self.shift_between_set
+            self.last_predicted_date_test = self.test_df.index[-1]
+        except:
+            self.first_predicted_date_test,self.last_predicted_date_test = None, None
+        # ...
+
+
+        assert self.first_predicted_date_train < self.last_predicted_date_train, 'Training Set Too Small or Historical Sequence looking to far'           
     
     def remove_invalid_dates(self,tmps_df,invalid_dates,full_df  =True, train_df_bool = False):
         if invalid_dates is not None:
@@ -510,16 +568,17 @@ class DataSet(object):
         self.df = normalized_df
         self.normalized = True
 
-    def normalize_df(self, train_prop,invalid_dates = None,minmaxnorm = True):
+    def normalize_df(self,invalid_dates = None,minmaxnorm = True):
         assert self.normalized == False, 'Dataframe might be already normalized'
-        
-        self.train_df = self.df[:int(train_prop*self.length)]  # Slicing to get train_df
 
         self.remove_invalid_dates(self.train_df,invalid_dates,full_df = False,train_df_bool = True)  # remove invalid_dates from train_df
         if minmaxnorm:
             self.minmax_normalize_df(self.remaining_train)
         else:
             raise Exception('Normalization has not been coded')
+        
+        self.first_date_train = self.train_df.index[0]
+        self.last_date_train = self.train_df.index[-1]
         
     def unormalize_df(self,minmaxnorm):
         assert self.normalized == True, 'Dataframe might be already UN-normalized'
@@ -551,20 +610,27 @@ class DataSet(object):
         df = self.df
 
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
-        df = df[:int((train_prop+valid_prop)*len(df))]  
+        split_test = int((train_prop+valid_prop)*len(df))
+        df = df[:split_test]  
+        self.test_df = df[split_test:]
 
         # Récupère la Taille de cette DataFrame
         n = len(df)
 
+        # Adapt Valid and Train Prop (cause we want Test_prop = 0)
+        valid_prop_tmps = valid_prop/(train_prop+valid_prop)
+        train_prop_tmps = train_prop*1/(train_prop+valid_prop)
+        
         # Découpe la dataframe en K_fold 
         for k in range(K_fold):
+
             # Slicing 
             if validation == 'wierd_blocked':
                 df_tmps = df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
 
             if validation == 'sliding_window':
-                width_dataset = int(n/(1+(K_fold-1)*valid_prop/(train_prop+valid_prop)))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
-                init_pos = int(k*(valid_prop/(train_prop+valid_prop))*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
+                width_dataset = int(n/(1+(K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
+                init_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
                 if k == K_fold - 1:
                     df_tmps = df[init_pos:]             
                 else:
@@ -574,24 +640,16 @@ class DataSet(object):
             dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = self.time_step_per_hour,train_df = None)
 
             # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train (pour obtenir 'remaining-train'), et on récupère le Min/Max du remaining_train
-            dataset_tmps.normalize_df(train_prop*1/(train_prop+valid_prop),invalid_dates = invalid_dates, minmaxnorm = True)
-            dataset_tmps.first_date_train = dataset_tmps.train_df.index[0]
-            dataset_tmps.last_date_train = dataset_tmps.train_df.index[-1]
 
-            if no_common_dates_between_set:
-                shift_week = self.Weeks if self.Weeks is not None else 0
-                shift_day = self.Days if self.Days is not None else 0
-                shift_date = max(shift_week*7*24*self.time_step_per_hour,shift_day*24*self.time_step_per_hour,self.historical_len*self.time_step_per_hour) 
-                dataset_tmps.first_date_valid = dataset_tmps.train_df.index[-1] + shift_date*timedelta(hours = 1/self.time_step_per_hour)
-            else:
-                dataset_tmps.first_date_valid = dataset_tmps.train_df.index[-1]
-            dataset_tmps.last_date_valid = dataset_tmps.df.index[-1]    
+            dataset_tmps.normalize_df(train_prop_tmps,invalid_dates = invalid_dates, minmaxnorm = True)
 
+            # Get Date to shift between Set      
+            dataset_tmps.train_valid_test_limits(train_prop_tmps,valid_prop_tmps,no_common_dates_between_set)
             # Ajoute l'objet Dataset-k, à la liste 
             Datasets.append(dataset_tmps)
 
         return(Datasets)
-
+    
 
 
     def unormalize(self,timeserie):

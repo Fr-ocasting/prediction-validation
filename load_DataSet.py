@@ -25,7 +25,7 @@ def load_normalized_dataset(df,time_step_per_hour,train_prop,step_ahead,H,D,W,in
     (U,Utarget,df_verif) = dataset.get_feature_vect(step_ahead,H,D,W)
 
     # Identify Invalid index on the feature vector 
-    invalid_indices_tensor,invalid_indx_df = dataset.get_invalid_indx(invalid_dates,df_verif)  # has to be run after 'get_feature_vect'
+    invalid_indices_tensor,invalid_indx_df = dataset.get_invalid_indx(invalid_dates)  # has to be run after 'get_feature_vect'
 
     # Remove the Invalid Sequences 
     Uclean,Utarget_clean,remaining_dates = dataset.remove_indices(invalid_indices_tensor)

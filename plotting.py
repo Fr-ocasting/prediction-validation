@@ -43,6 +43,7 @@ def plot_k_fold_split(Datasets,invalid_dates):
             
 
     # K-folds : 
+    dates_xticks = []
     for i,dset in enumerate(Datasets):
         
         mask = (dset.df_verif.iloc[:,-1] == dset.last_date_train)
@@ -53,7 +54,7 @@ def plot_k_fold_split(Datasets,invalid_dates):
             first_valid_index = dset.df_verif[mask].index.item()
         except:
             raise ValueError('Too Many Fold or Lagged Feature is way too significant. Reduce K_fold or W,D,H')
-
+        
         predicted_train_1 = dset.df_verif.iloc[0,-1]
         predicted_train_2 = dset.df_verif.loc[last_train_index][-1]
         predicted_valid_1 = dset.df_verif.loc[first_valid_index][-1]    
@@ -66,6 +67,8 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
         lpt1, lpt2, lpv1,lpv2  = mdates.date2num(predicted_train_1),mdates.date2num(predicted_train_2),mdates.date2num(predicted_valid_1) ,mdates.date2num(predicted_valid_2)
         lt1, lt2,lv1,lv2  = mdates.date2num(litmit_set_train1),mdates.date2num(litmit_set_train2), mdates.date2num(litmit_set_valid1),mdates.date2num(litmit_set_valid2)
+
+        dates_xticks = dates_xticks + [lpt1,lpt2,lpv1,lpv2,lt1,lt2,lv1,lv2]
 
         # Calculez les différences en jours (t2-t1) et (t3-t2) comme largeurs
         width_predict_train = lpt2 - lpt1
@@ -80,17 +83,17 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
         ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
         ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Values ValidSet' if i == 0 else None)
+
     # ...
 
+    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
+    #locator = mdates.AutoDateLocator()
+    #formatter = mdates.ConciseDateFormatter(locator)
+    #ax.xaxis.set_major_locator(locator)
+    #ax.xaxis.set_major_formatter(formatter)
 
-
-    #ax.xaxis.set_major_locator(mdates.Locator())
-    #ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%b'))
-    locator = mdates.AutoDateLocator()
-    formatter = mdates.ConciseDateFormatter(locator)
-    ax.xaxis.set_major_locator(locator)
-    ax.xaxis.set_major_formatter(formatter)
-
+    ax.set_xticks(dates_xticks)
+    ax.tick_params(axis='x',rotation=70)
 
     # Pour mieux gérer l'affichage des dates, notamment si elles sont très rapprochées ou très éloignées
     fig.autofmt_xdate()
