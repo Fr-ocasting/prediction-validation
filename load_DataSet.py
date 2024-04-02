@@ -12,17 +12,16 @@ from DL_class import DataSet
 # ======================================================
 
 # Load DataSet object and Sequences : 
-def load_normalized_dataset(df,time_step_per_hour,train_prop,step_ahead,H,D,W,invalid_dates=[]):
+def load_normalized_dataset(df,time_step_per_hour,train_prop,valid_prop,step_ahead,H,D,W,invalid_dates=[]):
 
     # Load DataSet object
-    dataset = DataSet(df,time_step_per_hour=time_step_per_hour)
-
+    dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead)
+    dataset.train_valid_test_limits(train_prop,valid_prop)
     # MinMax Normalize, without taking into account the invalid_dates
-    dataset.remove_invalid_dates(dataset.init_df,invalid_dates)
-    dataset.normalize_df(train_prop,minmaxnorm=True)
+    dataset.normalize_df(invalid_dates,minmaxnorm=True)
 
     # Built Feature Vector 
-    (U,Utarget,df_verif) = dataset.get_feature_vect(step_ahead,H,D,W)
+    (U,Utarget,df_verif) = dataset.get_feature_vect()
 
     # Identify Invalid index on the feature vector 
     invalid_indices_tensor,invalid_indx_df = dataset.get_invalid_indx(invalid_dates)  # has to be run after 'get_feature_vect'

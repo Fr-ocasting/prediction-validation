@@ -96,22 +96,20 @@ def get_dic_results(trainer,pi):
     results['last valid loss'] = trainer.valid_loss[-1] 
     return(results)
 
-def display_info_on_dataset(dataset,train_prop,valid_prop,remaining_dates,train_indice = None,valid_indice = None):
-    if train_indice is None:
-        train_indice = int(len(remaining_dates)*train_prop)
-        valid_indice = int(len(remaining_dates)*(train_prop+valid_prop))
+def display_info_on_dataset(dataset,remaining_dates,train_indice = None,valid_indice = None):
+    assert train_indice is not None, 'Train / Valid Split Indices has not been defined'
 
     if len(remaining_dates) > 0:
         train_dates1 =  f"{str(remaining_dates.iloc[0].item())}" 
         train_dates2 = f"{str(remaining_dates.iloc[train_indice].item())}"
         len_train = f"{len(remaining_dates[:train_indice])}"
 
-        valid_dates1 =  None if (valid_prop == 0) else f"{str(remaining_dates.iloc[train_indice].item())}"
-        valid_dates2 =  None if (valid_prop == 0) else f"{str(remaining_dates.iloc[valid_indice].item())}"  
+        valid_dates1 =  None if (dataset.valid_prop == 0) else f"{str(remaining_dates.iloc[train_indice].item())}"
+        valid_dates2 =  None if (dataset.valid_prop == 0) else f"{str(remaining_dates.iloc[valid_indice].item())}"  
         len_valid = f"{len(remaining_dates[train_indice:valid_indice])}"      
 
-        test_dates1 =  None if ((abs(valid_prop + train_prop -1 ) < 1e-4) or (train_prop == 1 )) else f"{str(remaining_dates.iloc[valid_indice].item())}"
-        test_dates2 =  None if ((abs(valid_prop + train_prop -1 ) < 1e-4) or (train_prop == 1 )) else f"{str(remaining_dates.iloc[-1].item())}"  
+        test_dates1 =  None if ((abs(dataset.valid_prop + dataset.train_prop -1 ) < 1e-4) or (dataset.train_prop == 1 )) else f"{str(remaining_dates.iloc[valid_indice].item())}"
+        test_dates2 =  None if ((abs(dataset.valid_prop + dataset.train_prop -1 ) < 1e-4) or (dataset.train_prop == 1 )) else f"{str(remaining_dates.iloc[-1].item())}"  
         len_test = f"{len(remaining_dates[valid_indice:])}"        
 
     else:
@@ -129,13 +127,15 @@ def display_info_on_dataset(dataset,train_prop,valid_prop,remaining_dates,train_
     # ...
 
 def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
-    (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,step_ahead,H,D,W,invalid_dates)
+    (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,args.valid_prop,step_ahead,H,D,W,invalid_dates)
     print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
     time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
     data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
     data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
     # Print Information
-    display_info_on_dataset(dataset,args.train_prop,args.valid_prop,remaining_dates)
+    _,train_idx = find_nearest_inferior_date(remaining_dates,dataset.last_date_train)
+    _,valid_idx = find_nearest_inferior_date(remaining_dates,dataset.last_date_valid)
+    display_info_on_dataset(dataset,remaining_dates,train_idx,valid_idx)
 
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)

@@ -483,26 +483,29 @@ class DataSet(object):
             x = (x-self.mini)/(self.maxi-self.mini)
         return x 
     
-    def get_shift_between_set(self,no_common_dates_between_set):
-        if no_common_dates_between_set:
-            shift_week = self.Weeks if self.Weeks is not None else 0
-            shift_day = self.Days if self.Days is not None else 0
-            shift_date = max(shift_week*7*24*self.time_step_per_hour,shift_day*24*self.time_step_per_hour,self.historical_len*self.time_step_per_hour) 
-            self.shift_between_set = shift_date*timedelta(hours = 1/self.time_step_per_hour)
-        else:
-            self.shift_between_set = timedelta(0)
+    def get_shift_between_set(self):
+        shift_week = self.Weeks if self.Weeks is not None else 0
+        shift_day = self.Days if self.Days is not None else 0
+        self.shift_from_first_elmt = int(max(shift_week*24*7*self.time_step_per_hour,
+                                shift_day*24*self.time_step_per_hour,
+                                self.historical_len+self.step_ahead-1
+                                ))
+        self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
 
-    def train_valid_test_limits(self,train_prop,valid_prop,no_common_dates_between_set):
+    def train_valid_test_limits(self,train_prop,valid_prop):
         # Split df
-        self.train_df = self.df[:int(train_prop*self.length)]  # Slicing 
-        self.valid_df = self.df[int(train_prop*self.length):int((train_prop+valid_prop)*self.length)]        
-        self.test_df = self.df[int((train_prop+valid_prop)*self.length):]   
+        self.train_prop,self.valid_prop = train_prop,valid_prop
+        ind_train_df=  int(train_prop*self.length)
+        ind_valid_df = int((train_prop+valid_prop)*self.length)
 
-        # Get Shift if needed
-        self.get_shift_between_set(no_common_dates_between_set) 
+        self.train_df = self.df[:ind_train_df]  # Slicing 
+        self.valid_df = self.df[ind_train_df:ind_valid_df]       
+        self.test_df = self.df[ind_valid_df:]   
 
-        # Keep track on 'Full Set' limits:
+        # Get Shift Date Attribute
+        self.get_shift_between_set() 
 
+        # === Keep track on 'Full Set' limits:
         # Train
         self.first_date_train = self.train_df.index[0] 
         self.last_date_train = self.train_df.index[-1]
@@ -520,9 +523,9 @@ class DataSet(object):
             self.last_date_test = self.test_df.index[-1] 
         except:
             self.first_date_test,self.last_date_test = None, None
-        # ...
+        # === ...
  
-        # Keep track on 'Predicted Set' Limits:
+        # === Keep track on 'Predicted Set' Limits:
             
         # Train
         self.first_predicted_date_train = self.train_df.index[0] + self.shift_between_set
@@ -541,8 +544,7 @@ class DataSet(object):
             self.last_predicted_date_test = self.test_df.index[-1]
         except:
             self.first_predicted_date_test,self.last_predicted_date_test = None, None
-        # ...
-
+        # === ...
 
         assert self.first_predicted_date_train < self.last_predicted_date_train, 'Training Set Too Small or Historical Sequence looking to far'           
     
@@ -619,7 +621,7 @@ class DataSet(object):
 
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
         valid_prop_tmps = valid_prop/(train_prop+valid_prop)
-        train_prop_tmps = train_prop*1/(train_prop+valid_prop)
+        train_prop_tmps = train_prop/(train_prop+valid_prop)
         
         # Découpe la dataframe en K_fold 
         for k in range(K_fold):
@@ -637,14 +639,18 @@ class DataSet(object):
                     df_tmps = df[init_pos:init_pos+width_dataset]                   
 
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
-            dataset_tmps = DataSet(df_tmps,init_df = None,mini= None, maxi = None, mean = None, normalized = normalized,time_step_per_hour = self.time_step_per_hour,train_df = None)
+            dataset_tmps = DataSet(df_tmps,Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len, 
+                                   step_ahead= self.step_ahead,init_df = None,mini= None, maxi = None,
+                                     mean = None, normalized = normalized,
+                                     time_step_per_hour = self.time_step_per_hour,
+                                     train_df = None)
+            
+            # Get Date to shift between Set      
+            dataset_tmps.train_valid_test_limits(train_prop_tmps,valid_prop_tmps)
 
             # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train (pour obtenir 'remaining-train'), et on récupère le Min/Max du remaining_train
+            dataset_tmps.normalize_df(invalid_dates = invalid_dates, minmaxnorm = True)
 
-            dataset_tmps.normalize_df(train_prop_tmps,invalid_dates = invalid_dates, minmaxnorm = True)
-
-            # Get Date to shift between Set      
-            dataset_tmps.train_valid_test_limits(train_prop_tmps,valid_prop_tmps,no_common_dates_between_set)
             # Ajoute l'objet Dataset-k, à la liste 
             Datasets.append(dataset_tmps)
 
@@ -667,19 +673,19 @@ class DataSet(object):
         timeserie = TimeSerie(ts = self.df[[station]],init_ts = self.init_df[[station]],mini = self.mini[station],maxi = self.maxi[station],mean = self.mean[station], normalized = self.normalized)
         return(timeserie)
 
-    def shift_data(self,step_ahead,historical_len,Weeks,Days):
+    def shift_data(self):
 
         # Weekkly periodic
-        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((Weeks-i)*self.Week_nb_steps).values),2) for i in range(Weeks)]
-        Dwt = [self.df_dates.shift((Weeks-i)*self.Week_nb_steps) for i in range(Weeks)] 
+        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Weeks-i)*self.Week_nb_steps).values),2) for i in range(self.Weeks)]
+        Dwt = [self.df_dates.shift((self.Weeks-i)*self.Week_nb_steps) for i in range(self.Weeks)] 
 
         # Daily periodic
-        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((Days-i)*self.Day_nb_steps).values),2) for i in range(Days)]
-        Ddt = [self.df_dates.shift((Days-i)*self.Day_nb_steps) for i in range(Days)] 
+        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Days-i)*self.Day_nb_steps).values),2) for i in range(self.Days)]
+        Ddt = [self.df_dates.shift((self.Days-i)*self.Day_nb_steps) for i in range(self.Days)] 
 
         # Recent Historic pattern 
-        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(step_ahead+(historical_len-i)).values),2) for i in range(1,historical_len+1)]
-        Dt = [self.df_dates.shift(step_ahead+(historical_len-i)) for i in range(1,historical_len+1)] 
+        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
+        Dt = [self.df_dates.shift(self.step_ahead+(self.historical_len-i)) for i in range(1,self.historical_len+1)] 
 
         shifted_values = Uwt+Udt+Ut
         shifted_dates = Dwt+Ddt+Dt
@@ -702,38 +708,23 @@ class DataSet(object):
         return(invalid_indices_tensor,self.invalid_indx_df)
 
 
-    def get_feature_vect(self,step_ahead,historical_len,Days,Weeks):
-        if self.time_step_per_hour is None :
-            raise Exception('Number of time steps per hour as not been defined. Please use FeatureVector.time_step_per_hour ')
-        
-        else : 
-             # Update Dataset attributes
-            self.step_ahead = step_ahead
-            self.historical_len = historical_len
-            self.Days = Days
-            self.Weeks = Weeks
-             
-            self.shift_from_first_elmt = int(max(Weeks*24*7*self.time_step_per_hour,
-                                    Days*24*self.time_step_per_hour,
-                                    historical_len+step_ahead-1
-                                    ))
-            
-            # Get the shifted "Dates" of Feature Vector and Target
-            (shifted_values,shifted_dates) = self.shift_data(step_ahead,historical_len,Weeks,Days)
-            L_shifted_dates = shifted_dates + [self.df_dates]
-            Names = [f't-{str(self.Week_nb_steps*(Weeks-w))}' for w in range(Weeks)] + [f't-{str(self.Day_nb_steps*(Days-d))}' for d in range(Days)] + [f't-{str(historical_len-t)}' for t in range(historical_len)]+ [f't+{step_ahead-1}']
-            df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:]
+    def get_feature_vect(self):        
+        # Get the shifted "Dates" of Feature Vector and Target
+        (shifted_values,shifted_dates) = self.shift_data()
+        L_shifted_dates = shifted_dates + [self.df_dates]
+        Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
+        df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:]
 
-            # Get Feature Vector and Target 
-            U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
-            Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
+        # Get Feature Vector and Target 
+        U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
+        Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
 
-            # Update Dataset attributes
-            self.U = U
-            self.Utarget = Utarget
-            self.df_verif = df_verif
+        # Update Dataset attributes
+        self.U = U
+        self.Utarget = Utarget
+        self.df_verif = df_verif
 
-            return(U,Utarget,df_verif)
+        return(U,Utarget,df_verif)
     
 
 class TimeSerie(object):
