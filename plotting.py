@@ -1,5 +1,4 @@
 import matplotlib.pyplot as plt
-import mpl_toolkits.axes_grid1 as axes_grid1
 import pandas as pd
 import numpy as np
 import torch 
@@ -7,6 +6,7 @@ from DL_class import PI_object
 import matplotlib.dates as mdates
 
 from datetime import timedelta
+from utilities_DL import get_associated__df_verif_index
 
 
 def plot_k_fold_split(Datasets,invalid_dates):
@@ -45,57 +45,44 @@ def plot_k_fold_split(Datasets,invalid_dates):
     # K-folds : 
     dates_xticks = []
     for i,dset in enumerate(Datasets):
-        
-        mask = (dset.df_verif.iloc[:,-1] == dset.last_date_train)
-        last_train_index = dset.df_verif[mask].index.item()
-    
-        mask = (dset.df_verif.iloc[:,-1] == dset.first_date_valid)
-        try:
-            first_valid_index = dset.df_verif[mask].index.item()
-        except:
-            raise ValueError('Too Many Fold or Lagged Feature is way too significant. Reduce K_fold or W,D,H')
-        
-        predicted_train_1 = dset.df_verif.iloc[0,-1]
-        predicted_train_2 = dset.df_verif.loc[last_train_index][-1]
-        predicted_valid_1 = dset.df_verif.loc[first_valid_index][-1]    
-        predicted_valid_2 = dset.df_verif.iloc[-1,-1]
 
-        litmit_set_train1=dset.df_verif.iloc[0,0]
-        litmit_set_train2=dset.df_verif.loc[last_train_index][-1]
-        litmit_set_valid1=dset.df_verif.loc[first_valid_index][0]
-        litmit_set_valid2=dset.df_verif.iloc[-1,-1]
+        # Convert Numpy Timestamp into 'mdates num'
+        lpt1, lpt2, lpv1,lpv2,lpte1,lpte2  = mdates.date2num(dset.first_predicted_date_train),mdates.date2num(dset.last_predicted_date_train),mdates.date2num(dset.first_predicted_date_valid) ,mdates.date2num(dset.last_predicted_date_valid),mdates.date2num(dset.first_predicted_date_test) ,mdates.date2num(dset.last_predicted_date_test)
+        lt1, lt2,lv1,lv2,lte1,lte2  = mdates.date2num(dset.first_date_train),mdates.date2num(dset.last_date_train), mdates.date2num(dset.first_date_valid),mdates.date2num(dset.last_date_valid),mdates.date2num(dset.first_date_test),mdates.date2num(dset.last_date_test)
 
-        lpt1, lpt2, lpv1,lpv2  = mdates.date2num(predicted_train_1),mdates.date2num(predicted_train_2),mdates.date2num(predicted_valid_1) ,mdates.date2num(predicted_valid_2)
-        lt1, lt2,lv1,lv2  = mdates.date2num(litmit_set_train1),mdates.date2num(litmit_set_train2), mdates.date2num(litmit_set_valid1),mdates.date2num(litmit_set_valid2)
+        # Display specifics dates on the plot
+        dates_xticks = dates_xticks + [x for x in [lpt1,lpt2,lpv1,lpv2,lpte1,lpte2,lt1,lt2,lv1,lv2,lte1,lte2 ] if x is not None ]  # Remove all the useless dates
 
-        dates_xticks = dates_xticks + [lpt1,lpt2,lpv1,lpv2,lt1,lt2,lv1,lv2]
-
-        # Calculez les différences en jours (t2-t1) et (t3-t2) comme largeurs
+        # Compute Width of each horizontal bar
         width_predict_train = lpt2 - lpt1
         width_predict_valid = lpv2 - lpv1
+        width_predict_test = lpte2 - lpte1
 
         width_train_set = lt2 - lt1
         width_valid_set = lv2 - lv1   
+        width_test_set = lte2 - lte1
 
-        # Ajoutez les barres horizontales en utilisant les dates converties
+        # Plot each horizontal bar (if exists):
         ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Time-Slot within Train' if i == 0 else None)
         ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Values in TrainSet' if i == 0 else None)
 
-        ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
-        ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Values ValidSet' if i == 0 else None)
+        if not np.isnan(width_predict_valid):
+            ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
+            ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Values ValidSet' if i == 0 else None)
 
+        if not np.isnan(width_predict_test):
+            ax.barh(i-0.2, width_predict_test, left=lpte1, color='forestgreen', height = 0.35, alpha = 0.7, label='Predicted Test' if i == 0 else None)
+            ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label='Values TestSet' if i == 0 else None)
     # ...
-
+            
+    # Date formater
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
-    #locator = mdates.AutoDateLocator()
-    #formatter = mdates.ConciseDateFormatter(locator)
-    #ax.xaxis.set_major_locator(locator)
-    #ax.xaxis.set_major_formatter(formatter)
 
+    # Add xticks
     ax.set_xticks(dates_xticks)
     ax.tick_params(axis='x',rotation=70)
 
-    # Pour mieux gérer l'affichage des dates, notamment si elles sont très rapprochées ou très éloignées
+    # Might be useless : 
     fig.autofmt_xdate()
 
     ax.legend()

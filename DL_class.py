@@ -495,8 +495,9 @@ class DataSet(object):
     def train_valid_test_limits(self,train_prop,valid_prop):
         # Split df
         self.train_prop,self.valid_prop = train_prop,valid_prop
-        ind_train_df=  int(train_prop*self.length)
-        ind_valid_df = int((train_prop+valid_prop)*self.length)
+        ind_train_df=  int(train_prop*len(self.df_verif))
+        self.df_verif.iloc[int(train_prop*len(self.df_verif))]
+        ind_valid_df = int((train_prop+valid_prop)*len(self.length))
 
         self.train_df = self.df[:ind_train_df]  # Slicing 
         self.valid_df = self.df[ind_train_df:ind_valid_df]       
@@ -526,7 +527,6 @@ class DataSet(object):
         # === ...
  
         # === Keep track on 'Predicted Set' Limits:
-            
         # Train
         self.first_predicted_date_train = self.train_df.index[0] + self.shift_between_set
         self.last_predicted_date_train = self.train_df.index[-1]
@@ -548,15 +548,14 @@ class DataSet(object):
 
         assert self.first_predicted_date_train < self.last_predicted_date_train, 'Training Set Too Small or Historical Sequence looking to far'           
     
-    def remove_invalid_dates(self,tmps_df,invalid_dates,full_df  =True, train_df_bool = False):
+    def remove_invalid_dates(self,invalid_dates):
         if invalid_dates is not None:
-            invalid_dates = invalid_dates.intersection(tmps_df.index)
-            tmps_df = tmps_df.drop(invalid_dates)
-        if full_df:
-            self.cleaned_df = tmps_df
-        if train_df_bool:
-            self.remaining_train = tmps_df
-        return(tmps_df)
+            invalid_dates = invalid_dates.intersection(self.df.index)
+            tmps_df = self.df.drop(invalid_dates)
+        else:
+            tmps_df = self.df
+
+        self.remaining_dataset = tmps_df
     
     def minmax_normalize_df(self,tmps_df):
         self.mini = tmps_df.min()
@@ -572,15 +571,10 @@ class DataSet(object):
 
     def normalize_df(self,invalid_dates = None,minmaxnorm = True):
         assert self.normalized == False, 'Dataframe might be already normalized'
-
-        self.remove_invalid_dates(self.train_df,invalid_dates,full_df = False,train_df_bool = True)  # remove invalid_dates from train_df
         if minmaxnorm:
             self.minmax_normalize_df(self.remaining_train)
         else:
             raise Exception('Normalization has not been coded')
-        
-        self.first_date_train = self.train_df.index[0]
-        self.last_date_train = self.train_df.index[-1]
         
     def unormalize_df(self,minmaxnorm):
         assert self.normalized == True, 'Dataframe might be already UN-normalized'
@@ -614,7 +608,6 @@ class DataSet(object):
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         split_test = int((train_prop+valid_prop)*len(df))
         df = df[:split_test]  
-        self.test_df = df[split_test:]
 
         # Récupère la Taille de cette DataFrame
         n = len(df)
@@ -645,8 +638,20 @@ class DataSet(object):
                                      time_step_per_hour = self.time_step_per_hour,
                                      train_df = None)
             
-            # Get Date to shift between Set      
+            dataset_tmps.remove_invalid_dates(invalid_dates)  # remove invalid_dates. Build 'remaining_dataset'
+            dataset_tmps.get_feature_vect()  # Build 'df_verif'. Length of df_verif = number of sequences 
+
+            # Supposons 6048 séquences (2 mois).
+            # Intuitivement, pour un ratio 0.6, on prendrait 3628 premier Train et 2420 suivant Valid.
+            # Pb : Il y a un lag de 1 semaine (décalage de 672).
+            # Donc Il reste 2956 Train et 1748 Valid.
+            # Ce qui fait un ratio de 0.62 Train et 2/10 valid 
+
+
             dataset_tmps.train_valid_test_limits(train_prop_tmps,valid_prop_tmps)
+            
+
+
 
             # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train (pour obtenir 'remaining-train'), et on récupère le Min/Max du remaining_train
             dataset_tmps.normalize_df(invalid_dates = invalid_dates, minmaxnorm = True)
@@ -707,7 +712,6 @@ class DataSet(object):
 
         return(invalid_indices_tensor,self.invalid_indx_df)
 
-
     def get_feature_vect(self):        
         # Get the shifted "Dates" of Feature Vector and Target
         (shifted_values,shifted_dates) = self.shift_data()
@@ -723,8 +727,6 @@ class DataSet(object):
         self.U = U
         self.Utarget = Utarget
         self.df_verif = df_verif
-
-        return(U,Utarget,df_verif)
     
 
 class TimeSerie(object):

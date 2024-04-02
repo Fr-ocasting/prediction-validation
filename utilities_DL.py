@@ -19,6 +19,13 @@ from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 
+def get_associated__df_verif_index(dataset,date,iloc):
+    mask = (dataset.df_verif.iloc[:,iloc] == date)
+    try:
+        associated_index = dataset.df_verif[mask].index.item()
+    except:
+        associated_index = None
+    return(associated_index)
 
 def load_all(folder_path,file_name,args,step_ahead,H,D,W,
              embedding_dim=2,position = 'input',single_station = False):
@@ -46,7 +53,7 @@ def load_all(folder_path,file_name,args,step_ahead,H,D,W,
     else:
         model,optimizer = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
 
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer)
+    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates)
 
 def find_nearest_inferior_date(remaining_dates,date):
     '''
