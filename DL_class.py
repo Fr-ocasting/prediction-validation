@@ -497,7 +497,7 @@ class DataSet(object):
         self.train_prop,self.valid_prop = train_prop,valid_prop
         ind_train_df=  int(train_prop*len(self.df_verif))
         self.df_verif.iloc[int(train_prop*len(self.df_verif))]
-        ind_valid_df = int((train_prop+valid_prop)*len(self.length))
+        ind_valid_df = int((train_prop+valid_prop)*len(self.df_verif))
 
         self.train_df = self.df[:ind_train_df]  # Slicing 
         self.valid_df = self.df[ind_train_df:ind_valid_df]       
