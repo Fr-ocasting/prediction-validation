@@ -55,37 +55,37 @@ def load_all(folder_path,file_name,args,step_ahead,H,D,W,
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates)
 
-def find_nearest_date(remaining_dates,date_series,date, inferior):
-    '''
-    Find the nearest TimeStamp <= 'date' among 'remaining_dates'.
-    It return the associated index and indice in 'remaining_dates'
-    '''
-    diff = date_series - date #abs(remaining_dates.iloc[:,0] - date)
-
-    # Nerest <= date: 
-    if inferior :
-        clear_diff = diff[(diff <= timedelta(0))]
-        if len(clear_diff) > 0:
-            nearest_date = max(clear_diff)
-        else : 
-            return(None,None)
-    # Nearest >= date: 
-    else :
-        clear_diff = diff[(diff >= timedelta(0))]
-        if len(clear_diff) > 0:
-            nearest_date = min(clear_diff)
-        else : 
-            return(None,None)
-    mask = (diff == nearest_date)
-
-    # Get Index
-    nearest_df = remaining_dates[mask]    # Suppose to return a unique element 
-    nearest_index = nearest_df.index.item() if  len(nearest_df) > 0 else None   
-
-    # Get Indice
-    nearest_indice_df  = remaining_dates.reset_index()[remaining_dates.reset_index()['index'] == nearest_index]
-    nearest_indice = nearest_indice_df.index.item() if len(nearest_indice_df) > 0 else None
-    return(nearest_index,nearest_indice)
+def find_nearest_date(date_series, date, inferior=True):
+    """
+    Find the nearest index of the timestamp <= or >= 'date' in 'date_series'.
+    Parameters:
+        date_series (pd.Series): A series of timestamps.
+        date (pd.Timestamp): The reference timestamp.
+        inferior (bool): If True, search for the nearest date <= 'date', else >= 'date'.
+    Returns:
+        int or None: The index of the nearest date, or None if not found.
+    """
+    # Calculating the difference
+    diff = date_series - date
+    
+    if inferior:
+        # Filtering to get the nearest <= date
+        filtered_series = diff[diff <= pd.Timedelta(0)]
+        if not filtered_series.empty:
+            nearest_index = filtered_series.idxmax()
+        else:
+            return None,None
+    else:
+        # Filtering to get the nearest >= date
+        filtered_series = diff[diff >= pd.Timedelta(0)]
+        if not filtered_series.empty:
+            nearest_index = filtered_series.idxmin()
+        else:
+            return None,None
+        
+    nearest_indice = date_series.index.get_loc(nearest_index)
+    
+    return nearest_index,nearest_indice
 
 def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
@@ -154,9 +154,9 @@ def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
     data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
     # Print Information
-    _,train_idx = find_nearest_date(remaining_dates,remaining_dates.iloc[:,0],dataset.last_date_train,inferior = True)
-    _,valid_idx = find_nearest_date(remaining_dates,remaining_dates.iloc[:,0],dataset.last_date_valid,inferior = True)
-    display_info_on_dataset(dataset,remaining_dates,train_idx,valid_idx)
+    _,train_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_train,inferior = True)
+    _,valid_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_valid,inferior = True)
+    display_info_on_dataset(dataset,remaining_dates,train_ind,valid_ind)
 
 
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)

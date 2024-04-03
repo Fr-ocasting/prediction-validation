@@ -8,7 +8,7 @@ import torch.nn as nn
 from metrics import evaluate_metrics
 from utilities import get_higher_quantile
 from datetime import timedelta
-
+from split_df import train_valid_test_split_iterative_method
 try: 
     from ray import tune
 except : 
@@ -476,13 +476,6 @@ class DataSet(object):
         indx2colname = {k:c for k,c in enumerate(self.columns)}
         return(colname2indx,indx2colname)
     
-    def minmaxnorm(self,x,reverse = False):
-        if reverse:
-            x = x*(self.maxi - self.mini) +self.mini
-        else :
-            x = (x-self.mini)/(self.maxi-self.mini)
-        return x 
-    
     def get_shift_between_set(self):
         shift_week = self.Weeks if self.Weeks is not None else 0
         shift_day = self.Days if self.Days is not None else 0
@@ -492,62 +485,6 @@ class DataSet(object):
                                 ))
         self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
 
-    def train_valid_test_limits(self,train_prop,valid_prop):
-        # Split df
-        self.train_prop,self.valid_prop = train_prop,valid_prop
-        ind_train_df=  int(train_prop*len(self.df_verif))
-        self.df_verif.iloc[int(train_prop*len(self.df_verif))]
-        ind_valid_df = int((train_prop+valid_prop)*len(self.df_verif))
-
-        self.train_df = self.df[:ind_train_df]  # Slicing 
-        self.valid_df = self.df[ind_train_df:ind_valid_df]       
-        self.test_df = self.df[ind_valid_df:]   
-
-        # Get Shift Date Attribute
-        self.get_shift_between_set() 
-
-        # === Keep track on 'Full Set' limits:
-        # Train
-        self.first_date_train = self.train_df.index[0] 
-        self.last_date_train = self.train_df.index[-1]
-
-        # Valid (if exists)
-        try:
-            self.first_date_valid = self.valid_df.index[0] #self.train_df.index[-1] + self.shift_between_set
-            self.last_date_valid = self.valid_df.index[-1]
-        except:
-            self.first_date_valid,self.last_date_valid = None, None
-
-        # Test (if exists)
-        try:
-            self.first_date_test = self.test_df.index[0]
-            self.last_date_test = self.test_df.index[-1] 
-        except:
-            self.first_date_test,self.last_date_test = None, None
-        # === ...
- 
-        # === Keep track on 'Predicted Set' Limits:
-        # Train
-        self.first_predicted_date_train = self.train_df.index[0] + self.shift_between_set
-        self.last_predicted_date_train = self.train_df.index[-1]
-
-        # Valid
-        try:
-            self.first_predicted_date_valid = self.valid_df.index[0] + self.shift_between_set
-            self.last_predicted_date_valid = self.valid_df.index[-1]
-        except:
-            self.first_predicted_date_valid,self.last_predicted_date_valid = None, None
-        
-        # Test
-        try:
-            self.first_predicted_date_test = self.test_df.index[0] + self.shift_between_set
-            self.last_predicted_date_test = self.test_df.index[-1]
-        except:
-            self.first_predicted_date_test,self.last_predicted_date_test = None, None
-        # === ...
-
-        assert self.first_predicted_date_train < self.last_predicted_date_train, 'Training Set Too Small or Historical Sequence looking to far'           
-    
     def remove_invalid_dates(self,invalid_dates):
         if invalid_dates is not None:
             invalid_dates = invalid_dates.intersection(self.df.index)
@@ -556,11 +493,21 @@ class DataSet(object):
             tmps_df = self.df
 
         self.remaining_dataset = tmps_df
-    
-    def minmax_normalize_df(self,tmps_df):
-        self.mini = tmps_df.min()
-        self.maxi = tmps_df.max()
-        self.mean = tmps_df.mean()
+
+
+    def minmaxnorm(self,x,reverse = False):
+        if reverse:
+            x = x*(self.maxi - self.mini) +self.mini
+        else :
+            x = (x-self.mini)/(self.maxi-self.mini)
+        return x   
+
+
+    def minmax_normalize_df(self):
+
+        self.mini = self.df_train.min()
+        self.maxi = self.df_train.max()
+        self.mean = self.df_train.mean()
 
         # Normalize : 
         normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
@@ -569,10 +516,10 @@ class DataSet(object):
         self.df = normalized_df
         self.normalized = True
 
-    def normalize_df(self,invalid_dates = None,minmaxnorm = True):
+    def normalize_df(self,minmaxnorm = True):
         assert self.normalized == False, 'Dataframe might be already normalized'
         if minmaxnorm:
-            self.minmax_normalize_df(self.remaining_train)
+            self.minmax_normalize_df()
         else:
             raise Exception('Normalization has not been coded')
         
@@ -638,7 +585,7 @@ class DataSet(object):
                                      time_step_per_hour = self.time_step_per_hour,
                                      train_df = None)
             
-            dataset_tmps.remove_invalid_dates(invalid_dates)  # remove invalid_dates. Build 'remaining_dataset'
+            #dataset_tmps.remove_invalid_dates(invalid_dates)  # remove invalid_dates. Build 'remaining_dataset' USELESS 
             dataset_tmps.get_feature_vect()  # Build 'df_verif'. Length of df_verif = number of sequences 
 
             # Supposons 6048 séquences (2 mois).
@@ -648,13 +595,8 @@ class DataSet(object):
             # Ce qui fait un ratio de 0.62 Train et 2/10 valid 
 
 
-            dataset_tmps.train_valid_test_limits(train_prop_tmps,valid_prop_tmps)
-            
-
-
-
             # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train (pour obtenir 'remaining-train'), et on récupère le Min/Max du remaining_train
-            dataset_tmps.normalize_df(invalid_dates = invalid_dates, minmaxnorm = True)
+            dataset_tmps.normalize_df(minmaxnorm = True)
 
             # Ajoute l'objet Dataset-k, à la liste 
             Datasets.append(dataset_tmps)
@@ -697,6 +639,27 @@ class DataSet(object):
 
         return(shifted_values,shifted_dates)
     
+
+    def shift_dates(self):
+        # Weekkly periodic
+        Dwt = [self.df_dates.shift((self.Weeks-i)*self.Week_nb_steps) for i in range(self.Weeks)] 
+        # Daily periodic
+        Ddt = [self.df_dates.shift((self.Days-i)*self.Day_nb_steps) for i in range(self.Days)] 
+        # Recent Historic pattern 
+        Dt = [self.df_dates.shift(self.step_ahead+(self.historical_len-i)) for i in range(1,self.historical_len+1)] 
+        shifted_dates = Dwt+Ddt+Dt
+        return(shifted_dates)
+
+    def shift_values(self):
+        # Weekkly periodic
+        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Weeks-i)*self.Week_nb_steps).values),2) for i in range(self.Weeks)]
+        # Daily periodic
+        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Days-i)*self.Day_nb_steps).values),2) for i in range(self.Days)]
+         # Recent Historic pattern 
+        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
+        shifted_values = Uwt+Udt+Ut
+        return(shifted_values)
+    
     def get_invalid_indx(self,invalid_dates:list):
         '''invalid_dates:  list of Tmestamp dates 
         from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
@@ -708,9 +671,18 @@ class DataSet(object):
         self.invalid_indx_df = df_verif_forbiden.index
 
         # Shift them in relation to the tensor 
-        invalid_indices_tensor = self.invalid_indx_df - self.shift_from_first_elmt
+        self.invalid_indices_tensor = self.invalid_indx_df - self.shift_from_first_elmt
 
-        return(invalid_indices_tensor,self.invalid_indx_df)
+        return(self.invalid_indices_tensor,self.invalid_indx_df)
+    
+    def get_df_verif(self):
+        # Get the shifted "Dates" of Feature Vector and Target
+        shifted_dates = self.shift_dates()
+        L_shifted_dates = shifted_dates + [self.df_dates]
+        Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
+        df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:]
+        self.df_verif = df_verif     
+
 
     def get_feature_vect(self):        
         # Get the shifted "Dates" of Feature Vector and Target
