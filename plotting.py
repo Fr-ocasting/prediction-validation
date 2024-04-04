@@ -10,6 +10,8 @@ from utilities_DL import get_associated__df_verif_index
 
 
 def plot_k_fold_split(Datasets,invalid_dates):
+    if not(type(Datasets) == list):
+        Datasets = [Datasets]
     fig,ax = plt.subplots(figsize=(16,9))
 
     # Forbidden Dates
@@ -40,18 +42,17 @@ def plot_k_fold_split(Datasets,invalid_dates):
                 already_ploted.append(invalid_date+shift*delta_t)
     ax.axvspan(invalid_dates[0], invalid_dates[0], alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted")
     # ...
-            
 
     # K-folds : 
     dates_xticks = []
     for i,dset in enumerate(Datasets):
 
         # Convert Numpy Timestamp into 'mdates num'
-        lpt1, lpt2, lpv1,lpv2,lpte1,lpte2  = mdates.date2num(dset.first_predicted_date_train),mdates.date2num(dset.last_predicted_date_train),mdates.date2num(dset.first_predicted_date_valid) ,mdates.date2num(dset.last_predicted_date_valid),mdates.date2num(dset.first_predicted_date_test) ,mdates.date2num(dset.last_predicted_date_test)
-        lt1, lt2,lv1,lv2,lte1,lte2  = mdates.date2num(dset.first_date_train),mdates.date2num(dset.last_date_train), mdates.date2num(dset.first_date_valid),mdates.date2num(dset.last_date_valid),mdates.date2num(dset.first_date_test),mdates.date2num(dset.last_date_test)
+        lpt1, lpt2, lpv1,lpv2,lpte1,lpte2  = mdates.date2num(dset.first_predicted_train_date),mdates.date2num(dset.last_predicted_train_date),mdates.date2num(dset.first_predicted_valid_date) ,mdates.date2num(dset.last_predicted_valid_date),mdates.date2num(dset.first_predicted_test_date) ,mdates.date2num(dset.last_predicted_test_date)
+        lt1, lt2,lv1,lv2,lte1,lte2  = mdates.date2num(dset.first_train_date),mdates.date2num(dset.last_train_date), mdates.date2num(dset.first_valid_date),mdates.date2num(dset.last_valid_date),mdates.date2num(dset.first_test_date),mdates.date2num(dset.last_test_date)
 
         # Display specifics dates on the plot
-        dates_xticks = dates_xticks + [x for x in [lpt1,lpt2,lpv1,lpv2,lpte1,lpte2,lt1,lt2,lv1,lv2,lte1,lte2 ] if x is not None ]  # Remove all the useless dates
+        dates_xticks = dates_xticks + [x for x in [lpt1,lpt2,lpv1,lpv2,lpte1,lpte2,lt1,lt2,lv1,lv2,lte1,lte2 ] if not np.isnan(x)]  # Remove all the useless dates
 
         # Compute Width of each horizontal bar
         width_predict_train = lpt2 - lpt1

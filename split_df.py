@@ -41,7 +41,7 @@ def find_limits_for_a_df(dataset,df_verif,predicted_serie,last_date1,prop,iterat
         return(None,None)
     else:
         first_date2 = predicted_serie.at[idx1]
-        ind1= df_verif['t+0'].index.get_loc(idx1)  # get indice from index
+        ind1= df_verif[f't+{dataset.step_ahead-1}'].index.get_loc(idx1)  # get indice from index
         ind2 = ind1+iteration*round(10*prop)
         if ind2 > len(df_verif) - 1:
             return(None,None)
@@ -53,9 +53,13 @@ def find_limits_for_a_df(dataset,df_verif,predicted_serie,last_date1,prop,iterat
 
 def train_valid_test_split_iterative_method(dataset,df_verif,train_prop,valid_prop,test_prop):
     # Init:
+    # Case No Validation, No testing: 
+    if train_prop == 1:
+        return(df_verif[f't+{dataset.step_ahead-1}'].iat[0],df_verif[f't+{dataset.step_ahead-1}'].iat[-1],None,None,None,None)
+    
     train_ind1 = 0
     train_ind2 = 0
-    predicted_serie = df_verif['t+0']
+    predicted_serie = df_verif[f't+{dataset.step_ahead-1}']
     first_train_date = predicted_serie.iat[train_ind1]
     last_train_date = predicted_serie.iat[train_ind2]
     new_first_valid_date,new_last_valid_date,new_first_test_date,new_last_test_date = 0,0,0,0 

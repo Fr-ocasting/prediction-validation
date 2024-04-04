@@ -9,6 +9,7 @@ from metrics import evaluate_metrics
 from utilities import get_higher_quantile
 from datetime import timedelta
 from split_df import train_valid_test_split_iterative_method
+from calendar_class import get_time_slots_labels
 try: 
     from ray import tune
 except : 
@@ -86,80 +87,36 @@ class DictDataLoader(object):
     '''
     args
     -----
-    validation -> classic (basic one, with train_prop first percent of the dataset for training) 
-                  wierd_blocked (for Blocked K-fold Cross validation)
-                  sliding_window (for K-fold sliding wodw Validation, there is no Testing set, so there is a modification on train_prop, valid_prop)
     '''
-    def __init__(self,U,Utarget,train_prop,valid_prop,validation = 'classic', shuffle = True, calib_prop = None,time_slots = None,train_idx = None, valid_idx = None):
+    def __init__(self,dataset, shuffle, calib_prop):
         super().__init__()
-        self.validation = validation
-        self.train_prop = train_prop
-        self.valid_prop = valid_prop
-        self.U = U
-        self.Utarget = Utarget 
         self.dataloader = {}
         self.shuffle = shuffle
         self.calib_prop = calib_prop
-        self.time_slots = time_slots
-        self.train_idx = train_idx
-        self.valid_idx = valid_idx
+        self.dataset = dataset
 
-    def get_split_indx(self):
-
-        if self.train_idx is None: 
-            n = self.U.size(0)
-            if (self.validation == 'sliding_window'):
-                # Work as if there were no Testing Set
-                train_prop,valid_prop  = self.train_prop*1/(self.train_prop+self.valid_prop),self.valid_prop*1/(self.train_prop+self.valid_prop)
-
-            if self.validation == 'classic':
-                train_prop,valid_prop  = self.train_prop,self.valid_prop   
-
-            train_idx,valid_idx = int(n*train_prop),int(n*(train_prop+valid_prop)) 
-
-        # In case we already provided the split indices: 
-        else:
-            train_idx,valid_idx = self.train_idx,self.valid_idx     
-        
-        return(train_idx,valid_idx)
-
-    def train_test_split(self,U,Utarget,time_slots):
-
-        # get Split indx
-        train_idx,valid_idx = self.get_split_indx()
-
-        # Train, Valid, Test set
-        train_set,valid_set,test_set = U[:train_idx],U[train_idx:valid_idx],U[valid_idx:]
-        # Targets set
-        train_target, valid_target, test_target = Utarget[:train_idx],Utarget[train_idx:valid_idx],Utarget[valid_idx:]
-        # Time_slots set
-        time_slots_train,time_slots_valid,time_slots_test = time_slots[:train_idx], time_slots[train_idx:valid_idx], time_slots[valid_idx:]
-
-        return(train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test)
-
-    def fill_data_loader_dict(self,set_of_dataset,batch_size):
-        train_set,valid_set,test_set,train_target, valid_target, test_target,time_slots_train,time_slots_valid,time_slots_test = set_of_dataset
-
+    def get_dictdataloader(self,batch_size):
         if self.calib_prop is None: 
-            Sequences,Targets,Time_slots_list,Names = [train_set,valid_set,test_set],[train_target,valid_target,test_target],[time_slots_train,time_slots_valid,time_slots_test],['train','validate','test']
-            #for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-            #        self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=batch_size, shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None
+            Sequences = [self.dataset.U_train,self.dataset.U_valid,self.dataset.U_test]
+            Targets = [self.dataset.Utarget_train,self.dataset.Utarget_valid,self.dataset.Utarget_test]
+            Time_slots_list = [self.dataset.time_slots_train,self.dataset.time_slots_valid,self.dataset.time_slots_test]
+            Names = ['train','validate','test']
+
         else : 
-            indices = torch.randperm(train_set.size(0))
-            split = int(train_set.size(0)*self.calib_prop)
-            proper_set_x,proper_set_y = train_set[indices[:split]],train_target[indices[:split]]
-            calib_set_x,calib_set_y = train_set[indices[split:]],train_target[indices[split:]]
-            time_slots_proper,time_slots_calib = time_slots_train[indices[:split]], time_slots_train[indices[split:]]
+            indices = torch.randperm(self.dataset.U_train.size(0)) 
+            split = int(self.dataset.U_train.size(0)*self.calib_prop)
+            proper_set_x,proper_set_y = self.dataset.U_train[indices[:split]],self.dataset.Utarget_train[indices[:split]]
+            calib_set_x,calib_set_y = self.dataset.U_train[indices[split:]],self.dataset.Utarget_train[indices[split:]]
+            time_slots_proper,time_slots_calib = self.dataset.time_slots_train[indices[:split]], self.dataset.time_slots_train[indices[split:]]
+
+            Sequences = [proper_set_x,self.dataset.U_valid,self.dataset.U_test,calib_set_x]
+            Targets = [proper_set_y,self.dataset.Utarget_valid,self.dataset.Utarget_test,calib_set_y]
+            Time_slots_list = [time_slots_proper,self.dataset.time_slots_valid,self.dataset.time_slots_test,time_slots_calib]
+            Names = ['train','validate','test','cal']
             
-            Sequences,Targets,Time_slots_list,Names = [proper_set_x,valid_set,test_set,calib_set_x],[proper_set_y,valid_target,test_target,calib_set_y],[time_slots_proper,time_slots_valid,time_slots_test,time_slots_calib],['train','validate','test','cal']
-
-        for dataset,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-            self.dataloader[training_mode] = DataLoader(list(zip(dataset,target,L_time_slot)),batch_size=(dataset.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if len(dataset) > 0 else None   
-
-
-    def get_dictdataloader(self,batch_size:int):
-        set_of_dataset = self.train_test_split(self.U,self.Utarget,self.time_slots)
-        self.fill_data_loader_dict(set_of_dataset,batch_size)
+        for feature_vector,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
+            self.dataloader[training_mode] = DataLoader(list(zip(feature_vector,target,L_time_slot)),batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if feature_vector is not None else None   
+        return(self.dataloader)
 
 class MultiModelTrainer(object):
     def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,alpha = None):
@@ -465,6 +422,7 @@ class DataSet(object):
         self.df_shifted = None
         self.invalid_indx_df = None
         self.remaining_dates = None
+        self.time_slots_labels = None
         self.step_ahead = step_ahead
         self.Weeks = Weeks
         self.Days = Days
@@ -485,15 +443,6 @@ class DataSet(object):
                                 self.historical_len+self.step_ahead-1
                                 ))
         self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
-
-    def remove_invalid_dates(self,invalid_dates):
-        if invalid_dates is not None:
-            invalid_dates = invalid_dates.intersection(self.df.index)
-            tmps_df = self.df.drop(invalid_dates)
-        else:
-            tmps_df = self.df
-
-        self.remaining_dataset = tmps_df
 
 
     def minmaxnorm(self,x,reverse = False):
@@ -530,11 +479,12 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
-    def split_K_fold(self,K_fold,train_prop,valid_prop,validation,normalized,invalid_dates = None,no_common_dates_between_set = None):
+    def split_K_fold(self,K_fold,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,batch_size,type_class,type_calendar,no_common_dates_between_set = None):
         '''
         Split la DataSet Initiale en K-fold
         '''
-        Datasets = []
+        Datasets,DataLoader_list = [],[]
+        dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list,time_slots_labels_list = [],[],[],[]
         # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
         df = self.df
 
@@ -565,31 +515,22 @@ class DataSet(object):
                     df_tmps = df[init_pos:init_pos+width_dataset]                   
 
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
-            dataset_tmps = DataSet(df_tmps,Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len, 
-                                   step_ahead= self.step_ahead,init_df = None,mini= None, maxi = None,
-                                     mean = None, normalized = normalized,
-                                     time_step_per_hour = self.time_step_per_hour,
-                                     train_df = None)
+            dataset_tmps = DataSet(df_tmps, Weeks = self.W, Days = self.D, historical_len= self.historical_len,
+                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
             
-            #dataset_tmps.remove_invalid_dates(invalid_dates)  # remove invalid_dates. Build 'remaining_dataset' USELESS 
-            dataset_tmps.get_feature_vect()  # Build 'df_verif'. Length of df_verif = number of sequences 
-
-            # Supposons 6048 séquences (2 mois).
-            # Intuitivement, pour un ratio 0.6, on prendrait 3628 premier Train et 2420 suivant Valid.
-            # Pb : Il y a un lag de 1 semaine (décalage de 672).
-            # Donc Il reste 2956 Train et 1748 Valid.
-            # Ce qui fait un ratio de 0.62 Train et 2/10 valid 
-
-
-            # On normalise selon le protocole du ppt 'Clustering de Time Embedding' : D'abord on Split en  Train/Valid, ensuite on retire les valeur interdite du Train (pour obtenir 'remaining-train'), et on récupère le Min/Max du remaining_train
-            dataset_tmps.normalize_df(minmaxnorm = True)
-
-            # Ajoute l'objet Dataset-k, à la liste 
+            data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
+                                                                                                                                          0,calib_prop,batch_size,type_class= type_class,type_calendar =type_calendar)
+            
             Datasets.append(dataset_tmps)
+            DataLoader_list.append(data_loader)
+            time_slots_labels_list.append(time_slots_labels)
+            dic_class2rpz_list.append(dic_class2rpz)
+            dic_rpz2class_list.append(dic_rpz2class)
+            nb_words_embedding_list.append(nb_words_embedding)
+                      
 
-        return(Datasets)
+        return(Datasets,DataLoader_list,time_slots_labels_list,dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list)
     
-
 
     def unormalize(self,timeserie):
         if not(self.normalized):
@@ -605,26 +546,6 @@ class DataSet(object):
     def get_time_serie(self,station):
         timeserie = TimeSerie(ts = self.df[[station]],init_ts = self.init_df[[station]],mini = self.mini[station],maxi = self.maxi[station],mean = self.mean[station], normalized = self.normalized)
         return(timeserie)
-
-    def shift_data(self):
-
-        # Weekkly periodic
-        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Weeks-i)*self.Week_nb_steps).values),2) for i in range(self.Weeks)]
-        Dwt = [self.df_dates.shift((self.Weeks-i)*self.Week_nb_steps) for i in range(self.Weeks)] 
-
-        # Daily periodic
-        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Days-i)*self.Day_nb_steps).values),2) for i in range(self.Days)]
-        Ddt = [self.df_dates.shift((self.Days-i)*self.Day_nb_steps) for i in range(self.Days)] 
-
-        # Recent Historic pattern 
-        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
-        Dt = [self.df_dates.shift(self.step_ahead+(self.historical_len-i)) for i in range(1,self.historical_len+1)] 
-
-        shifted_values = Uwt+Udt+Ut
-        shifted_dates = Dwt+Ddt+Dt
-
-        return(shifted_values,shifted_dates)
-    
 
     def shift_dates(self):
         # Weekkly periodic
@@ -645,35 +566,6 @@ class DataSet(object):
         Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
         shifted_values = Uwt+Udt+Ut
         return(shifted_values)
-    
-    def get_invalid_indx(self,invalid_dates:list):
-        '''invalid_dates:  list of Tmestamp dates 
-        from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
-        and return 'invalid_indx_df' which correspond to the forbidden index within the dataframe (where the first index can be > 0)'''
-        # Get all the row were the invalid dates are used 
-        df_verif_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])
-
-        # Get the associated index 
-        self.invalid_indx_df = df_verif_forbiden.index
-
-        # Shift them in relation to the tensor 
-        self.invalid_indices_tensor = self.invalid_indx_df - self.shift_from_first_elmt
-
-        return(self.invalid_indices_tensor,self.invalid_indx_df)
-    
-    def remove_indices(self,invalid_indices_tensor):
-        ''' Remove the invalid sequences matching to invalid dates.
-        Sequences have already been shifted, so there is (len(df_init)-shift_from_first_elmt elements) elements left.
-        - The first index of df_verif is 0+shift_from_first_elmt
-        - The last index of df_verif is len(df_init)
-        We then have to remove the invalid sequences from U, and keep the remaining dates from 'df_verif'
-        '''
-        selected_indices = [e for e in np.arange(self.U.shape[0]) if e not in invalid_indices_tensor]  
-        selected_dates_index = [e for e in np.arange(self.shift_from_first_elmt,self.U.shape[0]+self.shift_from_first_elmt) if e not in self.invalid_indx_df]
-        self.U = self.U[selected_indices]
-        self.Utarget = self.Utarget[selected_indices]
-        self.remaining_dates = self.df_shifted.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
-        return(self.U,self.Utarget,self.remaining_dates)
 
     def remove_forbidden_prediction(self,invalid_dates):
         # Mask for dataframe df_verif
@@ -706,6 +598,153 @@ class DataSet(object):
         self.get_U_shifted()       
         # Get the df of associated TimeStamp of the shifter Feature Vector and shifted Target
         self.get_df_shifted()
+
+    def split_tensors(self):
+        ''' Split tensor U in Train/Valid/Test part '''
+        self.U_train = self.U[self.first_train_U:self.last_train_U]
+        self.U_valid = self.U[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None   
+        self.U_test = self.U[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
+
+        self.Utarget_train = self.Utarget[self.first_train_U:self.last_train_U] 
+        self.Utarget_valid = self.Utarget[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
+        self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
+
+        if self.time_slots_labels is not None : 
+            self.time_slots_train = self.time_slots_labels[self.first_train_U:self.last_train_U] 
+            self.time_slots_valid = self.time_slots_labels[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
+            self.time_slots_test = self.time_slots_labels[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None    
+
+    def train_valid_test_split(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
+        # Split with iterative method 
+        first_predicted_train_date,last_predicted_train_date,first_predicted_valid_date,last_predicted_valid_date,first_predicted_test_date,last_predicted_test_date = train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+
+        # Keep track on predicted limits (dates): 
+        self.first_predicted_train_date,self.last_predicted_train_date = first_predicted_train_date,last_predicted_train_date
+        self.first_predicted_valid_date,self.last_predicted_valid_date = first_predicted_valid_date,last_predicted_valid_date
+        self.first_predicted_test_date,self.last_predicted_test_date = first_predicted_test_date,last_predicted_test_date
+
+        # Keep track on DataFrame Verif:
+        predicted_dates = self.df_verif.iloc[:,-1]
+        self.df_verif_train = self.df_verif[( predicted_dates >= self.first_predicted_train_date) & (predicted_dates <= self.last_predicted_train_date)]
+        self.df_verif_valid = self.df_verif[(predicted_dates >= self.first_predicted_valid_date) & (predicted_dates <= self.last_predicted_valid_date)] if self.last_predicted_valid_date is not None else None
+        self.df_verif_test = self.df_verif[(predicted_dates >= self.first_predicted_test_date) & (predicted_dates <= self.last_predicted_test_date)]  if self.last_predicted_test_date is not None else None
+
+        # Keep track on DataFrame Limits (dates): 
+        self.first_train_date,self.last_train_date = self.df_verif_train.iat[0,0] ,self.df_verif_train.iat[-1,-1]
+        if valid_prop > 1e-3 :
+            self.first_valid_date,self.last_valid_date = self.df_verif_valid.iat[0,0] ,self.df_verif_valid.iat[-1,-1]
+        else:
+            self.first_valid_date,self.last_valid_date = None, None
+
+        if test_prop > 1e-3 :
+            self.first_test_date,self.last_test_date = self.df_verif_test.iat[0,0] ,self.df_verif_test.iat[-1,-1]
+        else:
+            self.first_test_date,self.last_test_date = None, None
+        
+        # Get All the involved dates and keep track on splitted DataFrame 
+        self.df_train = self.df.reindex(self.df_verif_train.stack().unique())
+        self.df_valid = self.df.reindex(self.df_verif_valid.stack().unique()) if valid_prop > 1e-3 else None
+        self.df_test = self.df.reindex(self.df_verif_test.stack().unique()) if test_prop > 1e-3 else None
+
+        # Get all the limits for U / Utarget split : 
+        self.first_train_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_train_date].index[0])
+        self.last_train_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_train_date].index[0])
+
+        self.first_valid_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_valid_date].index[0]) if valid_prop > 1e-3 else None
+        self.last_valid_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_valid_date].index[0]) if valid_prop > 1e-3 else None
+
+        self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
+        self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
+
+    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,batch_size,type_class= None,type_calendar = None):
+        self.get_shift_between_set()   # get shift indice and shift date from the first element / between each dataset 
+        self.get_feature_vect()  # Build 'df_shifted'.
+        self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
+
+        # Get Index to Split df, U, Utarget, time_slots_labels
+        self.train_valid_test_split(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
+
+        # Normalize 
+        self.normalize_df(minmaxnorm = True)   # Normalize dataset.df thank to dataset.train_df
+
+        # Re-load U  and U_target, while df is now correctly normalized
+        self.get_feature_vect()  # Build 'df_shifted'.
+        self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
+
+        # get Associated time_slots_labels >
+        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self,type_class= type_class,type_calendar = type_calendar)
+
+        # Split U in  U_train, U_valid, U_test thanks to 'df_verif' and the date limits of the df_train/df_valid/df_test
+        self.split_tensors()
+
+        #   DataLoader 
+        data_loader_obj = DictDataLoader(self, shuffle = True, calib_prop=calib_prop)
+        data_loader = data_loader_obj.get_dictdataloader(batch_size)
+        return(data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+
+    # =====================================================================================================================================
+    # Probablement à supprimer : 
+
+    def remove_invalid_dates(self,invalid_dates):
+        if invalid_dates is not None:
+            invalid_dates = invalid_dates.intersection(self.df.index)
+            tmps_df = self.df.drop(invalid_dates)
+        else:
+            tmps_df = self.df
+
+        self.remaining_dataset = tmps_df
+
+    def shift_data(self):
+
+        # Weekkly periodic
+        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Weeks-i)*self.Week_nb_steps).values),2) for i in range(self.Weeks)]
+        Dwt = [self.df_dates.shift((self.Weeks-i)*self.Week_nb_steps) for i in range(self.Weeks)] 
+
+        # Daily periodic
+        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Days-i)*self.Day_nb_steps).values),2) for i in range(self.Days)]
+        Ddt = [self.df_dates.shift((self.Days-i)*self.Day_nb_steps) for i in range(self.Days)] 
+
+        # Recent Historic pattern 
+        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
+        Dt = [self.df_dates.shift(self.step_ahead+(self.historical_len-i)) for i in range(1,self.historical_len+1)] 
+
+        shifted_values = Uwt+Udt+Ut
+        shifted_dates = Dwt+Ddt+Dt
+
+        return(shifted_values,shifted_dates)
+
+    def get_invalid_indx(self,invalid_dates:list):
+        '''invalid_dates:  list of Tmestamp dates 
+        from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
+        and return 'invalid_indx_df' which correspond to the forbidden index within the dataframe (where the first index can be > 0)'''
+        # Get all the row were the invalid dates are used 
+        df_verif_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])
+
+        # Get the associated index 
+        self.invalid_indx_df = df_verif_forbiden.index
+
+        # Shift them in relation to the tensor 
+        self.invalid_indices_tensor = self.invalid_indx_df - self.shift_from_first_elmt
+
+        return(self.invalid_indices_tensor,self.invalid_indx_df)
+    
+    def remove_indices(self,invalid_indices_tensor):
+        ''' Remove the invalid sequences matching to invalid dates.
+        Sequences have already been shifted, so there is (len(df_init)-shift_from_first_elmt elements) elements left.
+        - The first index of df_verif is 0+shift_from_first_elmt
+        - The last index of df_verif is len(df_init)
+        We then have to remove the invalid sequences from U, and keep the remaining dates from 'df_verif'
+        '''
+        selected_indices = [e for e in np.arange(self.U.shape[0]) if e not in invalid_indices_tensor]  
+        selected_dates_index = [e for e in np.arange(self.shift_from_first_elmt,self.U.shape[0]+self.shift_from_first_elmt) if e not in self.invalid_indx_df]
+        self.U = self.U[selected_indices]
+        self.Utarget = self.Utarget[selected_indices]
+        self.remaining_dates = self.df_shifted.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
+        return(self.U,self.Utarget,self.remaining_dates)
+
+
+
+
 
 class TimeSerie(object):
     def __init__(self,ts,init_ts = None,mini = None, maxi = None, mean = None, normalized = False):

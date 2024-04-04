@@ -69,7 +69,7 @@ def get_week_hour_minute_class(type_class):
 def get_time_slots_labels(dataset,type_class,type_calendar):
 
     # Associate Label to a timestamp
-    df_time_slots = pd.DataFrame(dataset.df.index,columns = ['datetime'])
+    df_time_slots = pd.DataFrame(dataset.df_verif[f"t+{dataset.step_ahead-1}"]).rename(columns = {f"t+{dataset.step_ahead-1}":'datetime'})
     df_time_slots['hour'] = df_time_slots.datetime.dt.hour
     df_time_slots['weekday'] = df_time_slots.datetime.dt.weekday
     df_time_slots['minutes'] = df_time_slots.datetime.dt.minute
@@ -86,11 +86,14 @@ def get_time_slots_labels(dataset,type_class,type_calendar):
 
     # According choosen type_class: 
     if type_class == 0:
-        return(torch.Tensor([0.0]*len(dataset.df)),dic_class2rpz,dic_rpz2class,1)
+        dataset.time_slots_labels = torch.Tensor([0.0]*len(dataset.df_verif))
+        return(dataset.time_slots_labels,dic_class2rpz,dic_rpz2class,1)
     else:
         df_time_slots['calendar_class_rpz'] = df_time_slots.apply(lambda row : find_class((row.weekday,row.hour,row.minutes),week_group,hour_minute_group),axis=1)
         df_time_slots['calendar_class_rpz_str'] = df_time_slots.calendar_class_rpz.apply(lambda class_rpz : f"{'_'.join(list(map(str,class_rpz[0])))}-{'_'.join(list(map(str,class_rpz[1])))}" )
         df_time_slots['calendar_class'] = df_time_slots.calendar_class_rpz_str.apply(lambda class_rpz : dic_rpz2class[class_rpz]) 
-        time_slots_labels = torch.Tensor(df_time_slots['calendar_class'])
+        #time_slots_labels = torch.Tensor(df_time_slots['calendar_class'])
+        time_slots_labels = torch.Tensor(df_time_slots['calendar_class'].values)  #.long()
         nb_words_embedding = len(df_time_slots['calendar_class'].unique())
-        return(time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+        dataset.time_slots_labels = time_slots_labels
+        return(dataset.time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)

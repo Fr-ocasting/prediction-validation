@@ -80,6 +80,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['train_prop'] = 0.6
     config['calib_prop'] = 0.5
     config['valid_prop'] = 0.2  
+    config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     config['alpha'] = 0.1
     config['loss_function_type'] = 'quantile'
     config['conformity_scores_type'] = 'max_residual'
