@@ -462,6 +462,7 @@ class DataSet(object):
         self.U = None
         self.Utarget = None
         self.df_verif = None
+        self.df_shifted = None
         self.invalid_indx_df = None
         self.remaining_dates = None
         self.step_ahead = step_ahead
@@ -529,21 +530,6 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
-
-    def remove_indices(self,invalid_indices_tensor):
-        ''' Remove the invalid sequences matching to invalid dates.
-        Sequences have already been shifted, so there is (len(df_init)-shift_from_first_elmt elements) elements left.
-        - The first index of df_verif is 0+shift_from_first_elmt
-        - The last index of df_verif is len(df_init)
-        We then have to remove the invalid sequences from U, and keep the remaining dates from 'df_verif'
-        '''
-        selected_indices = [e for e in np.arange(self.U.shape[0]) if e not in invalid_indices_tensor]  
-        selected_dates_index = [e for e in np.arange(self.shift_from_first_elmt,self.U.shape[0]+self.shift_from_first_elmt) if e not in self.invalid_indx_df]
-        self.U = self.U[selected_indices]
-        self.Utarget = self.Utarget[selected_indices]
-        self.remaining_dates = self.df_verif.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
-        return(self.U,self.Utarget,self.remaining_dates)
-    
     def split_K_fold(self,K_fold,train_prop,valid_prop,validation,normalized,invalid_dates = None,no_common_dates_between_set = None):
         '''
         Split la DataSet Initiale en K-fold
@@ -665,7 +651,7 @@ class DataSet(object):
         from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
         and return 'invalid_indx_df' which correspond to the forbidden index within the dataframe (where the first index can be > 0)'''
         # Get all the row were the invalid dates are used 
-        df_verif_forbiden = pd.concat([self.df_verif[self.df_verif[c].isin(invalid_dates)] for c in self.df_verif.columns])
+        df_verif_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])
 
         # Get the associated index 
         self.invalid_indx_df = df_verif_forbiden.index
@@ -675,31 +661,51 @@ class DataSet(object):
 
         return(self.invalid_indices_tensor,self.invalid_indx_df)
     
-    def get_df_verif(self):
+    def remove_indices(self,invalid_indices_tensor):
+        ''' Remove the invalid sequences matching to invalid dates.
+        Sequences have already been shifted, so there is (len(df_init)-shift_from_first_elmt elements) elements left.
+        - The first index of df_verif is 0+shift_from_first_elmt
+        - The last index of df_verif is len(df_init)
+        We then have to remove the invalid sequences from U, and keep the remaining dates from 'df_verif'
+        '''
+        selected_indices = [e for e in np.arange(self.U.shape[0]) if e not in invalid_indices_tensor]  
+        selected_dates_index = [e for e in np.arange(self.shift_from_first_elmt,self.U.shape[0]+self.shift_from_first_elmt) if e not in self.invalid_indx_df]
+        self.U = self.U[selected_indices]
+        self.Utarget = self.Utarget[selected_indices]
+        self.remaining_dates = self.df_shifted.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
+        return(self.U,self.Utarget,self.remaining_dates)
+
+    def remove_forbidden_prediction(self,invalid_dates):
+        # Mask for dataframe df_verif
+        df_shifted_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])  # Concat forbidden indexes within each columns
+        forbidden_index = df_shifted_forbiden.index.unique()  # drop dupplicates
+
+        # Mask for Tensor U, Utarget
+        forbidden_indice_U = forbidden_index - self.shift_from_first_elmt  #shift index to get back to corresponding indices
+        mask_U =  [e for e in np.arange(self.U.shape[0]) if e not in forbidden_indice_U]
+
+        # Apply Mask
+        self.U = self.U[mask_U]
+        self.Utarget = self.Utarget[mask_U]
+        self.df_verif = self.df_shifted.drop(forbidden_index)
+
+    def get_df_shifted(self):
         # Get the shifted "Dates" of Feature Vector and Target
         shifted_dates = self.shift_dates()
         L_shifted_dates = shifted_dates + [self.df_dates]
         Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
-        df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:]
-        self.df_verif = df_verif     
+        self.df_shifted = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:] 
 
+    def get_U_shifted(self):
+        shifted_values = self.shift_values()
+        self.U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
+        self.Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
 
-    def get_feature_vect(self):        
-        # Get the shifted "Dates" of Feature Vector and Target
-        (shifted_values,shifted_dates) = self.shift_data()
-        L_shifted_dates = shifted_dates + [self.df_dates]
-        Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
-        df_verif = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:]
-
-        # Get Feature Vector and Target 
-        U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
-        Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
-
-        # Update Dataset attributes
-        self.U = U
-        self.Utarget = Utarget
-        self.df_verif = df_verif
-    
+    def get_feature_vect(self): 
+        # Get shifted Feature Vector and shifted Target
+        self.get_U_shifted()       
+        # Get the df of associated TimeStamp of the shifter Feature Vector and shifted Target
+        self.get_df_shifted()
 
 class TimeSerie(object):
     def __init__(self,ts,init_ts = None,mini = None, maxi = None, mean = None, normalized = False):
