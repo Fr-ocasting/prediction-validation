@@ -479,7 +479,7 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
-    def split_K_fold(self,K_fold,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,batch_size,type_class,type_calendar,no_common_dates_between_set = None):
+    def split_K_fold(self,K_fold,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,validation,batch_size,type_class,type_calendar,no_common_dates_between_set = None):
         '''
         Split la DataSet Initiale en K-fold
         '''
@@ -487,14 +487,19 @@ class DataSet(object):
         dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list,time_slots_labels_list = [],[],[],[]
         # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
         df = self.df
-
+        # Récupère la DataSet de Test Commune à tous: 
+        dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
+                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
+        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,train_prop, valid_prop,test_prop,
+                                                                              calib_prop,batch_size,type_class= type_class,type_calendar =type_calendar)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
-        split_test = int((train_prop+valid_prop)*len(df))
-        df = df[:split_test]  
+        df = df[: dataset_init.first_test_date]  
 
         # Récupère la Taille de cette DataFrame
         n = len(df)
 
+
+        
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
         valid_prop_tmps = valid_prop/(train_prop+valid_prop)
         train_prop_tmps = train_prop/(train_prop+valid_prop)
@@ -515,12 +520,17 @@ class DataSet(object):
                     df_tmps = df[init_pos:init_pos+width_dataset]                   
 
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
-            dataset_tmps = DataSet(df_tmps, Weeks = self.W, Days = self.D, historical_len= self.historical_len,
+            dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
             
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
                                                                                                                                           0,calib_prop,batch_size,type_class= type_class,type_calendar =type_calendar)
             
+            data_loader['test'] = data_loader_with_test['test']
+            dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
+            dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
+            dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
+             
             Datasets.append(dataset_tmps)
             DataLoader_list.append(data_loader)
             time_slots_labels_list.append(time_slots_labels)
