@@ -95,17 +95,38 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
 
 
 def load_raw_data(folder_path,file_name,single_station = False,):
-    if file_name == 'preprocessed_subway_15_min.csv':
+    if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
         subway_in = pd.read_csv(folder_path+file_name,index_col = 0)
         subway_in.columns.name = 'Station'
         subway_in.index = pd.to_datetime(subway_in.index)
 
         subway_in = subway_in[['Ampère Victor Hugo']] if single_station else subway_in
-        # Invalid dates : 
+
+        # Define Invalid Dates : 
+        list_of_invalid_period = []
+        list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
+        list_of_invalid_period.append([datetime(2019,1,30,8,15),datetime(2019,1,30,10,30)])
+        list_of_invalid_period.append([datetime(2019,2,18,11),datetime(2019,2,18,13)])
+        list_of_invalid_period.append([datetime(2019,4,23,14),datetime(2019,4,28,14)])
+        list_of_invalid_period.append([datetime(2019,6,26,11),datetime(2019,6,28,4)])
+        list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
+        list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
+
+        invalid_dates = []
         time_step_per_hour = (60*60)/(subway_in.iloc[1].name - subway_in.iloc[0].name).seconds
-        invalid_dates = pd.date_range(datetime(2019,4,23,14),datetime(2019,4,28,14),freq = f'{60/time_step_per_hour}min')
+        for start,end in list_of_invalid_period:
+            invalid_dates = invalid_dates + list(pd.date_range(start,end,freq = f'{60/time_step_per_hour}min'))
+
+        # Restrain invalid_dates to the df: 
+        invalid_dates = list(set(invalid_dates) & set(subway_in.index))
+
         print(f"coverage period: {subway_in.index.min()} - {subway_in.index.max()}")
-        return(subway_in,invalid_dates,time_step_per_hour)
+
+    
+    else:
+        raise NotImplementedError(f"file name option '{file_name}' has not been defined in 'load_row_data' ")
+        
+    return(subway_in,invalid_dates,time_step_per_hour)
 
 
 def get_dic_results(trainer,pi):

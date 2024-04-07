@@ -18,29 +18,30 @@ def plot_k_fold_split(Datasets,invalid_dates):
     delta_t = timedelta(hours= 1/Datasets[0].time_step_per_hour)
     already_ploted = []
     for i,invalid_date in enumerate(invalid_dates):
-        if not invalid_date in already_ploted:   # Avoid to plot too many vbar
+        if (not invalid_date in already_ploted):   # Avoid to plot too many vbar
             ax.axvspan(invalid_date, invalid_date+delta_t, alpha=0.3, color='grey',label= 'Invalid dates' if i==0 else None)
+            date_for_grey_label = invalid_date
             already_ploted.append(invalid_date)
 
     for i,invalid_date in enumerate(invalid_dates):
         if Datasets[0].Weeks is not None:
             shift = int(Datasets[0].Weeks*24*7*Datasets[0].time_step_per_hour)
-            if not invalid_date+shift*delta_t in already_ploted:
+            if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
 
         if Datasets[0].Days is not None:
             shift = int(Datasets[0].Days*24*Datasets[0].time_step_per_hour)
-            if not invalid_date+shift*delta_t in already_ploted:
+            if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
 
         if Datasets[0].historical_len is not None:
             shift = int(Datasets[0].historical_len*Datasets[0].time_step_per_hour)
-            if not invalid_date+shift*delta_t in already_ploted:
+            if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
-    ax.axvspan(invalid_dates[0], invalid_dates[0], alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted")
+    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted")
     # ...
 
     # K-folds : 
