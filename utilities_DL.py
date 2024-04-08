@@ -95,7 +95,7 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
 
 
 def load_raw_data(folder_path,file_name,single_station = False,):
-    if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
+    if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (file_name=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):
         subway_in = pd.read_csv(folder_path+file_name,index_col = 0)
         subway_in.columns.name = 'Station'
         subway_in.index = pd.to_datetime(subway_in.index)

@@ -148,12 +148,38 @@ class MultiModelTrainer(object):
         mean_picp = torch.Tensor(self.picp).mean()
         mean_mpiw = torch.Tensor(self.mpiw).mean() 
         assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
-        mean_last_train_loss = self.Loss_train.mean(dim = 0)[-1]  #.item()
-        mean_last_valid_loss = self.Loss_valid.mean(dim = 0)[-1]  #.item()
 
-        min_mean_train_loss = self.Loss_train.mean(dim = 0).min()  #.item()
-        min_mean_valid_loss = self.Loss_valid.mean(dim = 0).min()  #.item()
-        return(mean_picp,mean_mpiw,mean_last_train_loss,mean_last_valid_loss,min_mean_train_loss,min_mean_valid_loss)       
+        # Last loss : 
+        mean_last_train_loss = self.Loss_train.mean(dim = 0)[-1]  #.item()
+        associated_std_of_last_train_loss =  self.Loss_train.std(dim = 0)[-1]
+        mean_last_valid_loss = self.Loss_valid.mean(dim = 0)[-1]  #.item()
+        associated_std_of_last_valid_loss =  self.Loss_train.std(dim = 0)[-1]
+
+        dict_last_from_mean_of_folds = dict(mean_last_train_loss = mean_last_train_loss.item(),
+                                    associated_std_of_last_train_loss = associated_std_of_last_train_loss.item(),
+                                    mean_last_valid_loss = mean_last_valid_loss.item(),
+                                    associated_std_of_last_valid_loss = associated_std_of_last_valid_loss.item()
+                                    )
+        # ...
+        
+        # Moyenne des meilleurs loss de chaque fold : 
+        #mean_on_best_train_loss_by_fold = self.Loss_train.min(dim = 1)[0].mean() #.item()
+        #mean_on_best_valid_loss_by_fold = self.Loss_valid.min(dim = 1)[0].mean()  #.item()  
+        # ...
+
+        # On recupère une loss moyenne sur les K-fold. On prend le minimum atteint par cette moyenne.
+        best_train_loss_from_mean_of_fold,ind_best_train = self.Loss_train.mean(dim = 0).min(dim = 0)  #.item()
+        associated_std_of_best_train_loss =  self.Loss_train.std(dim = 0)[ind_best_train]
+        best_valid_loss_from_mean_of_fold,ind_best_valid = self.Loss_valid.mean(dim = 0).min(dim = 0)  #.item()
+        associated_std_of_best_valid_loss =  self.Loss_valid.std(dim = 0)[ind_best_valid]
+        dict_best_from_mean_of_folds = dict(best_train_loss_from_mean_of_fold = best_train_loss_from_mean_of_fold.item(),
+                                            associated_std_of_best_train_loss = associated_std_of_best_train_loss.item(),
+                                            best_valid_loss_from_mean_of_fold = best_valid_loss_from_mean_of_fold.item(),
+                                            associated_std_of_best_valid_loss = associated_std_of_best_valid_loss.item()
+                                            )
+        # ...
+        
+        return(mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
 
 
     

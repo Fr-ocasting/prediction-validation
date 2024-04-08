@@ -119,13 +119,12 @@ def load_data_and_pivot(folder_path, file_name, reindex):
         txt_path = "Métro 15 minutes 2019 2020.txt"
         df_metro_funi_2019_2020 = load_subway_15_min(folder_path+txt_path)
         df_metro = df_metro_funi_2019_2020[(df_metro_funi_2019_2020.datetime >= start)&(df_metro_funi_2019_2020.datetime < end)]
-
+        
+    df_metro = df_metro[df_metro['Code ligne'].isin(['A','B','C','D'])]
     # For a same station, there are different sens. Let's aggregate them with 'sum' : 
     subway_in = pd.pivot_table(df_metro,index = 'datetime',columns = 'Station',values = 'in',aggfunc = 'sum', fill_value = 0).reindex(reindex).fillna(0)
     subway_out = pd.pivot_table(df_metro,index = 'datetime',columns = 'Station',values = 'out',aggfunc = 'sum', fill_value = 0).reindex(reindex).fillna(0)
 
-    subway_in = subway_in.drop(columns= ['Fourvière'])
-    subway_out = subway_out.drop(columns= ['Fourvière'])
 
     return(subway_in,subway_out)
 

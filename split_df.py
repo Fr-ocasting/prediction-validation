@@ -37,8 +37,11 @@ def find_limits_for_a_df(dataset,df_verif,predicted_serie,last_date1,prop,iterat
     ''' Find the next limits of the df_valid or df_test '''
     #_,ind1 = find_nearest_date(df_verif,df_verif.iloc[:,-1],last_date1+dataset.shift_between_set,inferior = False)
     idx1,_ = find_nearest_date(predicted_serie,last_date1+dataset.shift_between_set,inferior = False)
-    if (idx1 is None) | (idx1 > predicted_serie.idxmax()): 
+    
+    if (idx1 is None) : 
         return(None,None)
+    elif (idx1 > predicted_serie.idxmax()):
+        return(None,None) 
     else:
         first_date2 = predicted_serie.at[idx1]
         ind1= df_verif[f't+{dataset.step_ahead-1}'].index.get_loc(idx1)  # get indice from index
