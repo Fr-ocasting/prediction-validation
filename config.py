@@ -33,9 +33,15 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         dropout = [0.2],calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
-                        num_nodes = 40, n_his=8, n_pred = 1, time_intvl = 5, Kt = 3, stblock_num=2,act_fun=['glu','gtu'],Ks = [3,2],
-                        graph_conv_type = ['cheb_graph_conv', 'graph_conv'],gso_type = ['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj'],
-                        enable_bias = 'True',out_dim = 2,adj_type = 'dist',enable_padding = True,
+                        num_nodes = 40, n_his=8, n_pred = 1, time_intvl = 5, Kt = 3, stblock_num=2,
+                        act_fun=['glu'],#['glu','gtu'],
+                        Ks =[2], #[3,2],
+                        graph_conv_type = ['graph_conv'], # ['cheb_graph_conv', 'graph_conv'],
+                        gso_type = ['sym_norm_lap'], # ['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj'],
+                        enable_bias = 'True',
+                        out_dim = 2,
+                        adj_type = 'dist',
+                        enable_padding = True,
 
                         threeshold = 0.3,gamma = 0.95,patience = 30,scheduler = None, ray = False
         )
@@ -88,7 +94,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['calendar_class'] = 3
     config['specific_lr'] = [True, False]
     config['time_embedding'] = True
-    config['type_calendar'] = 'class_of_tuple'  
+    config['type_calendar'] = 'unique_long_embedding'  # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
     config['validation'] = 'classic'  # classic / sliding_window / 
     config['position'] = 'input'  # Position of time_embedding module : before or after the core model
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
@@ -142,7 +148,6 @@ def get_parameters(config,description = None ):
 
     args = parser.parse_args(args=[])
     return(args)
-
 
 def display_config(args,args_embedding):
     # Args 

@@ -10,7 +10,7 @@ from load_adj import load_adj
 from config import optimizer_specific_lr, get_config_embed, get_parameters,display_config
 from calendar_class import get_time_slots_labels
 from load_DataSet import load_normalized_dataset
-from DL_class import DictDataLoader,QuantileLoss
+from DL_class import DictDataLoader,QuantileLoss,DataSet
 
 # Models : 
 from dl_models.CNN_based_model import CNN
@@ -18,6 +18,18 @@ from dl_models.MTGNN import gtnet
 from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
+
+# Load Loss 
+def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding_list,dic_class2rpz_list):
+    loss_function = get_loss(args.loss_function_type,args)
+    config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding_list[0],embedding_dim = args.embedding_dim,position = args.position)
+    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding') if args.time_embedding else None
+
+    model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz_list[0]) for _ in range(args.K_fold)]
+    Model_list = [model_opt[0] for model_opt in model_opt_list]
+    Optimizer_list = [model_opt[1] for model_opt in model_opt_list]
+    return(loss_function,Model_list,Optimizer_list,args_embedding)
+
 
 def get_associated__df_verif_index(dataset,date,iloc):
     mask = (dataset.df_verif.iloc[:,iloc] == date)
@@ -93,6 +105,10 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     optimizer = choose_optimizer(model,args)
     return(model,optimizer)
 
+def get_DataSet_and_invalid_dates(folder_path,file_name,W,D,H,step_ahead,single_station = False):
+    df,invalid_dates,time_step_per_hour = load_raw_data(folder_path,file_name,single_station = single_station)
+    dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead)
+    return(dataset,invalid_dates)
 
 def load_raw_data(folder_path,file_name,single_station = False,):
     if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (file_name=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):

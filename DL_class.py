@@ -119,12 +119,12 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,alpha = None):
+    def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False):
         super(MultiModelTrainer).__init__()
         self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding) for dataloader,model,optimizer in zip(dataloader_list,model_list,optimizer_list)]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
-        self.alpha = alpha 
+        self.alpha = args.alpha 
         self.picp = []   
         self.mpiw = []
 
@@ -151,14 +151,14 @@ class MultiModelTrainer(object):
 
         # Last loss : 
         mean_last_train_loss = self.Loss_train.mean(dim = 0)[-1]  #.item()
-        associated_std_of_last_train_loss =  self.Loss_train.std(dim = 0)[-1]
+        std_of_lasts_train_loss =  self.Loss_train.std(dim = 0)[-1]
         mean_last_valid_loss = self.Loss_valid.mean(dim = 0)[-1]  #.item()
-        associated_std_of_last_valid_loss =  self.Loss_train.std(dim = 0)[-1]
+        std_of_lasts_valid_loss =  self.Loss_train.std(dim = 0)[-1]
 
         dict_last_from_mean_of_folds = dict(mean_last_train_loss = mean_last_train_loss.item(),
-                                    associated_std_of_last_train_loss = associated_std_of_last_train_loss.item(),
+                                    std_of_lasts_train_loss = std_of_lasts_train_loss.item(),
                                     mean_last_valid_loss = mean_last_valid_loss.item(),
-                                    associated_std_of_last_valid_loss = associated_std_of_last_valid_loss.item()
+                                    std_of_lasts_valid_loss = std_of_lasts_valid_loss.item()
                                     )
         # ...
         
@@ -168,14 +168,14 @@ class MultiModelTrainer(object):
         # ...
 
         # On recupère une loss moyenne sur les K-fold. On prend le minimum atteint par cette moyenne.
-        best_train_loss_from_mean_of_fold,ind_best_train = self.Loss_train.mean(dim = 0).min(dim = 0)  #.item()
-        associated_std_of_best_train_loss =  self.Loss_train.std(dim = 0)[ind_best_train]
-        best_valid_loss_from_mean_of_fold,ind_best_valid = self.Loss_valid.mean(dim = 0).min(dim = 0)  #.item()
-        associated_std_of_best_valid_loss =  self.Loss_valid.std(dim = 0)[ind_best_valid]
-        dict_best_from_mean_of_folds = dict(best_train_loss_from_mean_of_fold = best_train_loss_from_mean_of_fold.item(),
-                                            associated_std_of_best_train_loss = associated_std_of_best_train_loss.item(),
-                                            best_valid_loss_from_mean_of_fold = best_valid_loss_from_mean_of_fold.item(),
-                                            associated_std_of_best_valid_loss = associated_std_of_best_valid_loss.item()
+        best_mean_train_loss,ind_best_train = self.Loss_train.mean(dim = 0).min(dim = 0)  #.item()
+        std_of_best_mean_train_loss =  self.Loss_train.std(dim = 0)[ind_best_train]
+        best_mean_valid_loss,ind_best_valid = self.Loss_valid.mean(dim = 0).min(dim = 0)  #.item()
+        std_of_best_mean_valid_loss =  self.Loss_valid.std(dim = 0)[ind_best_valid]
+        dict_best_from_mean_of_folds = dict(best_mean_train_loss = best_mean_train_loss.item(),
+                                            std_of_best_mean_train_loss = std_of_best_mean_train_loss.item(),
+                                            best_mean_valid_loss = best_mean_valid_loss.item(),
+                                            std_of_best_mean_valid_loss = std_of_best_mean_valid_loss.item()
                                             )
         # ...
         
