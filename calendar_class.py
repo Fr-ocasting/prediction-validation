@@ -66,7 +66,7 @@ def get_week_hour_minute_class(type_class):
 
     return(week_group,hour_minute_group)
 
-def get_time_slots_labels(dataset,type_class,type_calendar):
+def get_time_slots_labels(dataset,calendar_class):
 
     # Associate Label to a timestamp
     df_time_slots = pd.DataFrame(dataset.df_verif[f"t+{dataset.step_ahead-1}"]).rename(columns = {f"t+{dataset.step_ahead-1}":'datetime'})
@@ -74,18 +74,12 @@ def get_time_slots_labels(dataset,type_class,type_calendar):
     df_time_slots['weekday'] = df_time_slots.datetime.dt.weekday
     df_time_slots['minutes'] = df_time_slots.datetime.dt.minute
 
-    # If calendar is represented by a typle (weekday, )
-    #if type_calendar == 'tuple':
-    #    time_slots_labels = torch.Tensor(df_time_slots.apply(lambda row: [row.weekday,row.hour,row.minutes/15], axis = 1)).long()
-
-    #if type_calendar == 'class_of_tuple':
-        # Dict Label to representation 
-    week_group,hour_minute_group = get_week_hour_minute_class(type_class)
+    week_group,hour_minute_group = get_week_hour_minute_class(calendar_class)
     dic_class2rpz = {i*len(hour_minute_group)+k:([w1,w2],[(h1,m1),(h2,m2)]) for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
     dic_rpz2class = {f"{'_'.join(list(map(str,[w1,w2])))}-{'_'.join(list(map(str,[(h1,m1),(h2,m2)])))}":i*len(hour_minute_group)+k for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
 
     # According choosen type_class: 
-    if type_class == 0:
+    if calendar_class == 0:
         dataset.time_slots_labels = torch.Tensor([0.0]*len(dataset.df_verif))
         return(dataset.time_slots_labels,dic_class2rpz,dic_rpz2class,1)
     else:

@@ -4,8 +4,9 @@ def time_embedding_tuning(args,mean_picp,mean_mpiw):
     dict1 = dict(CalendarClass = args.calendar_class, 
         Position = args.position, 
         Specific_lr = args.specific_lr,
-        PICP = mean_picp.item(),
-        MPIW = mean_mpiw.item()
+        Type_calendar = args.type_calendar,
+        PICP_mean = mean_picp.item(),
+        MPIW_mean = mean_mpiw.item()
         )
     
     return(dict1)

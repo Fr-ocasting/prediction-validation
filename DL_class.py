@@ -131,6 +131,8 @@ class MultiModelTrainer(object):
     def K_fold_validation(self):
         for k,trainer in enumerate(self.Trainers):
             # Train valid model 
+            if k == 0:
+                print('\n')
             print(f"K_fold {k}")
             trainer.train_and_valid(mod = 10000)
 
@@ -144,7 +146,7 @@ class MultiModelTrainer(object):
                 self.picp.append(pi.picp)
                 self.mpiw.append(pi.mpiw)
 
-            print(f"Last Train Loss: {trainer.train_loss[-1]},Last Valid Loss: {trainer.valid_loss[-1]},PICP: {pi.picp}, MPIW: {pi.mpiw}")
+            #print(f"Last Train Loss: {trainer.train_loss[-1]},Last Valid Loss: {trainer.valid_loss[-1]},PICP: {pi.picp}, MPIW: {pi.mpiw}")
         mean_picp = torch.Tensor(self.picp).mean()
         mean_mpiw = torch.Tensor(self.mpiw).mean() 
         assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
@@ -505,7 +507,7 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
-    def split_K_fold(self,K_fold,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,validation,batch_size,type_class,type_calendar,no_common_dates_between_set = None):
+    def split_K_fold(self,K_fold,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,validation,batch_size,calendar_class,no_common_dates_between_set = None):
         '''
         Split la DataSet Initiale en K-fold
         '''
@@ -517,7 +519,7 @@ class DataSet(object):
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
         data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,train_prop, valid_prop,test_prop,
-                                                                              calib_prop,batch_size,type_class= type_class,type_calendar =type_calendar)
+                                                                              calib_prop,batch_size,calendar_class= calendar_class)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df = df[: dataset_init.first_test_date]  
 
@@ -550,7 +552,7 @@ class DataSet(object):
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
             
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
-                                                                                                                                          0,calib_prop,batch_size,type_class= type_class,type_calendar =type_calendar)
+                                                                                                                                          0,calib_prop,batch_size,calendar_class= calendar_class)
             
             data_loader['test'] = data_loader_with_test['test']
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
@@ -692,7 +694,7 @@ class DataSet(object):
         self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
         self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
 
-    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,batch_size,type_class= None,type_calendar = None):
+    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,batch_size,calendar_class):
         self.get_shift_between_set()   # get shift indice and shift date from the first element / between each dataset 
         self.get_feature_vect()  # Build 'df_shifted'.
         self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
@@ -708,7 +710,7 @@ class DataSet(object):
         self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
 
         # get Associated time_slots_labels >
-        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self,type_class= type_class,type_calendar = type_calendar)
+        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self,calendar_class= calendar_class)
 
         # Split U in  U_train, U_valid, U_test thanks to 'df_verif' and the date limits of the df_train/df_valid/df_test
         self.split_tensors()

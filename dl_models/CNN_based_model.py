@@ -14,15 +14,15 @@ class CNN(nn.Module):
         self.Convs = nn.ModuleList([nn.Conv1d(c_in_, c_out_, kernel_size,padding=args.padding,dilation=dilation) for c_in_,c_out_ in zip([args.c_in]+args.H_dims[:-1], args.H_dims)])
 
         # Calculate the last dim of the sequence : 
+        l_out_add = (2*args.padding - dilation*(kernel_size[0]-1) -1)/stride + 1
+
         if args_embedding is not None:
                 if args_embedding.position == 'input':
                     L = args.seq_length+args_embedding.embedding_dim
+                    l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
 
-        l_out_add = (2*args.padding - dilation*(kernel_size[0]-1) -1)/stride + 1
-        l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
-
-        if args_embedding is not None:
                 if args_embedding.position == 'output':
+                    l_out = int( args.seq_length/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
                     l_out = l_out+args_embedding.embedding_dim
 
         self.l_out = l_out
@@ -39,6 +39,8 @@ class CNN(nn.Module):
             mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
             self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor)
             self.Tembedding_position = args_embedding.position
+
+            
     def forward(self,x,time_elt = None):
         if len(x.shape) == 3:
             B,N,L = x.shape
