@@ -137,8 +137,8 @@ class MultiModelTrainer(object):
             trainer.train_and_valid(mod = 10000)
 
             # Add Loss 
-            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).unsqueeze(0)],axis =  0) 
-            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss).unsqueeze(0)],axis =  0) 
+            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).to(self.Loss_train).unsqueeze(0)],axis =  0) 
+            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss).to(self.Loss_valid).unsqueeze(0)],axis =  0) 
             # Testing
             if self.alpha is not None:
                 preds,Y_true,_ = trainer.test_prediction(training_mode = 'test')
