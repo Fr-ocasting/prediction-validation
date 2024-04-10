@@ -87,7 +87,8 @@ def plot_k_fold_split(Datasets,invalid_dates):
     # Might be useless : 
     fig.autofmt_xdate()
 
-    ax.legend()
+    #ax.legend()
+    ax.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
     plt.show()
 
 
