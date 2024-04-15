@@ -22,8 +22,12 @@ from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 # Load Loss 
 def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding_list,dic_class2rpz_list):
     loss_function = get_loss(args.loss_function_type,args)
-    config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding_list[0],embedding_dim = args.embedding_dim,position = args.position)
-    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding') if args.time_embedding else None
+
+    if args.time_embedding:
+        config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding_list[0],embedding_dim = args.embedding_dim,position = args.position)
+        args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
+    else:
+        args_embedding = None
 
     model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz_list[0]) for _ in range(args.K_fold)]
     Model_list = [model_opt[0] for model_opt in model_opt_list]

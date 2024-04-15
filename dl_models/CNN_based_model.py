@@ -25,7 +25,12 @@ class CNN(nn.Module):
                     l_out = int( args.seq_length/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
                     l_out = l_out+args_embedding.embedding_dim
 
+        else:
+            L = args.seq_length
+            l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))])) 
+            
         self.l_out = l_out
+
         # ... 
 
         # Activation, Flatten and Regularization : 
