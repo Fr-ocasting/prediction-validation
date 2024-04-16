@@ -119,9 +119,9 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False):
+    def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,save_path = None):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding) for dataloader,model,optimizer in zip(dataloader_list,model_list,optimizer_list)]
+        self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding,save_path = f"{save_path}best_model_fold{k}.pkl" if save_path is not None else None) for k,(dataloader,model,optimizer) in enumerate(zip(dataloader_list,model_list,optimizer_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
