@@ -122,12 +122,12 @@ class STGCNGraphConv(nn.Module):
         for l in range(len(blocks) - 3):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
-        Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
+        Ko = args.L - (len(blocks) - 3) * 2 * (args.Kt - 1)
 
         # Ajout perso, dans le cas ou Ko < 0, on a 'enable padding' obligatoire 
         # ----
         if args.enable_padding:
-            Ko = args.seq_length
+            Ko = args.L
         if args_embedding is not None:
             Ko = Ko + args_embedding.embedding_dim
         # ----

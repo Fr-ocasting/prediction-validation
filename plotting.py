@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import torch 
-from DL_class import PI_object
+from PI_object import PI_object
 import matplotlib.dates as mdates
 
 from datetime import timedelta

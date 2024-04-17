@@ -10,10 +10,13 @@ from utilities import get_higher_quantile
 from datetime import timedelta
 from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
+from PI_object import PI_object
+from plotting_bokeh import generate_bokeh
 try: 
     from ray import tune
 except : 
     print('Training and Hyper-parameter tuning with Ray is not possible')
+
 
 
 class QuantileLoss(nn.Module):
@@ -36,51 +39,6 @@ class QuantileLoss(nn.Module):
         loss = torch.mean(torch.sum(losses,dim = -1))   #  Loss commune pour toutes les stations. sinon loss par stations : torch.mean(torch.sum(losses,dim = -1),dim = 0)
 
         return(loss)
-
-
-class PI_object(object):
-    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None,T_labels = None):
-        super(PI_object,self).__init__()
-        self.alpha = alpha
-        self.Y_true = Y_true
-
-        if type(Q) == dict:
-            Q_tensor = torch.zeros(preds.size(0),preds.size(1),1).to(preds)
-            for label in T_labels.unique():
-                indices = torch.nonzero(T_labels == label).squeeze()
-                try: 
-                    Q_tensor[indices,:,0] = Q[label.item()]['Q'][0,:,0]
-                except:
-                    print(f"No Conformal Calibration value found for {label.item()}. Will be set to 100") 
-                    Q_tensor[indices,:,0] = 100
-        else : 
-            Q_tensor = Q
-
-        self.Q_tensor = Q_tensor
-        
-        if type_calib == 'CQR':
-            self.bands = {'lower':preds[...,0].unsqueeze(-1)-self.Q_tensor, 'upper': preds[...,1].unsqueeze(-1)+self.Q_tensor}
-            self.lower = preds[...,0].unsqueeze(-1)-self.Q_tensor
-            self.upper = preds[...,1].unsqueeze(-1)+self.Q_tensor
-
-        if type_calib =='classic':
-            self.bands = {'lower':preds[...,0].unsqueeze(-1), 'upper': preds[...,1].unsqueeze(-1)}
-            self.lower = preds[...,0].unsqueeze(-1)
-            self.upper = preds[...,1].unsqueeze(-1)
-
-        self.MPIW()
-        self.PICP()
-    
-    
-    def MPIW(self):
-        self.mpiw = torch.mean(self.bands['upper']-self.bands['lower']).item()
-        return(self.mpiw)
-    def PICP(self):
-        self.picp = torch.sum((self.lower<self.Y_true)&(self.Y_true<self.upper)).item()/torch.prod(torch.Tensor([s for s in self.lower.size()])).item()
-        return(self.picp)
-
-        
-        
 
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
@@ -119,9 +77,9 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,ray=False,save_path = None):
+    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,dic_class2rpz,ray=False,save_dir = None):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding,save_path = f"{save_path}best_model_fold{k}.pkl" if save_path is not None else None) for k,(dataloader,model,optimizer) in enumerate(zip(dataloader_list,model_list,optimizer_list))]
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding,dic_class2rpz,save_dir=save_dir,save_path = f"best_model_fold{k}.pkl") for k,(dataset,dataloader,model,optimizer) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
@@ -188,8 +146,9 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None, save_path = None):
+    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None,dic_class2rpz = None, save_dir = None, save_path = None):
         super().__init__()
+        self.dataset = dataset
         self.dataloader = dataloader
         self.training_mode = 'train'
         self.optimizer = optimizer
@@ -199,24 +158,33 @@ class Trainer(object):
         self.train_loss = []
         self.valid_loss = []
         self.calib_loss =[]
-        self.epochs = args.epochs
-        self.device = args.device
-        self.quantile_method = args.quantile_method 
-        self.conformity_scores_type = args.conformity_scores_type
+        self.args = args
         self.ray = ray
         self.args_embedding = args_embedding
         self.save_path = save_path 
+        self.save_dir = save_dir
         self.best_valid = np.inf
+        self.dic_class2rpz = dic_class2rpz
 
     def save_best_model(self,checkpoint,epoch):
         ''' Save best model in .pkl format'''
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
-        torch.save(checkpoint, f"{self.save_path}")    
+        torch.save(checkpoint, f"{self.save_dir}{self.save_path}")    
 
-    def train_and_valid(self,mod = 10, alpha = None,dataset = None):
+    def train_and_valid(self,mod = 10, mod_plot = 50, alpha = None,station = 0):
         print(f'start training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
-        for epoch in range(self.epochs):
+        for epoch in range(self.args.epochs):
+            # Plot Latent Space (from random initialization)
+            if epoch%mod_plot == 0:
+                Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
+                trial_save = f'latent_space_e{epoch}'
+                pi,pi_cqr = generate_bokeh(self,self.dataloader,
+                                           self.dataset,Q,self.args,self.dic_class2rpz,
+                                           self.save_dir,trial_save,station = station
+                                          )
+            # ....
+                
             t0 = time.time()
             # Train and Valid each epoch 
             self.training_mode = 'train'
@@ -234,7 +202,7 @@ class Trainer(object):
             # Keep track on Metrics
             if self.ray : 
                 # Calibration 
-                Q = self.conformal_calibration(alpha,dataset,conformity_scores_type = self.conformity_scores_type,quantile_method = self.quantile_method)  
+                Q = self.conformal_calibration(alpha,self.dataset,conformity_scores_type = self.args.conformity_scores_type,quantile_method = self.args.quantile_method)  
                 # Testing
                 preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
                 # get PI
@@ -249,14 +217,14 @@ class Trainer(object):
             if epoch%mod==0:
                 print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
             if epoch == 1:
-                print(f"Estimated time for training: {'{0:.1f}'.format(self.epochs*(time.time()-t0)/60)}min ")
+                print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
 
 
     def loop(self,):
         loss_epoch,nb_samples = 0,0
         with torch.set_grad_enabled(self.training_mode=='train'):
             for x_b,y_b,t_b in self.dataloader[self.training_mode]:
-                x_b,y_b,t_b = x_b.to(self.device),y_b.to(self.device),t_b.to(self.device)
+                x_b,y_b,t_b = x_b.to(self.args.device),y_b.to(self.args.device),t_b.to(self.args.device)
                 #Forward 
                 if self.args_embedding is not None: 
                     pred = self.model(x_b,t_b.long())
@@ -287,7 +255,7 @@ class Trainer(object):
         self.model.eval()
         with torch.no_grad():
             data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader['cal']]
-            X_cal,Y_cal,T_cal = torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device),torch.cat([t_b for [_,_,t_b] in data]).to(self.device)
+            X_cal,Y_cal,T_cal = torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device),torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
 
             #Forward 
             if self.args_embedding is not None: 
@@ -309,12 +277,12 @@ class Trainer(object):
                 raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
             
             # unormalized lower and upper band 
-            lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.device),dataset.unormalize_tensor(upper_q,device = self.device)
-            Y_cal = dataset.unormalize_tensor(Y_cal,device = self.device)
+            lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.args.device),dataset.unormalize_tensor(upper_q,device = self.args.device)
+            Y_cal = dataset.unormalize_tensor(Y_cal,device = self.args.device)
 
             # Confority scores and quantiles
             if conformity_scores_type == 'max_residual':
-                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
+                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.args.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
             if conformity_scores_type == 'max_residual_plus_middle':
                 print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
@@ -323,11 +291,11 @@ class Trainer(object):
 
             # Get Quantile :
             if quantile_method == 'classic':  
-                quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.device)
+                quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.args.device)
                 #Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
-                Q = get_higher_quantile(self.conformity_scores,quantile_order,device = self.device)
+                Q = get_higher_quantile(self.conformity_scores,quantile_order,device = self.args.device)
                 output = Q
-            if quantile_method == 'weekday_hour':
+            if quantile_method == 'compute_quantile_by_class':  # Calcul Higher Quantil for each calendar class. Several label can belongs to the same calendar class. The Quantile is computed through all residual of label of the same class
                 calendar_class = torch.cat([t_b for [_,_,t_b] in data])
                 dic_label2Q = {}
 
@@ -336,14 +304,14 @@ class Trainer(object):
                 nb_label_with_quantile_1 = 0
                 for label in calendar_class.unique():
                     indices = torch.nonzero(calendar_class == label,as_tuple = True)[0]
-                    quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.device)  # Quantile for each class, so the quantile order is different as each class has a different length
-                    quantile_order = min(torch.Tensor([1]).to(self.device),quantile_order)
+                    quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.args.device)  # Quantile for each class, so the quantile order is different as each class has a different length
+                    quantile_order = min(torch.Tensor([1]).to(self.args.device),quantile_order)
                     if quantile_order == 1: 
                         nb_label_with_quantile_1 +=1
                         #print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
                     conformity_scores_i = self.conformity_scores[indices]
                     scores_counts = conformity_scores_i.size(0)
-                    Q_i = get_higher_quantile(conformity_scores_i,quantile_order,device = self.device)
+                    Q_i = get_higher_quantile(conformity_scores_i,quantile_order,device = self.args.device)
                     #Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
                     dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
                 print(f"Proportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(calendar_class.unique()))}")
@@ -352,7 +320,7 @@ class Trainer(object):
         return(output)
     
     def CQR_PI(self,preds,Y_true,alpha,Q,T_labels = None):
-        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels,device = self.device)
+        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels,device = self.args.device)
         self.pi = pi
         return(pi)
 
@@ -372,7 +340,7 @@ class Trainer(object):
         with torch.no_grad():
             # Au lieu de          Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]]) // Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
             data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
-            X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.device)
+            X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             
             if self.args_embedding is not None: 
                 Pred = self.model(X,T_labels.long())
@@ -384,8 +352,8 @@ class Trainer(object):
     def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
         (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout)  # Get Normalized Pred and Y_true
 
-        test_pred = dataset.unormalize_tensor(test_pred, device = self.device)
-        Y_true = dataset.unormalize_tensor(Y_true, device = self.device)
+        test_pred = dataset.unormalize_tensor(test_pred, device = self.args.device)
+        Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)
 
         df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
 
@@ -507,7 +475,7 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
-    def split_K_fold(self,K_fold,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,validation,batch_size,calendar_class,no_common_dates_between_set = None):
+    def split_K_fold(self,args,invalid_dates):
         '''
         Split la DataSet Initiale en K-fold
         '''
@@ -518,8 +486,8 @@ class DataSet(object):
         # Récupère la DataSet de Test Commune à tous: 
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,train_prop, valid_prop,test_prop,
-                                                                              calib_prop,batch_size,calendar_class= calendar_class)
+        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,args.train_prop, args.valid_prop,args.test_prop,
+                                                                              args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df = df[: dataset_init.first_test_date]  
 
@@ -529,20 +497,20 @@ class DataSet(object):
 
         
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
-        valid_prop_tmps = valid_prop/(train_prop+valid_prop)
-        train_prop_tmps = train_prop/(train_prop+valid_prop)
+        valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
+        train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)
         
         # Découpe la dataframe en K_fold 
-        for k in range(K_fold):
+        for k in range(args.K_fold):
 
             # Slicing 
-            if validation == 'wierd_blocked':
-                df_tmps = df[int((k/K_fold)*n):int(((k+1)/K_fold)*n)]
+            if args.validation == 'wierd_blocked':
+                df_tmps = df[int((k/args.K_fold)*n):int(((k+1)/args.K_fold)*n)]
 
-            if validation == 'sliding_window':
-                width_dataset = int(n/(1+(K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
+            if args.validation == 'sliding_window':
+                width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
                 init_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
-                if k == K_fold - 1:
+                if k == args.K_fold - 1:
                     df_tmps = df[init_pos:]             
                 else:
                     df_tmps = df[init_pos:init_pos+width_dataset]                   
@@ -552,7 +520,7 @@ class DataSet(object):
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
             
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
-                                                                                                                                          0,calib_prop,batch_size,calendar_class= calendar_class)
+                                                                                                                                          0,args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
             
             data_loader['test'] = data_loader_with_test['test']
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
@@ -561,13 +529,14 @@ class DataSet(object):
              
             Datasets.append(dataset_tmps)
             DataLoader_list.append(data_loader)
-            time_slots_labels_list.append(time_slots_labels)
-            dic_class2rpz_list.append(dic_class2rpz)
-            dic_rpz2class_list.append(dic_rpz2class)
-            nb_words_embedding_list.append(nb_words_embedding)
+
+            #time_slots_labels_list.append(time_slots_labels)
+            #dic_class2rpz_list.append(dic_class2rpz)
+            #dic_rpz2class_list.append(dic_rpz2class)
+            #nb_words_embedding_list.append(nb_words_embedding)
                       
 
-        return(Datasets,DataLoader_list,time_slots_labels_list,dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list)
+        return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     
 
     def unormalize(self,timeserie):

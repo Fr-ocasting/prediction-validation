@@ -20,16 +20,16 @@ from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 # Load Loss 
-def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding_list,dic_class2rpz_list):
+def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz):
     loss_function = get_loss(args.loss_function_type,args)
 
     if args.time_embedding:
-        config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding_list[0],embedding_dim = args.embedding_dim,position = args.position)
+        config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
         args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
     else:
         args_embedding = None
 
-    model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz_list[0]) for _ in range(args.K_fold)]
+    model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
     Model_list = [model_opt[0] for model_opt in model_opt_list]
     Optimizer_list = [model_opt[1] for model_opt in model_opt_list]
     return(loss_function,Model_list,Optimizer_list,args_embedding)
@@ -245,9 +245,9 @@ def load_model(args,args_embedding,dic_class2rpz):
                     layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline)
         
     if args.model_name == 'STGCN':
-        Ko = args.n_his - (args.Kt - 1) * 2 * args.stblock_num
+        Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num
         if args.enable_padding:
-            Ko = args.n_his
+            Ko = args.L
         blocks = []
         blocks.append([1])
         for l in range(args.stblock_num):

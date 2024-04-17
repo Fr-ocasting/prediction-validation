@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 # from DL_utilities import DictDataLoader,Trainer,PI_object,QuantileLoss,get_loss,choose_optimizer
-from DL_class import Trainer,PI_object
+from DL_class import Trainer
+from PI_object import PI_object
 from utilities_DL import get_loss,choose_optimizer
 import numpy as np 
 import matplotlib.pyplot as plt

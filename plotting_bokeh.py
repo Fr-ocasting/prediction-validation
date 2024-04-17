@@ -6,10 +6,10 @@ from bokeh.models import ColumnDataSource, Toggle, CustomJS,HoverTool
 from bokeh.layouts import layout,row,column
 
 import torch
-from DL_class import PI_object
+from PI_object import PI_object
 # ...
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_path,trial_save,station = 0):
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_dir,trial_save,station=0):
     pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station = station)
     p2 = plot_loss(trainer)
     
@@ -17,7 +17,7 @@ def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_path,tr
         p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz)
     else:
         p3 = None
-    combine_bokeh(p1,p2,p3,save_path,trial_save)
+    combine_bokeh(p1,p2,p3,save_dir,trial_save)
 
     return(pi,pi_cqr)
 
@@ -200,7 +200,7 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     return(pi,pi_cqr,p)
 
 
-def combine_bokeh(p1,p2,p3,save_path,trial_save):
+def combine_bokeh(p1,p2,p3,save_dir,trial_save):
     # Affichage côte à côte
     l = column(p1, p2)
     if p3 is not None:
@@ -208,7 +208,7 @@ def combine_bokeh(p1,p2,p3,save_path,trial_save):
     # Affichage de la figure
     show(l)
     # Pour sauvegarder en HTML (assurez-vous de mettre à jour 'name_save' avec votre nom de fichier désiré)
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-    output_file(f"{save_path}{trial_save}.html")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    output_file(f"{save_dir}{trial_save}.html")
     save(l)

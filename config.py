@@ -33,7 +33,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         dropout = [0.2],calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
-                        num_nodes = 40, n_his=8, n_pred = 1, time_intvl = 5, Kt = 3, stblock_num=2,
+                        num_nodes = 40, time_intvl = 5, Kt = 3, stblock_num=2,
                         act_fun=['glu'],#['glu','gtu'],
                         Ks =[2], #[3,2],
                         graph_conv_type = ['graph_conv'], # ['cheb_graph_conv', 'graph_conv'],
@@ -74,32 +74,54 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
                          bidirectional = [True,False], scheduler = None , ray = False
         )
-
-
-    for key in other_params.keys():
-        config[key] = other_params[key]
         
+
+    # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config['optimizer'] = ['sgd','adam','adamw']
+    config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['weight_decay'] = 0.0005
     config['momentum'] = 0.99
+    config['loss_function_type'] = 'quantile'
+
+    # Config Quantile Calibration 
+    config['alpha'] = 0.1
+    config['conformity_scores_type'] = 'max_residual'   # Define the function to compute the non-conformity scores
+    config['quantile_method'] =  'compute_quantile_by_class' # 'classic' Define type of method used to calcul quantile.  'classic':  Quantile through the entiere dataset  / 'weekday_hour': 
+
+    # Config Time Embedding: 
+    config['position'] = 'input'  # Position of time_embedding module : before or after the core model
+    config['time_embedding'] = True
+    config['type_calendar'] = 'unique_long_embedding'  # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
+    config['calendar_class'] = 3
+    config['specific_lr'] = [True, False]
+    config['embedding_dim'] = 3
+
+    # Config DataSet:
+    config['H'] = 6
+    config['W'] = 1
+    config['D'] = 1
+    config['step_ahead'] = 1
+    config['L'] = config['H']+config['W']+config['D']
+
+    # Split proportion
     config['train_prop'] = 0.6
     config['calib_prop'] = 0.5
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
-    config['alpha'] = 0.1
-    config['loss_function_type'] = 'quantile'
-    config['conformity_scores_type'] = 'max_residual'
-    config['quantile_method'] =  'weekday_hour' # 'classic'
-    config['calendar_class'] = 3
-    config['specific_lr'] = [True, False]
-    config['time_embedding'] = True
-    config['type_calendar'] = 'unique_long_embedding'  # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
-    config['validation'] = 'classic'  # classic / sliding_window / 
-    config['position'] = 'input'  # Position of time_embedding module : before or after the core model
-    config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
-    config['K_fold'] = None  # int. If None : classic validation, Else : validation with K_fold according 'config['validation']
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
+
+    # Validation, K-fold
+    config['validation'] = 'sliding_window'  # classic / sliding_window / 
+    config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
+    config['K_fold'] = 1  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
+
+    # ===   ===
+
+    # Add other parameters:
+    for key in other_params.keys():
+        config[key] = other_params[key]
+    # ...
+
     return(config)
     
 
@@ -123,7 +145,7 @@ def optimizer_specific_lr(model,args):
     return(specific_lr)
 
 
-def get_config_embed(nb_words_embedding,embedding_dim = 2,position = 'input'):
+def get_config_embed(nb_words_embedding,embedding_dim,position):
     '''
     args
     -----
@@ -132,6 +154,10 @@ def get_config_embed(nb_words_embedding,embedding_dim = 2,position = 'input'):
     config_Tembed = dict(nb_words_embedding= nb_words_embedding,embedding_dim = embedding_dim, position=position)
     return(config_Tembed)
 
+def get_args(model_name,learn_graph_structure = None,other_params =  {}):
+    config = get_config(model_name,learn_graph_structure,other_params)
+    args = get_parameters(config,description = None )
+    return(args)
 
 def get_parameters(config,description = None ):
     if description is None:
