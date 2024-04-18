@@ -349,8 +349,8 @@ class Trainer(object):
                 
         return(Pred,Y_true,T_labels)
 
-    def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False):
-        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout)  # Get Normalized Pred and Y_true
+    def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False, training_mode = 'test'):
+        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode)  # Get Normalized Pred and Y_true
 
         test_pred = dataset.unormalize_tensor(test_pred, device = self.args.device)
         Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)
@@ -526,6 +526,7 @@ class DataSet(object):
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
             dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
             dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
+            dataset_tmps.df_verif_test = dataset_init.df_verif_test
              
             Datasets.append(dataset_tmps)
             DataLoader_list.append(data_loader)

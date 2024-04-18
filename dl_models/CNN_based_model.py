@@ -18,15 +18,15 @@ class CNN(nn.Module):
 
         if args_embedding is not None:
                 if args_embedding.position == 'input':
-                    L = args.seq_length+args_embedding.embedding_dim
+                    L = args.L+args_embedding.embedding_dim
                     l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
 
                 if args_embedding.position == 'output':
-                    l_out = int( args.seq_length/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
+                    l_out = int( args.L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
                     l_out = l_out+args_embedding.embedding_dim
 
         else:
-            L = args.seq_length
+            L = args.L
             l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))])) 
             
         self.l_out = l_out

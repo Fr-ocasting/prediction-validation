@@ -43,33 +43,6 @@ def get_associated__df_verif_index(dataset,date,iloc):
         associated_index = None
     return(associated_index)
 
-def load_all(folder_path,file_name,args,step_ahead,H,D,W,
-             embedding_dim=2,position = 'input',single_station = False):
-    ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
-    df,invalid_dates,time_step_per_hour = load_raw_data(folder_path,file_name,single_station = False)
-
-    dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding = data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates)
-
-    # Time Embedding Config
-    config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding,embedding_dim = embedding_dim,position = position)
-    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding') if args.time_embedding else None
-    # Print config :
-    display_config(args,args_embedding)
-
-    # Quantile Loss
-    loss_function = get_loss(args.loss_function_type,args)
-
-    # Load Model
-    if type(data_loader) == list:
-        model,optimizer = [],[]
-        for i in range(len(data_loader)):
-            mod,opt = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
-            model.append(mod)
-            optimizer.append(opt)
-    else:
-        model,optimizer = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
-
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates)
 
 def find_nearest_date(date_series, date, inferior=True):
     """
@@ -141,6 +114,7 @@ def load_raw_data(folder_path,file_name,single_station = False,):
         invalid_dates = list(set(invalid_dates) & set(subway_in.index))
 
         print(f"coverage period: {subway_in.index.min()} - {subway_in.index.max()}")
+        print(f"Time-step per hour: {time_step_per_hour}")
 
     
     else:
@@ -187,20 +161,6 @@ def display_info_on_dataset(dataset,remaining_dates,train_indice = None,valid_in
     print(f"            {train_dates1}   --   {train_dates2 if train_dates2 == valid_dates1 else train_dates2 + ' None'}      --     {valid_dates2 if valid_dates2 == test_dates1 else valid_dates2 + ' None'}    --  {test_dates2}" ) 
     print(f" Len Train/Valid/Test:           {len_train}            ---            {len_valid}             ---             {len_test}\n")
     # ...
-
-def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
-    (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,args.valid_prop,step_ahead,H,D,W,invalid_dates)
-    print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
-    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
-    data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
-    data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
-    # Print Information
-    _,train_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_train,inferior = True)
-    _,valid_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_valid,inferior = True)
-    display_info_on_dataset(dataset,remaining_dates,train_ind,valid_ind)
-
-
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
 def get_loss(loss_function_type,args = None):
     if (loss_function_type == 'mse') or  (loss_function_type == 'MSE') or (loss_function_type == 'Mse'):
@@ -287,3 +247,50 @@ def load_model(args,args_embedding,dic_class2rpz):
         model = RNN(args.seq_length,args.h_dim,args.C_outs, args.num_layers, nonlinearity = 'tanh',bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional)
         #self.rnn = nn.RNN(input_size = c_in, hidden_size = h_dim, num_layers=num_layers,nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional) 
     return(model)
+
+
+
+
+# =========== Surement à supprimer : =============
+
+def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
+    (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,args.valid_prop,step_ahead,H,D,W,invalid_dates)
+    print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
+    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
+    data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
+    data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
+    # Print Information
+    _,train_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_train,inferior = True)
+    _,valid_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_valid,inferior = True)
+    display_info_on_dataset(dataset,remaining_dates,train_ind,valid_ind)
+
+    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+
+
+def load_all(folder_path,file_name,args,step_ahead,H,D,W,
+             embedding_dim=2,position = 'input',single_station = False):
+    ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
+    df,invalid_dates,time_step_per_hour = load_raw_data(folder_path,file_name,single_station = False)
+
+    dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding = data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates)
+
+    # Time Embedding Config
+    config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding,embedding_dim = embedding_dim,position = position)
+    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding') if args.time_embedding else None
+    # Print config :
+    display_config(args,args_embedding)
+
+    # Quantile Loss
+    loss_function = get_loss(args.loss_function_type,args)
+
+    # Load Model
+    if type(data_loader) == list:
+        model,optimizer = [],[]
+        for i in range(len(data_loader)):
+            mod,opt = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+            model.append(mod)
+            optimizer.append(opt)
+    else:
+        model,optimizer = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+
+    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates)
