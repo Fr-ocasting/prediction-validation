@@ -1,2 +1,2 @@
 ,CalendarClass,Position,Specific_lr,Type_calendar,PICP_mean,MPIW_mean,mean_last_train_loss,std_of_lasts_train_loss,mean_last_valid_loss,std_of_lasts_valid_loss,best_mean_train_loss,std_of_best_mean_train_loss,best_mean_valid_loss,std_of_best_mean_valid_loss
-0,3,input,True,tuple,0.9319601058959961,0.40120822191238403,0.02944592759013176,,0.02747473306953907,,0.02944592759013176,,0.02747473306953907,
+0,3,input,False,tuple,0.8104380369186401,0.10401571542024612,0.0075365714728832245,,0.010166489519178867,,0.0075365714728832245,,0.008260659873485565,

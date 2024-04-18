@@ -86,13 +86,13 @@ class MultiModelTrainer(object):
         self.picp = []   
         self.mpiw = []
 
-    def K_fold_validation(self):
+    def K_fold_validation(self,mod_plot = 50, alpha = None,station = 0):
         for k,trainer in enumerate(self.Trainers):
             # Train valid model 
             if k == 0:
                 print('\n')
             print(f"K_fold {k}")
-            trainer.train_and_valid(mod = 10000)
+            trainer.train_and_valid(mod = 10000,mod_plot = mod_plot, alpha = alpha,station = station)
 
             # Add Loss 
             self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).to(self.Loss_train).unsqueeze(0)],axis =  0) 
