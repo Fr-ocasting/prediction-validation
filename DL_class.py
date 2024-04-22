@@ -12,6 +12,7 @@ from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
 from PI_object import PI_object
 from plotting_bokeh import generate_bokeh
+from save_results import update_results_df, results2dict
 try: 
     from ray import tune
 except : 
@@ -79,7 +80,7 @@ class DictDataLoader(object):
 class MultiModelTrainer(object):
     def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,dic_class2rpz,ray=False,save_dir = None):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding,dic_class2rpz,save_dir=save_dir,save_path = f"best_model_fold{k}.pkl") for k,(dataset,dataloader,model,optimizer) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list))]
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding,dic_class2rpz,save_dir=save_dir,fold = k) for k,(dataset,dataloader,model,optimizer) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
@@ -87,12 +88,13 @@ class MultiModelTrainer(object):
         self.mpiw = []
 
     def K_fold_validation(self,mod_plot = 50, alpha = None,station = 0):
+        results_by_fold = pd.DataFrame()
         for k,trainer in enumerate(self.Trainers):
             # Train valid model 
             if k == 0:
                 print('\n')
             print(f"K_fold {k}")
-            trainer.train_and_valid(mod = 10000,mod_plot = mod_plot, alpha = alpha,station = station)
+            results_df = trainer.train_and_valid(mod = 10000,mod_plot = mod_plot, alpha = alpha,station = station)
 
             # Add Loss 
             self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).to(self.Loss_train).unsqueeze(0)],axis =  0) 
@@ -103,8 +105,11 @@ class MultiModelTrainer(object):
                 pi = PI_object(preds,Y_true,self.alpha,type_calib = 'classic')
                 self.picp.append(pi.picp)
                 self.mpiw.append(pi.mpiw)
+            
 
-            #print(f"Last Train Loss: {trainer.train_loss[-1]},Last Valid Loss: {trainer.valid_loss[-1]},PICP: {pi.picp}, MPIW: {pi.mpiw}")
+            results_df['fold'] = k
+            results_by_fold = pd.concat([results_by_fold,results_df])
+
         mean_picp = torch.Tensor(self.picp).mean()
         mean_mpiw = torch.Tensor(self.mpiw).mean() 
         assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
@@ -139,14 +144,14 @@ class MultiModelTrainer(object):
                                             )
         # ...
         
-        return(mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
+        return(results_by_fold,mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
 
 
     
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None,dic_class2rpz = None, save_dir = None, save_path = None):
+    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None,dic_class2rpz = None, save_dir = None, fold = 0):
         super().__init__()
         self.dataset = dataset
         self.dataloader = dataloader
@@ -161,30 +166,37 @@ class Trainer(object):
         self.args = args
         self.ray = ray
         self.args_embedding = args_embedding
-        self.save_path = save_path 
-        self.save_dir = save_dir
+        self.save_path  = f"best_model.pkl" 
+        self.fold = fold
+        self.save_dir = f"{save_dir}fold{fold}/"
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz
 
     def save_best_model(self,checkpoint,epoch):
         ''' Save best model in .pkl format'''
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
-        torch.save(checkpoint, f"{self.save_dir}{self.save_path}")    
+        torch.save(checkpoint, f"{self.save_dir}{self.save_path}")   
+
+    def plot_bokeh_and_save_results(self,results_df,epoch,station):
+        Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
+        trial_save = f'latent_space_e{epoch}'
+        pi,pi_cqr = generate_bokeh(self,self.dataloader,
+                                    self.dataset,Q,self.args,self.dic_class2rpz,
+                                    self.save_dir,trial_save,station = station
+                                    )
+        valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
+        dict_row = results2dict(self.args,epoch,pi.picp,pi.mpiw,valid_loss,train_loss)
+        results_df = update_results_df(results_df,dict_row) 
+        return(results_df)
+
 
     def train_and_valid(self,mod = 10, mod_plot = 50, alpha = None,station = 0):
         print(f'start training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
+        # Plot Init Latent Space and Accuracy (from random initialization) 
+        results_df = self.plot_bokeh_and_save_results(pd.DataFrame(),-1,station)
+
         for epoch in range(self.args.epochs):
-            # Plot Latent Space (from random initialization)
-            if epoch%mod_plot == 0:
-                Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
-                trial_save = f'latent_space_e{epoch}'
-                pi,pi_cqr = generate_bokeh(self,self.dataloader,
-                                           self.dataset,Q,self.args,self.dic_class2rpz,
-                                           self.save_dir,trial_save,station = station
-                                          )
-            # ....
-                
             t0 = time.time()
             # Train and Valid each epoch 
             self.training_mode = 'train'
@@ -193,8 +205,8 @@ class Trainer(object):
             self.training_mode = 'validate'
             self.model.eval()   # Desactivate Dropout 
             self.loop()
-
-
+        
+            # Save best model 
             if (self.valid_loss[-1] < self.best_valid) & (self.save_path is not None):
                 self.best_valid = self.valid_loss[-1]
                 self.save_best_model(checkpoint,epoch)
@@ -218,6 +230,12 @@ class Trainer(object):
                 print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
             if epoch == 1:
                 print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
+
+            # Plot Latent Space and get accuracy 
+            if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
+                results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
+
+        return(results_df)
 
 
     def loop(self,):

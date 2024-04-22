@@ -29,7 +29,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     if (model_name == 'STGCN') or  (model_name == 'stgcn'):
         # Utilise la distance adjacency matrix 
-        config = dict(model_name= model_name,epochs = [3], lr = [1e-4],batch_size = [64],
+        config = dict(model_name= model_name,epochs = [100], lr = [1e-4],batch_size = [64],
                         dropout = [0.2],calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
