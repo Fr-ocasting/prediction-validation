@@ -90,6 +90,8 @@ class STGCNChebGraphConv(nn.Module):
             x = self.fc2(x).permute(0, 3, 1, 2)
 
         x = x.squeeze()
+        if B ==1:
+            x = x.unsqueeze(0)
         x = x.permute(0,2,1)
         return x
 
@@ -179,5 +181,7 @@ class STGCNGraphConv(nn.Module):
             x = self.fc2(x).permute(0, 3, 1, 2)
 
         x = x.squeeze()
+        if B ==1:
+            x = x.unsqueeze(0)
         x = x.permute(0,2,1)
         return x
