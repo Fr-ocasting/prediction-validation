@@ -143,6 +143,7 @@ class STGCNGraphConv(nn.Module):
             self.do = nn.Dropout(p=args.dropout)
 
         if args_embedding is not None:
+            #mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1], bank_holiday) for _, (week, time, bank_holiday) in sorted(dic_class2rpz.items())]).to(args.device)
             mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
             self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor)
             self.Tembedding_position = args_embedding.position

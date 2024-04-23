@@ -26,9 +26,11 @@ class TimeEmbedding(nn.Module):
             self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
             Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
             self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,Embedding_dims)])
-            self.output1 = nn.Linear(sum(Embedding_dims),embedding_dim*2)
-            self.output2 = nn.Linear(embedding_dim*2,embedding_dim) 
-            self.relu = nn.ReLU()     
+            #self.output1 = nn.Linear(sum(Embedding_dims),embedding_dim*2)
+            self.output1 = nn.Linear(sum(Embedding_dims),int(sum(Embedding_dims)/2))
+            #self.output2 = nn.Linear(embedding_dim*2,embedding_dim) 
+            self.output2 = nn.Linear(int(sum(Embedding_dims)/2),embedding_dim) 
+            self.relu = nn.ReLU()
 
         elif self.type_calendar == 'unique_long_embedding' : 
             if embedding_with_dense_layer:
