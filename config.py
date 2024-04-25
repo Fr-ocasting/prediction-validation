@@ -18,7 +18,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                     gcn_true = False, buildA_true = False, gcn_depth = 2,propalpha=0.05,predefined_A=None,# inutile ici car pas de Graph Convolution
                     subgraph_size=20,node_dim=40,tanhalpha=3,static_feat=None,  # inutile aussi, c'est pour la construction de matrice d'adjacence
 
-                    num_nodes = 40,dilation_exponential=1,
+                    dilation_exponential=1,
                     
                     c_in = 1,conv_channels=32, residual_channels=32, 
                     skip_channels=64, end_channels=128,out_dim=2,layers=3,layer_norm_affline=True, 
@@ -33,7 +33,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         dropout = [0.2],calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
-                        num_nodes = 40, time_intvl = 5, Kt = 3, stblock_num=2,
+                        Kt = 3, stblock_num=2,
                         act_fun=['glu'],#['glu','gtu'],
                         Ks =[2], #[3,2],
                         graph_conv_type = ['graph_conv'], # ['cheb_graph_conv', 'graph_conv'],
@@ -82,6 +82,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['weight_decay'] = 0.0005
     config['momentum'] = 0.99
     config['loss_function_type'] = 'quantile'
+    config['single_station']= False
 
     # Config Quantile Calibration 
     config['alpha'] = 0.1

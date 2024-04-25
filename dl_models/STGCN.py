@@ -30,12 +30,14 @@ class STGCNChebGraphConv(nn.Module):
     def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz=None):
         super(STGCNChebGraphConv, self).__init__()
         modules = []
+        self.args = args
         for l in range(len(blocks) - 3):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
-        Ko = args.seq_length - (len(blocks) - 3) * 2 * (args.Kt - 1)
+
+        Ko = args.L - (len(blocks) - 3) * 2 * (args.Kt - 1)
         if args.enable_padding:
-            Ko = args.seq_length
+            Ko = args.L if args.L > 0 else 1
 
         if args_embedding is not None:
             Ko = Ko + args_embedding.embedding_dim
@@ -92,6 +94,8 @@ class STGCNChebGraphConv(nn.Module):
         x = x.squeeze()
         if B ==1:
             x = x.unsqueeze(0)
+        if N == 1:
+            x = x.unsqueeze(-1)
         x = x.permute(0,2,1)
         return x
 
@@ -129,7 +133,7 @@ class STGCNGraphConv(nn.Module):
         # Ajout perso, dans le cas ou Ko < 0, on a 'enable padding' obligatoire 
         # ----
         if args.enable_padding:
-            Ko = args.L
+            Ko = args.L if args.L > 0 else 1
         if args_embedding is not None:
             Ko = Ko + args_embedding.embedding_dim
         # ----
@@ -164,7 +168,6 @@ class STGCNGraphConv(nn.Module):
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
         x = x.permute(0,1,3,2)
-
         x = self.st_blocks(x)
         # st_blocks outputs: [B, C_out, L-4*nb_blocks, N])
         B,C,L,N = x.size() 
@@ -173,7 +176,8 @@ class STGCNGraphConv(nn.Module):
                 time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = 2)
-
+        
+        
         if self.Ko > 1:
             x = self.output(x)
         elif self.Ko == 0:
@@ -184,5 +188,7 @@ class STGCNGraphConv(nn.Module):
         x = x.squeeze()
         if B ==1:
             x = x.unsqueeze(0)
+        if N == 1:
+            x = x.unsqueeze(-1)
         x = x.permute(0,2,1)
         return x

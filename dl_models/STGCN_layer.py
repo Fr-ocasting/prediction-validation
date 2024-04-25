@@ -51,6 +51,7 @@ class CausalConv2d(nn.Conv2d):
         
     def forward(self, input):
         if self.__padding != 0:
+            #print(f'input shape: {input.shape} \n Args F.pad: ({self.left_padding[1]}, 0, {self.left_padding[0]}, 0)')
             input = F.pad(input, (self.left_padding[1], 0, self.left_padding[0], 0))
         result = super(CausalConv2d, self).forward(input)
 
@@ -255,17 +256,17 @@ class STConvBlock(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
-        #print('Shape avant de rentrer dans tmp_conv1: ',x.shape)
+        #print('\nShape avant de rentrer dans tmp_conv1: ',x.shape)
         x = self.tmp_conv1(x)
-        #print('Shape après tmp_conv1: ',x.shape)
+        #print('\nShape après tmp_conv1: ',x.shape)
         x = self.graph_conv(x)
-        #print('Shape après graph conv: ',x.shape)
+        #print('\nShape après graph conv: ',x.shape)
         x = self.relu(x)
         x = self.tmp_conv2(x)
-        #print('Shape après tmp_conv2 conv: ',x.shape)
+        #print('\nShape après tmp_conv2 conv: ',x.shape)
         x = self.tc2_ln(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
         x = self.dropout(x)
-        #print('Shape en sortie du STConvBlock: ',x.shape,'\n')
+        #print('\nShape en sortie du STConvBlock: ',x.shape,'\n')
 
         return x
 

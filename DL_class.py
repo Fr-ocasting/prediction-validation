@@ -616,8 +616,15 @@ class DataSet(object):
 
     def get_U_shifted(self):
         shifted_values = self.shift_values()
-        self.U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
         self.Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
+
+        try:
+            self.U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
+        except:
+            assert self.Weeks+self.historical_len+self.Days == 0, 'something is going wrong with the previous line'
+            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
+            self.U = self.Utarget*0
+
 
     def get_feature_vect(self): 
         # Get shifted Feature Vector and shifted Target

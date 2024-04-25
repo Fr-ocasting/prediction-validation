@@ -13,48 +13,49 @@ args = get_args(model_name)
 #args = get_args(model_name = model_name,learn_graph_structure = True)  # MTGNN
 
 # Modification : 
-args.epochs = 20
-args.K_fold = 1
+args.epochs = 400
 
 # Save Directory:
 main_dir = get_save_directory(args)
-
-
-
+args.H = 0
+args.W = 0
+args.D = 0
 
 # ==== TEST  ====
-results_df = pd.DataFrame()
+for K_fold in [7]:
+    args.K_fold = K_fold
+    results_df = pd.DataFrame()
 
-for i,(calendar_class,position,specific_lr, type_calendar,time_embedding) in enumerate(zip([3,3,3],
-                                                                                           ['input','input',None],
-                                                                                           [True,False,None],
-                                                                                           ['tuple','tuple',None],
-                                                                                           [True,True,False]
-                                                                                          )
-                                                                                        ):
-    
-    args.calendar_class = calendar_class
-    args.position = position
-    args.specific_lr = specific_lr
-    args.type_calendar = type_calendar
-    args.time_embedding = time_embedding
+    #for i,(calendar_class,position,specific_lr, type_calendar) in enumerate(zip([3,1,3],['input','input','input'],[True,True,False],['tuple','tuple','tuple'])):
+    #for i,(calendar_class,position,specific_lr, type_calendar) in enumerate(zip([3],['input'],[True],['tuple'])):
+    for i,(embedding_dim,calendar_class,position,specific_lr, type_calendar,time_embedding) in enumerate(zip([3,3,3,3,4,4,4], # None
+                                                                                                             [3,3,1,3,3,3,3], # 3
+                                                                                               ['input','input','input','input','input','input','input'], # None
+                                                                                               [False,False,True,True,False,False,True], # None 
+                                                                                               ['tuple','unique_long_embedding','tuple','tuple','tuple','unique_long_embedding','tuple'], # None
+                                                                                               [True,True,True,True,True,True,True] # False
+                                                                                              )
+                                                                                            ):
+        args.embedding_dim = embedding_dim
+        args.calendar_class = calendar_class
+        args.position = position
+        args.specific_lr = specific_lr
+        args.type_calendar = type_calendar
+        args.time_embedding = time_embedding
 
-    save_dir = get_save_directory(args)
+        save_dir = get_save_directory(args)
 
-    # Load dataset and invalid_dates 
-    dataset,invalid_dates = get_DataSet_and_invalid_dates(folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = False)
-    (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) =  dataset.split_K_fold(args,invalid_dates)
-    
-    # Load associated K_folds Models: 
-    (loss_function,Model_list,Optimizer_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz)
-    multimodeltrainer = MultiModelTrainer(Datasets,Model_list,DataLoader_list,args,Optimizer_list,loss_function,scheduler = None,args_embedding=args_embedding,ray= False,save_dir = save_dir,dic_class2rpz=dic_class2rpz)
-    (results_by_fold,mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds) = multimodeltrainer.K_fold_validation(mod_plot = 10)
-    results_by_fold.to_csv(f"{save_dir}results_by_fold.csv")
+        # Load dataset and invalid_dates 
+        dataset,invalid_dates = get_DataSet_and_invalid_dates(folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = False)
+        (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) =  dataset.split_K_fold(args,invalid_dates)
 
-    # Svae results 
-    results_df = build_results_df(results_df,args, mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)
+        # Load associated K_folds Models: 
+        (loss_function,Model_list,Optimizer_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz)
+        multimodeltrainer = MultiModelTrainer(Datasets,Model_list,DataLoader_list,args,Optimizer_list,loss_function,scheduler = None,args_embedding=args_embedding,ray= False,save_dir = save_dir,dic_class2rpz=dic_class2rpz)
+        
+        (results_by_fold,mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds) = multimodeltrainer.K_fold_validation(mod_plot = 10)
+        results_by_fold.to_csv(f"{save_dir}results_by_fold.csv")
 
-    if args.time_embedding:
-        results_df.to_csv(f"{args.model_name}_E{args.epochs}_K_fold{args.K_fold}_calendar_class{args.calendar_class}_{args.position}_specific_lr{args.specific_lr}_{args.type_calendar}_save_results.csv")
-    else:
-        results_df.to_csv(f"{args.model_name}_E{args.epochs}_K_fold{args.K_fold}_Time_Embedding{args.time_embedding}_save_results.csv")
+        # Svae results 
+        results_df = build_results_df(results_df,args, mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)
+        results_df.to_csv(f"{args.model_name}_H{args.H}_D{args.D}_W{args.W}_E{args.epochs}_K_fold{args.K_fold}_Emb_dim{args.embedding_dim}FC1_17_8_FC2_8_4_save_results.csv")
