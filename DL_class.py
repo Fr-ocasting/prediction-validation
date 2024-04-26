@@ -374,7 +374,6 @@ class Trainer(object):
         Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)
 
         df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
-
         return(test_pred,Y_true,T_labels,df_metrics)  
     
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):
@@ -536,7 +535,7 @@ class DataSet(object):
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            
+            print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
                                                                                                                                           0,args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
             
@@ -548,6 +547,7 @@ class DataSet(object):
              
             Datasets.append(dataset_tmps)
             DataLoader_list.append(data_loader)
+
 
             #time_slots_labels_list.append(time_slots_labels)
             #dic_class2rpz_list.append(dic_class2rpz)
@@ -622,7 +622,6 @@ class DataSet(object):
             self.U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
         except:
             assert self.Weeks+self.historical_len+self.Days == 0, 'something is going wrong with the previous line'
-            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
             self.U = self.Utarget*0
 
 
