@@ -28,7 +28,7 @@ def get_save_directory(args):
 
     # Tackle case wether (or not) there is time embedding:
     if args.time_embedding:
-        save_dir = f"{save_dir}FC1_17_8_FC2_8_4/Emb_dim{args.embedding_dim}/Specific_lr_{args.specific_lr}/CalendarClass{args.calendar_class}/position_{args.position}/"
+        save_dir = f"{save_dir}Multi_Emb{args.multi_embedding}/FC1_17_8_FC2_8_4/Emb_dim{args.embedding_dim}/Specific_lr_{args.specific_lr}/CalendarClass{args.calendar_class}/position_{args.position}/"
     else:
         save_dir = f"{save_dir}no_embedding/"
 

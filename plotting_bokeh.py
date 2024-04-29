@@ -14,7 +14,7 @@ def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_dir,tri
     p2 = plot_loss(trainer)
     
     if args.time_embedding:
-        p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz)
+        p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz,station)
     else:
         p3 = None
     combine_bokeh(p1,p2,p3,save_dir,trial_save)
@@ -40,7 +40,7 @@ def hm2hour(hm):
     
     return f"{hm[0][0]}:{m1} - {hm[1][0]}:{m2}h"
 
-def plot_latent_space(trainer,data_loader,args,dic_class2rpz):
+def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     # Get unique labels : 
     data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in data_loader['test']]
     X_test,Y_test,T_test = torch.cat([x_b for [x_b,_,_] in data]),torch.cat([y_b for [_,y_b,_] in data]),torch.cat([t_b for [_,_,t_b] in data])
@@ -55,8 +55,13 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz):
     trainer.model.eval()
     with torch.no_grad():
         for label in labels:
-            embeded_vector = trainer.model.Tembedding(label).cpu().detach().numpy()
-            x,y = embeded_vector[0],embeded_vector[1]
+            embeded_vector = trainer.model.Tembedding(label)
+            n = len(embeded_vector.size())
+            embeded_vector = embeded_vector.cpu().detach().numpy()
+            if n < 3:
+                x,y = embeded_vector[0],embeded_vector[1]
+            else: 
+                x,y = embeded_vector[0,station,0],embeded_vector[0,station,1]
             rpz = dic_class2rpz[label.item()]
             X.append(x)
             Y.append(y)

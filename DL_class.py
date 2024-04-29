@@ -114,37 +114,29 @@ class MultiModelTrainer(object):
         mean_mpiw = torch.Tensor(self.mpiw).mean() 
         assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
 
-        # Last loss : 
-        mean_last_train_loss = self.Loss_train.mean(dim = 0)[-1]  #.item()
-        std_of_lasts_train_loss =  self.Loss_train.std(dim = 0)[-1]
-        mean_last_valid_loss = self.Loss_valid.mean(dim = 0)[-1]  #.item()
-        std_of_lasts_valid_loss =  self.Loss_train.std(dim = 0)[-1]
-
-        dict_last_from_mean_of_folds = dict(mean_last_train_loss = mean_last_train_loss.item(),
-                                    std_of_lasts_train_loss = std_of_lasts_train_loss.item(),
-                                    mean_last_valid_loss = mean_last_valid_loss.item(),
-                                    std_of_lasts_valid_loss = std_of_lasts_valid_loss.item()
-                                    )
-        # ...
-        
-        # Moyenne des meilleurs loss de chaque fold : 
-        #mean_on_best_train_loss_by_fold = self.Loss_train.min(dim = 1)[0].mean() #.item()
-        #mean_on_best_valid_loss_by_fold = self.Loss_valid.min(dim = 1)[0].mean()  #.item()  
-        # ...
 
         # On recupère une loss moyenne sur les K-fold. On prend le minimum atteint par cette moyenne.
-        best_mean_train_loss,ind_best_train = self.Loss_train.mean(dim = 0).min(dim = 0)  #.item()
-        std_of_best_mean_train_loss =  self.Loss_train.std(dim = 0)[ind_best_train]
-        best_mean_valid_loss,ind_best_valid = self.Loss_valid.mean(dim = 0).min(dim = 0)  #.item()
-        std_of_best_mean_valid_loss =  self.Loss_valid.std(dim = 0)[ind_best_valid]
-        dict_best_from_mean_of_folds = dict(best_mean_train_loss = best_mean_train_loss.item(),
-                                            std_of_best_mean_train_loss = std_of_best_mean_train_loss.item(),
-                                            best_mean_valid_loss = best_mean_valid_loss.item(),
-                                            std_of_best_mean_valid_loss = std_of_best_mean_valid_loss.item()
-                                            )
+        dict_scores,dict_last = {},{}
+        for L_loss,name in zip([self.Loss_train,self.Loss_valid],['train_loss','valid_loss']):
+
+            # Score: 
+            score, indices = L_loss.min(dim = -1)
+            score = score.mean()
+            std_score = torch.Tensor([L_loss[k,i] for k,i in enumerate(indices)]).std()
+            dict_scores.update({f"score_{name}": score.item(),
+                                f"std_{name}": std_score.item()})
+            # ...
+
+            # Last Score: 
+            last_score = L_loss.mean(dim = 0)[-1]
+            last_std = L_loss.std(dim = 0)[-1]
+            dict_last.update({f"last_{name}": last_score.item(),
+                                f"last_std_{name}": last_std.item()})
+
+
         # ...
-        
-        return(results_by_fold,mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
+
+        return(results_by_fold,mean_picp,mean_mpiw,dict_last,dict_scores)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
 
 
     
@@ -535,7 +527,8 @@ class DataSet(object):
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
+            if dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days == 0:
+                print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
                                                                                                                                           0,args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
             

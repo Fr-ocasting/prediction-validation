@@ -94,9 +94,9 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['time_embedding'] = True
     config['type_calendar'] = 'unique_long_embedding'  # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
     config['calendar_class'] = 3
-    config['specific_lr'] = [True, False]
+    config['specific_lr'] = False  #True, False
     config['embedding_dim'] = 3
-
+    config['multi_embedding'] = False
     # Config DataSet:
     config['H'] = 6
     config['W'] = 1

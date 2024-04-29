@@ -14,22 +14,24 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,nb_words_embedding,embedding_dim,type_calendar,mapping_tensor,embedding_with_dense_layer = True):
+    def __init__(self,nb_words_embedding,embedding_dim,type_calendar,mapping_tensor,embedding_with_dense_layer = True, n_embedding = 1):
         super(TimeEmbedding, self).__init__()
         self.nb_words = nb_words_embedding
         self.embedding_with_dense_layer = embedding_with_dense_layer
         self.type_calendar = type_calendar
         self.mapping_tensor = mapping_tensor
+        self.n_embedding = n_embedding
 
         if self.type_calendar == 'tuple':
             nb_embeddings = mapping_tensor.size(1)
             self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
-            Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
-            self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,Embedding_dims)])
+            self.Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
+
+            self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim*n_embedding) for dic_size,emb_dim in zip(self.dic_sizes,self.Embedding_dims)])
             #self.output1 = nn.Linear(sum(Embedding_dims),embedding_dim*2)
-            self.output1 = nn.Linear(sum(Embedding_dims),int(sum(Embedding_dims)/2))
+            self.output1 = nn.Linear(sum(self.Embedding_dims),int(sum(self.Embedding_dims)/2))
             #self.output2 = nn.Linear(embedding_dim*2,embedding_dim) 
-            self.output2 = nn.Linear(int(sum(Embedding_dims)/2),embedding_dim) 
+            self.output2 = nn.Linear(int(sum(self.Embedding_dims)/2),embedding_dim) 
             self.relu = nn.ReLU()
 
         elif self.type_calendar == 'unique_long_embedding' : 
@@ -51,9 +53,11 @@ class TimeEmbedding(nn.Module):
                 elt_i = elt[:,i].long().squeeze()
                 one_hot_encodding_matrix = nn.functional.one_hot(elt_i,num_classes =self.dic_sizes[i]).to(elt).float()
                 emb_vector = emb_layer(one_hot_encodding_matrix)
-                concat_z = torch.cat([concat_z,emb_vector],dim=-1) # [B,embedding_dim*len(self.dic_sizes)]
+                emb_vector = emb_vector.reshape(elt.size(0),self.n_embedding,self.Embedding_dims[i])
+                concat_z = torch.cat([concat_z,emb_vector],dim=-1) # [B,N_stations,embedding_dim*len(self.dic_sizes)]
+
  
-            z = self.output2(self.relu(self.output1(concat_z)))
+            z = self.output2(self.relu(self.output1(concat_z)))  # [B, N_stations, Z]
 
         if self.type_calendar == 'unique_long_embedding':
             if self.embedding_with_dense_layer:
