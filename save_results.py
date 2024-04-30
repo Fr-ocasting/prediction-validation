@@ -4,6 +4,9 @@ def time_embedding2dict(args):
         Position = args.position, 
         Specific_lr = args.specific_lr,
         Type_calendar = args.type_calendar,
+        Multi_Emb = args.multi_embedding,
+        TE_transfer = args.TE_transfer,
+        single_station = args.single_station
         )
     
     return(dict1)

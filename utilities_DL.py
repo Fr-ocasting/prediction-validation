@@ -11,6 +11,7 @@ from config import optimizer_specific_lr, get_config_embed, get_parameters,displ
 from calendar_class import get_time_slots_labels
 from load_DataSet import load_normalized_dataset
 from DL_class import DictDataLoader,QuantileLoss,DataSet
+from TE_transfer_learning import TE_transfer
 
 # Models : 
 from dl_models.CNN_based_model import CNN
@@ -20,7 +21,7 @@ from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 # Load Loss 
-def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz):
+def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
     loss_function = get_loss(args.loss_function_type,args)
 
     if args.time_embedding:
@@ -31,6 +32,9 @@ def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz):
 
     model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
     Model_list = [model_opt[0] for model_opt in model_opt_list]
+    if args.TE_transfer:
+        Model_list = [TE_transfer(model,n_vertex,args,model_dir =  'data/') for model in Model_list]
+        
     Optimizer_list = [model_opt[1] for model_opt in model_opt_list]
     return(loss_function,Model_list,Optimizer_list,args_embedding)
 

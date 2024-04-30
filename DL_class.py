@@ -347,8 +347,7 @@ class Trainer(object):
             self.model.train()
         else: 
             self.model.eval()
-        with torch.no_grad():
-            # Au lieu de          Pred = torch.cat([self.model(x_b.to(self.device)) for x_b,y_b in self.dataloader[self.training_mode]]) // Y_true = torch.cat([y_b.to(self.device) for x_b,y_b in self.dataloader[self.training_mode]])
+        with torch.no_grad():       
             data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
             X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             
@@ -359,14 +358,14 @@ class Trainer(object):
                 
         return(Pred,Y_true,T_labels)
 
-    def testing(self,dataset,metrics= ['mse','mae'], allow_dropout = False, training_mode = 'test'):
+    def testing(self,dataset, allow_dropout = False, training_mode = 'test', ): #metrics= ['mse','mae']
         (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode)  # Get Normalized Pred and Y_true
 
         test_pred = dataset.unormalize_tensor(test_pred, device = self.args.device)
         Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)
 
-        df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
-        return(test_pred,Y_true,T_labels,df_metrics)  
+        #df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
+        return(test_pred,Y_true,T_labels)#,df_metrics)  
     
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):
         if training_mode == 'train':
@@ -537,6 +536,7 @@ class DataSet(object):
             dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
             dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
             dataset_tmps.df_verif_test = dataset_init.df_verif_test
+            dataset_tmps.df_test = dataset_init.df_test
              
             Datasets.append(dataset_tmps)
             DataLoader_list.append(data_loader)
@@ -650,9 +650,9 @@ class DataSet(object):
 
         # Keep track on DataFrame Verif:
         predicted_dates = self.df_verif.iloc[:,-1]
-        self.df_verif_train = self.df_verif[( predicted_dates >= self.first_predicted_train_date) & (predicted_dates <= self.last_predicted_train_date)]
-        self.df_verif_valid = self.df_verif[(predicted_dates >= self.first_predicted_valid_date) & (predicted_dates <= self.last_predicted_valid_date)] if self.last_predicted_valid_date is not None else None
-        self.df_verif_test = self.df_verif[(predicted_dates >= self.first_predicted_test_date) & (predicted_dates <= self.last_predicted_test_date)]  if self.last_predicted_test_date is not None else None
+        self.df_verif_train = self.df_verif[( predicted_dates >= self.first_predicted_train_date) & (predicted_dates < self.last_predicted_train_date)]
+        self.df_verif_valid = self.df_verif[(predicted_dates >= self.first_predicted_valid_date) & (predicted_dates < self.last_predicted_valid_date)] if self.last_predicted_valid_date is not None else None
+        self.df_verif_test = self.df_verif[(predicted_dates >= self.first_predicted_test_date) & (predicted_dates < self.last_predicted_test_date)]  if self.last_predicted_test_date is not None else None
 
         # Keep track on DataFrame Limits (dates): 
         self.first_train_date,self.last_train_date = self.df_verif_train.iat[0,0] ,self.df_verif_train.iat[-1,-1]

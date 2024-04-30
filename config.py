@@ -97,6 +97,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['specific_lr'] = False  #True, False
     config['embedding_dim'] = 3
     config['multi_embedding'] = False
+    config['TE_transfer'] = False
     # Config DataSet:
     config['H'] = 6
     config['W'] = 1

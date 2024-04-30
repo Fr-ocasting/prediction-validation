@@ -43,7 +43,7 @@ def hm2hour(hm):
 def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     # Get unique labels : 
     data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in data_loader['test']]
-    X_test,Y_test,T_test = torch.cat([x_b for [x_b,_,_] in data]),torch.cat([y_b for [_,y_b,_] in data]),torch.cat([t_b for [_,_,t_b] in data])
+    T_test = torch.cat([t_b for [_,_,t_b] in data])
     labels = T_test.unique().long().to(args.device)
     # ...
 
@@ -167,7 +167,7 @@ def plot_loss(trainer,location = "top_right"):
 
 def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     
-    (preds,Y_true,T_labels,df_metrics) = trainer.testing(dataset,metrics= ['mse','mae'])
+    (preds,Y_true,T_labels) = trainer.testing(dataset)
     if len(preds.size()) == 2:
         preds = preds.unsqueeze(1)
     # ...
