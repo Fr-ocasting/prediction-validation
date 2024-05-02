@@ -1,4 +1,6 @@
 import pandas as pd
+import warnings
+
 def time_embedding2dict(args):
     dict1 = dict(CalendarClass = args.calendar_class, 
         Position = args.position, 
@@ -31,8 +33,19 @@ def Multi_results2dict(args,mean_picp,mean_mpiw,dict3,dict4):
 
 
 def update_results_df(results_df, dict_row):
-    results_df = pd.concat([results_df,pd.DataFrame.from_records([dict_row])])
-    return(results_df)
+    df_row = pd.DataFrame.from_records([dict_row])
+    if (not results_df.empty) &(not df_row.empty):
+        with warnings.catch_warnings():
+            # TODO: pandas 2.1.0 has a FutureWarning for concatenating DataFrames with Null entries
+            warnings.filterwarnings("ignore", category=FutureWarning)
+        return (pd.concat([results_df,df_row]))
+    elif (not results_df.empty) & (df_row.empty):
+        return results_df
+    elif (results_df.empty) & (not df_row.empty):
+        return df_row
+    else:
+        return results_df
+
 
 
 def build_results_df(results_df,args, mean_picp,mean_mpiw,dict2,dict3):

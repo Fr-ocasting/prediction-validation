@@ -103,10 +103,10 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     p = figure(title="Visualisation of latent space", x_axis_label='dimension 1', y_axis_label='dimension 2')
 
     # Ajout des points à la figure
-    render_total = p.circle('x', 'y', size=15, source=source_total, visible=True)
-    render_morning = p.circle('x', 'y', size=15, source=source_morning, color='red', visible=False)
-    render_evening = p.circle('x', 'y', size=15, source=source_evening, color='yellow', visible=False)
-    render_night = p.circle('x', 'y', size=15, source=source_night, color='black', visible=False)
+    render_total = p.scatter('x', 'y', size=15, source=source_total, visible=True)
+    render_morning = p.scatter('x', 'y', size=15, source=source_morning, color='red', visible=False)
+    render_evening = p.scatter('x', 'y', size=15, source=source_evening, color='yellow', visible=False)
+    render_night = p.scatter('x', 'y', size=15, source=source_night, color='black', visible=False)
 
     # Configuration du HoverTool
     hover = HoverTool()
@@ -145,12 +145,10 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
 
 def plot_loss(trainer,location = "top_right"):
     train_loss,valid_loss = trainer.train_loss, trainer.valid_loss
-    
-    # Création des figures Bokeh
-    p = figure(title="Loss over Time", x_axis_label='Epochs', y_axis_label='Loss', width=900, height=400)
 
     # Ajout des données à la première figure
     if len(valid_loss) > 0:
+        p = figure(title="Loss over Time", x_axis_label='Epochs', y_axis_label='Loss', width=900, height=400)
         p.add_layout(Legend(), 'right')
 
         p.line(np.arange(len(valid_loss)), valid_loss, 
@@ -162,6 +160,8 @@ def plot_loss(trainer,location = "top_right"):
 
         # Configuration des légendes
         #p.legend.location = location
+    else:
+        p = None
     return(p)
 
 
@@ -212,7 +212,10 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
 
 def combine_bokeh(p1,p2,p3,save_dir,trial_save):
     # Affichage côte à côte
-    l = column(p1, p2)
+    if p2 is not None:
+        l = column(p1, p2)
+    else:
+        l = p1
     if p3 is not None:
         l = row(l,p3)
     # Affichage de la figure
