@@ -15,11 +15,11 @@ def get_save_directory(args):
 
     # Common parameter between models:
     common_args_begin = f"save/{args.model_name}/K_fold{args.K_fold}/H{args.H}_D{args.D}_W{args.W}/"
-    common_args_end  = f"opt{args.optimizer}/train_valid_calib_{args.train_prop}{args.valid_prop}{args.calib_prop}/E{args.epochs}_lr{args.lr}_B{args.batch_size}/"
+    common_args_end  = f"E{args.epochs}_lr{args.lr}_B{args.batch_size}_train_valid_calib_{args.train_prop}{args.valid_prop}{args.calib_prop}/"
 
     # Tackle different Models : 
     if args.model_name == 'STGCN':
-        save_dir = f"{common_args_begin}{args.graph_conv_type}/{args.gso_type}/act_{args.act_fun}_Ks{args.Ks}/{common_args_end}"
+        save_dir = f"{common_args_begin}{args.graph_conv_type}_{args.gso_type}/act_{args.act_fun}_Ks{args.Ks}/{common_args_end}"
 
     elif args.model_name == 'CNN':
         save_dir =  f"{common_args_begin}h_dims{'_'.join(list(map(str,args.H_dims)))}_out_dims{'_'.join(list(map(str,args.C_outs)))}/{common_args_end}"
@@ -31,6 +31,10 @@ def get_save_directory(args):
         save_dir = f"{save_dir}TE_transfer_{args.TE_transfer}/Multi_Emb{args.multi_embedding}/FC1_17_8_FC2_8_4/Emb_dim{args.embedding_dim}/Specific_lr_{args.specific_lr}/CalendarClass{args.calendar_class}/position_{args.position}/"
     else:
         save_dir = f"{save_dir}no_embedding/"
+
+    if args.epochs < 10:
+        save_dir = 'petit_trial'
+        
 
     # Make directory is doesn't exist yet
     if not os.path.exists(save_dir):

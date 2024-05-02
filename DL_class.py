@@ -177,7 +177,12 @@ class Trainer(object):
                                     self.save_dir,trial_save,station = station
                                     )
         valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
-        dict_row = results2dict(self.args,epoch,pi.picp,pi.mpiw,valid_loss,train_loss)
+        if pi is None:
+            picp,mpiw = None, None
+        else:
+            picp,mpiw = pi.picp,pi.mpiw
+
+        dict_row = results2dict(self.args,epoch,picp,mpiw,valid_loss,train_loss)
         results_df = update_results_df(results_df,dict_row) 
         return(results_df)
 

@@ -1,2 +1,2 @@
-,CalendarClass,Position,Specific_lr,Type_calendar,PICP_mean,MPIW_mean,mean_last_train_loss,std_of_lasts_train_loss,mean_last_valid_loss,std_of_lasts_valid_loss,best_mean_train_loss,std_of_best_mean_train_loss,best_mean_valid_loss,std_of_best_mean_valid_loss
-0,3,input,True,tuple,0.9439880847930908,0.17412135004997253,0.01629619672894478,0.0025994351599365473,0.009900754317641258,0.0025994351599365473,0.01629619672894478,0.0025994351599365473,0.009900754317641258,0.002138999290764332
+,CalendarClass,Position,Specific_lr,Type_calendar,Multi_Emb,TE_transfer,single_station,PICP_mean,MPIW_mean,last_train_loss,last_std_train_loss,last_valid_loss,last_std_valid_loss,score_train_loss,std_train_loss,score_valid_loss,std_valid_loss
+0,3,input,True,tuple,False,False,False,,,0.013172056525945663,,0.0027749694418162107,,0.013172056525945663,,0.0027749694418162107,

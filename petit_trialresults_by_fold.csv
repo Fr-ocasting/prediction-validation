@@ -1,0 +1,3 @@
+,CalendarClass,Position,Specific_lr,Type_calendar,Multi_Emb,TE_transfer,single_station,epoch,PICP,MPIW,valid_loss,train_loss,fold
+0,3,input,True,tuple,False,False,False,-1,,,,,0
+0,3,input,True,tuple,False,False,False,1,,,0.00277496934257692,0.013172056852405006,0

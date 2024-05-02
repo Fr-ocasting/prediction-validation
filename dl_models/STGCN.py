@@ -102,8 +102,8 @@ class STGCNChebGraphConv(nn.Module):
             x = x.unsqueeze(0)
         if N == 1:
             x = x.unsqueeze(-1)
-        #if self.out_dim == 1:
-        #    x = x.unsqueeze(-2)
+        if self.out_dim == 1:
+            x = x.unsqueeze(-2)
         x = x.permute(0,2,1)
         return x
 
@@ -207,7 +207,7 @@ class STGCNGraphConv(nn.Module):
             x = x.unsqueeze(0)
         if N == 1:
             x = x.unsqueeze(-1)
-        #if self.out_dim == 1:
-        #    x = x.unsqueeze(-2)
+        if self.out_dim == 1:
+            x = x.unsqueeze(-2)
         x = x.permute(0,2,1)
         return x
