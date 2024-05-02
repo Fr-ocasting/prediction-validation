@@ -29,6 +29,7 @@ class STGCNChebGraphConv(nn.Module):
 
     def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz=None):
         super(STGCNChebGraphConv, self).__init__()
+        self.out_dim = blocks[-1][-1]
         modules = []
         self.args = args
         for l in range(len(blocks) - 3):
@@ -101,6 +102,8 @@ class STGCNChebGraphConv(nn.Module):
             x = x.unsqueeze(0)
         if N == 1:
             x = x.unsqueeze(-1)
+        #if self.out_dim == 1:
+        #    x = x.unsqueeze(-2)
         x = x.permute(0,2,1)
         return x
 
@@ -129,6 +132,7 @@ class STGCNGraphConv(nn.Module):
 
     def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz =None):
         super(STGCNGraphConv, self).__init__()
+        self.out_dim = blocks[-1][-1]
         modules = []
         for l in range(len(blocks) - 3):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
@@ -203,5 +207,7 @@ class STGCNGraphConv(nn.Module):
             x = x.unsqueeze(0)
         if N == 1:
             x = x.unsqueeze(-1)
+        #if self.out_dim == 1:
+        #    x = x.unsqueeze(-2)
         x = x.permute(0,2,1)
         return x
