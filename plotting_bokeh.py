@@ -90,7 +90,7 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     
 
     # Assurons-nous que la sortie s'affiche dans le notebook
-    output_notebook()
+    # output_notebook()
 
 
     # Création du ColumnDataSource à partir des données

@@ -14,7 +14,7 @@ file_name = 'subway_IN_interpol_neg_15_min_2019_2020.csv'
 def get_save_directory(args): 
 
     # Common parameter between models:
-    common_args_begin = f"save/{args.model_name}/K_fold{args.K_fold}/H{args.H}_D{args.D}_W{args.W}/"
+    common_args_begin = f"save/{args.loss_function_type}/{args.model_name}/K_fold{args.K_fold}/H{args.H}_D{args.D}_W{args.W}/"
     common_args_end  = f"E{args.epochs}_lr{args.lr}_B{args.batch_size}_train_valid_calib_{args.train_prop}{args.valid_prop}{args.calib_prop}/"
 
     # Tackle different Models : 

@@ -92,7 +92,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     # Config Time Embedding: 
     config['position'] = 'input'  # Position of time_embedding module : before or after the core model
     config['time_embedding'] = True
-    config['type_calendar'] = 'unique_long_embedding'  # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
+    config['type_calendar'] = 'tuple' # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
     config['calendar_class'] = 3
     config['specific_lr'] = False  #True, False
     config['embedding_dim'] = 3

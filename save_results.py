@@ -38,7 +38,7 @@ def update_results_df(results_df, dict_row):
         with warnings.catch_warnings():
             # TODO: pandas 2.1.0 has a FutureWarning for concatenating DataFrames with Null entries
             warnings.filterwarnings("ignore", category=FutureWarning)
-        return (pd.concat([results_df,df_row]))
+            return (pd.concat([results_df,df_row]))
     elif (not results_df.empty) & (df_row.empty):
         return results_df
     elif (results_df.empty) & (not df_row.empty):
