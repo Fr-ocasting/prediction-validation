@@ -5,14 +5,13 @@ import torch.nn as nn
 
 def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     if model_name== 'CNN':
-        config = dict(model_name= model_name,epochs = [50], lr = [1e-4],batch_size = [32],
-                      dropout = [0.2],enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
-                      scheduler = None,ray = False,
+        config = dict(model_name= model_name,epochs = [50],
+                      enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                     c_in = 1, C_outs = [[16,2]],H_dims = [[16,16]],out_dim = 2, padding = 0
                     ) 
 
     if model_name== 'MTGNN':
-        config = dict(model_name= model_name,epochs = [30], lr = [1e-4], batch_size = [64],dropout = [0.2],
+        config = dict(model_name= model_name,epochs = [30],
                     enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
                     gcn_true = False, buildA_true = False, gcn_depth = 2,propalpha=0.05,predefined_A=None,# inutile ici car pas de Graph Convolution
@@ -22,15 +21,14 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                     
                     c_in = 1,conv_channels=32, residual_channels=32, 
                     skip_channels=64, end_channels=128,out_dim=2,layers=3,layer_norm_affline=True, 
-                    scheduler = None, ray = False
                     )
         if learn_graph_structure is not None:
             config['gcn_true'],config['buildA_true'] = True,True   
 
     if (model_name == 'STGCN') or  (model_name == 'stgcn'):
         # Utilise la distance adjacency matrix 
-        config = dict(model_name= model_name,epochs = [100], lr = [1e-4],batch_size = [64],
-                        dropout = [0.2],calib_prop = [0.5],
+        config = dict(model_name= model_name,epochs = [100],
+                        calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
                         Kt = 3, stblock_num=2,
@@ -43,36 +41,36 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         adj_type = 'dist',
                         enable_padding = True,
 
-                        threeshold = 0.3,gamma = 0.95,patience = 30,scheduler = None, ray = False
+                        threeshold = 0.3,gamma = 0.95,patience = 30
         )
 
 
 
     if model_name== 'LSTM':
-        config = dict(model_name= model_name,epochs = [30], lr = [1e-4],batch_size = [64],
-                        dropout = [0.2],calib_prop = [0.5], 
+        config = dict(model_name= model_name,epochs = [30],
+                        calib_prop = [0.5], 
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
                           h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
-                         bidirectional = [True,False], scheduler = None, ray = False
+                         bidirectional = [True,False]
         )
         
     if model_name == 'GRU':
-        config = dict(model_name= model_name,epochs = [30], lr = [1e-4],batch_size = [64],
-                        dropout = [0.2],calib_prop = [0.5],
+        config = dict(model_name= model_name,epochs = [30],
+                        calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
                          h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
-                         bidirectional = [True,False], scheduler = None, ray = False
+                         bidirectional = [True,False]
         )
 
     if model_name == 'RNN':
-        config = dict(model_name= model_name,epochs = [30], lr = [1e-4],batch_size = [64],
-                        dropout = [0.2],calib_prop = [0.5],
+        config = dict(model_name= model_name,epochs = [30], 
+                       calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
                         h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
-                         bidirectional = [True,False], scheduler = None , ray = False
+                         bidirectional = [True,False]
         )
         
 
@@ -83,6 +81,12 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['momentum'] = 0.99
     config['loss_function_type'] = 'quantile'
     config['single_station']= False
+    config['batch_size'] = 32
+    config['lr'] = 1e-4
+    config['dropout'] = 0.2
+
+    config['scheduler'] = None
+    config['ray'] = False
 
     # Config Quantile Calibration 
     config['alpha'] = 0.1

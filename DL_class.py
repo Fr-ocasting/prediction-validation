@@ -78,9 +78,9 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,dic_class2rpz,ray=False,save_dir = None):
+    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,dic_class2rpz,save_dir = None):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,ray,args_embedding,dic_class2rpz,save_dir=save_dir,fold = k) for k,(dataset,dataloader,model,optimizer) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list))]
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,save_dir=save_dir,fold = k) for k,(dataset,dataloader,model,optimizer) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
@@ -143,7 +143,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None, ray = False,args_embedding  =None,dic_class2rpz = None, save_dir = None, fold = 0):
+    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, save_dir = None, fold = 0):
         super().__init__()
         self.dataset = dataset
         self.dataloader = dataloader
@@ -156,11 +156,10 @@ class Trainer(object):
         self.valid_loss = []
         self.calib_loss =[]
         self.args = args
-        self.ray = ray
         self.args_embedding = args_embedding
-        self.save_path  = f"best_model.pkl" 
+        self.save_path  = f"best_model.pkl" if save_dir is not None else None
         self.fold = fold
-        self.save_dir = f"{save_dir}fold{fold}/"
+        self.save_dir = f"{save_dir}fold{fold}/" 
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz
 
@@ -186,8 +185,43 @@ class Trainer(object):
         results_df = update_results_df(results_df,dict_row) 
         return(results_df)
 
+    def train_valid_one_epoch(self):
+        # Train and Valid each epoch 
+        self.training_mode = 'train'
+        self.model.train()   #Activate Dropout 
+        self.loop()
+        self.training_mode = 'validate'
+        self.model.eval()   # Desactivate Dropout 
+        self.loop()  
 
-    def train_and_valid(self,mod = 10, mod_plot = 50, alpha = None,station = 0):
+    def update_scheduler(self):
+        if self.scheduler is not None:
+            self.scheduler.step()
+
+    def display_usefull_information(self,epoch,mod,t0):
+        if mod is not None:
+            if epoch%mod==0:
+                print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
+            if epoch == 1:
+                print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
+
+    def ray_tune_track(self):
+        if self.args.ray : 
+            # Calibration 
+            Q = self.conformal_calibration(self.args.alpha,self.dataset,
+                                           conformity_scores_type = self.args.conformity_scores_type,
+                                           quantile_method = self.args.quantile_method)  
+            # Testing
+            preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
+            #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
+
+            # get PI
+            pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
+            # Report usefull metrics
+            tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
+
+
+    def train_and_valid(self,mod = 10, mod_plot = 50,station = 0):
         print(f'start training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
         # Plot Init Latent Space and Accuracy (from random initialization) 
@@ -196,41 +230,26 @@ class Trainer(object):
         for epoch in range(self.args.epochs):
             t0 = time.time()
             # Train and Valid each epoch 
-            self.training_mode = 'train'
-            self.model.train()   #Activate Dropout 
-            self.loop()
-            self.training_mode = 'validate'
-            self.model.eval()   # Desactivate Dropout 
-            self.loop()
-        
+            self.train_valid_one_epoch()
+
             # Save best model 
             if (self.valid_loss[-1] < self.best_valid) & (self.save_path is not None):
                 self.best_valid = self.valid_loss[-1]
                 self.save_best_model(checkpoint,epoch)
 
             # Keep track on Metrics
-            if self.ray : 
-                # Calibration 
-                Q = self.conformal_calibration(alpha,self.dataset,conformity_scores_type = self.args.conformity_scores_type,quantile_method = self.args.quantile_method)  
-                # Testing
-                preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
-                # get PI
-                pi = self.CQR_PI(preds,Y_true,alpha,Q,T_labels)
-                # Report usefull metrics
-                tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
+            self.ray_tune_track()
 
             # Update scheduler after each Epoch 
-            if self.scheduler is not None:
-               self.scheduler.step()
+            self.update_scheduler()
 
-            if epoch%mod==0:
-                print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
-            if epoch == 1:
-                print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
+            # Print
+            self.display_usefull_information(epoch,mod,t0)
 
             # Plot Latent Space and get accuracy 
-            if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
-                results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
+            if mod_plot is not None:
+                if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
+                    results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
 
         return(results_df)
 
