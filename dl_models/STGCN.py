@@ -173,10 +173,10 @@ class STGCNGraphConv(nn.Module):
     
         if time_elt is not None:
             if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,1,embedding_dim]
+                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
                 if not(self.multi_embedding):
                     time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                time_elt = time_elt.reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
+                time_elt = time_elt.reshape(B,C,N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
                 x = torch.cat([x,time_elt],dim = -1)
 
         #x : [B,C,N,L]

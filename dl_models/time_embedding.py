@@ -27,6 +27,18 @@ class TimeEmbedding(nn.Module):
             self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
             self.Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
 
+
+            # [Emb_hour, Emb_jour, Emb_minute]
+            # For each embedding: 
+            # embedding = nn.Linear(dic_size,emb_dim*n_embedding)
+
+            # Example : 
+            # Emb_hour: 
+            # dic_size = 7
+            # emb_dim = 3
+            # n_embedding = 40
+            # [3,3,3,3,3...... 40 fois ... 3,3,3]
+
             self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim*n_embedding) for dic_size,emb_dim in zip(self.dic_sizes,self.Embedding_dims)])
             #self.output1 = nn.Linear(sum(Embedding_dims),embedding_dim*2)
             self.output1 = nn.Linear(sum(self.Embedding_dims),int(sum(self.Embedding_dims)/2))

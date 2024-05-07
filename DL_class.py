@@ -303,7 +303,6 @@ class Trainer(object):
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
 
 
-
             # Get Quantile :
             if quantile_method == 'classic':  
                 quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.args.device)
@@ -346,16 +345,16 @@ class Trainer(object):
         self.optimizer.step()
         return(loss)
     
-    def test_prediction(self,allow_dropout = False,training_mode = 'test'):
+    def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None):
         self.training_mode = training_mode
         if allow_dropout:
             self.model.train()
         else: 
             self.model.eval()
         with torch.no_grad():       
-            data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
-            X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
-            
+            if X is None:
+                data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
+                X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             if self.args_embedding is not None: 
                 Pred = self.model(X,T_labels.long())
             else:
@@ -363,8 +362,8 @@ class Trainer(object):
                 
         return(Pred,Y_true,T_labels)
 
-    def testing(self,dataset, allow_dropout = False, training_mode = 'test', ): #metrics= ['mse','mae']
-        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode)  # Get Normalized Pred and Y_true
+    def testing(self,dataset, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
+        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
 
         test_pred = dataset.unormalize_tensor(test_pred, device = self.args.device)
         Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)

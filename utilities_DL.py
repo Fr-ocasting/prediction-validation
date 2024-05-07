@@ -224,8 +224,8 @@ def load_model(args,args_embedding,dic_class2rpz):
             blocks.append([128, 128])
         blocks.append([args.out_dim])
 
-        print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
-        print(f'Blocks: {blocks}')
+        #print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
+        #print(f'Blocks: {blocks}')
         # Intégrer les deux fonction calc_gso et calc_chebynet_gso. Regarder comment est représenté l'input.
         adj,num_nodes = load_adj(adj_type = args.adj_type)
         adj[adj < args.threeshold] = 0
