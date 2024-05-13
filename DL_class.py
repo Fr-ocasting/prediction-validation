@@ -221,11 +221,14 @@ class Trainer(object):
             tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
 
 
-    def train_and_valid(self,mod = 10, mod_plot = 50,station = 0):
+    def train_and_valid(self,mod = None, mod_plot = None,station = 0):
         print(f'start training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
         # Plot Init Latent Space and Accuracy (from random initialization) 
-        results_df = self.plot_bokeh_and_save_results(pd.DataFrame(),-1,station)
+        if mod_plot is not None: 
+            results_df = self.plot_bokeh_and_save_results(pd.DataFrame(),-1,station)
+        else:
+            results_df = None
 
         for epoch in range(self.args.epochs):
             t0 = time.time()

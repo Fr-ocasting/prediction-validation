@@ -196,6 +196,12 @@ def choose_optimizer(model,args):
     else :
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 
+def load_init_trainer(folder_path,file_name,args):
+    # Load dataset and invalid_dates 
+    dataset,invalid_dates = get_DataSet_and_invalid_dates(folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
+    (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
+    return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
+
 
 def load_model(args,args_embedding,dic_class2rpz):
     if args.model_name == 'CNN': 
