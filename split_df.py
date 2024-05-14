@@ -97,5 +97,14 @@ def train_valid_test_split_iterative_method(dataset,df_verif,train_prop,valid_pr
     else: 
         test_ind2 = len(df_verif) - 1
         last_test_date = df_verif.iat[-1,-1]    
-    # ==== .... 
-    return(first_train_date,last_train_date,first_valid_date,last_valid_date,first_test_date,last_test_date)
+    # ==== ....
+
+    split_limits = {'first_predicted_train_date':first_train_date,
+                    'last_predicted_train_date': last_train_date,
+                    'first_predicted_valid_date':first_valid_date,
+                    'last_predicted_valid_date': last_valid_date,
+                    'first_predicted_test_date': first_test_date,
+                    'last_predicted_test_date': last_test_date
+                    }
+
+    return(split_limits)

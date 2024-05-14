@@ -4,6 +4,7 @@ import torch.nn as nn
 import pandas as pd
 from datetime import datetime, timedelta
 from torch.optim import SGD,Adam,AdamW
+import os 
 
 # Personnal import: 
 from load_adj import load_adj
@@ -12,6 +13,7 @@ from calendar_class import get_time_slots_labels
 from load_DataSet import load_normalized_dataset
 from DL_class import DictDataLoader,QuantileLoss,DataSet
 from TE_transfer_learning import TE_transfer
+from save_results import Dataset_get_save_folder, read_object, save_object 
 
 # Models : 
 from dl_models.CNN_based_model import CNN
@@ -86,14 +88,14 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     optimizer = choose_optimizer(model,args)
     return(model,optimizer)
 
-def get_DataSet_and_invalid_dates(folder_path,file_name,W,D,H,step_ahead,single_station = False):
-    df,invalid_dates,time_step_per_hour = load_raw_data(folder_path,file_name,single_station = single_station)
+def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False):
+    df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = single_station)
     dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead)
     return(dataset,invalid_dates)
 
-def load_raw_data(folder_path,file_name,single_station = False,):
+def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
     if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (file_name=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):
-        subway_in = pd.read_csv(folder_path+file_name,index_col = 0)
+        subway_in = pd.read_csv(abs_path + folder_path+file_name,index_col = 0)
         subway_in.columns.name = 'Station'
         subway_in.index = pd.to_datetime(subway_in.index)
 
@@ -198,7 +200,7 @@ def choose_optimizer(model,args):
 
 def load_init_trainer(folder_path,file_name,args):
     # Load dataset and invalid_dates 
-    dataset,invalid_dates = get_DataSet_and_invalid_dates(folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
+    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path,folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
     (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
     return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
 
@@ -233,7 +235,7 @@ def load_model(args,args_embedding,dic_class2rpz):
         #print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
         #print(f'Blocks: {blocks}')
         # Intégrer les deux fonction calc_gso et calc_chebynet_gso. Regarder comment est représenté l'input.
-        adj,num_nodes = load_adj(adj_type = args.adj_type)
+        adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
         adj[adj < args.threeshold] = 0
         
         adj = adj.to_numpy()
@@ -284,10 +286,10 @@ def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
     return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
 
-def load_all(folder_path,file_name,args,step_ahead,H,D,W,
+def load_all(abs_path,folder_path,file_name,args,step_ahead,H,D,W,
              embedding_dim=2,position = 'input',single_station = False):
     ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
-    df,invalid_dates,time_step_per_hour = load_raw_data(folder_path,file_name,single_station = False)
+    df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = False)
 
     dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding = data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates)
 

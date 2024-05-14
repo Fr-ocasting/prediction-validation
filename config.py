@@ -2,6 +2,7 @@ import torch
 import argparse
 import random
 import torch.nn as nn
+import os 
 
 def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     if model_name== 'CNN':
@@ -84,9 +85,10 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['batch_size'] = 32
     config['lr'] = 1e-4
     config['dropout'] = 0.2
-
     config['scheduler'] = None
-    config['ray'] = False
+
+    config['ray'] = True
+    config['ray_track_pi'] = False
 
     # Config Quantile Calibration 
     config['alpha'] = 0.1
@@ -122,6 +124,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['K_fold'] = 1  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
 
     # ===   ===
+    config['abs_path'] = f"{os.path.abspath(os.getcwd())}/"
 
     # Add other parameters:
     for key in other_params.keys():

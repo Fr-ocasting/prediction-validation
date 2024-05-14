@@ -4,6 +4,8 @@ import time
 from torch.utils.data import DataLoader
 import torch 
 import torch.nn as nn 
+import os 
+
 # Personnal import: 
 from metrics import evaluate_metrics
 from utilities import get_higher_quantile
@@ -12,7 +14,7 @@ from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
 from PI_object import PI_object
 from plotting_bokeh import generate_bokeh
-from save_results import update_results_df, results2dict
+from save_results import update_results_df, results2dict,Dataset_get_save_folder,read_object,save_object
 try: 
     from ray import tune
 except : 
@@ -192,7 +194,9 @@ class Trainer(object):
         self.loop()
         self.training_mode = 'validate'
         self.model.eval()   # Desactivate Dropout 
-        self.loop()  
+        self.loop() 
+
+        self.ray_tune_track()
 
     def update_scheduler(self):
         if self.scheduler is not None:
@@ -207,18 +211,23 @@ class Trainer(object):
 
     def ray_tune_track(self):
         if self.args.ray : 
-            # Calibration 
-            Q = self.conformal_calibration(self.args.alpha,self.dataset,
-                                           conformity_scores_type = self.args.conformity_scores_type,
-                                           quantile_method = self.args.quantile_method)  
-            # Testing
-            preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
-            #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
+            if self.args.ray_track_pi:
+                # Calibration 
+                Q = self.conformal_calibration(self.args.alpha,self.dataset,
+                                            conformity_scores_type = self.args.conformity_scores_type,
+                                            quantile_method = self.args.quantile_method)  
+                # Testing
+                preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
+                #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
 
-            # get PI
-            pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
-            # Report usefull metrics
-            tune.report(Loss_model = self.valid_loss[-1], MPIW = pi.mpiw, PICP = pi.picp) 
+                # get PI
+                pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
+                # Report usefull metrics
+                tune.report({"Loss_model" : self.valid_loss[-1], 
+                            "MPIW" : pi.mpiw,
+                            "PICP" : pi.picp}) 
+            else:
+                tune.report({"Loss_model" : self.valid_loss[-1]})
 
 
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
@@ -239,9 +248,6 @@ class Trainer(object):
             if (self.valid_loss[-1] < self.best_valid) & (self.save_path is not None):
                 self.best_valid = self.valid_loss[-1]
                 self.save_best_model(checkpoint,epoch)
-
-            # Keep track on Metrics
-            self.ray_tune_track()
 
             # Update scheduler after each Epoch 
             self.update_scheduler()
@@ -356,7 +362,7 @@ class Trainer(object):
         return(output)
     
     def CQR_PI(self,preds,Y_true,alpha,Q,T_labels = None):
-        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels,device = self.args.device)
+        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels)
         self.pi = pi
         return(pi)
 
@@ -514,12 +520,13 @@ class DataSet(object):
         Split la DataSet Initiale en K-fold
         '''
         Datasets,DataLoader_list = [],[]
-        dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list,time_slots_labels_list = [],[],[],[]
+        #dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list,time_slots_labels_list = [],[],[],[]
         # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
         df = self.df
         # Récupère la DataSet de Test Commune à tous: 
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
+        dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0)
         data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,args.train_prop, args.valid_prop,args.test_prop,
                                                                               args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
@@ -536,7 +543,6 @@ class DataSet(object):
         
         # Découpe la dataframe en K_fold 
         for k in range(args.K_fold):
-
             # Slicing 
             if args.validation == 'wierd_blocked':
                 df_tmps = df[int((k/args.K_fold)*n):int(((k+1)/args.K_fold)*n)]
@@ -552,11 +558,12 @@ class DataSet(object):
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
+            dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k)
             if dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days == 0:
                 print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
+
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
                                                                                                                                           0,args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
-            
             data_loader['test'] = data_loader_with_test['test']
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
             dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
@@ -572,7 +579,6 @@ class DataSet(object):
             #dic_class2rpz_list.append(dic_class2rpz)
             #dic_rpz2class_list.append(dic_rpz2class)
             #nb_words_embedding_list.append(nb_words_embedding)
-                      
 
         return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     
@@ -667,7 +673,19 @@ class DataSet(object):
 
     def train_valid_test_split(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
         # Split with iterative method 
-        first_predicted_train_date,last_predicted_train_date,first_predicted_valid_date,last_predicted_valid_date,first_predicted_test_date,last_predicted_test_date = train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+        split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
+        if os.path.exists(split_path):
+            split_limits = read_object(split_path)
+        else : 
+            split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+            save_object(split_limits, split_path)
+
+        first_predicted_train_date= split_limits['first_predicted_train_date']
+        last_predicted_train_date = split_limits['last_predicted_train_date']
+        first_predicted_valid_date = split_limits['first_predicted_valid_date']
+        last_predicted_valid_date = split_limits['last_predicted_valid_date']
+        first_predicted_test_date = split_limits['first_predicted_test_date']
+        last_predicted_test_date = split_limits['last_predicted_test_date']
 
         # Keep track on predicted limits (dates): 
         self.first_predicted_train_date,self.last_predicted_train_date = first_predicted_train_date,last_predicted_train_date

@@ -1,6 +1,16 @@
 import pandas as pd
 import warnings
 
+# cPickle préferable à pickle, mais pas partout disponible 
+import os 
+
+try:
+    import cPickle as pickle
+except ModuleNotFoundError:
+    import pickle
+
+
+
 def time_embedding2dict(args):
     dict1 = dict(CalendarClass = args.calendar_class, 
         Position = args.position, 
@@ -53,4 +63,31 @@ def build_results_df(results_df,args, mean_picp,mean_mpiw,dict2,dict3):
     results_df = update_results_df(results_df, dict_row)
     return(results_df)
 
+
+def save_object(obj, filename):
+    with open(filename, 'wb') as outp:  # Overwrites any existing file.
+        pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+
+def read_object(filename):
+    with open(filename, 'rb') as f:  # Overwrites any existing file.
+        return(pickle.load(f))
+    
+def Dataset_get_save_folder(args,K_fold = None, fold = None):
+    # Define the name of the save folder 
+    W_D_H_S = f"W{args.W}_D{args.D}_H{args.H}_S{args.step_ahead}"
+    prop_station = f"train{str(args.train_prop).replace('.','')}_val{str(args.valid_prop).replace('.','')}_cal{str(args.calib_prop).replace('.','')}_single_station{args.single_station}"
+
+    if K_fold is None:
+        K_fold = args.K_fold
+    
+    if fold is None:
+        fold = 0
+    B_K_validation = f"B{args.batch_size}_K_fold{K_fold}_Cclass{args.calendar_class}_validation{args.validation}_fold{fold}"
+
+    save_folder = f"data/loading/{W_D_H_S}/{prop_station}/{B_K_validation}/"
+
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder,exist_ok = True)
+
+    return(save_folder)
 
