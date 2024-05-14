@@ -35,7 +35,11 @@ def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_ve
     model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
     Model_list = [model_opt[0] for model_opt in model_opt_list]
     if args.TE_transfer:
-        Model_list = [TE_transfer(model,n_vertex,args,model_dir =  'data/') for model in Model_list]
+        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
+            Model_list = [TE_transfer(model,n_vertex,args,model_dir = 'data/') for model in Model_list]
+        else:
+            print('TE impossible')
+                                      
         
     Optimizer_list = [model_opt[1] for model_opt in model_opt_list]
     return(loss_function,Model_list,Optimizer_list,args_embedding)

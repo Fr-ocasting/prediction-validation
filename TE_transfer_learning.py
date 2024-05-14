@@ -1,7 +1,7 @@
 import torch 
 
 def TE_transfer(model,n_vertex,args,model_dir =  'data/'):
-    saved_checkpoint = torch.load(f'{model_dir}Trained_Time_Embedding{args.embedding_dim}.pkl')
+    saved_checkpoint = torch.load(f'{args.abs_path}{model_dir}Trained_Time_Embedding{args.embedding_dim}.pkl')
     embedding_weights = {k: v for k, v in saved_checkpoint['state_dict'].items() if 'Tembedding' in k}
 
     if args.multi_embedding:
