@@ -87,8 +87,11 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['dropout'] = 0.2
     config['scheduler'] = None
 
+    # === Ray config ===
     config['ray'] = True
     config['ray_track_pi'] = False
+    config['ray_scheduler'] = 'ASHA' #None
+    config['ray_search_alg'] = None #  'HyperOpt'
 
     # Config Quantile Calibration 
     config['alpha'] = 0.1
