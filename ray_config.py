@@ -1,3 +1,4 @@
+import pkg_resources
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 import torch
@@ -32,14 +33,45 @@ def get_search_alg(name,metric,mode,points_to_evaluate = None):
     
     return(search_alg)
 
+def get_point_to_evaluate(args):
+    if args.model_name == 'STGCN':
+        point_to_evaluate = [{
+            'Kt': 3,
+            'Ks': 2,
+            'graph_conv_type': 'graph_conv',
+            'gso_type': 'sym_norm_lap',
+            'adj_type':'dist',
+            'dropout': 0.2,
+            'lr': 1e-4,
+            'momentum':0.99,
+            'weight_decay':0.005
+        }]
+    elif args.model_name == 'CNN':
+        point_to_evaluate = [{
+            'c_in': 1,
+            'C_outs': [16,2] ,
+            'H_dims': [16,16]
+        }]
+
+    else:
+        raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {name} has not been implemented' ) 
+    return(point_to_evaluate)
 
 
+
+def choose_ray_metric(args):
+    ray_version = pkg_resources.get_distribution("ray").version
+    if ray_version.startswith('2.7'):
+        metric = 'Loss_model'
+    else:
+        metric = '_metric/Loss_model'
+    return(metric)
 
 
 def get_ray_config(args):
-    #metric = '_metric/Loss_model' if args.ray_track_pi else 'Loss_model'
-    metric = '_metric/Loss_model'
-    
+    metric = choose_ray_metric(args)
+    points_to_evaluate = get_point_to_evaluate(args)   
+
     scheduler = get_scheduler(args.epochs,args.ray_scheduler, metric= metric, mode = 'min')
     search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = None)
 

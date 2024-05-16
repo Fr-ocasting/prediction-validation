@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import torch 
 import torch.nn as nn 
 import os 
+import pkg_resources
 
 # Personnal import: 
 from metrics import evaluate_metrics
@@ -13,10 +14,18 @@ from datetime import timedelta
 from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
 from PI_object import PI_object
-from plotting_bokeh import generate_bokeh
+try :
+    from plotting_bokeh import generate_bokeh
+except:
+    print('no plotting bokeh available')
 from save_results import update_results_df, results2dict,Dataset_get_save_folder,read_object,save_object
 try: 
-    from ray import tune
+    from ray import tune,train
+    ray_version = pkg_resources.get_distribution("ray").version
+    if ray_version.startswith('2.7'):
+        report = train.report
+    else:
+        report = tune.report
 except : 
     print('Training and Hyper-parameter tuning with Ray is not possible')
 
@@ -223,11 +232,11 @@ class Trainer(object):
                 # get PI
                 pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
                 # Report usefull metrics
-                tune.report({"Loss_model" : self.valid_loss[-1], 
+                report({"Loss_model" : self.valid_loss[-1], 
                             "MPIW" : pi.mpiw,
                             "PICP" : pi.picp}) 
             else:
-                tune.report({"Loss_model" : self.valid_loss[-1]})
+                report({"Loss_model" : self.valid_loss[-1]})
 
 
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
