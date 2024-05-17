@@ -44,8 +44,20 @@ def get_point_to_evaluate(args):
             'dropout': 0.2,
             'lr': 1e-4,
             'momentum':0.99,
-            'weight_decay':0.005
-        }]
+            'weight_decay':0.005},
+            {
+            'Kt': 4,
+            'Ks': 2,
+            'graph_conv_type': 'graph_conv',
+            'gso_type': 'rw_norm_lap',
+            'adj_type':'dist',
+            'dropout': 0.15,
+            'lr': 4e-4,
+            'momentum':0.87,
+            'weight_decay':0.05,
+            'stblock_num':3,
+            'act_fun':'gtu'}
+            ]
     elif args.model_name == 'CNN':
         point_to_evaluate = [{
             'c_in': 1,
@@ -54,7 +66,7 @@ def get_point_to_evaluate(args):
         }]
 
     else:
-        raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {name} has not been implemented' ) 
+        raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {args.model_name} has not been implemented' ) 
     return(point_to_evaluate)
 
 
@@ -76,9 +88,10 @@ def get_ray_config(args):
     search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = None)
 
     resources_per_trial = {'gpu':0.25,'cpu':2} if torch.cuda.is_available() else {'cpu':1}
-    num_gpus = 1 if torch.cuda.is_available() else 0
+    num_gpus = 2 if torch.cuda.is_available() else 0
+    num_cpus = 36 if torch.cuda.is_available() else 6
     max_concurrent_trials = 18 if torch.cuda.is_available() else 6
 
 
-    return(scheduler,search_alg,resources_per_trial,num_gpus,max_concurrent_trials)
+    return(scheduler,search_alg,resources_per_trial,num_gpus,max_concurrent_trials,num_cpus)
     

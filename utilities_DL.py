@@ -132,6 +132,17 @@ def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
         
     return(subway_in,invalid_dates,time_step_per_hour)
 
+def load_prediction(trainer,dataset,dataloader,args,training_mode,normalize):
+    data=  [[x,y,t] for x,y,t in dataloader[training_mode]] 
+    X = torch.cat([x for x,_,_ in data]).to(args.device)
+    Y = torch.cat([y for _,y,_ in data]).to(args.device)
+    T = torch.cat([t for _,_,t in data]).to(args.device)
+    if normalize:
+        Preds,Y,T = trainer.testing(dataset,False,training_mode,X, Y,T)
+    else :
+        Preds,Y,T = trainer.test_prediction(False,training_mode,X,Y,T)
+    return(Preds,Y,T)
+
 
 def get_dic_results(trainer,pi):
     results = {}

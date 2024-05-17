@@ -89,7 +89,6 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     # === Ray config ===
     config['ray'] = True
-    config['ray_track_pi'] = False
     config['ray_scheduler'] = 'ASHA' #None
     config['ray_search_alg'] = None #  'HyperOpt'
 
@@ -120,6 +119,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
+    config['track_pi'] = True
 
     # Validation, K-fold
     config['validation'] = 'sliding_window'  # classic / sliding_window / 

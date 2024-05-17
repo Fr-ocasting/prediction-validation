@@ -173,6 +173,8 @@ class Trainer(object):
         self.save_dir = f"{save_dir}fold{fold}/" 
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz
+        self.picp_list = []
+        self.mpiw_list = []
 
     def save_best_model(self,checkpoint,epoch):
         ''' Save best model in .pkl format'''
@@ -205,7 +207,9 @@ class Trainer(object):
         self.model.eval()   # Desactivate Dropout 
         self.loop() 
 
-        self.ray_tune_track()
+        # Follow Update of Testing Metrics 
+        pi = self.track_pi()
+        self.ray_tune_track(pi)
 
     def update_scheduler(self):
         if self.scheduler is not None:
@@ -217,20 +221,34 @@ class Trainer(object):
                 print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
             if epoch == 1:
                 print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
+    
+    def get_pi_from_prediction(self):
+        # Calibration 
+        Q = self.conformal_calibration(self.args.alpha,self.dataset,
+                                    conformity_scores_type = self.args.conformity_scores_type,
+                                    quantile_method = self.args.quantile_method,print_info = False)  
+        # Testing
+        preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
+        #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
 
-    def ray_tune_track(self):
-        if self.args.ray : 
-            if self.args.ray_track_pi:
-                # Calibration 
-                Q = self.conformal_calibration(self.args.alpha,self.dataset,
-                                            conformity_scores_type = self.args.conformity_scores_type,
-                                            quantile_method = self.args.quantile_method)  
-                # Testing
-                preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
-                #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
+        # get PI
+        pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
 
-                # get PI
-                pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
+        return(pi)
+    
+    def track_pi(self):
+        if self.args.track_pi:
+            pi = self.get_pi_from_prediction()
+            self.picp_list.append(pi.picp)
+            self.mpiw_list.append(pi.mpiw)
+            return(pi)
+        else:
+            return(None)
+
+
+    def ray_tune_track(self,pi):
+        if self.args.ray:
+            if pi is not None:
                 # Report usefull metrics
                 report({"Loss_model" : self.valid_loss[-1], 
                             "MPIW" : pi.mpiw,
@@ -293,7 +311,7 @@ class Trainer(object):
                 loss_epoch += loss.item()*x_b.shape[0]
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',week_group = None, hour_group = None):
+    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',week_group = None, hour_group = None,print_info = True):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -304,6 +322,7 @@ class Trainer(object):
         - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
         - dataset : DataSet object. Allow us to unormalize tensor
         '''
+        str_info = ''
         self.model.eval()
         with torch.no_grad():
             data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader['cal']]
@@ -336,7 +355,7 @@ class Trainer(object):
             if conformity_scores_type == 'max_residual':
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.args.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
             if conformity_scores_type == 'max_residual_plus_middle':
-                print("|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'")
+                str_info = str_info+ "\n|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'"
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
 
 
@@ -365,8 +384,12 @@ class Trainer(object):
                     Q_i = get_higher_quantile(conformity_scores_i,quantile_order,device = self.args.device)
                     #Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
                     dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
-                print(f"Proportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(calendar_class.unique()))}")
+
+                str_info = str_info+ f"\nProportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(calendar_class.unique()))}"
                 output = dic_label2Q
+        
+        if print_info:
+            print(str_info)
 
         return(output)
     
@@ -684,7 +707,12 @@ class DataSet(object):
         # Split with iterative method 
         split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
         if os.path.exists(split_path):
-            split_limits = read_object(split_path)
+            try:
+                split_limits = read_object(split_path)
+            except:
+                split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+                save_object(split_limits, split_path)
+                print(f"split_limits.pkl has never been saved or issue with last .pkl save")
         else : 
             split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
             save_object(split_limits, split_path)
