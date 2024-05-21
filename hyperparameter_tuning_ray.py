@@ -61,7 +61,7 @@ config = {"lr": tune.qloguniform(1e-4, 1e-1, 5e-5),
           "weight_decay" : tune.uniform(0.0005, 0.1),
           "momentum" : tune.uniform(0.80, 0.99),
           "dropout" : tune.uniform(0,0.9),
-          "scheduler" : tune.choice(True,None),
+          "scheduler" : tune.choice([True,None]),
 
           "torch_scheduler_milestone": tune.qrandint(1, 100, 4),
           "torch_scheduler_gamma": tune.uniform(0.9, 0.999),

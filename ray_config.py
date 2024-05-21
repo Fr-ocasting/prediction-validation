@@ -8,7 +8,7 @@ def get_scheduler(epochs,name='ASHA', metric= 'Loss_model', mode = 'min'):
         scheduler = ASHAScheduler(metric=metric,
             mode=mode,
             max_t=epochs,  # Maximum of run epochs 
-            grace_period=1,     # Minimum of run epochs 
+            grace_period=15,     # Minimum of run epochs 
             reduction_factor=2,  # 100*(1/reduction_factor) % of all trials are kept each time they are reduced
         )
     elif name is None:
