@@ -26,7 +26,8 @@ def calc_gso(dir_adj, gso_type):
     if gso_type == 'sym_norm_adj' or gso_type == 'sym_renorm_adj' \
         or gso_type == 'sym_norm_lap' or gso_type == 'sym_renorm_lap':
         row_sum = adj.sum(axis=1).A1
-        row_sum_inv_sqrt = np.power(row_sum, -0.5)
+        row_sum_float = row_sum.astype(float)
+        row_sum_inv_sqrt = np.power(row_sum_float, -0.5)# Liste de N éléments 
         row_sum_inv_sqrt[np.isinf(row_sum_inv_sqrt)] = 0.
         deg_inv_sqrt = sp.diags(row_sum_inv_sqrt, format='csc')
         # A_{sym} = D^{-0.5} * A * D^{-0.5}
@@ -43,7 +44,8 @@ def calc_gso(dir_adj, gso_type):
     elif gso_type == 'rw_norm_adj' or gso_type == 'rw_renorm_adj' \
         or gso_type == 'rw_norm_lap' or gso_type == 'rw_renorm_lap':
         row_sum = np.sum(adj, axis=1).A1    # Liste de N éléments   . .A1 permet de passer de (N,1) à (N,) 
-        row_sum_inv = np.power(row_sum, -1)# Liste de N éléments 
+        row_sum_float = row_sum.astype(float)
+        row_sum_inv = np.power(row_sum_float, -1)# Liste de N éléments 
         row_sum_inv[np.isinf(row_sum_inv)] = 0.
         #deg_inv = np.diag(row_sum_inv)    # Matrice diag [N,N]
         deg_inv = sp.diags(row_sum_inv,format ='csc')
