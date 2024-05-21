@@ -4,6 +4,7 @@ import torch.nn as nn
 import pandas as pd
 from datetime import datetime, timedelta
 from torch.optim import SGD,Adam,AdamW
+from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
 import os 
 
 # Personnal import: 
@@ -32,8 +33,8 @@ def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_ve
     else:
         args_embedding = None
 
-    model_opt_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
-    Model_list = [model_opt[0] for model_opt in model_opt_list]
+    model_opt_sched_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
+    Model_list = [model_opt[0] for model_opt in model_opt_sched_list]
     if args.TE_transfer:
         if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
             Model_list = [TE_transfer(model,n_vertex,args,model_dir = 'data/') for model in Model_list]
@@ -41,8 +42,9 @@ def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_ve
             print('TE impossible')
                                       
         
-    Optimizer_list = [model_opt[1] for model_opt in model_opt_list]
-    return(loss_function,Model_list,Optimizer_list,args_embedding)
+    Optimizer_list = [model_opt[1] for model_opt in model_opt_sched_list]
+    Scheduler_list = [model_opt[2] for model_opt in model_opt_sched_list]
+    return(loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding)
 
 
 def get_associated__df_verif_index(dataset,date,iloc):
@@ -90,7 +92,8 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
     # Config optimizer:
     optimizer = choose_optimizer(model,args)
-    return(model,optimizer)
+    scheduler = load_scheduler(optimizer,args)
+    return(model,optimizer,scheduler)
 
 def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False):
     df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = single_station)
@@ -212,6 +215,15 @@ def choose_optimizer(model,args):
             return AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     else :
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
+    
+def load_scheduler(optimizer,args):
+    if args.scheduler is None :
+        scheduler = None
+    else:
+        scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)
+        scheduler2 = ExponentialLR(optimizer, gamma=args.torch_scheduler_gamma)
+        scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[args.torch_scheduler_milestone])
+    return(scheduler)
 
 def load_init_trainer(folder_path,file_name,args):
     # Load dataset and invalid_dates 
@@ -319,12 +331,13 @@ def load_all(abs_path,folder_path,file_name,args,step_ahead,H,D,W,
 
     # Load Model
     if type(data_loader) == list:
-        model,optimizer = [],[]
+        model,optimizer,scheduler = [],[],[]
         for i in range(len(data_loader)):
-            mod,opt = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+            mod,opt,sched = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
             model.append(mod)
             optimizer.append(opt)
+            scheduler.append(sched)
     else:
-        model,optimizer = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+        model,optimizer,scheduler = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
 
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates)
+    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates,scheduler)

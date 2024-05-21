@@ -85,7 +85,12 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['batch_size'] = 32
     config['lr'] = 1e-4
     config['dropout'] = 0.2
-    config['scheduler'] = None
+
+    # Scheduler 
+    config['scheduler'] = True  # None
+    config['torch_scheduler_milestone'] = 10
+    config['torch_scheduler_gamma'] = 0.95
+    config['torch_scheduler_lr_start_factor'] = 0.1
 
     # === Ray config ===
     config['ray'] = True
