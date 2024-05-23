@@ -19,12 +19,18 @@ def get_save_directory(args):
 
     # Tackle different Models : 
     if args.model_name == 'STGCN':
-        save_dir = f"{common_args_begin}{args.graph_conv_type}_{args.gso_type}/act_{args.act_fun}_Ks{args.Ks}/{common_args_end}"
-
+        save_dir = f"{args.graph_conv_type}_{args.gso_type}/act_{args.act_fun}_Ks{args.Ks}/"
     elif args.model_name == 'CNN':
-        save_dir =  f"{common_args_begin}h_dims{'_'.join(list(map(str,args.H_dims)))}_out_dims{'_'.join(list(map(str,args.C_outs)))}/{common_args_end}"
+        save_dir =  f"h_dims{'_'.join(list(map(str,args.H_dims)))}_out_dims{'_'.join(list(map(str,args.C_outs)))}/"
+    elif args.model_name == 'MTGNN':
+        save_dir = f"gcn_true{args.gcn_true}_conv{args.conv_channels}_res{args.residual_channels}_skip{args.skip_channels}_end{args.end_channels}_layer{args.layers}/gcn_depth{args.gcn_depth}_propalpha{args.propalpha}_subgraphsize{args.subgraph_size}_node_dim{args.node_dim}/"
+    elif args.model_name =='DCRNN':
+        save_dir = f"adj_type_{args.adj_type}_max_diffusion_step{args.max_diffusion_step}_filter_type_{args.filter_type}_num_nodes{args.num_nodes}_rnn_units{args.rnn_units}_num_rnn_layers{args.num_rnn_layers}/"
+
     else:
         raise NotImplementedError(f'The model {args.model_name} has not been implemented in get_save_directory in paths.py')
+    
+    save_dir = f"{common_args_begin}{save_dir}{common_args_end}"
 
     # Tackle case wether (or not) there is time embedding:
     if args.time_embedding:

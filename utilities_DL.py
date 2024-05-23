@@ -22,9 +22,11 @@ from dl_models.MTGNN import gtnet
 from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
-
+from dl_models.time_embedding import TE_adder
+from dl_models.dcrnn_model import DCRNNModel
 # Load Loss 
 def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+    args.num_nodes = n_vertex
     loss_function = get_loss(args.loss_function_type,args)
 
     if args.time_embedding:
@@ -241,7 +243,13 @@ def load_model(args,args_embedding,dic_class2rpz):
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
                     dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
                     skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
-                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline)
+                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
+        model = TE_adder(model,args,args_embedding,dic_class2rpz)
+    if args.model_name == 'DCRNN':
+        model_kwargs = vars(args)
+        adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
+        model = DCRNNModel(adj, **model_kwargs)
+        model = TE_adder(model,args,args_embedding,dic_class2rpz)
         
     if args.model_name == 'STGCN':
         Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num
@@ -280,6 +288,9 @@ def load_model(args,args_embedding,dic_class2rpz):
             model = STGCNChebGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
         else:
             model = STGCNGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
+        
+        model = TE_adder(model,args,args_embedding,dic_class2rpz)
+            #model = STGCNGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
 

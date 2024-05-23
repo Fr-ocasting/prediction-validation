@@ -13,18 +13,21 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     if model_name== 'MTGNN':
         config = dict(model_name= model_name,epochs = [30],
-                    enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
-
-                    gcn_true = False, buildA_true = False, gcn_depth = 2,propalpha=0.05,predefined_A=None,# inutile ici car pas de Graph Convolution
-                    subgraph_size=20,node_dim=40,tanhalpha=3,static_feat=None,  # inutile aussi, c'est pour la construction de matrice d'adjacence
-
+                    enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',   # VERIFIER CA  !!!!!!!!!!!!!!!!!!!!!!!
                     dilation_exponential=1,
-                    
                     c_in = 1,conv_channels=32, residual_channels=32, 
                     skip_channels=64, end_channels=128,out_dim=2,layers=3,layer_norm_affline=True, 
-                    )
-        if learn_graph_structure is not None:
-            config['gcn_true'],config['buildA_true'] = True,True   
+                    gcn_true = True, # learn graph structure
+                    buildA_true = True, # learn graph structure
+                    gcn_depth = 2,propalpha=0.05,predefined_A=None,# pour la Graph Convolution
+                    #Pour construction de matrice d'adjacence
+                    subgraph_size=20,  #Dimension du sous-graph. A priori <= node_dim car issue de matrice générée depuis l'embedding des noeuds
+                    node_dim=30,   #Dimension d'embedding. A priori <= num_nodes qui est définie dans utilities_DL.get_MultiModel_loss_args_emb_opts qui est la dimension d'embedding des noeuds
+                    tanhalpha=3,
+                    # ...
+
+                    static_feat=None,  # Si = None, alors nodevec1 et nodevec2 sont  issues d'embedding different dans le graph constructor. Sinon Issue de static_feat qui est une matrice (statique pre-définie ?)
+        )
 
     if (model_name == 'STGCN') or  (model_name == 'stgcn'):
         # Utilise la distance adjacency matrix 
@@ -43,6 +46,19 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         enable_padding = True,
 
                         threeshold = 0.3,gamma = 0.95,patience = 30
+        )
+
+    if model_name == 'DCRNN':
+        config  = dict(model_name= model_name,
+                       adj_type = 'dist',
+                       cl_decay_steps = 1000,  # Tant que use_curriculum_learning = False, ne sera jamais utilisé
+                       use_curriculum_learning = False, #Methode d'apprentissage. Pas besoin ici
+                       input_dim = 1 ,  # Number of featuree :  Flow, Velocity ...
+                       max_diffusion_step = 2, #1,2,3 ...
+                       filter_type ='laplacian' , #'laplacian' # 'random_walk' , # 'dual_random_walk'
+                       num_nodes = 1 , #1
+                       num_rnn_layers = 1, #1
+                       rnn_units = 1,
         )
 
 

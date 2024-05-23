@@ -89,23 +89,23 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler,args_embedding,dic_class2rpz,save_dir = None):
+    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz,save_dir = None):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,save_dir=save_dir,fold = k) for k,(dataset,dataloader,model,optimizer) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list))]
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,save_dir=save_dir,fold = k) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
         self.picp = []   
         self.mpiw = []
 
-    def K_fold_validation(self,mod_plot = 50, alpha = None,station = 0):
+    def K_fold_validation(self,mod_plot = 50,station = 0):
         results_by_fold = pd.DataFrame()
         for k,trainer in enumerate(self.Trainers):
             # Train valid model 
             if k == 0:
                 print('\n')
             print(f"K_fold {k}")
-            results_df = trainer.train_and_valid(mod = 10000,mod_plot = mod_plot, alpha = alpha,station = station)
+            results_df = trainer.train_and_valid(mod = 10000,mod_plot = mod_plot,station = station)
 
             # Add Loss 
             self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).to(self.Loss_train).unsqueeze(0)],axis =  0) 

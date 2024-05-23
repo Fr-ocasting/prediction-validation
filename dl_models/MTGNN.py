@@ -18,7 +18,7 @@ from dl_models.MTGNN_layer import graph_constructor, LayerNorm,dilated_inception
 #   - La gate passe par une sigmoid
 #   - Les deux sont multiplié, puis passe dans un dropout
 class gtnet(nn.Module):
-    def __init__(self, gcn_true, buildA_true, gcn_depth, num_nodes, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, in_dim=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True):
+    def __init__(self, gcn_true, buildA_true, gcn_depth, num_nodes, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, in_dim=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True,args_embedding=None):
         super(gtnet, self).__init__()
         self.gcn_true = gcn_true
         self.buildA_true = buildA_true
@@ -38,7 +38,11 @@ class gtnet(nn.Module):
                                     kernel_size=(1, 1))
         self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
 
+
         self.seq_length = seq_length
+        if args_embedding is not None:
+            self.seq_length = self.seq_length + args_embedding.embedding_dim
+            
         kernel_size = 7
         if dilation_exponential>1:
             self.receptive_field = int(1+(kernel_size-1)*(dilation_exponential**layers-1)/(dilation_exponential-1))
@@ -103,17 +107,17 @@ class gtnet(nn.Module):
         self.idx = torch.arange(self.num_nodes).to(device)
 
 
-    def forward(self, input, idx=None):
+    def forward(self, x,idx=None):
 
         # Vérifie que x:  [B,C,N,L], et met le 'padding' necessaire pour pouvoir faire les temporal conv avec dilation
-        if len(input.size())<4:
-            input = input.unsqueeze(1)
-
-        seq_len = input.size(3)
-        assert seq_len==self.seq_length, 'input sequence length not equal to preset sequence length'
+        if len(x.size())<4:
+            x = x.unsqueeze(1)
+            
+        B,C,N,L = x.size() 
+        assert L==self.seq_length, f'input sequence length {L} not equal to preset sequence length {self.seq_length}'
 
         if self.seq_length<self.receptive_field:
-            input = nn.functional.pad(input,(self.receptive_field-self.seq_length,0,0,0))
+            x = nn.functional.pad(x,(self.receptive_field-self.seq_length,0,0,0))
         # ...
 
         # Load Adjacency Matrix si on compte faire de la Graph-convolution
@@ -127,12 +131,11 @@ class gtnet(nn.Module):
                 adp = self.predefined_A
         # ...
                 
+        # Skip connection sur l'Input. Conv2D avec gros nombre de channel, avec un grand kernel (tout le long de la séquence)
+        skip = self.skip0(F.dropout(x, self.dropout, training=self.training))
 
         # Embedding avec une conv2D (1,1) pour avoir C = 32
-        x = self.start_conv(input)
-
-        # Skip connection sur l'Input. Conv2D avec gros nombre de channel, avec un grand kernel (tout le long de la séquence)
-        skip = self.skip0(F.dropout(input, self.dropout, training=self.training))
+        x = self.start_conv(x)
 
 
         # Avant les couches: x.shape : [B,residual channel, N, receptive_field]

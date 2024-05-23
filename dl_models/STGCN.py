@@ -54,12 +54,13 @@ class STGCNChebGraphConv(nn.Module):
             self.silu = nn.SiLU()
             self.dropout = nn.Dropout(p=args.dropout)
 
-        if args_embedding is not None:
-            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
-            self.multi_embedding = args.multi_embedding
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,n_embedding= n_vertex if self.multi_embedding else 1 )
-            self.Tembedding_position = args_embedding.position
-            self.N_repeat = 1 if self.multi_embedding else n_vertex
+        if False :
+            if args_embedding is not None:
+                mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+                self.multi_embedding = args.multi_embedding
+                self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,n_embedding= n_vertex if self.multi_embedding else 1 )
+                self.Tembedding_position = args_embedding.position
+                self.N_repeat = 1 if self.multi_embedding else n_vertex
 
 
     def forward(self, x, time_elt = None):
@@ -68,13 +69,14 @@ class STGCNChebGraphConv(nn.Module):
 
         B,C,N,L = x.size()
 
-        if time_elt is not None:
-            if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
-                if not(self.multi_embedding):
-                    time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                time_elt = time_elt.reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
-                x = torch.cat([x,time_elt],dim = -1)
+        if False:
+            if time_elt is not None:
+                if self.Tembedding_position == 'input':
+                    time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
+                    if not(self.multi_embedding):
+                        time_elt = time_elt.repeat(1,self.N_repeat*C,1)
+                    time_elt = time_elt.reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
+                    x = torch.cat([x,time_elt],dim = -1)
 
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
@@ -158,26 +160,28 @@ class STGCNGraphConv(nn.Module):
             self.silu = nn.SiLU()
             self.do = nn.Dropout(p=args.dropout)
 
-        if args_embedding is not None:
-            #mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1], bank_holiday) for _, (week, time, bank_holiday) in sorted(dic_class2rpz.items())]).to(args.device)
-            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
-            self.multi_embedding = args.multi_embedding
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor, n_embedding= n_vertex if self.multi_embedding else 1)
-            self.Tembedding_position = args_embedding.position
-            self.N_repeat = 1 if self.multi_embedding else n_vertex
+        if False: 
+            if args_embedding is not None:
+                #mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1], bank_holiday) for _, (week, time, bank_holiday) in sorted(dic_class2rpz.items())]).to(args.device)
+                mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+                self.multi_embedding = args.multi_embedding
+                self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor, n_embedding= n_vertex if self.multi_embedding else 1)
+                self.Tembedding_position = args_embedding.position
+                self.N_repeat = 1 if self.multi_embedding else n_vertex
 
     def forward(self, x,time_elt = None):
         if len(x.size())<4:
             x = x.unsqueeze(1)
         B,C,N,L = x.size()
-    
-        if time_elt is not None:
-            if self.Tembedding_position == 'input':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
-                if not(self.multi_embedding):
-                    time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                time_elt = time_elt.reshape(B,C,N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
-                x = torch.cat([x,time_elt],dim = -1)
+
+        if False:
+            if time_elt is not None:
+                if self.Tembedding_position == 'input':
+                    time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
+                    if not(self.multi_embedding):
+                        time_elt = time_elt.repeat(1,self.N_repeat*C,1)
+                    time_elt = time_elt.reshape(B,C,N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
+                    x = torch.cat([x,time_elt],dim = -1)
 
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
