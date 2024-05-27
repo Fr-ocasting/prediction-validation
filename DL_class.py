@@ -14,11 +14,12 @@ from datetime import timedelta
 from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
 from PI_object import PI_object
+from path import save_folder
 try :
     from plotting_bokeh import generate_bokeh
 except:
     print('no plotting bokeh available')
-from save_results import update_results_df, results2dict,Dataset_get_save_folder,read_object,save_object
+from save_results import update_results_df, results2dict,Dataset_get_save_folder,read_object,save_object,save_best_model_and_update_json,load_json_file,get_trial_id
 try: 
     from ray import tune,train
     ray_version = pkg_resources.get_distribution("ray").version
@@ -89,9 +90,12 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz,save_dir = None):
+    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz):
         super(MultiModelTrainer).__init__()
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,save_dir=save_dir,fold = k) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
+        trial_id1,trial_id2 = get_trial_id(args)
+        self.trial_id1 = trial_id1
+        self.trial_id2 = trial_id2
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
@@ -119,6 +123,7 @@ class MultiModelTrainer(object):
             
 
             results_df['fold'] = k
+            results_df.to_csv(f"{save_folder}{trainer.trial_id}/results.csv")
             results_by_fold = pd.concat([results_by_fold,results_df])
 
         mean_picp = torch.Tensor(self.picp).mean()
@@ -154,7 +159,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, save_dir = None, fold = 0):
+    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None):
         super().__init__()
         self.dataset = dataset
         self.dataloader = dataloader
@@ -168,25 +173,32 @@ class Trainer(object):
         self.calib_loss =[]
         self.args = args
         self.args_embedding = args_embedding
-        self.save_path  = f"best_model.pkl" if save_dir is not None else None
+        #self.save_path  = f"best_model.pkl" if save_dir is not None else None
         self.fold = fold
-        self.save_dir = f"{save_dir}fold{fold}/" 
+        #self.save_dir = f"{save_dir}fold{fold}/" 
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz
         self.picp_list = []
         self.mpiw_list = []
+        if trial_id1 is None:
+            self.trial_id = get_trial_id(args,fold)
+        else:
+            self.trial_id = f"{trial_id1}{fold}{trial_id2}"
 
-    def save_best_model(self,checkpoint,epoch):
+    def save_best_model(self,checkpoint,epoch,performance):
         ''' Save best model in .pkl format'''
+        #update checkpoint
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
-        torch.save(checkpoint, f"{self.save_dir}{self.save_path}")   
+        save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = 'save/best_models/')
+        # torch.save(checkpoint, f"{self.save_dir}{self.save_path}")   
 
     def plot_bokeh_and_save_results(self,results_df,epoch,station):
         Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
         trial_save = f'latent_space_e{epoch}'
         pi,pi_cqr = generate_bokeh(self,self.dataloader,
                                     self.dataset,Q,self.args,self.dic_class2rpz,
-                                    self.save_dir,trial_save,station = station
+                                    self.trial_id,
+                                    trial_save,station = station
                                     )
         valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
         if pi is None:
@@ -271,10 +283,11 @@ class Trainer(object):
             # Train and Valid each epoch 
             self.train_valid_one_epoch()
 
-            # Save best model 
-            if (self.valid_loss[-1] < self.best_valid) & (self.save_path is not None):
+            # Save best model (only if it's not a ray tuning)
+            if (self.valid_loss[-1] < self.best_valid) & (not(self.args.ray)):
                 self.best_valid = self.valid_loss[-1]
-                self.save_best_model(checkpoint,epoch)
+                performance = {'valid_loss': self.best_valid, 'epoch':epoch}
+                self.save_best_model(checkpoint,epoch,performance)
 
             # Update scheduler after each Epoch 
             self.update_scheduler()

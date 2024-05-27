@@ -2,7 +2,7 @@ import os
 
 # Usual paths: 
 folder_path = 'data/'
-
+save_folder = 'save/'
 # Load subway in data:
 #file_name = 'preprocessed_subway_15_min.csv'
 #file_name = 'subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'

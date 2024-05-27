@@ -8,29 +8,6 @@ import time
 import torch
 import argparse
 
-#from ray_config import get_ray_config
-#import ray 
-#from ray import tune 
-
-# ==== GET PARAMETERS ====
-# Load config
-model_name = 'STGCN'  #'CNN'
-args = get_args(model_name)
-#args = get_args(model_name = model_name,learn_graph_structure = True)  # MTGNN
-
-# Modification :
-args.epochs = 500
-args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 5 other ones to get the metrics
-if torch.cuda.is_available():
-    args.device = 'cuda:1'
-    args.batch_size = 256
-else :
-    args.device = 'cpu'
-    args.batch_size = 32
-
-args.single_station = False
-args.ray = False
-
 
 def update_args_according_loss_function(args):
     if args.loss_function_type == 'MSE':
@@ -54,21 +31,20 @@ def update_args_according_loss_function(args):
     return(args)
 
 
-
-folder_config = 'HyperparameterTuning/'
-
-def update_args(csv_path,args):
+def update_args(csv_path,args,config_columns):
     for key in config_columns:
         value = row[f"config/{key}"]
         if hasattr(args, key):  #si l'attribu existe
             setattr(args, key, value) #le changer 
     return(args)
 
-def update_args_according_TE(args,TE):
+def update_args_according_TE(args,TE,loss):
     if TE == 'False':
         args.time_embedding = False
     else:
         args.time_embedding = True
+    
+    args.loss_function_type = loss
     return(args)
 
 
@@ -89,17 +65,50 @@ def load_multimodeltrainer_and_train_it(args):
     results_df.to_csv(f"{args.model_name}_{args.loss_function_type}_H{args.H}_D{args.D}_W{args.W}_E{args.epochs}_K_fold{args.K_fold}_Emb_dim{args.embedding_dim}FC1_17_8_FC2_8_4_save_results.csv")
 
 
-for TE in ['False']:
-    for loss in ['quantile','MSE']:
-        # Read Tune Analysis - Keep the 3 best configs
-        csv_path = f"{folder_config}Htuning_ray_analysis_STGCN_loss{loss}_TE_{TE}.csv"
-        df_config = pd.read_csv(csv_path,index_col = 0).sort_values('Loss_model')[:3]
-        config_columns = [col.split('/')[1] for col in df_config.columns if col.startswith('config/')]
+def load_p_best_model_and_k_fold_valid_them(TE_list,loss_list, folder_config = 'HyperparameterTuning/',p=3):
+    for TE in TE_list:
+        for loss in loss_list:
+            # Read Tune Analysis - Keep the 3 best configs
+            csv_path = f"{folder_config}Htuning_ray_analysis_STGCN_loss{loss}_TE_{TE}.csv"
+            df_config = pd.read_csv(csv_path,index_col = 0).sort_values('Loss_model')[:p]
+            config_columns = [col.split('/')[1] for col in df_config.columns if col.startswith('config/')]
+
+            # Update args for the 3 best config 
+            for idx,row in df_config.iterrows():  # Pour chacune des 3meilleurs config : 
+                args = update_args(csv_path,args,config_columns)
+                args = update_args_according_loss_function(args)
+                args = update_args_according_TE(args,TE,loss)
+                load_multimodeltrainer_and_train_it(args)
+            
+
         
-        # Update args for the 3 best config 
-        for idx,row in df_config.iterrows():  # Pour chacune des 3meilleurs config : 
-            args = update_args(csv_path,args)
-            args = update_args_according_loss_function(args)
-            args = update_args_according_TE(args,TE)
-            load_multimodeltrainer_and_train_it(args)
+        
+if __name__ == '__main__':
+    #from ray_config import get_ray_config
+    #import ray 
+    #from ray import tune 
+
+    # ==== GET PARAMETERS ====
+    # Load config
+    model_name = 'STGCN'  #'CNN'
+    args = get_args(model_name)
+    #args = get_args(model_name = model_name,learn_graph_structure = True)  # MTGNN
+
+    # Modification :
+    args.epochs = 500
+    args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 5 other ones to get the metrics
+    if torch.cuda.is_available():
+        args.device = 'cuda:0'
+        args.batch_size = 256
+    else :
+        args.device = 'cpu'
+        args.batch_size = 32
+
+    args.single_station = False
+    args.ray = False
+    
+    load_p_best_model_and_k_fold_valid_them(TE_list = ['True,False'],
+                                            loss_list = ['quantile','MSE'],
+                                            folder_config = 'HyperparameterTuning/',
+                                            p=3)
             

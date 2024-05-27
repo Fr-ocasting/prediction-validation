@@ -6,10 +6,11 @@ from bokeh.models import ColumnDataSource, Toggle, CustomJS,HoverTool, Legend
 from bokeh.layouts import layout,row,column
 
 import torch
+from paths import save_folder 
 from PI_object import PI_object
 # ...
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_dir,trial_save,station=0):
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id,trial_save,station=0):
     pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station = station)
     p2 = plot_loss(trainer)
     
@@ -17,6 +18,8 @@ def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,save_dir,tri
         p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz,station)
     else:
         p3 = None
+
+    save_dir = f'{save_folder}plot/{trial_id}/'
     combine_bokeh(p1,p2,p3,save_dir,trial_save)
 
     return(pi,pi_cqr)

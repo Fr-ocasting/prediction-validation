@@ -146,6 +146,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['validation'] = 'sliding_window'  # classic / sliding_window / 
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 1  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
+    config['current_fold'] = 0
 
     # ===   ===
     config['abs_path'] = f"{os.path.abspath(os.getcwd())}/"
