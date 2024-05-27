@@ -14,7 +14,7 @@ from datetime import timedelta
 from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
 from PI_object import PI_object
-from path import save_folder
+from paths import save_folder
 try :
     from plotting_bokeh import generate_bokeh
 except:
@@ -90,12 +90,12 @@ class DictDataLoader(object):
         return(self.dataloader)
 
 class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz):
+    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz,show_figure = True):
         super(MultiModelTrainer).__init__()
         trial_id1,trial_id2 = get_trial_id(args)
         self.trial_id1 = trial_id1
         self.trial_id2 = trial_id2
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2,show_figure= show_figure) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
@@ -123,7 +123,7 @@ class MultiModelTrainer(object):
             
 
             results_df['fold'] = k
-            results_df.to_csv(f"{save_folder}{trainer.trial_id}/results.csv")
+            results_df.to_csv(f"{save_folder}results/{trainer.trial_id}_results.csv")
             results_by_fold = pd.concat([results_by_fold,results_df])
 
         mean_picp = torch.Tensor(self.picp).mean()
@@ -159,7 +159,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None):
+    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
         super().__init__()
         self.dataset = dataset
         self.dataloader = dataloader
@@ -180,6 +180,7 @@ class Trainer(object):
         self.dic_class2rpz = dic_class2rpz
         self.picp_list = []
         self.mpiw_list = []
+        self.show_figure = show_figure
         if trial_id1 is None:
             self.trial_id = get_trial_id(args,fold)
         else:
@@ -198,7 +199,8 @@ class Trainer(object):
         pi,pi_cqr = generate_bokeh(self,self.dataloader,
                                     self.dataset,Q,self.args,self.dic_class2rpz,
                                     self.trial_id,
-                                    trial_save,station = station
+                                    trial_save,station = station,
+                                    show_figure = self.show_figure
                                     )
         valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
         if pi is None:
@@ -286,7 +288,7 @@ class Trainer(object):
             # Save best model (only if it's not a ray tuning)
             if (self.valid_loss[-1] < self.best_valid) & (not(self.args.ray)):
                 self.best_valid = self.valid_loss[-1]
-                performance = {'valid_loss': self.best_valid, 'epoch':epoch}
+                performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
                 self.save_best_model(checkpoint,epoch,performance)
 
             # Update scheduler after each Epoch 
@@ -300,6 +302,8 @@ class Trainer(object):
                 if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
                     results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
 
+        performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True}
+        self.save_best_model(checkpoint,epoch,performance)
         return(results_df)
 
 

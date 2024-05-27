@@ -26,7 +26,7 @@ def get_trial_id(args,fold = None):
 
     if fold is None:
         trial_id1 = f"{random.randint(1,100000)}_{args.model_name}_F{args.K_fold}f"
-        trial_id2 = f"_{args.batch_size}_{args.epoch}_{l}{t}{s}_{date.today().strftime('%d_%m_%Y')}"
+        trial_id2 = f"_{args.batch_size}_{args.epochs}_{l}{t}{s}_{date.today().strftime('%d_%m_%Y')}"
         return(trial_id1,trial_id2)
     
     else : 
@@ -36,13 +36,15 @@ def get_trial_id(args,fold = None):
 def load_json_file(save_dir):
     ''' Load Json-file containing ID of DeepLearning trial and all the usefull arguments'''
     # if json_file doesn't exist, build it 
-    if not os.path.exists(save_dir):
-        os.mkdir(save_dir)
+    json_save_path = f"{save_dir}model_args.pkl"
+    if not os.path.exists(json_save_path):
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
         json_file = {'model':{}}
-        pickle.dump(json_file,open(f"{save_dir}model_args.pkl",'wb'))
+        pickle.dump(json_file,open(json_save_path,'wb'))
     else:
         # Load json_file
-        json_file = pickle.load(open(f"{save_dir}model_args.pkl",'rb'))
+        json_file = pickle.load(open(json_save_path,'rb'))
 
     return(json_file)
 
@@ -52,7 +54,7 @@ def update_json(args,json_file,trial_id,performance,save_dir):
     dic_args = vars(args)
 
     # update 
-    json_file['model'][trial_id] = {'args':{dic_args},'performance':{performance}}
+    json_file['model'][trial_id] = {'args': dic_args,'performance': performance}
 
     # Save Json_file
     pickle.dump(json_file,open(f"{save_dir}model_args.pkl",'wb'))

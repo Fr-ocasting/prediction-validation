@@ -11,6 +11,10 @@ file_name = 'subway_IN_interpol_neg_15_min_2019_2020.csv'
 # Load CRITER data : 
 #file_name = 'preprocessed_CRITER_6min.csv'
 
+results_folder = f"{save_folder}results/"
+if not(os.path.exists(results_folder)):
+    os.makedirs(results_folder)
+
 def get_save_directory(args): 
 
     # Common parameter between models:

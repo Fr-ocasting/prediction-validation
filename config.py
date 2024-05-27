@@ -104,8 +104,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     # Scheduler 
     config['scheduler'] = True  # None
-    config['torch_scheduler_milestone'] = 10
-    config['torch_scheduler_gamma'] = 0.95
+    config['torch_scheduler_milestone'] = 20
+    config['torch_scheduler_gamma'] = 0.99
     config['torch_scheduler_lr_start_factor'] = 0.1
 
     # === Ray config ===

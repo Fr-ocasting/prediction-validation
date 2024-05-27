@@ -10,7 +10,7 @@ from paths import save_folder
 from PI_object import PI_object
 # ...
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id,trial_save,station=0):
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id,trial_save,station=0,show_figure = False):
     pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station = station)
     p2 = plot_loss(trainer)
     
@@ -20,7 +20,7 @@ def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id,tri
         p3 = None
 
     save_dir = f'{save_folder}plot/{trial_id}/'
-    combine_bokeh(p1,p2,p3,save_dir,trial_save)
+    combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure)
 
     return(pi,pi_cqr)
 
@@ -58,7 +58,13 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     trainer.model.eval()
     with torch.no_grad():
         for label in labels:
-            embeded_vector = trainer.model.Tembedding(label)
+            # According to the version I'm using : 
+            try:
+                embeded_vector = trainer.model.Tembedding(label)
+            except:
+                embeded_vector = trainer.model.TE.Tembedding(label)
+            # ...
+            
             n = len(embeded_vector.size())
             embeded_vector = embeded_vector.cpu().detach().numpy()
             if n < 3:
@@ -227,7 +233,7 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     return(pi,pi_cqr,p)
 
 
-def combine_bokeh(p1,p2,p3,save_dir,trial_save):
+def combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure):
     # Affichage côte à côte
     if p2 is not None:
         l = column(p1, p2)
@@ -236,7 +242,8 @@ def combine_bokeh(p1,p2,p3,save_dir,trial_save):
     if p3 is not None:
         l = row(l,p3)
     # Affichage de la figure
-    show(l)
+    if show_figure:
+        show(l)
     # Pour sauvegarder en HTML (assurez-vous de mettre à jour 'name_save' avec votre nom de fichier désiré)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
