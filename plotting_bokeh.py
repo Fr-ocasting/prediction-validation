@@ -10,18 +10,19 @@ from paths import save_folder
 from PI_object import PI_object
 # ...
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id,trial_save,station=0,show_figure = False):
-    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station = station)
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True,calibration_calendar_class = None):
+    if calibration_calendar_class is None:
+        calibration_calendar_class = args.calendar_class
+    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station,calibration_calendar_class)
     p2 = plot_loss(trainer)
     
     if args.time_embedding:
-        p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz,station)
+        p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz[args.calendar_class],station)
     else:
         p3 = None
 
     save_dir = f'{save_folder}plot/{trial_id}/'
-    combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure)
-
+    combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure,save_plot)
     return(pi,pi_cqr)
 
 
@@ -45,7 +46,7 @@ def hm2hour(hm):
 
 def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     # Get unique labels : 
-    data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in data_loader['test']]
+    data = [[x_b,y_b,t_b[trainer.args.calendar_class]] for  x_b,y_b,*t_b in data_loader['test']]
     T_test = torch.cat([t_b for [_,_,t_b] in data])
     labels = T_test.unique().long().to(args.device)
     # ...
@@ -62,7 +63,8 @@ def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
             try:
                 embeded_vector = trainer.model.Tembedding(label)
             except:
-                embeded_vector = trainer.model.TE.Tembedding(label)
+                embeded_vector = trainer.model.te.Tembedding(label)
+                #embeded_vector = trainer.model.TE.Tembedding(label)
             # ...
             
             n = len(embeded_vector.size())
@@ -174,7 +176,7 @@ def plot_loss(trainer,location = "top_right"):
     return(p)
 
 
-def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
+def plot_prediction(trainer,dataset,Q,args,station,calibration_calendar_class,location = "top_right"):
     
     (preds,Y_true,T_labels) = trainer.testing(dataset)
     if len(preds.size()) == 2:
@@ -182,9 +184,12 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     # ...
 
     # PI
+    data = [t_b[calibration_calendar_class] for  x_b,y_b,*t_b in trainer.dataloader['test']]
+    T_labels_cal= torch.cat(data).to(trainer.args.device)
+
     if preds.size(-1) > 1:
         pi = PI_object(preds,Y_true,alpha = args.alpha, type_calib = 'classic')     # PI 'classic' :
-        pi_cqr = PI_object(preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels)      # PI 'CQR' 
+        pi_cqr = PI_object(preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels_cal)      # PI 'CQR' 
         # str legend
         str_picp,str_mpiw = f"{'{:.2%}'.format(pi.picp)}" , f"{'{:.2f}'.format(pi.mpiw)}"
         str_picp_cqr, str_mpiw_cqr = f"{'{:.2%}'.format(pi_cqr.picp)}" , f"{'{:.2f}'.format(pi_cqr.mpiw)}"
@@ -233,7 +238,7 @@ def plot_prediction(trainer,dataset,Q,args,station = 0, location = "top_right"):
     return(pi,pi_cqr,p)
 
 
-def combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure):
+def combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure,save_plot):
     # Affichage côte à côte
     if p2 is not None:
         l = column(p1, p2)
@@ -243,9 +248,12 @@ def combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure):
         l = row(l,p3)
     # Affichage de la figure
     if show_figure:
+        output_notebook()
         show(l)
     # Pour sauvegarder en HTML (assurez-vous de mettre à jour 'name_save' avec votre nom de fichier désiré)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    output_file(f"{save_dir}{trial_save}.html")
-    save(l)
+
+    if save_plot :
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        output_file(f"{save_dir}{trial_save}.html")
+        save(l)

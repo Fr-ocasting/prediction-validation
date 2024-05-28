@@ -78,7 +78,8 @@ class DictDataLoader(object):
             split = int(self.dataset.U_train.size(0)*self.calib_prop)
             proper_set_x,proper_set_y = self.dataset.U_train[indices[:split]],self.dataset.Utarget_train[indices[:split]]
             calib_set_x,calib_set_y = self.dataset.U_train[indices[split:]],self.dataset.Utarget_train[indices[split:]]
-            time_slots_proper,time_slots_calib = self.dataset.time_slots_train[indices[:split]], self.dataset.time_slots_train[indices[split:]]
+            time_slots_proper = {calendar_class: self.dataset.time_slots_train[calendar_class][indices[:split]] for calendar_class in range(len(self.dataset.nb_class)) } 
+            time_slots_calib = {calendar_class: self.dataset.time_slots_train[calendar_class][indices[split:]] for calendar_class in range(len(self.dataset.nb_class))}
 
             Sequences = [proper_set_x,self.dataset.U_valid,self.dataset.U_test,calib_set_x]
             Targets = [proper_set_y,self.dataset.Utarget_valid,self.dataset.Utarget_test,calib_set_y]
@@ -86,7 +87,14 @@ class DictDataLoader(object):
             Names = ['train','validate','test','cal']
             
         for feature_vector,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-            self.dataloader[training_mode] = DataLoader(list(zip(feature_vector,target,L_time_slot)),batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) if feature_vector is not None else None   
+            if feature_vector is not None:
+                inputs = list(zip(feature_vector,target,*list(L_time_slot.values()) ))
+                self.dataloader[training_mode] = DataLoader(inputs, 
+                                                            batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size),
+                                                            shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) 
+            else:
+                self.dataloader[training_mode] = None
+            #self.dataloader[training_mode] = DataLoader(list(zip(feature_vector,target,L_time_slot)),batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) 
         return(self.dataloader)
 
 class MultiModelTrainer(object):
@@ -172,6 +180,7 @@ class Trainer(object):
         self.valid_loss = []
         self.calib_loss =[]
         self.args = args
+        self.alpha = args.alpha
         self.args_embedding = args_embedding
         #self.save_path  = f"best_model.pkl" if save_dir is not None else None
         self.fold = fold
@@ -197,10 +206,11 @@ class Trainer(object):
         Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
         trial_save = f'latent_space_e{epoch}'
         pi,pi_cqr = generate_bokeh(self,self.dataloader,
-                                    self.dataset,Q,self.args,self.dic_class2rpz,
+                                    self.dataset,Q,self.args,self.dic_class2rpz[self.args.calendar_class],
                                     self.trial_id,
                                     trial_save,station = station,
-                                    show_figure = self.show_figure
+                                    show_figure = self.show_figure,
+                                    save_plot = True
                                     )
         valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
         if pi is None:
@@ -302,6 +312,9 @@ class Trainer(object):
                 if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
                     results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
 
+
+            
+
         performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True}
         self.save_best_model(checkpoint,epoch,performance)
         return(results_df)
@@ -310,7 +323,8 @@ class Trainer(object):
     def loop(self,):
         loss_epoch,nb_samples = 0,0
         with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b,t_b in self.dataloader[self.training_mode]:
+            for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
+                t_b = T_b[self.args.calendar_class]
                 x_b,y_b,t_b = x_b.to(self.args.device),y_b.to(self.args.device),t_b.to(self.args.device)
                 #Forward 
                 if self.args_embedding is not None: 
@@ -328,7 +342,7 @@ class Trainer(object):
                 loss_epoch += loss.item()*x_b.shape[0]
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',week_group = None, hour_group = None,print_info = True):
+    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -339,20 +353,24 @@ class Trainer(object):
         - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
         - dataset : DataSet object. Allow us to unormalize tensor
         '''
+        if calibration_calendar_class is None:
+            calibration_calendar_class = self.args.calendar_class
         str_info = ''
         self.model.eval()
         with torch.no_grad():
-            data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader['cal']]
-            X_cal,Y_cal,T_cal = torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device),torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
+            # Load Calibration Dataset :
+            data = [[x_b,y_b,t_b[self.args.calendar_class],t_b[calibration_calendar_class]] for  x_b,y_b,*t_b in self.dataloader['cal']]
+            X_cal,Y_cal,T_pred,T_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_,_] in data]).to(self.args.device),torch.cat([t_pred for [_,_,t_pred,_] in data]).to(self.args.device),torch.cat([t_cal for [_,_,_,t_cal] in data]).to(self.args.device)
 
-            #Forward 
+            # Forward Pass: 
             if self.args_embedding is not None: 
-                preds = self.model(X_cal,T_cal.long())
+                preds = self.model(X_cal,T_pred.long())
             else:
                 preds = self.model(X_cal) 
 
             if len(preds.size()) == 2:
                 preds = preds.unsqueeze(1)
+            # ...
 
 
             # get lower and upper band
@@ -363,28 +381,34 @@ class Trainer(object):
                 lower_q,upper_q = preds,preds 
             else:
                 raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
+            # ...
             
-            # unormalized lower and upper band 
+            # unormalized lower and upper band  
             lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.args.device),dataset.unormalize_tensor(upper_q,device = self.args.device)
             Y_cal = dataset.unormalize_tensor(Y_cal,device = self.args.device)
+            # ...
 
-            # Confority scores and quantiles
+            # Get Confority scores: 
             if conformity_scores_type == 'max_residual':
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.args.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
             if conformity_scores_type == 'max_residual_plus_middle':
                 str_info = str_info+ "\n|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'"
                 self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
+            # ...
 
-
-            # Get Quantile :
+            # Get Quantile:
+            # If classic Calibration:
             if quantile_method == 'classic':  
                 quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.args.device)
                 #Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
                 Q = get_higher_quantile(self.conformity_scores,quantile_order,device = self.args.device)
                 output = Q
+
+            # If Calibration by group of T_labels: 
             if quantile_method == 'compute_quantile_by_class':  # Calcul Higher Quantil for each calendar class. Several label can belongs to the same calendar class. The Quantile is computed through all residual of label of the same class
-                calendar_class = torch.cat([t_b for [_,_,t_b] in data])
+                calendar_class = torch.cat([t_cal for [_,_,_,t_cal] in data])
                 dic_label2Q = {}
+            # ...
 
 
                 # Compute quantile for each calendar class : 
@@ -430,7 +454,7 @@ class Trainer(object):
             self.model.eval()
         with torch.no_grad():       
             if X is None:
-                data = [[x_b,y_b,t_b] for  x_b,y_b,t_b in self.dataloader[training_mode]]
+                data = [[x_b,y_b,t_b[self.args.calendar_class]] for  x_b,y_b,*t_b in self.dataloader[training_mode]]
                 X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             if self.args_embedding is not None: 
                 Pred = self.model(X,T_labels.long())
@@ -623,12 +647,6 @@ class DataSet(object):
             Datasets.append(dataset_tmps)
             DataLoader_list.append(data_loader)
 
-
-            #time_slots_labels_list.append(time_slots_labels)
-            #dic_class2rpz_list.append(dic_class2rpz)
-            #dic_rpz2class_list.append(dic_rpz2class)
-            #nb_words_embedding_list.append(nb_words_embedding)
-
         return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     
 
@@ -716,9 +734,11 @@ class DataSet(object):
         self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
 
         if self.time_slots_labels is not None : 
-            self.time_slots_train = self.time_slots_labels[self.first_train_U:self.last_train_U] 
-            self.time_slots_valid = self.time_slots_labels[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
-            self.time_slots_test = self.time_slots_labels[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None    
+            self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
+            self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
+            self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
+            #self.time_slots_valid = self.time_slots_labels[self.args.calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
+            #self.time_slots_test = self.time_slots_labels[self.args.calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None    
 
     def train_valid_test_split(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
         # Split with iterative method 
@@ -795,7 +815,7 @@ class DataSet(object):
         self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
 
         # get Associated time_slots_labels >
-        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self,calendar_class= calendar_class)
+        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self)
 
         # Split U in  U_train, U_valid, U_test thanks to 'df_verif' and the date limits of the df_train/df_valid/df_test
         self.split_tensors()

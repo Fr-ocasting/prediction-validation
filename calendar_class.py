@@ -66,28 +66,38 @@ def get_week_hour_minute_class(type_class):
 
     return(week_group,hour_minute_group)
 
-def get_time_slots_labels(dataset,calendar_class):
-
+def get_time_slots_labels(dataset,nb_class = [0,1,2,3]):
+    dataset.nb_class = nb_class
+    Dic_T_labels,Dic_nb_words_embedding,Dic_class2rpz,Dic_rpz2class = {},{},{},{}
     # Associate Label to a timestamp
     df_time_slots = pd.DataFrame(dataset.df_verif[f"t+{dataset.step_ahead-1}"]).rename(columns = {f"t+{dataset.step_ahead-1}":'datetime'})
     df_time_slots['hour'] = df_time_slots.datetime.dt.hour
     df_time_slots['weekday'] = df_time_slots.datetime.dt.weekday
     df_time_slots['minutes'] = df_time_slots.datetime.dt.minute
 
-    week_group,hour_minute_group = get_week_hour_minute_class(calendar_class)
-    dic_class2rpz = {i*len(hour_minute_group)+k:([w1,w2],[(h1,m1),(h2,m2)]) for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
-    dic_rpz2class = {f"{'_'.join(list(map(str,[w1,w2])))}-{'_'.join(list(map(str,[(h1,m1),(h2,m2)])))}":i*len(hour_minute_group)+k for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
+    for calendar_class in range(len(nb_class)):
+        week_group,hour_minute_group = get_week_hour_minute_class(calendar_class)
+        dic_class2rpz = {i*len(hour_minute_group)+k:([w1,w2],[(h1,m1),(h2,m2)]) for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
+        dic_rpz2class = {f"{'_'.join(list(map(str,[w1,w2])))}-{'_'.join(list(map(str,[(h1,m1),(h2,m2)])))}":i*len(hour_minute_group)+k for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
 
-    # According choosen type_class: 
-    if calendar_class == 0:
-        dataset.time_slots_labels = torch.Tensor([0.0]*len(dataset.df_verif))
-        return(dataset.time_slots_labels,dic_class2rpz,dic_rpz2class,1)
-    else:
-        df_time_slots['calendar_class_rpz'] = df_time_slots.apply(lambda row : find_class((row.weekday,row.hour,row.minutes),week_group,hour_minute_group),axis=1)
-        df_time_slots['calendar_class_rpz_str'] = df_time_slots.calendar_class_rpz.apply(lambda class_rpz : f"{'_'.join(list(map(str,class_rpz[0])))}-{'_'.join(list(map(str,class_rpz[1])))}" )
-        df_time_slots['calendar_class'] = df_time_slots.calendar_class_rpz_str.apply(lambda class_rpz : dic_rpz2class[class_rpz]) 
-        #time_slots_labels = torch.Tensor(df_time_slots['calendar_class'])
-        time_slots_labels = torch.Tensor(df_time_slots['calendar_class'].values)  #.long()
-        nb_words_embedding = len(df_time_slots['calendar_class'].unique())
-        dataset.time_slots_labels = time_slots_labels
-        return(dataset.time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+        # According choosen type_class: 
+        if calendar_class == 0:
+            T_labels = torch.Tensor([0.0]*len(dataset.df_verif))
+            nb_words_embedding = 1
+        else:
+            df_time_slots['calendar_class_rpz'] = df_time_slots.apply(lambda row : find_class((row.weekday,row.hour,row.minutes),week_group,hour_minute_group),axis=1)
+            df_time_slots['calendar_class_rpz_str'] = df_time_slots.calendar_class_rpz.apply(lambda class_rpz : f"{'_'.join(list(map(str,class_rpz[0])))}-{'_'.join(list(map(str,class_rpz[1])))}" )
+            df_time_slots['calendar_class'] = df_time_slots.calendar_class_rpz_str.apply(lambda class_rpz : dic_rpz2class[class_rpz]) 
+            #time_slots_labels = torch.Tensor(df_time_slots['calendar_class'])
+            T_labels = torch.Tensor(df_time_slots['calendar_class'].values)  #.long()
+            nb_words_embedding = len(df_time_slots['calendar_class'].unique()) 
+
+        Dic_class2rpz[calendar_class] = dic_class2rpz
+        Dic_rpz2class[calendar_class] = dic_rpz2class
+        Dic_nb_words_embedding[calendar_class] = nb_words_embedding
+        Dic_T_labels[calendar_class] = T_labels
+
+    dataset.time_slots_labels = Dic_T_labels
+
+
+    return(Dic_T_labels,Dic_class2rpz,Dic_rpz2class,Dic_nb_words_embedding)

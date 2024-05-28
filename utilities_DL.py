@@ -22,8 +22,8 @@ from dl_models.MTGNN import gtnet
 from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
-from dl_models.time_embedding import get_model
 from dl_models.dcrnn_model import DCRNNModel
+from dl_models.full_model import full_model
 # Load Loss 
 def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
     args.num_nodes = n_vertex
@@ -91,7 +91,8 @@ def find_nearest_date(date_series, date, inferior=True):
     return nearest_index,nearest_indice
 
 def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
-    model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
+    model =  full_model(args,args_embedding,dic_class2rpz).to(args.device)
+    #model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
     # Config optimizer:
     optimizer = choose_optimizer(model,args)
     scheduler = load_scheduler(optimizer,args)
@@ -232,129 +233,3 @@ def load_init_trainer(folder_path,file_name,args):
     dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path,folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
     (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
     return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
-
-
-def load_model(args,args_embedding,dic_class2rpz):
-    if args.model_name == 'CNN': 
-        model = CNN(args, kernel_size = (2,),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
-    if args.model_name == 'MTGNN': 
-        model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
-                    predefined_A=args.predefined_A, static_feat=args.static_feat, 
-                    dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
-                    dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
-                    skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
-                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
-        #model = TE_adder(model,args,args_embedding,dic_class2rpz)
-    if args.model_name == 'DCRNN':
-        model_kwargs = vars(args)
-        adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
-        model = DCRNNModel(adj, **model_kwargs)
-        #model = TE_adder(model,args,args_embedding,dic_class2rpz)
-        
-    if args.model_name == 'STGCN':
-        Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num
-        if args.enable_padding:
-            Ko = args.L
-        if args_embedding is not None:
-            Ko = Ko + args_embedding.embedding_dim
-        blocks = []
-        blocks.append([1])
-        for l in range(args.stblock_num):
-            blocks.append([64, 16, 64])
-        if Ko == 0:
-            blocks.append([128])
-        elif Ko > 0:
-            blocks.append([128, 128])
-        blocks.append([args.out_dim])
-
-        #print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
-        #print(f'Blocks: {blocks}')
-        # Intégrer les deux fonction calc_gso et calc_chebynet_gso. Regarder comment est représenté l'input.
-        adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
-        adj[adj < args.threeshold] = 0
-        
-        adj = adj.to_numpy()
-        gso = calc_gso(adj, args.gso_type)
-        if args.graph_conv_type == 'cheb_graph_conv':   
-            gso = calc_chebynet_gso(gso)     # Calcul la valeur propre max du gso. Si lambda > 2 : gso = gso - I , sinon : gso = 2gso/lambda - I 
-        gso = gso.toarray()
-        gso = gso.astype(dtype=np.float32)
-        if args.single_station:
-            gso = np.array([[1]]).astype(dtype=np.float32)
-            num_nodes = 1
-        args.gso = torch.from_numpy(gso).to(args.device)
-
-        if args.graph_conv_type == 'cheb_graph_conv':
-            model = STGCNChebGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
-        else:
-            model = STGCNGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
-        
-        #model = TE_adder(model,args,args_embedding,dic_class2rpz)
-            #model = STGCNGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
-        number_of_st_conv_blocks = len(blocks) - 3
-        assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
-
-    if args.model_name == 'LSTM':
-        model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional,lstm = True)
-        # nn.LSTM(input_size = c_in, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
-    if args.model_name == 'GRU':
-        model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional, gru = True)
-        #self.rnn = nn.GRU(input_size = c_in, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
-    if args.model_name == 'RNN':
-        model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers, nonlinearity = 'tanh',bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional)
-        #self.rnn = nn.RNN(input_size = c_in, hidden_size = h_dim, num_layers=num_layers,nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional) 
-
-
-    #if args.time_embedding:
-    #    te_module = TE_module(args,args_embedding,dic_class2rpz)
-    #    model = nn.Sequential(te_module,model)
-    model = get_model(model,args,args_embedding,dic_class2rpz)
-    return(model)
-
-
-
-
-# =========== Surement à supprimer : =============
-
-def data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates):
-    (dataset,U,Utarget,remaining_dates) = load_normalized_dataset(df,time_step_per_hour,args.train_prop,args.valid_prop,step_ahead,H,D,W,invalid_dates)
-    print(f"{len(df.columns)} nodes (stations) have been considered. \n ")
-    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset,type_class= args.calendar_class,type_calendar = args.type_calendar)
-    data_loader_obj = DictDataLoader(U,Utarget,args.train_prop,args.valid_prop,validation = args.validation, shuffle = True, calib_prop=args.calib_prop, time_slots = time_slots_labels)
-    data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
-    # Print Information
-    _,train_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_train,inferior = True)
-    _,valid_ind = find_nearest_date(remaining_dates.iloc[:,0],dataset.last_date_valid,inferior = True)
-    display_info_on_dataset(dataset,remaining_dates,train_ind,valid_ind)
-
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding)
-
-
-def load_all(abs_path,folder_path,file_name,args,step_ahead,H,D,W,
-             embedding_dim=2,position = 'input',single_station = False):
-    ''' Load dataset, dataloader, loss function, Model, Optimizer, Trainer '''
-    df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = False)
-
-    dataset,data_loader,dic_class2rpz,dic_rpz2class,nb_words_embedding = data_generator(df,args,time_step_per_hour,step_ahead,H,D,W,invalid_dates)
-
-    # Time Embedding Config
-    config_Tembed = get_config_embed(nb_words_embedding = nb_words_embedding,embedding_dim = embedding_dim,position = position)
-    args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding') if args.time_embedding else None
-    # Print config :
-    display_config(args,args_embedding)
-
-    # Quantile Loss
-    loss_function = get_loss(args.loss_function_type,args)
-
-    # Load Model
-    if type(data_loader) == list:
-        model,optimizer,scheduler = [],[],[]
-        for i in range(len(data_loader)):
-            mod,opt,sched = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
-            model.append(mod)
-            optimizer.append(opt)
-            scheduler.append(sched)
-    else:
-        model,optimizer,scheduler = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
-
-    return(dataset,data_loader,dic_class2rpz,dic_rpz2class,args_embedding,loss_function,model,optimizer,invalid_dates,scheduler)

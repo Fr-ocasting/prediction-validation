@@ -65,6 +65,15 @@ def get_point_to_evaluate(args):
             'H_dims': [16,16]
         }]
 
+    elif args.model_name == 'DCRNN':
+        point_to_evaluate = [{
+            'torch_scheduler_milestone' : 40,
+            'torch_scheduler_gamma' :0.99,
+            'torch_scheduler_lr_start_factor' : 0.1,
+            
+
+        }]
+
     else:
         raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {args.model_name} has not been implemented' ) 
     return(point_to_evaluate)
