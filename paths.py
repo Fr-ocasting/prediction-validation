@@ -15,6 +15,14 @@ results_folder = f"{save_folder}results/"
 if not(os.path.exists(results_folder)):
     os.makedirs(results_folder)
 
+
+
+
+# ================================================
+# A SUPPRIMER 
+# ================================================
+
+
 def get_save_directory(args): 
 
     # Common parameter between models:

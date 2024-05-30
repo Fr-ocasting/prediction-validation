@@ -50,15 +50,16 @@ def update_args_according_TE(args,TE,loss):
 
 def load_multimodeltrainer_and_train_it(args):
     results_df = pd.DataFrame()
-    save_dir = get_save_directory(args)
+    #save_dir = get_save_directory(args)
     Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(folder_path,file_name,args)
     (loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = len(Datasets[0].columns))
     # Remove the first Fold 
     Model_list,Optimizer_list,DataLoader_list,Datasets,Scheduler_list = Model_list[1:],Optimizer_list[1:],DataLoader_list[1:],Datasets[1:],Scheduler_list[1:]
-    multimodeltrainer = MultiModelTrainer(Datasets,Model_list,DataLoader_list,args,Optimizer_list,loss_function,scheduler_list = Scheduler_list,args_embedding=args_embedding,save_dir = save_dir,dic_class2rpz=dic_class2rpz)
+    
+    multimodeltrainer = MultiModelTrainer(Datasets,Model_list,DataLoader_list,args,Optimizer_list,loss_function,scheduler_list = Scheduler_list,args_embedding=args_embedding,dic_class2rpz=dic_class2rpz,show_figure = False)
 
     (results_by_fold,mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds) = multimodeltrainer.K_fold_validation(mod_plot = 10)
-    results_by_fold.to_csv(f"{save_dir}results_by_fold.csv")
+    #results_by_fold.to_csv(f"{save_dir}results_by_fold.csv")
 
     # Save results 
     results_df = build_results_df(results_df,args, mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)
