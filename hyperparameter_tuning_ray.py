@@ -57,8 +57,7 @@ def load_trainer(config,folder_path,file_name,args):
 
     trainer = Trainer(dataset,model,dataloader,
                     args,optimizer,loss_function,scheduler = scheduler,
-                    args_embedding=args_embedding,
-                    save_dir = None,dic_class2rpz=dic_class2rpz)
+                    args_embedding=args_embedding,dic_class2rpz=dic_class2rpz)
     return(trainer)
 
 def Train_with_tune(config,folder_path,file_name,args):

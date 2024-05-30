@@ -18,7 +18,7 @@ class full_model(nn.Module):
         self.core_model = load_model(args,args_embedding,dic_class2rpz)
         self.te = TE_module(args,args_embedding,dic_class2rpz) if args.time_embedding else None
 
-    def forward(self,x,time_elt):
+    def forward(self,x,time_elt = None):
         if self.te is not None:
             x = self.te(x,time_elt)
         x = self.core_model(x)

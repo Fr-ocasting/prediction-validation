@@ -327,7 +327,7 @@ class Trainer(object):
                 t_b = T_b[self.args.calendar_class]
                 x_b,y_b,t_b = x_b.to(self.args.device),y_b.to(self.args.device),t_b.to(self.args.device)
                 #Forward 
-                if self.args_embedding is not None: 
+                if self.args_embedding : 
                     pred = self.model(x_b,t_b.long())
                 else:
                     pred = self.model(x_b)
@@ -363,7 +363,7 @@ class Trainer(object):
             X_cal,Y_cal,T_pred,T_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_,_] in data]).to(self.args.device),torch.cat([t_pred for [_,_,t_pred,_] in data]).to(self.args.device),torch.cat([t_cal for [_,_,_,t_cal] in data]).to(self.args.device)
 
             # Forward Pass: 
-            if self.args_embedding is not None: 
+            if self.args_embedding : 
                 preds = self.model(X_cal,T_pred.long())
             else:
                 preds = self.model(X_cal) 
@@ -456,7 +456,7 @@ class Trainer(object):
             if X is None:
                 data = [[x_b,y_b,t_b[self.args.calendar_class]] for  x_b,y_b,*t_b in self.dataloader[training_mode]]
                 X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
-            if self.args_embedding is not None: 
+            if self.args_embedding : 
                 Pred = self.model(X,T_labels.long())
             else:
                 Pred = self.model(X) 
