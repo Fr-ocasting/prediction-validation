@@ -1,9 +1,9 @@
 import pandas as pd
-from utilities_DL import get_DataSet_and_invalid_dates,get_MultiModel_loss_args_emb_opts,load_init_trainer
+from utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer
 from DL_class import MultiModelTrainer, Trainer
 from config import get_args
 from save_results import build_results_df
-from paths import folder_path,file_name,get_save_directory
+from paths import folder_path,file_name
 import time 
 import torch
 import argparse
@@ -31,7 +31,7 @@ def update_args_according_loss_function(args):
     return(args)
 
 
-def update_args(csv_path,args,config_columns):
+def update_args(row,args,config_columns):
     for key in config_columns:
         value = row[f"config/{key}"]
         if hasattr(args, key):  #si l'attribu existe
@@ -76,7 +76,7 @@ def load_p_best_model_and_k_fold_valid_them(TE_list,loss_list, folder_config = '
 
             # Update args for the 3 best config 
             for idx,row in df_config.iterrows():  # Pour chacune des 3meilleurs config : 
-                args = update_args(csv_path,args,config_columns)
+                args = update_args(row,args,config_columns)
                 args = update_args_according_loss_function(args)
                 args = update_args_according_TE(args,TE,loss)
                 load_multimodeltrainer_and_train_it(args)
