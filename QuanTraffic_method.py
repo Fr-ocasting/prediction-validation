@@ -11,16 +11,15 @@ from paths import folder_path,file_name,save_folder
 import torch
 
 
-
 def split_tensor(X,split_prop):
     return(X[:int(len(X)*split_prop)],X[int(len(X)*split_prop):])
 
 def split_calibration_dataset(trainer,split_prop) :
     data = [[x_b,y_b,t_b[trainer.args.calendar_class]] for  x_b,y_b,*t_b in trainer.dataloader['cal']]
 
-    X_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(trainer.args.device),
-    Y_cal= torch.cat([y_b for [_,y_b,_,_] in data]).to(trainer.args.device)
-    T_pred = torch.cat([t_pred for [_,_,t_pred,_] in data]).to(trainer.args.device)
+    X_cal = torch.cat([x_b for [x_b,_,_] in data]).to(trainer.args.device)
+    Y_cal= torch.cat([y_b for [_,y_b,_] in data]).to(trainer.args.device)
+    T_pred = torch.cat([t_pred for [_,_,t_pred] in data]).to(trainer.args.device)
 
     X_cal_train,X_cal_valid = split_tensor(X_cal,split_prop)
     Y_cal_train,Y_cal_valid = split_tensor(Y_cal,split_prop)
@@ -33,6 +32,7 @@ def prediction_on_specific_dataset(trainer,X,T):
 
 def get_predictions(trainer,split_prop):
     X_cal_train,X_cal_valid,Y_cal_train,Y_cal_valid,T_pred_train,T_pred_valid = split_calibration_dataset(trainer,split_prop)
+    
     Y_cal_train_pred = prediction_on_specific_dataset(trainer,X_cal_train,T_pred_train)
     Y_cal_valid_pred = prediction_on_specific_dataset(trainer,X_cal_valid,T_pred_valid)
 
@@ -43,23 +43,97 @@ def compute_error(Y_true,Y_pred_lower,Y_pred_upper):
     #   error_low = target - lower_band  / error_high  = upper_band - target
     #   err_dis = torch.cat([error_low,error_high])   # Concat errors on the dim 0 : [B,S,N],[B,S,N] -> [2*B,S,N]    , with S =nb step ahead of the prediction
     # ==== ....
-    error_low = Y_true - Y_pred_lower
-    error_high = Y_pred_upper - Y_true
+    error_low = Y_true.cpu().detach() - Y_pred_lower.cpu().detach()
+    error_high = Y_pred_upper.cpu().detach() - Y_true.cpu().detach()
     err =  torch.cat([error_low,error_high])
 
     return err 
 
-def compute_quantile_of_residual_err_s_n(err,q,s,n):
-    quantile_s_n = torch.quantile(err[:,s,n],q)
+
+def repeat_permute(X,n_repeat):
+    X = X.cpu().detach()
+    return(X.repeat(n_repeat,1,1,1).permute(1,0,2,3))
+
+
+def compute_quantile_of_residual_err_s_n(err,q,n,s):
+    quantile_s_n = torch.quantile(err[:,n,s],q)
     return(quantile_s_n)
 
-def compute_quantile_of_residual_err(err,S,N,nb_quantiles = 99):
-    quantile_table = [[[compute_quantile_of_residual_err_s_n(err,q,s,n) for s in range(S)] for n in range(N)] for q in range(nb_quantiles+1)]
-    torch.stack(torch.stack(quantile_table ) )
+def compute_quantile_table_for_each_q(err,S,N,nb_quantiles = 99):
+    quantile_table = torch.stack([torch.stack([torch.stack([compute_quantile_of_residual_err_s_n(err,q/(nb_quantiles+1),n,s) for s in range(S)]) for n in range(N)]) for q in range(nb_quantiles+1)])
+    return(quantile_table)
+
+def get_calibrated_metrics(Y_true,Y_pred_lower,Y_pred_upper,quantile_table,nb_quantiles):
+    # Compute calibrated PI band 
+    calibrated_lower_band = repeat_permute(Y_pred_lower,nb_quantiles+1) - quantile_table   
+    calibrated_upper_band = repeat_permute(Y_pred_upper,nb_quantiles+1) + quantile_table  
+
+    # Set lower band Min = 0
+    mask  = calibrated_lower_band > 0  
+    calibrated_lower_band = calibrated_lower_band*mask
+
+    # Coverage table : True if real value within interval, else False
+    stacked_Y_true = repeat_permute(Y_true,nb_quantiles+1)
+    coverage_table = torch.logical_and(calibrated_upper_band >= stacked_Y_true,calibrated_lower_band <= stacked_Y_true)
+
+    # Compute PICP and MPIW : 
+    calibrated_PICP_table = torch.sum(coverage_table,dim = 0)/coverage_table.size(0)
+    calibrated_MPIW_table = torch.mean(calibrated_upper_band - calibrated_lower_band,dim=0)
+
+    return(calibrated_PICP_table,calibrated_MPIW_table)
 
 
+def normalize_metric_table(metric_table):
+    normalized_table = (metric_table - torch.min(metric_table,dim = 0)[0]) / (torch.max(metric_table,dim = 0)[0] - torch.min(metric_table,dim = 0)[0])
+    return(normalized_table)
+
+def lambda_optimization(quantile_table,PICP_table, MPIW_table,lambda_list):
+    N,S = quantile_table.size(1),quantile_table.size(2)
+    Loss = [(1-lambda_i)*MPIW_table - lambda_i*PICP_table for lambda_i in lambda_list]
+    Index = [torch.argmin(loss,dim = 0) for loss in Loss]  # loss [nb_quantiles+1, N, S]  /  Index: list of lambda_list elmt with shape [N,S]
+
+    best_quantile_by_lambda = []
+    for i in range(len(lambda_list)):
+        index_i = Index[i]  # shape [N,1]   / [N,S]
+        best_quantile = torch.stack([torch.stack([quantile_table[index_i[n,s],n,s] for s in range(S)]) for n in range(N)])    # index_i[n,s] choose the 'best quantile order' (???)
+        best_quantile_by_lambda.append(best_quantile)
+    best_quantile_by_lambda = torch.stack(best_quantile_by_lambda)
+    return(best_quantile_by_lambda)
 
 
+def get_QuanTraffic_calibration_table(trainer,split_prop,nb_quantiles,lambda_list):
+    # Init, Load Data:
+    N = len(trainer.dataset.columns)  #40
+    S = trainer.args.step_ahead #1
+    Y_cal_train_pred,Y_cal_train,Y_cal_valid_pred,Y_cal_valid = get_predictions(trainer,split_prop)    # Get prediction from Calibration DataSet 
+    Y_cal_train_pred_lower,Y_cal_train_pred_upper = Y_cal_train_pred[...,0].unsqueeze(-1),Y_cal_train_pred[...,1].unsqueeze(-1)    # Get Upper and Lower band from prediction
+    Y_cal_valid_pred_lower,Y_cal_valid_pred_upper = Y_cal_valid_pred[...,0].unsqueeze(-1),Y_cal_valid_pred[...,1].unsqueeze(-1)
+
+    # Tensor of Residual Error (Concat Lower band error and Upper band error)
+    err = compute_error(Y_cal_train,Y_cal_train_pred_lower,Y_cal_train_pred_upper)  # Get Prediction  [2*B, N, 1] 
+
+    # Compute Quantile Table
+    quantile_table = compute_quantile_table_for_each_q(err,S,N,nb_quantiles)
+
+    # Compute claibrated PICP and MPIW through all quantile 
+    calibrated_PICP_table,calibrated_MPIW_table = get_calibrated_metrics(Y_cal_train,Y_cal_train_pred_lower,Y_cal_train_pred_upper,quantile_table,nb_quantiles)
+
+    # Normalize them 
+    n_calibrated_PICP_table,n_calibrated_MPIW_table = normalize_metric_table(calibrated_PICP_table),normalize_metric_table(calibrated_MPIW_table)
+
+    # Choose best calibration thanks to Optimization Function 
+    best_quantile_by_lambda = lambda_optimization(quantile_table,n_calibrated_PICP_table, n_calibrated_MPIW_table,lambda_list)
+
+    # Calibration on Cal_Valid_Dataset:
+    calibrated_Valid_PICP_table,calibrated_Valid_MPIW_table = get_calibrated_metrics(Y_cal_valid,Y_cal_valid_pred_lower,Y_cal_valid_pred_upper,best_quantile_by_lambda,len(lambda_list) -1)
+
+    # Choose best Calibration argument through lambda_list different propositions: 
+    best_lambda_ind = torch.argmin(torch.abs(torch.mean(calibrated_Valid_PICP_table,dim=1) - (1-trainer.args.alpha)))
+
+    # Select Best Calibration Table : 
+    final_calibration_table = best_quantile_by_lambda[best_lambda_ind]  # Simplement Q .... Semble être le même pour tout time-slot. 
+
+    return(final_calibration_table)
 
 
 if __name__ == '__main__': 
@@ -98,79 +172,10 @@ if __name__ == '__main__':
 
 
     # ==== QuanTraffic Calibration : 
-    # Load Y_pred_calibration1 and Y_pred_calibration2
     split_prop = 0.5
+    nb_quantiles = 99
+    n_lambda = 50 #41 
+    lambda_list = np.arange(0,n_lambda)/n_lambda
 
-    Y_cal_train_pred,Y_cal_train,Y_cal_valid_pred,Y_cal_valid = get_predictions(trainer,split_prop)    # Get prediction from Calibration DataSet 
-    Y_cal_train_pred_lower,Y_cal_train_pred_upper = Y_cal_train_pred[...,0],Y_cal_train_pred[...,1]    # Get Upper and Lower band from prediction
-    Y_cal_valid_pred_lower,Y_cal_valid_pred_upper = Y_cal_valid_pred[...,0],Y_cal_valid_pred[...,1]
-
-    err = compute_error(Y_cal_train,Y_cal_train_pred_lower,Y_cal_train_pred_upper)  # Get Prediction
-
-    # ....
-
-
-
-
-# 1 . ==== 'Preprocessing' 
-    #   Data .to(device), DataLoader(XS,YS)
-    #   Load trained model
-    #   Prediction : YS_pred (quantile_l and quantile_u) on calibration dataset 
-    #   Inverse_transform Prediction ( ??? )
- 
-    # split YS_pred in 2 part: upper and lower estimation (YS_pred_O and YS_pred1)
-    #   split  YS and YS_pred in 2 part: 'train' and 'validation'  (YS_train,YS_val for the targets ones, and YS_0_train,YS_1_train and YS_0_val,YS_1_val for the predicted ones )
-    #   Traffic state (demand, speed, flow) are always >= 0, then mask 'YS_1_train' which is the lower band, by setting all negative values by 0.
-
-    #   error_quantile = 'n_grid'
+    final_calibration_table = get_QuanTraffic_calibration_table(trainer,split_prop,nb_quantiles,lambda_list)
     # ==== ....
-    
-    # 2 . ==== Compute error :     
-    #   error_low = target - lower_band  / error_high  = upper_band - target
-    #   err_dis = torch.cat([errow_low,error_high])   # Concat errors on the dim 0 : [B,S,N],[B,S,N] -> [2*B,S,N]    , with S =nb step ahead of the prediction
-    # ==== ....
-
-    # 3 . ==== Compute Quantile Table : 
-    # Thanks to all residual error, compute a quantile for each percentile, each node id, each 't' 
-    # corr_err_list = Quantile_table, shape : [error_quantile, S, N]
-    # ==== ....
-
-    # 4 . ==== PICP and MPIW Table:
-    # For each quantile (percentile here, error_quantile = 99):
-    #    Compute lower_band:  lower_prediction - quantile table for the quantile q    -> Shape [B,S,N]
-    #    Compute upper_band:  upper_prediction + quantile table for the quantile q   -> Shape [B,S,N]  (on s'assure que lower_band > 0)
-    #    Compute PICP (coverage_list) et MPIW (interval_list) mean through first dimension.  shape [S,N]
-    # Compute it for each quantile  -> coverage_list and interval_list Shape [error_quantile,S,N]
-    # ==== ....
-
-
-    # 5 . ==== Compute PICP and MPIW MinMax_Normalization : (???) 
-    #   Compute Normalized PICP  interval_nor (resp MPIW  - coverage_nor) through dim 0, For each node, each time-step ahead, 
-    # ==== ....
-
-    # 6 . ==== For each Lambda coeff, choose the best Quantile :
-    #  For each lambda : 
-    #    Loss = (1-i)MPIW_n  - i PICP_n    -> shape [error_quantile,S,N]
-    #    find index table of min_loss for each couple (s,n) 
-    #    for each s, each n : 
-    #        cor_err[lambda,s,n] = Quantile_table[index[s,n],s,n]
-    #
-    # Return a Calibration table 'cor_err' of shape [lambda_list,S,N] 
-    # ==== ....
-
-    # 7 . ==== For each Lambda coeff, calibration on the Validation Prediction 
-    #  For each lambda_i: 
-    #    Compute lower band : lower_validation_predcition - calibration table[lambda_i]
-    #    Compute upper band : upper_validation_predcition + calibration table[lambda_i]
-    #    Compute coverage (independent_coverage), a Boolean Tensor, shape [B2,S,N]. True if real value within PI
-    #    Compute PICP : mean of 'True coverage', shape [1]
-    #
-    # do for each lambda_i, then produce a PICP vector [lambda list]
-    # Return the best lambda_i(the closest from expected quantile 0.9)
-    # ==== .... 
-
-
-    # 6 and 7 are the optimisation part to select the best_lambda
-    # Then, for each 's' and each 'n', we have the associated best calibration cor_err[best_lambda,s,n]
-
-    # These are the final calibration scores and can be used on test_dataset
