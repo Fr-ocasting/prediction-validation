@@ -49,6 +49,14 @@ def compute_error(Y_true,Y_pred_lower,Y_pred_upper):
 
     return err 
 
+def compute_quantile_of_residual_err_s_n(err,q,s,n):
+    quantile_s_n = torch.quantile(err[:,s,n],q)
+    return(quantile_s_n)
+
+def compute_quantile_of_residual_err(err,S,N,nb_quantiles = 99):
+    quantile_table = [[[compute_quantile_of_residual_err_s_n(err,q,s,n) for s in range(S)] for n in range(N)] for q in range(nb_quantiles+1)]
+    torch.stack(torch.stack(quantile_table ) )
+
 
 
 
