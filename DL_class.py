@@ -206,7 +206,7 @@ class Trainer(object):
         Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
         trial_save = f'latent_space_e{epoch}'
         pi,pi_cqr = generate_bokeh(self,self.dataloader,
-                                    self.dataset,Q,self.args,self.dic_class2rpz[self.args.calendar_class],
+                                    self.dataset,Q,self.args,self.dic_class2rpz,
                                     self.trial_id,
                                     trial_save,station = station,
                                     show_figure = self.show_figure,
@@ -406,15 +406,15 @@ class Trainer(object):
 
             # If Calibration by group of T_labels: 
             if quantile_method == 'compute_quantile_by_class':  # Calcul Higher Quantil for each calendar class. Several label can belongs to the same calendar class. The Quantile is computed through all residual of label of the same class
-                calendar_class = torch.cat([t_cal for [_,_,_,t_cal] in data])
+                #calendar_class = torch.cat([t_cal for [_,_,_,t_cal] in data])
                 dic_label2Q = {}
             # ...
 
 
                 # Compute quantile for each calendar class : 
                 nb_label_with_quantile_1 = 0
-                for label in calendar_class.unique():
-                    indices = torch.nonzero(calendar_class == label,as_tuple = True)[0]
+                for label in T_cal.unique():
+                    indices = torch.nonzero(T_cal == label,as_tuple = True)[0]
                     quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.args.device)  # Quantile for each class, so the quantile order is different as each class has a different length
                     quantile_order = min(torch.Tensor([1]).to(self.args.device),quantile_order)
                     if quantile_order == 1: 
@@ -426,7 +426,7 @@ class Trainer(object):
                     #Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
                     dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
 
-                str_info = str_info+ f"\nProportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(calendar_class.unique()))}"
+                str_info = str_info+ f"\nProportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(T_cal.unique()))}"
                 output = dic_label2Q
         
         if print_info:
