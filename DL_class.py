@@ -76,10 +76,15 @@ class DictDataLoader(object):
         else : 
             indices = torch.randperm(self.dataset.U_train.size(0)) 
             split = int(self.dataset.U_train.size(0)*self.calib_prop)
-            proper_set_x,proper_set_y = self.dataset.U_train[indices[:split]],self.dataset.Utarget_train[indices[:split]]
-            calib_set_x,calib_set_y = self.dataset.U_train[indices[split:]],self.dataset.Utarget_train[indices[split:]]
-            time_slots_proper = {calendar_class: self.dataset.time_slots_train[calendar_class][indices[:split]] for calendar_class in range(len(self.dataset.nb_class)) } 
-            time_slots_calib = {calendar_class: self.dataset.time_slots_train[calendar_class][indices[split:]] for calendar_class in range(len(self.dataset.nb_class))}
+
+            self.dataset.indices_cal = indices[split:]
+            self.dataset.indices_train = indices[:split]
+
+            proper_set_x,proper_set_y = self.dataset.U_train[self.dataset.indices_train],self.dataset.Utarget_train[self.dataset.indices_train]
+            calib_set_x,calib_set_y = self.dataset.U_train[self.dataset.indices_cal],self.dataset.Utarget_train[self.dataset.indices_cal]
+            time_slots_proper = {calendar_class: self.dataset.time_slots_train[calendar_class][self.dataset.indices_train] for calendar_class in range(len(self.dataset.nb_class)) } 
+            time_slots_calib = {calendar_class: self.dataset.time_slots_train[calendar_class][self.dataset.indices_cal] for calendar_class in range(len(self.dataset.nb_class))}
+
 
             Sequences = [proper_set_x,self.dataset.U_valid,self.dataset.U_test,calib_set_x]
             Targets = [proper_set_y,self.dataset.Utarget_valid,self.dataset.Utarget_test,calib_set_y]

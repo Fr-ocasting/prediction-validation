@@ -99,3 +99,83 @@ def evaluate_metrics(Pred,Y_true,metrics = ['mse','mae']):
         error = fun(Pred,Y_true)
         dic_metric[metric] = error
     return(dic_metric)
+
+
+def get_holidays(year):
+    holidays = []
+    # New Year's Day
+    holidays.append(datetime(year=year, month=1, day=1))
+    # Easter Sunday
+    if year == 2019:
+        day,month = 21,4
+    if year == 2020:
+        day,month = 13,4
+    if year == 2021:
+        day,month = 5,4  
+    if year == 2022:
+        day,month = 18,4
+    holidays.append(datetime(year=year, month=month, day=day))
+    # Labor Day
+    holidays.append(datetime(year=year, month=5, day=1))
+    # Victory in Europe Day
+    holidays.append(datetime(year=year, month=5, day=8))
+    # Ascension 
+    if year == 2019:
+        day,month = 30,5
+    if year == 2020:
+        day,month = 21,5
+    if year == 2021:
+        day,month = 13,5  
+    if year == 2022:
+        day,month = 26,5    
+    holidays.append(datetime(year=year, month=month, day=day))
+    # Bastille Day
+    holidays.append(datetime(year=year, month=7, day=14))
+    #"Pentecôte" 's Monday
+    if year == 2019:
+        day,month = 10,6
+    if year == 2020:
+        day,month = 1,6
+    if year == 2021:
+        day,month = 24,5 
+    if year == 2022:
+        day,month = 6,6    
+    holidays.append(datetime(year=year, month=month, day=day))
+    # Assumption of Mary
+    holidays.append(datetime(year=year, month=8, day=15))
+    # All Saints' Day
+    holidays.append(datetime(year=year, month=11, day=1))
+    # Armistice Day
+    holidays.append(datetime(year=year, month=11, day=11))
+    # Christmas Day
+    holidays.append(datetime(year=year, month=12, day=25))
+    
+    #holidays = [holiday.timestamp() for holiday in holidays]
+    return holidays
+
+def get_school_holidays(city,freq = '15min'):
+    print('Only French Holidays from 2019 to 2020 has been implemented')
+    if city == 'Lyon':
+        winter_holidays = list(pd.date_range(start = pd.to_datetime('16/02/2019',dayfirst=True), end = pd.to_datetime('4/03/2019',dayfirst=True), freq = freq)) + list(pd.date_range(start = pd.to_datetime('22/02/2020',dayfirst=True), end = pd.to_datetime('9/03/2020',dayfirst=True), freq = freq)) 
+        spring_holidays = list(pd.date_range(start = pd.to_datetime('13/04/2019',dayfirst=True), end = pd.to_datetime('29/04/2019',dayfirst=True), freq = freq)) + list(pd.date_range(start = pd.to_datetime('18/04/2020',dayfirst=True), end = pd.to_datetime('4/05/2020',dayfirst=True), freq = freq)) 
+        summer_holidays = list(pd.date_range(start = pd.to_datetime('6/07/2019',dayfirst=True), end = pd.to_datetime('02/09/2019',dayfirst=True), freq = freq))  + list(pd.date_range(start = pd.to_datetime('04/07/2020',dayfirst=True), end = pd.to_datetime('31/08/2020',dayfirst=True), freq = freq)) 
+        autumn_holidays = list(pd.date_range(start = pd.to_datetime('19/10/2019',dayfirst=True), end = pd.to_datetime('04/11/2019',dayfirst=True), freq = freq))
+        christmas_holidays = list(pd.date_range(start = pd.to_datetime('21/12/2019',dayfirst=True), end = pd.to_datetime('06/01/2020',dayfirst=True), freq = freq))
+    else:
+        raise NotImplementedError(f'City of {city} has not been implemented')
+
+    school_holidays = winter_holidays+spring_holidays+summer_holidays+autumn_holidays+christmas_holidays
+    return(school_holidays)
+
+
+
+def get_time_delta_holidays(agg_minutes = True,agg_hour = False):
+    holidays = []
+    for year in [2019,2020] :
+        holidays = holidays+ get_holidays(year)
+    if agg_minutes:
+        holidays = [[holiday + k*timedelta(minutes = 15) for k in range(24*4)] for holiday in holidays]
+    elif agg_hour: 
+        holidays = [[holiday + k*timedelta(hour = 1) for k in range(24)] for holiday in holidays]
+    holidays = list(np.concatenate(holidays))
+    return(holidays)
