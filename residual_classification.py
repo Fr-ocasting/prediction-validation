@@ -22,7 +22,7 @@ def load_dataset_for_classifier_for_ONE_single_station(trainer,split_prop,bank_h
     datasets = [(X_train,Y_train_lower),(X_train,Y_train_upper)]
     datasets_valid = [(X_valid,Y_valid_lower),(X_valid,Y_valid_upper)]
     # ...
-    return(datasets,datasets_valid,df_classification,Y_train_lower)
+    return(datasets,datasets_valid,df_classification,Y_train_lower,Y_train_upper)
 
 
 def labelise_residual(Y_train_lower,fraction_maxi = 2,fraction_std_step = 4):
@@ -167,6 +167,12 @@ def loop(model,dataloader,loss_function,optimizer,device,training_mode):
         for x_b,y_b in dataloader[training_mode]:
             x_b,y_b = x_b.to(device),y_b.to(device)
             pred = model(x_b)
+
+
+            print('prediction:',pred)
+            print('True Values:',y_b)
+
+            
             loss = loss_function(pred,y_b)
 
             # Back propagation (after each mini-batch)
@@ -218,7 +224,8 @@ def load_model(c_in,h_dim1,h_dim2,c_out,lr,weight_decay):
 
 def load_dataloader(X_train,X_valid,Y_train,Y_valid,batch_size):
     dataloader = {}
-    for training_mode, X,Y in zip(['train','valid'],[torch.tensor(X_train.values.astype(float)),torch.tensor(X_valid.values.astype(float))],[torch.tensor(Y_train.values),torch.tensor(Y_valid.values)]):
+    #for training_mode, X,Y in zip(['train','valid'],[torch.tensor(X_train.values.astype(float)),torch.tensor(X_valid.values.astype(float))],[torch.tensor(Y_train.values),torch.tensor(Y_valid.values)]):
+    for training_mode, X,Y in zip(['train','valid'],[torch.tensor(X_train.astype(float)),torch.tensor(X_valid.astype(float))],[torch.tensor(Y_train),torch.tensor(Y_valid)]):
         X = X.to(torch.float32)
         Y = Y.to(torch.float32)
         inputs = list(zip(X,Y))
@@ -246,27 +253,114 @@ def update_dictionnary(Models,model,band_name,optimizer,L_train,L_valid):
     Models[band_name]['L_valid'] = L_valid
     return(Models)
 
-def load_and_train_model(df_classification,split_prop = 0.7, task = 'regressio'):
-    # Load Data
-    (X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper) = get_train_valid_lower_upper(df_classification,split_prop)
+# ========== Get Loss Function ==========
+def get_loss_function(task):
+    if task == 'regression_loss_function':
+        return classification_loss_function()
+    elif task == 'classification':
+        return classification_loss_function()
+    else:
+        raise NotImplementedError(f'task {task} has not been implemented')
 
-    # MinMaxNormalize
-    mini_l,maxi_l,Y_train_lower,Y_valid_lower = minmax_normalise_train_valid(Y_train_lower,Y_valid_lower)
-    mini_u,maxi_u,Y_train_upper,Y_valid_upper = minmax_normalise_train_valid(Y_train_upper,Y_valid_upper) 
-    
-    # Init Hyperparameter
+def classification_loss_function():
+    return(nn.CrossEntropyLoss())
+
+def regression_loss_function():
+    return(nn.MSELoss())
+# ========== .... ==========
+
+
+
+# ========== Preprocessing Data ==========
+def preprocess_data(datasets,datasets_valid,task,fraction_maxi = None,fraction_std_step = None,standardization = None):
+    if task == 'regression':
+        return preprocess_regression_data(datasets,datasets_valid,standardization)
+    elif task == 'classification':
+        return preprocess_classification_data(datasets,datasets_valid,fraction_maxi,fraction_std_step)
+
+def preprocess_classification_data(datasets,datasets_valid,fraction_maxi,fraction_std_step):
+    '''Labelise Lower and Upper Residuals. 
+    Return the associated Feature Vector X and Target Vector Y'''
+    Y_train_lower,Y_train_upper = datasets[0][1],datasets[1][1]
+    labels_lower,step_lower = labelise_residual(Y_train_lower,fraction_maxi,fraction_std_step)
+    labels_upper,step_upper = labelise_residual(Y_train_upper,fraction_maxi,fraction_std_step)
+    (X_train,X_test,Y_train_lower,Y_valid_lower) =  get_classifier_inputs(datasets[0],datasets_valid[0],labels_lower,step_lower)
+    (X_train,X_test,Y_train_upper,Y_valid_upper) =  get_classifier_inputs(datasets[1],datasets_valid[1],labels_upper,step_upper)
+    return(X_train,X_test,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper)
+
+def preprocess_regression_data(datasets,datasets_valid,standardization = 'minmax'):
+    '''MinMax Normalize or Standardize'''
+    X_train,X_valid = datasets[0][0].values, datasets_valid[1][0].values
+    Y_train_lower,Y_train_upper = datasets[0][1],datasets[1][1]
+    Y_valid_lower,Y_valid_upper = datasets_valid[0][1],datasets_valid[1][1]
+    if standardization == 'minmax':
+        mini_l,maxi_l,Y_train_lower,Y_valid_lower = minmax_normalise_train_valid(Y_train_lower,Y_valid_lower)
+        mini_u,maxi_u,Y_train_upper,Y_valid_upper = minmax_normalise_train_valid(Y_train_upper,Y_valid_upper) 
+        return(mini_l,maxi_l,mini_u,maxi_u,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper)
+    elif standardization == 'stardize':
+
+        return(std_l,mean_l,std_u,mean_u,X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper)
+    else:
+        raise NotImplementedError(f'standardization {standardization} has not been implemented')    
+# ========== .... ==========
+
+
+# ========== Load and Train Model: ==========
+def load_and_train_model(datasets,datasets_valid,df_classification,task,fraction_maxi=None,fraction_std_step=None,standardization=None):
+    # Preprocess Data
+    if task == 'classification':
+        X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper = preprocess_data(datasets,datasets_valid,task,fraction_maxi = fraction_maxi, fraction_std_step = fraction_std_step)
+        parameter = {}
+    if task == 'regression':
+        mini_l,maxi_l,mini_u,maxi_u,X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper = preprocess_data(datasets,datasets_valid,task,standardization = standardization)
+        parameter = {'lower' : {'min':mini_l,'max':maxi_l},
+                     'upper' : {'min':mini_u,'max':maxi_u}
+                     }
+
+    # Load HyperParameters 
     (batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay) = load_hp(df_classification)
 
-    # Init
     Models = {'lower':{},'upper':{}}
-    loss_function = nn.MSELoss()
+    loss_function = get_loss_function(task)
 
     for Y_train,Y_valid,band_name in zip([Y_train_lower,Y_train_upper],[Y_valid_lower,Y_valid_upper],['lower','upper']):
+        if task == 'classification':
+            #c_out = len(Y_train.unique())
+            c_out = len(np.unique(Y_train))
+        
+        Models = train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay)
+    
+    return(Models,parameter)
 
-        if task == 'regression':
-            Models = train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay)
 
-    return(Models,mini_l,maxi_l,mini_u,maxi_u)
+
+# ========== .... ==========
+if False : 
+    def load_and_train_model(df_classification,split_prop = 0.7, task = 'regression'):
+        # Load Data
+        (X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper) = get_train_valid_lower_upper(df_classification,split_prop)
+
+        # MinMaxNormalize
+        mini_l,maxi_l,Y_train_lower,Y_valid_lower = minmax_normalise_train_valid(Y_train_lower,Y_valid_lower)
+        mini_u,maxi_u,Y_train_upper,Y_valid_upper = minmax_normalise_train_valid(Y_train_upper,Y_valid_upper) 
+        
+        # Init Hyperparameter
+        (batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay) = load_hp(df_classification)
+
+        # Init
+        Models = {'lower':{},'upper':{}}
+
+        loss_function = get_loss_function(task)
+
+
+        for Y_train,Y_valid,band_name in zip([Y_train_lower,Y_train_upper],[Y_valid_lower,Y_valid_upper],['lower','upper']):
+
+            if task == 'regression':
+                Models = train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay)
+            if task == 'classification':
+                Models = ihohjio
+
+        return(Models,mini_l,maxi_l,mini_u,maxi_u)
 
 
 # Map Residual to Label 

@@ -62,23 +62,23 @@ def load_multimodeltrainer_and_train_it(args):
     #results_by_fold.to_csv(f"{save_dir}results_by_fold.csv")
 
     # Save results 
-    results_df = build_results_df(results_df,args, mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)
-    results_df.to_csv(f"{args.model_name}_{args.loss_function_type}_H{args.H}_D{args.D}_W{args.W}_E{args.epochs}_K_fold{args.K_fold}_Emb_dim{args.embedding_dim}FC1_17_8_FC2_8_4_save_results.csv")
+    # results_df = build_results_df(results_df,args, mean_picp,mean_mpiw,dict_last_from_mean_of_folds,dict_best_from_mean_of_folds)
+    # results_df.to_csv(f"{args.model_name}_{args.loss_function_type}_H{args.H}_D{args.D}_W{args.W}_E{args.epochs}_K_fold{args.K_fold}_Emb_dim{args.embedding_dim}FC1_17_8_FC2_8_4_save_results.csv")
 
 
-def load_p_best_model_and_k_fold_valid_them(TE_list,loss_list, folder_config = 'HyperparameterTuning/',p=3):
+def load_p_best_model_and_k_fold_valid_them(args, TE_list,loss_list, folder_config = 'HyperparameterTuning/',p=3):
     for TE in TE_list:
         for loss in loss_list:
             # Read Tune Analysis - Keep the 3 best configs
             csv_path = f"{folder_config}Htuning_ray_analysis_STGCN_loss{loss}_TE_{TE}.csv"
             df_config = pd.read_csv(csv_path,index_col = 0).sort_values('Loss_model')[:p]
             config_columns = [col.split('/')[1] for col in df_config.columns if col.startswith('config/')]
-
+            
             # Update args for the 3 best config 
             for idx,row in df_config.iterrows():  # Pour chacune des 3meilleurs config : 
                 args = update_args(row,args,config_columns)
-                args = update_args_according_loss_function(args)
                 args = update_args_according_TE(args,TE,loss)
+                args = update_args_according_loss_function(args)
                 load_multimodeltrainer_and_train_it(args)
             
 
@@ -108,7 +108,7 @@ if __name__ == '__main__':
     args.single_station = False
     args.ray = False
     
-    load_p_best_model_and_k_fold_valid_them(TE_list = ['True,False'],
+    load_p_best_model_and_k_fold_valid_them(args, TE_list = ['True','False'],
                                             loss_list = ['quantile','MSE'],
                                             folder_config = 'HyperparameterTuning/',
                                             p=3)

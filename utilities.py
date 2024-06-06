@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import torch.nn as nn
 from scipy.spatial.distance import cdist 
-
+import pickle 
+import io 
 
 def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):
     assert 0 <= quantile_order <= 1, "Quantile order must be <= 1 and >=0"
@@ -179,3 +180,10 @@ def get_time_delta_holidays(agg_minutes = True,agg_hour = False):
         holidays = [[holiday + k*timedelta(hour = 1) for k in range(24)] for holiday in holidays]
     holidays = list(np.concatenate(holidays))
     return(holidays)
+
+
+class CPU_Unpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        if module == 'torch.storage' and name == '_load_from_bytes':
+            return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
+        else: return super().find_class(module, name)

@@ -199,6 +199,8 @@ class Trainer(object):
             self.trial_id = get_trial_id(args,fold)
         else:
             self.trial_id = f"{trial_id1}{fold}{trial_id2}"
+        if fold is not None:
+            self.args.current_fold = fold
 
     def save_best_model(self,checkpoint,epoch,performance):
         ''' Save best model in .pkl format'''
