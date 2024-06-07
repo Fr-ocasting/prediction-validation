@@ -14,9 +14,7 @@ def update_args_according_loss_function(args):
         args.out_dim = 1
         args.alpha = None
         args.type_calendar = 'tuple'
-
-        if args.ray:
-            args.ray_track_pi = False
+        args.track_pi = False
 
     else:
         args.embedding_dim = 3
@@ -26,8 +24,7 @@ def update_args_according_loss_function(args):
         args.type_calendar = 'tuple'
         args.out_dim = 2
         args.alpha = 0.1
-        if args.ray:
-            args.ray_track_pi = True
+        args.track_pi = True
     return(args)
 
 

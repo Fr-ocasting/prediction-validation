@@ -6,16 +6,17 @@ import numpy as np
 
 from sklearn.experimental import enable_halving_search_cv 
 from sklearn.model_selection import HalvingGridSearchCV
+import warnings
 
-def load_dataset_for_classifier_for_ONE_single_station(trainer,split_prop,bank_holidays,school_holidays,station = 0,dataloader_set = 'cal',
-                                                       add_bank_holidays = True,
-                                                       add_scholar_holidays = True,
-                                                        hour = True,
-                                                        weekday = True,
-                                                        minutes = True):
-    # Load DataSets
-    (X_cal,Y_cal,T_cal,T_cal_exact_dates,res_lower,res_upper) = load_inputs_preds_and_init_PI(trainer,calibration_calendar_class=3,dataloader_set = dataloader_set)
+def load_init_calibration_set_and_dummies_variables(trainer,bank_holidays,school_holidays,calibration_calendar_class,dataloader_set,add_bank_holidays,add_scholar_holidays,hour,weekday,minutes):
+    (X_cal,Y_cal,T_cal,T_cal_exact_dates,res_lower,res_upper) = load_inputs_preds_and_init_PI(trainer,calibration_calendar_class,dataloader_set = dataloader_set)
     df_dummies = load_df_dummies(T_cal_exact_dates,bank_holidays,school_holidays, add_bank_holidays, add_scholar_holidays, hour = hour, weekday = weekday,minutes = minutes)
+    return(df_dummies,X_cal,Y_cal,T_cal,T_cal_exact_dates,res_lower,res_upper)
+
+
+
+def load_dataset_for_classifier_for_ONE_single_station(df_dummies,res_lower,res_upper,split_prop,station = 0):
+    # Load DataSets
     df_classification = load_df_classification(df_dummies,res_lower,res_upper,station = station)
     (X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper) = get_train_valid_lower_upper(df_classification,split_prop)
 
@@ -135,12 +136,19 @@ class MLP(nn.Module):
         self.hidden2 = nn.Linear(h_dim1,h_dim2)
         self.relu = nn.ReLU()
         self.output = nn.Linear(h_dim2,c_out)
-    
+
+        self.softmax = nn.Softmax(dim = 1)
+        self.classification = True if c_out > 1 else False
+
     def forward(self,x):
         x = self.hidden1(x)
         x = self.relu(x)
         x = self.relu(self.hidden2(x))
         x = self.output(x)
+
+        if self.classification:
+            x = self.softmax(x)
+
         return(x)
 
 def train_and_valid(model,epochs,dataloader,loss_function,optimizer,L_train,L_valid,device='cpu'):
@@ -167,12 +175,6 @@ def loop(model,dataloader,loss_function,optimizer,device,training_mode):
         for x_b,y_b in dataloader[training_mode]:
             x_b,y_b = x_b.to(device),y_b.to(device)
             pred = model(x_b)
-
-
-            print('prediction:',pred)
-            print('True Values:',y_b)
-
-            
             loss = loss_function(pred,y_b)
 
             # Back propagation (after each mini-batch)
@@ -227,13 +229,13 @@ def load_dataloader(X_train,X_valid,Y_train,Y_valid,batch_size):
     #for training_mode, X,Y in zip(['train','valid'],[torch.tensor(X_train.values.astype(float)),torch.tensor(X_valid.values.astype(float))],[torch.tensor(Y_train.values),torch.tensor(Y_valid.values)]):
     for training_mode, X,Y in zip(['train','valid'],[torch.tensor(X_train.astype(float)),torch.tensor(X_valid.astype(float))],[torch.tensor(Y_train),torch.tensor(Y_valid)]):
         X = X.to(torch.float32)
-        Y = Y.to(torch.float32)
+        Y = Y.to(torch.float32).long()
         inputs = list(zip(X,Y))
         dataloader[training_mode] = torch.utils.data.DataLoader(inputs, batch_size=batch_size,shuffle = False)
     
     return(dataloader)
 
-def train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay):
+def train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay,plot):
     # Load model 
     model,optimizer = load_model(c_in,h_dim1,h_dim2,c_out,lr,weight_decay)
     # Load dataloader
@@ -241,22 +243,24 @@ def train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,
     # Train Model
     L_train,L_valid = train_and_valid(model,epochs,dataloader,loss_function,optimizer,L_train=[],L_valid=[],device='cpu')
     # Plot Results
-    pd.DataFrame(dict(train_loss=L_train[10:],train_valid = L_valid[10:])).plot()
+    if plot:
+        pd.DataFrame(dict(train_loss=L_train[10:],train_valid = L_valid[10:])).plot()
     # Update Dictionary 
-    Models = update_dictionnary(Models,model,band_name,optimizer,L_train,L_valid) 
+    Models = update_dictionnary(Models,model,band_name,optimizer,L_train,L_valid,dataloader) 
     return(Models)
 
-def update_dictionnary(Models,model,band_name,optimizer,L_train,L_valid):
+def update_dictionnary(Models,model,band_name,optimizer,L_train,L_valid,dataloader):
     Models[band_name]['model'] = model
     Models[band_name]['optimizer'] = optimizer
     Models[band_name]['L_train'] = L_train
     Models[band_name]['L_valid'] = L_valid
+    Models[band_name]['dataloader'] = dataloader
     return(Models)
 
 # ========== Get Loss Function ==========
 def get_loss_function(task):
     if task == 'regression_loss_function':
-        return classification_loss_function()
+        return regression_loss_function()
     elif task == 'classification':
         return classification_loss_function()
     else:
@@ -306,7 +310,7 @@ def preprocess_regression_data(datasets,datasets_valid,standardization = 'minmax
 
 
 # ========== Load and Train Model: ==========
-def load_and_train_model(datasets,datasets_valid,df_classification,task,fraction_maxi=None,fraction_std_step=None,standardization=None):
+def load_and_train_model(datasets,datasets_valid,df_classification,task,fraction_maxi=None,fraction_std_step=None,standardization=None,plot = True):
     # Preprocess Data
     if task == 'classification':
         X_train,X_valid,Y_train_lower,Y_valid_lower,Y_train_upper,Y_valid_upper = preprocess_data(datasets,datasets_valid,task,fraction_maxi = fraction_maxi, fraction_std_step = fraction_std_step)
@@ -328,13 +332,55 @@ def load_and_train_model(datasets,datasets_valid,df_classification,task,fraction
             #c_out = len(Y_train.unique())
             c_out = len(np.unique(Y_train))
         
-        Models = train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay)
+        Models = train_regression_MLP(Models,band_name,loss_function,X_train,X_valid,Y_train,Y_valid,batch_size,epochs,c_in,h_dim1,h_dim2,c_out,lr,weight_decay,plot)
     
     return(Models,parameter)
-
-
-
 # ========== .... ==========
+
+
+# ========== Get Score: ==========
+def score_metric(pred,Y):
+    score = sum(pred == Y)/pred.size(0)
+    return(score)
+
+def predict_and_score(model,X,Y):
+    pred = torch.max(model(X),1)[1]
+    score = score_metric(pred,Y)
+    return(score)
+
+def get_feature_vect_from_Models(Models):
+    valid_lower_dataloader = Models['lower']['dataloader']['valid']
+    valid_upper_dataloader = Models['upper']['dataloader']['valid']
+    data_lower = [(X,Y) for X,Y in valid_lower_dataloader]
+    data_upper = [(X,Y) for X,Y in valid_upper_dataloader]
+
+    valid_lower_X,valid_lower_Y = torch.cat([X for X,_ in data_lower]),torch.cat([Y for _,Y in data_lower])
+    valid_upper_X,valid_upper_Y = torch.cat([X for X,_ in data_upper]),torch.cat([Y for _,Y in data_upper])
+    return(valid_lower_X,valid_lower_Y,valid_upper_X,valid_upper_Y)
+
+def get_scores(Models):
+    (valid_lower_X,valid_lower_Y,valid_upper_X,valid_upper_Y) = get_feature_vect_from_Models(Models)
+
+    with torch.no_grad():
+        score_lower = predict_and_score(Models['lower']['model'],valid_lower_X,valid_lower_Y)
+        score_upper = predict_and_score(Models['upper']['model'],valid_upper_X,valid_upper_Y)
+        
+    #print(f'Score lower: {score_lower}, Score upper: {score_upper}')
+
+    return(score_lower,score_upper)
+# ========== .... ==========
+
+
+# ========== Others: ==========
+def update_results_by_station(results_classifier,station_name,score_lower,score_upper,num_station):
+    df_row = pd.DataFrame({'Station':station_name, 'Score Lower': score_lower.item(), 'Score Upper':  score_upper.item()},index = [num_station])
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        results_classifier = pd.concat([results_classifier,df_row])
+    return(results_classifier)
+# ========== .... ==========
+
+
 if False : 
     def load_and_train_model(df_classification,split_prop = 0.7, task = 'regression'):
         # Load Data
