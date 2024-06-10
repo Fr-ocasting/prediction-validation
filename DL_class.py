@@ -322,7 +322,7 @@ class Trainer(object):
 
             
 
-        performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True}
+        performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
         self.save_best_model(checkpoint,epoch,performance)
         return(results_df)
 
