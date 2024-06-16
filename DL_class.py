@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np
 import time
-from torch.utils.data import DataLoader
+from torch.utils.data import Dataset,DataLoader
 import torch 
 import torch.nn as nn 
 import os 
@@ -53,6 +53,19 @@ class QuantileLoss(nn.Module):
 
         return(loss)
 
+class CustomDataset(Dataset):
+    def __init__(self,X,Y,*T):
+        self.X = X
+        self.Y = Y
+        self.T = T
+        
+    def __len__(self):
+        return len(self.X)
+    
+    def __getitem__(self,idx):
+        T_data = [t[idx] for t in self.T]
+        return self.X[idx], self.Y[idx], *T_data
+
 class DictDataLoader(object):
     ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
     '''
@@ -93,7 +106,8 @@ class DictDataLoader(object):
             
         for feature_vector,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
             if feature_vector is not None:
-                inputs = list(zip(feature_vector,target,*list(L_time_slot.values()) ))
+                inputs = CustomDataset(feature_vector,target,*list(L_time_slot.values()))
+                # inputs = list(zip(feature_vector,target,*list(L_time_slot.values()) ))
                 # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,num_replicas=idr_torch.size,rank=idr_torch.rank,shuffle= ...)
                 self.dataloader[training_mode] = DataLoader(inputs, 
                                                             batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size),
