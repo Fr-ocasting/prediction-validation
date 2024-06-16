@@ -59,12 +59,12 @@ class DictDataLoader(object):
     args
     -----
     '''
-    def __init__(self,dataset, shuffle, calib_prop):
+    def __init__(self,dataset,args):
         super().__init__()
         self.dataloader = {}
-        self.shuffle = shuffle
-        self.calib_prop = calib_prop
+        self.calib_prop = args.calib_prop
         self.dataset = dataset
+        self.args = args
 
     def get_dictdataloader(self,batch_size):
         if self.calib_prop is None: 
@@ -94,9 +94,17 @@ class DictDataLoader(object):
         for feature_vector,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
             if feature_vector is not None:
                 inputs = list(zip(feature_vector,target,*list(L_time_slot.values()) ))
+                # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,num_replicas=idr_torch.size,rank=idr_torch.rank,shuffle= ...)
                 self.dataloader[training_mode] = DataLoader(inputs, 
                                                             batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size),
-                                                            shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) 
+                                                            shuffle = (training_mode == 'train'),
+                                                            #sampler=sampler,
+                                                            num_workers=self.args.num_workers,
+                                                            persistent_workers=self.args.persistent_workers,
+                                                            pin_memory=self.args.pin_memory,
+                                                            prefetch_factor=self.args.prefetch_factor,
+                                                            drop_last=self.args.drop_last
+                                                            ) 
             else:
                 self.dataloader[training_mode] = None
             #self.dataloader[training_mode] = DataLoader(list(zip(feature_vector,target,L_time_slot)),batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) 
@@ -607,8 +615,7 @@ class DataSet(object):
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
         dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0)
-        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,args.train_prop, args.valid_prop,args.test_prop,
-                                                                              args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
+        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop_tmps,args.test_prop)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df = df[: dataset_init.first_test_date]  
 
@@ -642,8 +649,7 @@ class DataSet(object):
             if dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days == 0:
                 print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
 
-            data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop_tmps, valid_prop_tmps,
-                                                                                                                                          0,args.calib_prop,args.batch_size,calendar_class= args.calendar_class)
+            data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(args,invalid_dates,train_prop_tmps, valid_prop_tmps, 0)
             data_loader['test'] = data_loader_with_test['test']
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
             dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
@@ -806,7 +812,9 @@ class DataSet(object):
         self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
         self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
 
-    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,calib_prop,batch_size,calendar_class):
+    def split_normalize_load_feature_vect(self,args,invalid_dates,train_prop,valid_prop,test_prop
+                                          #,calib_prop,batch_size,calendar_class
+                                          ):
         self.get_shift_between_set()   # get shift indice and shift date from the first element / between each dataset 
         self.get_feature_vect()  # Build 'df_shifted'.
         self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
@@ -828,8 +836,8 @@ class DataSet(object):
         self.split_tensors()
 
         #   DataLoader 
-        data_loader_obj = DictDataLoader(self, shuffle = True, calib_prop=calib_prop)
-        data_loader = data_loader_obj.get_dictdataloader(batch_size)
+        data_loader_obj = DictDataLoader(self,args)
+        data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
         return(data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # =====================================================================================================================================
