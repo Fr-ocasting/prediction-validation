@@ -629,7 +629,7 @@ class DataSet(object):
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
         dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0)
-        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop_tmps,args.test_prop)
+        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop,args.test_prop)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df = df[: dataset_init.first_test_date]  
 
