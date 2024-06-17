@@ -7,6 +7,7 @@ import torch.nn as nn
 import os 
 import pkg_resources
 
+
 from torch.cuda.amp import autocast
 
 # Personnal import: 
@@ -364,12 +365,19 @@ class Trainer(object):
                 t_b = T_b[self.args.calendar_class]
                 x_b,y_b,t_b = x_b.to(self.args.device),y_b.to(self.args.device),t_b.to(self.args.device)
                 #Forward 
-                with autocast():
+                if self.args.mixed_precision:
+                    with autocast():
+                        if self.args_embedding : 
+                            pred = self.model(x_b,t_b.long())
+                        else:
+                            pred = self.model(x_b)
+                        loss = self.loss_function(pred,y_b)
+                else:
                     if self.args_embedding : 
                         pred = self.model(x_b,t_b.long())
                     else:
                         pred = self.model(x_b)
-                    loss = self.loss_function(pred,y_b)
+                    loss = self.loss_function(pred,y_b)        
 
                 # Back propagation (after each mini-batch)
                 if self.training_mode == 'train': 

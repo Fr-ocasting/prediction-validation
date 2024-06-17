@@ -108,6 +108,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
     config['drop_last'] = False  # True
 
+    config['mixed_precision'] = True
+
     # Scheduler 
     config['scheduler'] = True  # None
     config['torch_scheduler_milestone'] = 40
