@@ -107,8 +107,13 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['pin_memory'] = True # False 
     config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
     config['drop_last'] = False  # True
+    
+    
+    config['non_blocking'] = True
 
     config['mixed_precision'] = True
+    config['torch_compile'] = True
+    config['backend'] = 'inductor' #'cudagraphs'
 
     # Scheduler 
     config['scheduler'] = True  # None

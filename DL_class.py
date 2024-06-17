@@ -363,7 +363,8 @@ class Trainer(object):
         with torch.set_grad_enabled(self.training_mode=='train'):
             for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
                 t_b = T_b[self.args.calendar_class]
-                x_b,y_b,t_b = x_b.to(self.args.device),y_b.to(self.args.device),t_b.to(self.args.device)
+                x_b,y_b,t_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking),y_b.to(self.args.device,non_blocking = self.args.non_blocking),t_b.to(self.args.device,non_blocking = self.args.non_blocking)
+
                 #Forward 
                 if self.args.mixed_precision:
                     with autocast():
