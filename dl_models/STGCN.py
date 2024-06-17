@@ -27,13 +27,13 @@ class STGCNChebGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz=None):
+    def __init__(self, args, gso, blocks, n_vertex,args_embedding = None,dic_class2rpz=None):
         super(STGCNChebGraphConv, self).__init__()
         self.out_dim = blocks[-1][-1]
         modules = []
         self.args = args
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
 
         Ko = args.L - (len(blocks) - 3) * 2 * (args.Kt - 1)
@@ -132,12 +132,12 @@ class STGCNGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, blocks, n_vertex,args_embedding = None,dic_class2rpz =None):
+    def __init__(self, args,gso, blocks, n_vertex,args_embedding = None,dic_class2rpz =None):
         super(STGCNGraphConv, self).__init__()
         self.out_dim = blocks[-1][-1]
         modules = []
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, args.gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
         Ko = args.L - (len(blocks) - 3) * 2 * (args.Kt - 1)
 

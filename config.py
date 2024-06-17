@@ -102,11 +102,11 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['lr'] = 1e-3
     config['dropout'] = 0.2
 
-    config['num_workers'] = 0 # 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
-    config['persistent_workers'] = False #True 
-    config['pin_memory'] = False #True
-    config['prefetch_factor'] = None #2,3,4,5 ... 
-    config['drop_last'] = False
+    config['num_workers'] = 1 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+    config['persistent_workers'] = True # False 
+    config['pin_memory'] = True # False 
+    config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
+    config['drop_last'] = False  # True
 
     # Scheduler 
     config['scheduler'] = True  # None

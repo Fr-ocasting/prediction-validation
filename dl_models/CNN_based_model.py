@@ -41,7 +41,7 @@ class CNN(nn.Module):
         self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*args.H_dims[-1]]+args.C_outs[:-1], args.C_outs)])
 
         if args_embedding is not None:
-            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
+            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz[args.calendar_class].items())]).to(args.device)
             self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor)
             self.Tembedding_position = args_embedding.position
 
@@ -53,7 +53,6 @@ class CNN(nn.Module):
             x = x.unsqueeze(2)
             x = x.reshape(B*N,C,L)
         if len(x.shape) == 4:
-            print('! Be sure input shape = [B,C,N,L]')
             B,C,N,L = x.shape
             x.reshape(B*N,C,L)
 
@@ -64,6 +63,9 @@ class CNN(nn.Module):
                 time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
                 time_elt = time_elt.repeat(N*C,1).reshape(B*N,C,-1)   # [B,embedding_dim] -> [B*N,C,embedding_dim]
                 x = torch.cat([x,time_elt],dim = -1)
+
+        if self.memory_format_last:
+            x = x.to(memory_format = torch.channels_last)
 
         # Conv Layers :        
         for conv in self.Convs:

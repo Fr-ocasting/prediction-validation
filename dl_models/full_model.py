@@ -27,7 +27,7 @@ class full_model(nn.Module):
 
 def load_model(args,args_embedding,dic_class2rpz):
     if args.model_name == 'CNN': 
-        model = CNN(args, kernel_size = (2,),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
+        model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
@@ -72,12 +72,12 @@ def load_model(args,args_embedding,dic_class2rpz):
         if args.single_station:
             gso = np.array([[1]]).astype(dtype=np.float32)
             num_nodes = 1
-        args.gso = torch.from_numpy(gso).to(args.device)
+        gso = torch.from_numpy(gso).to(args.device)
 
         if args.graph_conv_type == 'cheb_graph_conv':
-            model = STGCNChebGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
+            model = STGCNChebGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
         else:
-            model = STGCNGraphConv(args, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
+            model = STGCNGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
         
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"

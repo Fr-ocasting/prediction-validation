@@ -7,7 +7,10 @@ import torch.nn as nn
 import os 
 import pkg_resources
 
+from torch.cuda.amp import autocast
+
 # Personnal import: 
+from profiler import print_memory_usage,get_cpu_usage
 from metrics import evaluate_metrics
 from utilities import get_higher_quantile
 from datetime import timedelta
@@ -319,6 +322,7 @@ class Trainer(object):
         else:
             results_df = None
 
+        max_memory = 0
         for epoch in range(self.args.epochs):
             t0 = time.time()
             # Train and Valid each epoch 
@@ -341,11 +345,15 @@ class Trainer(object):
                 if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
                     results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
 
+            # Keep track on cpu-usage 
+            max_memory = get_cpu_usage(max_memory)
+
 
             
 
         performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
         self.save_best_model(checkpoint,epoch,performance)
+        print(print_memory_usage(max_memory))
         return(results_df)
 
 
@@ -356,11 +364,12 @@ class Trainer(object):
                 t_b = T_b[self.args.calendar_class]
                 x_b,y_b,t_b = x_b.to(self.args.device),y_b.to(self.args.device),t_b.to(self.args.device)
                 #Forward 
-                if self.args_embedding : 
-                    pred = self.model(x_b,t_b.long())
-                else:
-                    pred = self.model(x_b)
-                loss = self.loss_function(pred,y_b)
+                with autocast():
+                    if self.args_embedding : 
+                        pred = self.model(x_b,t_b.long())
+                    else:
+                        pred = self.model(x_b)
+                    loss = self.loss_function(pred,y_b)
 
                 # Back propagation (after each mini-batch)
                 if self.training_mode == 'train': 
