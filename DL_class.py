@@ -11,6 +11,7 @@ import pkg_resources
 from torch.cuda.amp import autocast
 
 # Personnal import: 
+from chrono import Chronometer
 from profiler import print_memory_usage,get_cpu_usage
 from metrics import evaluate_metrics
 from utilities import get_higher_quantile
@@ -264,9 +265,16 @@ class Trainer(object):
         self.model.eval()   # Desactivate Dropout 
         self.loop() 
 
+        # Update scheduler after each Epoch 
+        self.chrono.torch_scheduler()
+        self.update_scheduler()
+        self.chrono.torch_scheduler()
+
         # Follow Update of Testing Metrics 
+        self.chrono.track_pi()
         pi = self.track_pi()
         self.ray_tune_track(pi)
+        self.chrono.track_pi()
 
     def update_scheduler(self):
         if self.scheduler is not None:
@@ -316,6 +324,7 @@ class Trainer(object):
 
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
         print(f'start training')
+  
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
         # Plot Init Latent Space and Accuracy (from random initialization) 
         if mod_plot is not None: 
@@ -323,49 +332,60 @@ class Trainer(object):
         else:
             results_df = None
 
+        self.chrono = Chronometer()
+        self.chrono.start()
         max_memory = 0
         for epoch in range(self.args.epochs):
+            self.chrono.next_iter()
             t0 = time.time()
             # Train and Valid each epoch 
             self.train_valid_one_epoch()
 
             # Save best model (only if it's not a ray tuning)
+            self.chrono.save_model()
             if (self.valid_loss[-1] < self.best_valid) & (not(self.args.ray)):
                 self.best_valid = self.valid_loss[-1]
                 performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
                 self.save_best_model(checkpoint,epoch,performance)
+            self.chrono.save_model()
 
-            # Update scheduler after each Epoch 
-            self.update_scheduler()
-
-            # Print
-            self.display_usefull_information(epoch,mod,t0)
 
             # Plot Latent Space and get accuracy 
+            self.chrono.plotting()
+            self.display_usefull_information(epoch,mod,t0)
             if mod_plot is not None:
                 if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
                     results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
+            self.chrono.plotting()
 
             # Keep track on cpu-usage 
             max_memory = get_cpu_usage(max_memory)
 
 
-            
-
+        self.chrono.save_model()
         performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
         self.save_best_model(checkpoint,epoch,performance)
         print(print_memory_usage(max_memory))
+        self.chrono.save_model()
+
+        self.chrono.stop()
+
         return(results_df)
 
 
-    def loop(self,):
+    def loop(self):
         loss_epoch,nb_samples = 0,0
+        if self.training_mode=='validation':
+            self.chrono.validation()
         with torch.set_grad_enabled(self.training_mode=='train'):
             for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
                 t_b = T_b[self.args.calendar_class]
                 x_b,y_b,t_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking),y_b.to(self.args.device,non_blocking = self.args.non_blocking),t_b.to(self.args.device,non_blocking = self.args.non_blocking)
 
                 #Forward 
+                if self.training_mode=='train':
+                    self.chrono.forward()
+
                 if self.args.mixed_precision:
                     with autocast():
                         if self.args_embedding : 
@@ -378,15 +398,23 @@ class Trainer(object):
                         pred = self.model(x_b,t_b.long())
                     else:
                         pred = self.model(x_b)
-                    loss = self.loss_function(pred,y_b)        
+                    loss = self.loss_function(pred,y_b)       
 
                 # Back propagation (after each mini-batch)
                 if self.training_mode == 'train': 
+                    self.chrono.backward()
                     loss = self.backpropagation(loss)
 
                 # Keep track on metrics 
                 nb_samples += x_b.shape[0]
                 loss_epoch += loss.item()*x_b.shape[0]
+
+                if self.training_mode == 'train': 
+                    self.chrono.update()      
+                    self.chrono.next_iter()
+
+        if self.training_mode=='validation':
+            self.chrono.validation()
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
     def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):

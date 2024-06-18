@@ -96,6 +96,9 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     # Config optimizer:
     optimizer = choose_optimizer(model,args)
     scheduler = load_scheduler(optimizer,args)
+
+    print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
+    print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
     return(model,optimizer,scheduler)
 
 def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False):
