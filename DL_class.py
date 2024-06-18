@@ -327,11 +327,18 @@ class Trainer(object):
     
     def prefetch_all_dataloader_to_device(self):
         self.chrono.prefetch_all_data()
-        self.dataloader_gpu = {} 
-        if 'train' in self.dataloader.keys(): self.dataloader_gpu['train'] = self.prefetch_to_device(self.dataloader['train'])
-        if 'validate' in self.dataloader.keys(): self.dataloader_gpu['validate'] = self.prefetch_to_device(self.dataloader['validate'])
-        if 'test' in self.dataloader.keys(): self.dataloader_gpu['test'] = self.prefetch_to_device(self.dataloader['test'])
-        if 'cal' in self.dataloader.keys(): self.dataloader_gpu['cal'] = self.prefetch_to_device(self.dataloader['cal'])
+
+        #If dataloader_GPU already exists, no need to pass Validate, Test and Cal dataset again to the expected device
+        if hasattr(self, 'dataloader_gpu'):
+            if 'train' in self.dataloader.keys(): self.dataloader_gpu['train'] = self.prefetch_to_device(self.dataloader['train'])
+
+        # Else, build 'dataloader_gpu'
+        else:
+            self.dataloader_gpu = {} 
+            if 'train' in self.dataloader.keys(): self.dataloader_gpu['train'] = self.prefetch_to_device(self.dataloader['train'])
+            if 'validate' in self.dataloader.keys(): self.dataloader_gpu['validate'] = self.prefetch_to_device(self.dataloader['validate'])
+            if 'test' in self.dataloader.keys(): self.dataloader_gpu['test'] = self.prefetch_to_device(self.dataloader['test'])
+            if 'cal' in self.dataloader.keys(): self.dataloader_gpu['cal'] = self.prefetch_to_device(self.dataloader['cal'])
         self.chrono.prefetch_all_data()
     
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
@@ -346,9 +353,8 @@ class Trainer(object):
         self.chrono = Chronometer()
         self.chrono.start()
         max_memory = 0
-
-        self.prefetch_all_dataloader_to_device()
         
+        self.prefetch_all_dataloader_to_device()
         for epoch in range(self.args.epochs):
             self.chrono.next_iter()
             t0 = time.time()
@@ -395,8 +401,11 @@ class Trainer(object):
         loss_epoch,nb_samples = 0,0
         if self.training_mode=='validation':
             self.chrono.validation()
+
+        if self.training_mode=='train':
+            self.prefetch_all_dataloader_to_device()
         with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b,*T_b in self.dataloader_gpu[self.training_mode]:   
+            for x_b,y_b,T_b in self.dataloader_gpu[self.training_mode]:   
             #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
                 t_b = T_b[self.args.calendar_class]
                 #x_b,y_b,t_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking),y_b.to(self.args.device,non_blocking = self.args.non_blocking),t_b.to(self.args.device,non_blocking = self.args.non_blocking)
