@@ -209,6 +209,23 @@ class Chronometer:
 
         if len(self.power) > 0: print(">>> Peak Power during training: {} W)".format(np.max(self.power)))
         if self.val_time: print(">>> Validation time: {}".format(self.val_time))
+
+
+        total_times = [np.sum(self.time_perf_load) if len(self.time_perf_load) >0 else 0,
+                       np.sum(self.time_perf_forward) if len(self.time_perf_forward) >0 else 0,
+                       np.sum(self.time_perf_backward) if len(self.time_perf_backward) >0 else 0,
+                       np.sum(self.time_plotting) if len(self.time_plotting) >0 else 0,
+                       np.sum(self.time_saving_model) if len(self.time_saving_model) >0 else 0,
+                       np.sum(self.time_tracking_pi) if len(self.time_tracking_pi) >0 else 0,
+                       np.sum(self.time_scheduler) if len(self.time_scheduler) >0 else 0,
+                       ]
+        total_names = ['Loading','Forward','Backward','Plotting','CheckPoint Saving','Tracking PI','Update Scheduler']
+
+        for time,name in zip(total_times,total_names):
+            prop = time/np.sum(total_times)
+            print(f"Proportion of time consumed for {name}: {'{:.1%}'.format(prop)}")
+
+
         #if len(self.time_perf_train) > 0 and len(self.time_perf_load) > 0: 
         #    print(">>> Sortie trace #####################################" )
         #    print(">>>JSON", json.dumps({'GPU process - Forward/Backward':self.time_perf_train, 'CPU process - Dataloader':self.time_perf_load}))

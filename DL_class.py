@@ -365,11 +365,14 @@ class Trainer(object):
         self.chrono.save_model()
         performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
         self.save_best_model(checkpoint,epoch,performance)
-        print(print_memory_usage(max_memory))
+        
+        print(f'Training Throughput:{(self.args.epochs * len(self.dataset.df_verif_train))/np.sum(self.chrono.time_perf_train)} sequences per seconds')
+        
         self.chrono.save_model()
 
         self.chrono.stop()
         self.chrono.display()
+        print(print_memory_usage(max_memory))
 
         return(results_df)
 
