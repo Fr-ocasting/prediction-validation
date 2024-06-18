@@ -35,8 +35,6 @@ try:
 except : 
     print('Training and Hyper-parameter tuning with Ray is not possible')
 
-
-
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
         super().__init__()
@@ -68,7 +66,8 @@ class CustomDataset(Dataset):
         return len(self.X)
     
     def __getitem__(self,idx):
-        T_data = [t[idx] for t in self.T]
+        #T_data = [t[idx] for t in self.T]
+        T_data = tuple(t[idx] for t in self.T)
         return self.X[idx], self.Y[idx], *T_data
 
 class DictDataLoader(object):
@@ -322,7 +321,19 @@ class Trainer(object):
             else:
                 report({"Loss_model" : self.valid_loss[-1]})
 
-
+    def prefetch_to_device(self,loader):
+            return [(x.to(self.args.device, non_blocking=self.args.non_blocking), y.to(self.args.device, non_blocking=self.args.non_blocking), [t.to(self.args.device, non_blocking=self.args.non_blocking) for t in T])
+            for x, y, *T in loader]
+    
+    def prefetch_all_dataloader_to_device(self):
+        self.chrono.prefetch_all_data()
+        self.dataloader_gpu = {} 
+        if 'train' in self.dataloader.keys(): self.dataloader_gpu['train'] = self.prefetch_to_device(self.dataloader['train'])
+        if 'validate' in self.dataloader.keys(): self.dataloader_gpu['validate'] = self.prefetch_to_device(self.dataloader['validate'])
+        if 'test' in self.dataloader.keys(): self.dataloader_gpu['test'] = self.prefetch_to_device(self.dataloader['test'])
+        if 'cal' in self.dataloader.keys(): self.dataloader_gpu['cal'] = self.prefetch_to_device(self.dataloader['cal'])
+        self.chrono.prefetch_all_data()
+    
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
         print(f'start training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
@@ -335,6 +346,9 @@ class Trainer(object):
         self.chrono = Chronometer()
         self.chrono.start()
         max_memory = 0
+
+        self.prefetch_all_dataloader_to_device()
+        
         for epoch in range(self.args.epochs):
             self.chrono.next_iter()
             t0 = time.time()
@@ -366,8 +380,8 @@ class Trainer(object):
         performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
         self.save_best_model(checkpoint,epoch,performance)
         
-        print(f'Training Throughput:{(self.args.epochs * len(self.dataset.df_verif_train))/np.sum(self.chrono.time_perf_train)} sequences per seconds')
-        
+        print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+
         self.chrono.save_model()
 
         self.chrono.stop()
@@ -382,9 +396,10 @@ class Trainer(object):
         if self.training_mode=='validation':
             self.chrono.validation()
         with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
+            for x_b,y_b,*T_b in self.dataloader_gpu[self.training_mode]:   
+            #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
                 t_b = T_b[self.args.calendar_class]
-                x_b,y_b,t_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking),y_b.to(self.args.device,non_blocking = self.args.non_blocking),t_b.to(self.args.device,non_blocking = self.args.non_blocking)
+                #x_b,y_b,t_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking),y_b.to(self.args.device,non_blocking = self.args.non_blocking),t_b.to(self.args.device,non_blocking = self.args.non_blocking)
 
                 #Forward 
                 if self.training_mode=='train':

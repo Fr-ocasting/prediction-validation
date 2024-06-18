@@ -70,6 +70,8 @@ class Chronometer:
         self.time_tracking_pi = []
         self.time_saving_model = []
         self.time_plotting = []
+        self.time_prefetch = []
+
         self.start_proc = None
         self.stop_proc = None
         self.start_training = None
@@ -83,7 +85,7 @@ class Chronometer:
         self.start_save_model = None
         self.start_track_pi = None
         self.start_scheduler = None
-    
+        self.start_prefetch = None
         self.nvsmi = nvidia_smi.getInstance()
         
     def power_measurement(self):
@@ -158,7 +160,13 @@ class Chronometer:
         if self.start_plotting == None: self.start_plotting = time()
         else:
             self.time_plotting.append(time()-self.start_plotting)
-            self.start_plotting = None    
+            self.start_plotting = None   
+
+    def _prefetch_all_data(self):
+        if self.start_prefetch == None: self.start_prefetch = time()
+        else:
+            self.time_prefetch.append(time()-self.start_prefetch)
+            self.start_prefetch = None       
             
     def next_iter(self):
         self._dataload()
@@ -188,6 +196,9 @@ class Chronometer:
 
     def plotting(self):
         self._plotting()
+
+    def prefetch_all_data(self):
+        self._prefetch_all_data()
  
     def validation(self):
         if self.start_valid==None: self.start_valid = datetime.now()
@@ -218,8 +229,9 @@ class Chronometer:
                        np.sum(self.time_saving_model) if len(self.time_saving_model) >0 else 0,
                        np.sum(self.time_tracking_pi) if len(self.time_tracking_pi) >0 else 0,
                        np.sum(self.time_scheduler) if len(self.time_scheduler) >0 else 0,
+                       np.sum(self.time_prefetch) if len(self.time_prefetch) >0 else 0,
                        ]
-        total_names = ['Loading','Forward','Backward','Plotting','CheckPoint Saving','Tracking PI','Update Scheduler']
+        total_names = ['Loading','Forward','Backward','Plotting','CheckPoint Saving','Tracking PI','Update Scheduler','Read all data on GPU']
 
         for time,name in zip(total_times,total_names):
             prop = time/np.sum(total_times)
