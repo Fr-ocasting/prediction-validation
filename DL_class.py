@@ -8,7 +8,7 @@ import os
 import pkg_resources
 
 
-from torch.cuda.amp import autocast
+from torch.cuda.amp import autocast,GradScaler
 
 # Personnal import: 
 from chrono import Chronometer
@@ -208,6 +208,7 @@ class Trainer(object):
         self.loss_function = loss_function
         self.model = model 
         self.scheduler = scheduler
+        self.scaler = GradScaler()
         self.train_loss = []
         self.valid_loss = []
         self.calib_loss =[]
@@ -324,7 +325,6 @@ class Trainer(object):
 
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
         print(f'start training')
-  
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
         # Plot Init Latent Space and Accuracy (from random initialization) 
         if mod_plot is not None: 
@@ -369,6 +369,7 @@ class Trainer(object):
         self.chrono.save_model()
 
         self.chrono.stop()
+        self.chrono.display()
 
         return(results_df)
 
@@ -517,8 +518,13 @@ class Trainer(object):
 
     def backpropagation(self,loss):
         self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
+        if self.args.mixed_precision:
+            self.scaler.scale(loss).backward()
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            loss.backward()
+            self.optimizer.step()
         return(loss)
     
     def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None):
