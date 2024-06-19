@@ -207,7 +207,8 @@ class Trainer(object):
         self.loss_function = loss_function
         self.model = model 
         self.scheduler = scheduler
-        self.scaler = GradScaler()
+        if args.mixed_precision:
+            self.scaler = GradScaler()
         self.train_loss = []
         self.valid_loss = []
         self.calib_loss =[]
@@ -223,7 +224,12 @@ class Trainer(object):
         self.mpiw_list = []
         self.show_figure = show_figure
         if trial_id1 is None:
-            self.trial_id = get_trial_id(args,fold)
+            if fold is None: 
+                trial_id1,trial_id2 = get_trial_id(args,fold)
+                self.trial_id = f"{trial_id1}{-1}{trial_id2}"
+            else:
+                self.trial_id = get_trial_id(args,fold)
+
         else:
             self.trial_id = f"{trial_id1}{fold}{trial_id2}"
         if fold is not None:
@@ -320,11 +326,7 @@ class Trainer(object):
                             "PICP" : pi.picp}) 
             else:
                 report({"Loss_model" : self.valid_loss[-1]})
-                
-    #def prefetch_all_possible_data(self):
-    #    self.Train_Tensor = torch.zeros(self.args.epochs, self.args., 1, self.args.
-        
-        
+
     def prefetch_to_device(self,loader):
         if loader is not None :
             return [(x.to(self.args.device, non_blocking=self.args.non_blocking), y.to(self.args.device, non_blocking=self.args.non_blocking), [t.to(self.args.device, non_blocking=self.args.non_blocking) for t in T])
@@ -332,25 +334,10 @@ class Trainer(object):
         else :
             return None
     
-    def prefetch_all_dataloader_to_device(self):
-        self.chrono.prefetch_all_data()
-
-        #If dataloader_GPU already exists, no need to pass Validate, Test and Cal dataset again to the expected device
-        if hasattr(self, 'dataloader_gpu'):
-            if 'train' in self.dataloader.keys(): self.dataloader_gpu['train'] = self.prefetch_to_device(self.dataloader['train'])
-
-        # Else, build 'dataloader_gpu'
-        else:
-            self.dataloader_gpu = {} 
-            if 'train' in self.dataloader.keys(): self.dataloader_gpu['train'] = self.prefetch_to_device(self.dataloader['train'])
-            if 'validate' in self.dataloader.keys(): self.dataloader_gpu['validate'] = self.prefetch_to_device(self.dataloader['validate'])
-            if 'test' in self.dataloader.keys(): self.dataloader_gpu['test'] = self.prefetch_to_device(self.dataloader['test'])
-            if 'cal' in self.dataloader.keys(): self.dataloader_gpu['cal'] = self.prefetch_to_device(self.dataloader['cal'])
-        self.chrono.prefetch_all_data()
-    
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
         print(f'start training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
+
         # Plot Init Latent Space and Accuracy (from random initialization) 
         if mod_plot is not None: 
             results_df = self.plot_bokeh_and_save_results(pd.DataFrame(),-1,station)
@@ -361,8 +348,7 @@ class Trainer(object):
         self.chrono.start()
         max_memory = 0
         
-        #if self.args.prefetch_all:
-        #    self.prefetch_all_dataloader_to_device()
+
         for epoch in range(self.args.epochs):
             self.chrono.next_iter()
             t0 = time.time()
@@ -496,7 +482,6 @@ class Trainer(object):
             self.chrono.validation()
 
         if (self.args.prefetch_all) & (self.training_mode=='train'):
-            #self.prefetch_all_dataloader_to_device()
             self.prefetch()
             
         with torch.set_grad_enabled(self.training_mode=='train'):

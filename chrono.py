@@ -1,7 +1,12 @@
 from datetime import datetime
 from time import time
 import numpy as np
-from pynvml.smi import nvidia_smi
+try:
+    from pynvml.smi import nvidia_smi
+    nvidia_smi_available = True
+except:
+    print("'pynvml' is not available on this environment.")
+    nvidia_smi_available = False
 import json
 
 ###############################
@@ -86,7 +91,9 @@ class Chronometer:
         self.start_track_pi = None
         self.start_scheduler = None
         self.start_prefetch = None
-        self.nvsmi = nvidia_smi.getInstance()
+
+        if nvidia_smi_available:
+            self.nvsmi = nvidia_smi.getInstance()
         
     def power_measurement(self):
         powerquery = self.nvsmi.DeviceQuery('power.draw')['gpu']
@@ -182,7 +189,8 @@ class Chronometer:
     
     def update(self):
         self._backward()
-        self.power_measurement()
+        if nvidia_smi_available:
+            self.power_measurement()
         self._training()
 
     def torch_scheduler(self):
