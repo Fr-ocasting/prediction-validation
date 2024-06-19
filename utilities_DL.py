@@ -135,7 +135,9 @@ def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
         print(f"coverage period: {subway_in.index.min()} - {subway_in.index.max()}")
         print(f"Time-step per hour: {time_step_per_hour}")
 
-    
+    if file_name == 'Netmob.csv':
+        netmob = ...
+
     else:
         raise NotImplementedError(f"file name option '{file_name}' has not been defined in 'load_row_data' ")
         
