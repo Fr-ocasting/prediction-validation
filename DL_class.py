@@ -260,10 +260,10 @@ class Trainer(object):
         # Train and Valid each epoch 
         self.training_mode = 'train'
         self.model.train()   #Activate Dropout 
-        self.loop()
+        self.loop_epoch()
         self.training_mode = 'validate'
         self.model.eval()   # Desactivate Dropout 
-        self.loop() 
+        self.loop_epoch() 
 
         # Update scheduler after each Epoch 
         self.chrono.torch_scheduler()
@@ -320,10 +320,17 @@ class Trainer(object):
                             "PICP" : pi.picp}) 
             else:
                 report({"Loss_model" : self.valid_loss[-1]})
-
+                
+    #def prefetch_all_possible_data(self):
+    #    self.Train_Tensor = torch.zeros(self.args.epochs, self.args., 1, self.args.
+        
+        
     def prefetch_to_device(self,loader):
+        if loader is not None :
             return [(x.to(self.args.device, non_blocking=self.args.non_blocking), y.to(self.args.device, non_blocking=self.args.non_blocking), [t.to(self.args.device, non_blocking=self.args.non_blocking) for t in T])
             for x, y, *T in loader]
+        else :
+            return None
     
     def prefetch_all_dataloader_to_device(self):
         self.chrono.prefetch_all_data()
@@ -354,7 +361,8 @@ class Trainer(object):
         self.chrono.start()
         max_memory = 0
         
-        self.prefetch_all_dataloader_to_device()
+        #if self.args.prefetch_all:
+        #    self.prefetch_all_dataloader_to_device()
         for epoch in range(self.args.epochs):
             self.chrono.next_iter()
             t0 = time.time()
@@ -395,51 +403,106 @@ class Trainer(object):
         print(print_memory_usage(max_memory))
 
         return(results_df)
+    
+    
+    def prefetch(self):
+        self.chrono.prefetch_all_data()
+        if hasattr(self,'already_prefetch'):
+            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataset.train_loader)
+        else:
+            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataset.train_loader) #if hasattr(self.dataset,'train_loader'): 
+            self.dataset.prefetch_valid_loader = self.prefetch_to_device(self.dataset.valid_loader) #if hasattr(self.dataset,'valid_loader'): 
+            self.dataset.prefetch_test_loader = self.prefetch_to_device(self.dataset.test_loader) #if hasattr(self.dataset,'test_loader'): 
+            self.dataset.prefetch_cal_loader = self.prefetch_to_device(self.dataset.cal_loader) #if hasattr(self.dataset,'cal_loader'): 
+            self.already_prefetch = True
+        self.chrono.prefetch_all_data()
+            
+    def get_loader(self):
+        if self.args.prefetch_all:
+            #loader = self.dataloader_gpu[self.training_mode]
+            if self.training_mode == 'train': loader = self.dataset.prefetch_train_loader
+            if self.training_mode == 'validate': loader = self.dataset.prefetch_valid_loader
+            if self.training_mode == 'test': loader = self.dataset.prefetch_test_loader
+            if self.training_mode == 'cal': loader = self.dataset.prefetch_cal_loader           
+        else:
+            if self.training_mode == 'train': loader = self.dataset.train_loader
+            if self.training_mode == 'validate': loader = self.dataset.valid_loader
+            if self.training_mode == 'test': loader = self.dataset.test_loader
+            if self.training_mode == 'cal': loader = self.dataset.cal_loader
+                #loader = self.dataloader[self.training_mode]
+        return(loader)
+    
+    def load_to_device(self,x_b,y_b,T_b):
+        # If not already Pre-fetch: 
+        if self.args.prefetch_all:
+            t_b = T_b[self.args.calendar_class]
+        else:
+            t_b = T_b[self.args.calendar_class]
+            x_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking)
+            y_b = y_b.to(self.args.device,non_blocking = self.args.non_blocking)
+            t_b = t_b.to(self.args.device,non_blocking = self.args.non_blocking)
+        
+            
+        return(x_b,y_b,t_b)
+    
+    def loop_batch(self,x_b,y_b,t_b,nb_samples,loss_epoch):
+        #Forward 
+        if self.training_mode=='train':
+            self.chrono.forward()
 
+        if self.args.mixed_precision:
+            with autocast():
+                if self.args_embedding : 
+                    pred = self.model(x_b,t_b.long())
+                else:
+                    pred = self.model(x_b)
+                loss = self.loss_function(pred,y_b)
+        else:
+            if self.args_embedding : 
+                pred = self.model(x_b,t_b.long())
+            else:
+                pred = self.model(x_b)
+            loss = self.loss_function(pred,y_b)       
 
-    def loop(self):
-        loss_epoch,nb_samples = 0,0
+        # Back propagation (after each mini-batch)
+        if self.training_mode == 'train': 
+            self.chrono.backward()
+            loss = self.backpropagation(loss)
+
+        # Keep track on metrics 
+        nb_samples += x_b.shape[0]
+        loss_epoch += loss.item()*x_b.shape[0]
+
+        if self.training_mode == 'train': 
+            self.chrono.update()      
+            self.chrono.next_iter()
+        return(nb_samples,loss_epoch)
+        
+    def loop_through_batchs(self,loader):
+        ''' Small difference whether we first prefetch or not (T_b or *T_b) '''
+        nb_samples,loss_epoch = 0,0
+        if self.args.prefetch_all:
+            for x_b,y_b,T_b in loader:  #  self.dataloader_gpu[self.training_mode] 
+                x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
+                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
+        else:
+            for x_b,y_b,*T_b in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
+                x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
+                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
+        return(nb_samples,loss_epoch)
+
+    def loop_epoch(self):
         if self.training_mode=='validation':
             self.chrono.validation()
 
-        if self.training_mode=='train':
-            self.prefetch_all_dataloader_to_device()
+        if (self.args.prefetch_all) & (self.training_mode=='train'):
+            #self.prefetch_all_dataloader_to_device()
+            self.prefetch()
+            
         with torch.set_grad_enabled(self.training_mode=='train'):
-            for x_b,y_b,T_b in self.dataloader_gpu[self.training_mode]:   
-            #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
-                t_b = T_b[self.args.calendar_class]
-                #x_b,y_b,t_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking),y_b.to(self.args.device,non_blocking = self.args.non_blocking),t_b.to(self.args.device,non_blocking = self.args.non_blocking)
-
-                #Forward 
-                if self.training_mode=='train':
-                    self.chrono.forward()
-
-                if self.args.mixed_precision:
-                    with autocast():
-                        if self.args_embedding : 
-                            pred = self.model(x_b,t_b.long())
-                        else:
-                            pred = self.model(x_b)
-                        loss = self.loss_function(pred,y_b)
-                else:
-                    if self.args_embedding : 
-                        pred = self.model(x_b,t_b.long())
-                    else:
-                        pred = self.model(x_b)
-                    loss = self.loss_function(pred,y_b)       
-
-                # Back propagation (after each mini-batch)
-                if self.training_mode == 'train': 
-                    self.chrono.backward()
-                    loss = self.backpropagation(loss)
-
-                # Keep track on metrics 
-                nb_samples += x_b.shape[0]
-                loss_epoch += loss.item()*x_b.shape[0]
-
-                if self.training_mode == 'train': 
-                    self.chrono.update()      
-                    self.chrono.next_iter()
+            loader = self.get_loader()
+            nb_samples,loss_epoch = self.loop_through_batchs(loader)
+  
 
         if self.training_mode=='validation':
             self.chrono.validation()
@@ -931,6 +994,13 @@ class DataSet(object):
         #   DataLoader 
         data_loader_obj = DictDataLoader(self,args)
         data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
+        
+        # =============== Ajout ===============
+        if 'train' in data_loader.keys(): self.train_loader = data_loader['train']
+        if 'validate' in data_loader.keys(): self.valid_loader = data_loader['validate']
+        if 'test' in data_loader.keys(): self.test_loader = data_loader['test']
+        if 'cal' in data_loader.keys(): self.cal_loader = data_loader['cal']
+        # =============== Ajout ===============
         return(data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # =====================================================================================================================================
