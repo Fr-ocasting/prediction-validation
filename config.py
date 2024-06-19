@@ -115,6 +115,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['torch_compile'] = True
     config['backend'] = 'inductor' #'cudagraphs'
 
+    config['prefetch_all'] = False
+
     # Scheduler 
     config['scheduler'] = True  # None
     config['torch_scheduler_milestone'] = 40
