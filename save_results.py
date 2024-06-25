@@ -130,7 +130,7 @@ def read_object(filename):
     with open(filename, 'rb') as f:  # Overwrites any existing file.
         return(pickle.load(f))
     
-def Dataset_get_save_folder(args,K_fold = None, fold = None):
+def Dataset_get_save_folder(args,K_fold = None, fold = None, netmob = False):
     # Define the name of the save folder 
     W_D_H_S = f"W{args.W}_D{args.D}_H{args.H}_S{args.step_ahead}"
     prop_station = f"train{str(args.train_prop).replace('.','')}_val{str(args.valid_prop).replace('.','')}_cal{str(args.calib_prop).replace('.','')}_single_station{args.single_station}"
@@ -143,6 +143,9 @@ def Dataset_get_save_folder(args,K_fold = None, fold = None):
     B_K_validation = f"B{args.batch_size}_K_fold{K_fold}_Cclass{args.calendar_class}_validation{args.validation}_fold{fold}"
 
     save_folder = f"data/loading/{W_D_H_S}/{prop_station}/{B_K_validation}/"
+
+    if netmob:
+        save_folder = f"{save_folder}netmob/"
 
     if not os.path.exists(save_folder):
         os.makedirs(save_folder,exist_ok = True)

@@ -644,14 +644,17 @@ class DataSet(object):
     df : contain the current df you are working on. It's the full df, normalized or not
     init_df : contain the initial df, no normalized. It's the full initial dataset.
     '''
-    def __init__(self,df,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,
+    def __init__(self,df=None,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,
                  train_df = None,cleaned_df = None,Weeks = None, Days = None, historical_len = None,step_ahead = None):
-        self.length = len(df)
-        self.df = df
-        self.columns = df.columns
+        
+        if df is not None:
+            self.length = len(df)
+            self.df = df
+            self.columns = df.columns
+            self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
+
         self.normalized = normalized
         self.time_step_per_hour = time_step_per_hour
-        self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
         self.train_df = train_df
         if time_step_per_hour is not None :
             self.Week_nb_steps = int(7*24*self.time_step_per_hour)
@@ -744,7 +747,7 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
-    def split_K_fold(self,args,invalid_dates):
+    def split_K_fold(self,args,invalid_dates,netmob = False):
         '''
         Split la DataSet Initiale en K-fold
         '''
@@ -755,7 +758,7 @@ class DataSet(object):
         # Récupère la DataSet de Test Commune à tous: 
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-        dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0)
+        dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0,netmob=netmob)
         data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop,args.test_prop)
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df = df[: dataset_init.first_test_date]  
@@ -763,8 +766,6 @@ class DataSet(object):
         # Récupère la Taille de cette DataFrame
         n = len(df)
 
-
-        
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
         valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
         train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)
@@ -786,7 +787,7 @@ class DataSet(object):
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k)
+            dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
             if dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days == 0:
                 print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
 
@@ -863,7 +864,6 @@ class DataSet(object):
     def get_U_shifted(self):
         shifted_values = self.shift_values()
         self.Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
-
         try:
             self.U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
         except:
@@ -883,9 +883,10 @@ class DataSet(object):
         self.U_valid = self.U[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None   
         self.U_test = self.U[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
 
-        self.Utarget_train = self.Utarget[self.first_train_U:self.last_train_U] 
-        self.Utarget_valid = self.Utarget[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
-        self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
+        if self.Utarget is not None:
+            self.Utarget_train = self.Utarget[self.first_train_U:self.last_train_U] 
+            self.Utarget_valid = self.Utarget[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
+            self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
 
         if self.time_slots_labels is not None : 
             self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }

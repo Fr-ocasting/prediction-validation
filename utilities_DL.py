@@ -25,6 +25,18 @@ from dl_models.dcrnn_model import DCRNNModel
 from dl_models.full_model import full_model
 
 # Load Loss 
+
+def match_period_coverage(dataset,netmob_T):
+    coverage_dataset = dataset.df.index
+    coverage_netmob =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
+    coverage = list(set(coverage_dataset)& set(coverage_netmob))
+    
+    if len(coverage) != len(coverage_netmob):
+        raise ValueError("Coverage period from dataset doesn't match the NetMob coverage period")
+    else:
+        return(coverage_netmob)
+
+
 def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
     args.num_nodes = n_vertex
     loss_function = get_loss(args.loss_function_type,args)
@@ -101,8 +113,11 @@ def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
     print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
     return(model,optimizer,scheduler)
 
-def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False):
+def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False,coverage_period = None):
     df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = single_station)
+    if coverage_period is not None:
+        df = df.loc[coverage_period]
+        invalid_dates = list(set(invalid_dates) & set(coverage_period))
     dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead)
     return(dataset,invalid_dates)
 
@@ -135,7 +150,7 @@ def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
         print(f"coverage period: {subway_in.index.min()} - {subway_in.index.max()}")
         print(f"Time-step per hour: {time_step_per_hour}")
 
-    if file_name == 'Netmob.csv':
+    elif file_name == 'Netmob.csv':
         netmob = ...
 
     else:
