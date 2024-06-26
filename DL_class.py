@@ -1,7 +1,7 @@
 import pandas as pd 
 import numpy as np
 import time
-from torch.utils.data import Dataset,DataLoader
+
 import torch 
 import torch.nn as nn 
 import os 
@@ -20,6 +20,7 @@ from split_df import train_valid_test_split_iterative_method
 from calendar_class import get_time_slots_labels
 from PI_object import PI_object
 from paths import save_folder
+from loader import DictDataLoader
 try :
     from plotting_bokeh import generate_bokeh
 except:
@@ -55,78 +56,7 @@ class QuantileLoss(nn.Module):
         loss = torch.mean(torch.sum(losses,dim = -1))   #  Loss commune pour toutes les stations. sinon loss par stations : torch.mean(torch.sum(losses,dim = -1),dim = 0)
 
         return(loss)
-
-class CustomDataset(Dataset):
-    def __init__(self,X,Y,*T):
-        self.X = X
-        self.Y = Y
-        self.T = T
-        
-    def __len__(self):
-        return len(self.X)
     
-    def __getitem__(self,idx):
-        #T_data = [t[idx] for t in self.T]
-        T_data = tuple(t[idx] for t in self.T)
-        return self.X[idx], self.Y[idx], *T_data
-
-class DictDataLoader(object):
-    ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
-    '''
-    args
-    -----
-    '''
-    def __init__(self,dataset,args):
-        super().__init__()
-        self.dataloader = {}
-        self.calib_prop = args.calib_prop
-        self.dataset = dataset
-        self.args = args
-
-    def get_dictdataloader(self,batch_size):
-        if self.calib_prop is None: 
-            Sequences = [self.dataset.U_train,self.dataset.U_valid,self.dataset.U_test]
-            Targets = [self.dataset.Utarget_train,self.dataset.Utarget_valid,self.dataset.Utarget_test]
-            Time_slots_list = [self.dataset.time_slots_train,self.dataset.time_slots_valid,self.dataset.time_slots_test]
-            Names = ['train','validate','test']
-
-        else : 
-            indices = torch.randperm(self.dataset.U_train.size(0)) 
-            split = int(self.dataset.U_train.size(0)*self.calib_prop)
-
-            self.dataset.indices_cal = indices[split:]
-            self.dataset.indices_train = indices[:split]
-
-            proper_set_x,proper_set_y = self.dataset.U_train[self.dataset.indices_train],self.dataset.Utarget_train[self.dataset.indices_train]
-            calib_set_x,calib_set_y = self.dataset.U_train[self.dataset.indices_cal],self.dataset.Utarget_train[self.dataset.indices_cal]
-            time_slots_proper = {calendar_class: self.dataset.time_slots_train[calendar_class][self.dataset.indices_train] for calendar_class in range(len(self.dataset.nb_class)) } 
-            time_slots_calib = {calendar_class: self.dataset.time_slots_train[calendar_class][self.dataset.indices_cal] for calendar_class in range(len(self.dataset.nb_class))}
-
-
-            Sequences = [proper_set_x,self.dataset.U_valid,self.dataset.U_test,calib_set_x]
-            Targets = [proper_set_y,self.dataset.Utarget_valid,self.dataset.Utarget_test,calib_set_y]
-            Time_slots_list = [time_slots_proper,self.dataset.time_slots_valid,self.dataset.time_slots_test,time_slots_calib]
-            Names = ['train','validate','test','cal']
-            
-        for feature_vector,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-            if feature_vector is not None:
-                inputs = CustomDataset(feature_vector,target,*list(L_time_slot.values()))
-                # inputs = list(zip(feature_vector,target,*list(L_time_slot.values()) ))
-                # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,num_replicas=idr_torch.size,rank=idr_torch.rank,shuffle= ...)
-                self.dataloader[training_mode] = DataLoader(inputs, 
-                                                            batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size),
-                                                            shuffle = (training_mode == 'train'),
-                                                            #sampler=sampler,
-                                                            num_workers=self.args.num_workers,
-                                                            persistent_workers=self.args.persistent_workers,
-                                                            pin_memory=self.args.pin_memory,
-                                                            prefetch_factor=self.args.prefetch_factor,
-                                                            drop_last=self.args.drop_last
-                                                            ) 
-            else:
-                self.dataloader[training_mode] = None
-            #self.dataloader[training_mode] = DataLoader(list(zip(feature_vector,target,L_time_slot)),batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size), shuffle = (True if ((training_mode == 'train') & self.shuffle ) else False)) 
-        return(self.dataloader)
 
 class MultiModelTrainer(object):
     def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz,show_figure = True):
@@ -793,7 +723,11 @@ class DataSet(object):
 
             data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(args,invalid_dates,train_prop_tmps, valid_prop_tmps, 0)
             data_loader['test'] = data_loader_with_test['test']
+
+            # Risque de merder ici : Car dataset.tmps de contextual tensor mais  
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
+            # ...
+
             dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
             dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
             dataset_tmps.df_verif_test = dataset_init.df_verif_test
@@ -879,21 +813,26 @@ class DataSet(object):
 
     def split_tensors(self):
         ''' Split tensor U in Train/Valid/Test part '''
+        # Trafic Input 
         self.U_train = self.U[self.first_train_U:self.last_train_U]
         self.U_valid = self.U[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None   
         self.U_test = self.U[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
 
-        if self.Utarget is not None:
-            self.Utarget_train = self.Utarget[self.first_train_U:self.last_train_U] 
-            self.Utarget_valid = self.Utarget[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
-            self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
+        # Target
+        self.Utarget_train = self.Utarget[self.first_train_U:self.last_train_U] 
+        self.Utarget_valid = self.Utarget[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
+        self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
 
-        if self.time_slots_labels is not None : 
-            self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
-            self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
-            self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
-            #self.time_slots_valid = self.time_slots_labels[self.args.calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
-            #self.time_slots_test = self.time_slots_labels[self.args.calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None    
+        # Contextual Tensor:
+        for name, contextual_tensor in self.contextual_tensors.items():
+            setattr(self, f"{name}_train",contextual_tensor[self.first_train_U:self.last_train_U] )
+            setattr(self, f"{name}_valid",contextual_tensor[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None) 
+            setattr(self, f"{name}_test",contextual_tensor[self.first_test_U:self.last_test_U]  if self.first_test_U is not None else None)
+
+        #if self.time_slots_labels is not None : 
+        #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
+        #    self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
+        #    self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
 
     def train_valid_test_split(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
         # Split with iterative method 
@@ -967,7 +906,7 @@ class DataSet(object):
         # Normalize 
         self.normalize_df(minmaxnorm = True)   # Normalize dataset.df thank to dataset.train_df
 
-        # Re-load U  and U_target, while df is now correctly normalized
+        # Re-load U and U_target, while df is now correctly normalized
         self.get_feature_vect()  # Build 'df_shifted'.
         self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
 
@@ -975,19 +914,29 @@ class DataSet(object):
         time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self)
 
         # Split U in  U_train, U_valid, U_test thanks to 'df_verif' and the date limits of the df_train/df_valid/df_test
+        # ADD self.contextual_tensor_train/valid/test
         self.split_tensors()
 
         #   DataLoader 
-        data_loader_obj = DictDataLoader(self,args)
-        data_loader = data_loader_obj.get_dictdataloader(args.batch_size)
+        #DictDataLoader_object = DictDataLoader(self,args)
+        #dict_dataloader = DictDataLoader_object.get_dictdataloader(args.batch_size)
+
+        # Train, Valid, Test split : 
+        train_tuple =  self.U_train,self.Utarget_train,{getattr(self,f"{name}_train") for name in self.contextual_tensors.keys()} # subway_X[train_subset],subway_Y[train_subset], dict(netmob = netmob[train_subset], calendar = calendar[train_subset])
+        valid_tuple =  self.U_valid,self.Utarget_valid,{getattr(self,f"{name}_valid") for name in self.contextual_tensors.keys()}  # subway_X[valid_subset],subway_Y[valid_subset], dict(netmob = netmob[valid_subset], calendar = calendar[valid_subset])
+        test_tuple =  self.U_test,self.Utarget_test,{getattr(self,f"{name}_test") for name in self.contextual_tensors.keys()}   # subway_X[test_subset],subway_Y[test_subset], dict(netmob = netmob[test_subset], calendar = calendar[test_subset])
+
+        # Load DictDataLoader: 
+        DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,args)
+        dict_dataloader = DictDataLoader_object.get_dictdataloader()
         
         # =============== Ajout ===============
-        if 'train' in data_loader.keys(): self.train_loader = data_loader['train']
-        if 'validate' in data_loader.keys(): self.valid_loader = data_loader['validate']
-        if 'test' in data_loader.keys(): self.test_loader = data_loader['test']
-        if 'cal' in data_loader.keys(): self.cal_loader = data_loader['cal']
+        if 'train' in dict_dataloader.keys(): self.train_loader = dict_dataloader['train']
+        if 'validate' in dict_dataloader.keys(): self.valid_loader = dict_dataloader['validate']
+        if 'test' in dict_dataloader.keys(): self.test_loader = dict_dataloader['test']
+        if 'cal' in dict_dataloader.keys(): self.cal_loader = dict_dataloader['cal']
         # =============== Ajout ===============
-        return(data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+        return(dict_dataloader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # =====================================================================================================================================
     # Probablement à supprimer : 
