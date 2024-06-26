@@ -10,8 +10,35 @@ import warnings
 import torch
 import torch.nn.functional as F
 from datetime import datetime,timedelta
+import numpy as np 
 
 
+
+def build_image(T_i,tile_ids,epsilon,step_south_north):
+    # Find dimensions
+    H, W, tile_ids_real = calculate_grid_size(tile_ids,epsilon)
+
+    # Get Grid 
+    grid = get_grid(tile_ids_real,H,W,step_south_north)
+
+    # Match Metadata with Grid 
+    positions = match_tile_ids_with_grid(tile_ids_real,grid.reshape(-1))
+
+    # Re-organize Tensor  
+    new_T_i = resize_tensor(T_i, H,W, positions)
+    new_T_i = new_T_i.reshape(new_T_i.size(0),new_T_i.size(1),H,W)
+    return(new_T_i)
+
+def get_station_data_and_permute_reshape(T,i):
+    T_i = torch.squeeze(T[:,:,i,:,:])  #[Day, DL/UL, Tile-id, (hour,minute)] 
+    # BIEN ETRE SUR DE CE PERMUTE RESHAPE §§§§
+    T_i = T_i.permute(1,2,0,3)  #[DL/UL, Tile-id,Day,(hour,minute)] 
+    T_i = T_i.reshape(T_i.size(0),T_i.size(1),-1) #[DL/UL, Tile-id, Day*(hour,minute)]
+    #  ................................
+    T_i = T_i.permute(2,0,1) #[Day*(hour,minute), DL/UL, Tile-id]   <-> [N,C,H*W]
+    return(T_i)
+    
+    
 def calculate_grid_size(tile_ids,epsilon):
     ''' Calculate Image dimension. Simple function cause Cell-size = 100m*100m '''
     # Remove tile ids '-1' 
