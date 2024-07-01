@@ -604,7 +604,7 @@ class TensorDataset(object):
         # ...
             
         # Z-Standardization 
-        if standardize:
+        elif standardize:
             stacked_mean = torch.stack([self.mean]*self.reshaped_inputs_dim[-1],-1)
             stacked_std = torch.stack([self.std]*self.reshaped_inputs_dim[-1],-1)
 
@@ -614,6 +614,10 @@ class TensorDataset(object):
                 output_with_nan_and_inf = (inputs - stacked_mean)/(stacked_std)  # Sometimes issues when divided by 0
                 return(self.tackle_nan_inf_values(output_with_nan_and_inf)) 
         # ...
+
+        else:
+            raise ValueError('Standardization method has not been precised. Set minamxnorm = True or standardize = True')
+
             
             
     def tackle_nan_inf_values(self,output_with_nan_and_inf):
@@ -687,7 +691,7 @@ class TensorDataset(object):
         # reshape-back, inverse-permute
         normalized_tensor = self.inverse_reshape_permute(normalized_tensor)
 
-        return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = ~reverse)
+        return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = not(reverse))
     
 class TrainValidTest_Split_Normalize(object):
     def __init__(self,data,dims,train_indices, valid_indices, test_indices,minmaxnorm = False,standardize = False):
@@ -724,14 +728,6 @@ class TrainValidTest_Split_Normalize(object):
         test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)   
 
         return(train_dataset,valid_dataset,test_dataset)
-        
-
-
-
-
-
-    
-
 
 
 
