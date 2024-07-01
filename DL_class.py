@@ -579,12 +579,19 @@ class TensorDataset(object):
 
     def get_stats(self,inputs):
         ''' Return Min, Max, Mean and Std of inputs through the last dimension'''
-        if ~(hasattr(self,'mini')) & ~(hasattr(self,'maxi')) :
-            self.mini,self.maxi = inputs.min(-1).values,inputs.max(-1).values  #Min and Max through last dim 
-        if ~(hasattr(self,'mean')) & ~(hasattr(self,'std')) :
-            self.mean,self.std = inputs.mean(-1),inputs.std(-1)  #Min and Max through last dim 
+        #Min and Max through last dim 
+        if (not(hasattr(self,'mini'))):
+            self.mini = inputs.min(-1).values  
+        if (not(hasattr(self,'maxi'))): 
+            self.maxi = inputs.max(-1).values
+        if (not(hasattr(self,'mean'))):
+            self.mean= inputs.mean(-1)
+        if (not(hasattr(self,'std'))): 
+            self.std = inputs.std(-1)  #Min and Max through last dim 
 
     def transform(self,inputs: torch.Tensor, minmaxnorm: bool = False, standardize: bool = False, reverse: bool = False ):
+
+        # MinMax Normalization
         if minmaxnorm:
             stacked_mini = torch.stack([self.mini]*self.reshaped_inputs_dim[-1],-1)
             stacked_maxi = torch.stack([self.maxi]*self.reshaped_inputs_dim[-1],-1)
@@ -592,8 +599,11 @@ class TensorDataset(object):
             if reverse:
                 return((inputs*(stacked_maxi-stacked_mini) + stacked_mini))
             else: 
-                return((inputs - stacked_mini)/(stacked_maxi-stacked_mini))
-        
+                output_with_nan_and_inf = (inputs - stacked_mini)/(stacked_maxi-stacked_mini)  # Sometimes issues when divided by 0
+                return(self.tackle_nan_inf_values(output_with_nan_and_inf))
+        # ...
+            
+        # Z-Standardization 
         if standardize:
             stacked_mean = torch.stack([self.mean]*self.reshaped_inputs_dim[-1],-1)
             stacked_std = torch.stack([self.std]*self.reshaped_inputs_dim[-1],-1)
@@ -601,8 +611,21 @@ class TensorDataset(object):
             if reverse:
                 return(inputs*stacked_std + stacked_mean)
             else: 
-                return((inputs - stacked_mean)/(stacked_std))
+                output_with_nan_and_inf = (inputs - stacked_mean)/(stacked_std)  # Sometimes issues when divided by 0
+                return(self.tackle_nan_inf_values(output_with_nan_and_inf)) 
+        # ...
             
+            
+    def tackle_nan_inf_values(self,output_with_nan_and_inf):
+        '''For each channel and each station, we can have some issues when the minimum from Training Set is equal to its Maximum. We then can't normalize the dataset and set the values to 0. '''
+        regular_values_set_to_0 =  torch.isinf(output_with_nan_and_inf).sum()
+        Values_with_normalization_issues = (torch.isnan(output_with_nan_and_inf) + torch.isinf(output_with_nan_and_inf)).sum()
+        print('Values with issues: ','{:.3%}'.format(Values_with_normalization_issues.item()/output_with_nan_and_inf.numel() ))
+        print('Regular Values that we have to set to 0: ','{:.3%}'.format(regular_values_set_to_0.item()/output_with_nan_and_inf.numel() ))
+        output = torch.nan_to_num(output_with_nan_and_inf,0,0,0)  # Set 0 when devided by maxi - mini = 0 (0 when Nan, 0 when +inf, 0 when -inf
+        return(output)
+    
+
     def reshape_input(self,inputs,dims):
         # Design Permutation tuple: 
         int_dims = [dim if dim>=0 else inputs.dim()+dim for dim in dims ]   
@@ -666,6 +689,49 @@ class TensorDataset(object):
 
         return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = ~reverse)
     
+class TrainValidTest_Split_Normalize(object):
+    def __init__(self,data,dims,train_indices, valid_indices, test_indices,minmaxnorm = False,standardize = False):
+        super(TrainValidTest_Split_Normalize,self).__init__()
+        self.data = data
+        self.train_indices = train_indices
+        self.valid_indices = valid_indices
+        self.test_indices = test_indices
+        self.minmaxnorm = minmaxnorm
+        self.standardize = standardize
+        self.dims = dims 
+
+        self.split_data()
+
+    def split_data(self):
+        # Split Data within 3 groups:
+        self.data_train = self.data[self.train_indices]
+        self.data_valid = self.data[self.valid_indices]
+        self.data_test = self.data[self.test_indices]
+
+    def load_normalize_tensor_datasets(self):
+        print('Tackling Training Set')
+        train_dataset = TensorDataset(self.data_train)
+        train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
+
+        # Normalize thank to stats from Training Set 
+        print('Tackling Validation Set')
+        valid_dataset = TensorDataset(self.data_valid,mini = train_dataset.mini, maxi = train_dataset.maxi, mean = train_dataset.mean, std = train_dataset.std)
+        valid_dataset = valid_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
+
+        # Normalize thank to stats from Training Set 
+        print('Tackling Testing Set')
+        test_dataset = TensorDataset(self.data_test,mini = train_dataset.mini, maxi = train_dataset.maxi, mean = train_dataset.mean, std = train_dataset.std)
+        test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)   
+
+        return(train_dataset,valid_dataset,test_dataset)
+        
+
+
+
+
+
+    
+
 
 
 
