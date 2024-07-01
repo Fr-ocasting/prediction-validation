@@ -213,7 +213,7 @@ if __name__ == '__main__':
     print(x_b.size(),y_b.size(), contextual_data_b[0].size(),contextual_data_b[1].size())
 
 
-if False: 
+"""
     # ===== ..... Ancienne Version, pas assez souple à l'ajout / enlèvement de Dataset: ..... =====
 
     class CustomDataset(Dataset):
@@ -313,6 +313,6 @@ if False:
             return(self.dataloader)
 
     # =============== ....................
-
+"""
 
 

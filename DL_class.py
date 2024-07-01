@@ -567,6 +567,108 @@ class Trainer(object):
             self.calib_loss.append(loss_epoch/nb_samples)
 
 
+class TensorDataset(object):
+    def __init__(self,tensor,mini=None,maxi=None,mean=None,std=None, normalized = False):
+        super(TensorDataset,self).__init__()
+        if mini is not None: self.mini = mini 
+        if maxi is not None: self.maxi = maxi 
+        if mean is not None: self.mean = mean 
+        if std is not None: self.std = std 
+        self.normalized = normalized
+        self.tensor = tensor 
+
+    def get_stats(self,inputs):
+        ''' Return Min, Max, Mean and Std of inputs through the last dimension'''
+        if ~(hasattr(self,'mini')) & ~(hasattr(self,'maxi')) :
+            self.mini,self.maxi = inputs.min(-1).values,inputs.max(-1).values  #Min and Max through last dim 
+        if ~(hasattr(self,'mean')) & ~(hasattr(self,'std')) :
+            self.mean,self.std = inputs.mean(-1),inputs.std(-1)  #Min and Max through last dim 
+
+    def transform(self,inputs: torch.Tensor, minmaxnorm: bool = False, standardize: bool = False, reverse: bool = False ):
+        if minmaxnorm:
+            stacked_mini = torch.stack([self.mini]*self.reshaped_inputs_dim[-1],-1)
+            stacked_maxi = torch.stack([self.maxi]*self.reshaped_inputs_dim[-1],-1)
+
+            if reverse:
+                return((inputs*(stacked_maxi-stacked_mini) + stacked_mini))
+            else: 
+                return((inputs - stacked_mini)/(stacked_maxi-stacked_mini))
+        
+        if standardize:
+            stacked_mean = torch.stack([self.mean]*self.reshaped_inputs_dim[-1],-1)
+            stacked_std = torch.stack([self.std]*self.reshaped_inputs_dim[-1],-1)
+
+            if reverse:
+                return(inputs*stacked_std + stacked_mean)
+            else: 
+                return((inputs - stacked_mean)/(stacked_std))
+            
+    def reshape_input(self,inputs,dims):
+        # Design Permutation tuple: 
+        int_dims = [dim if dim>=0 else inputs.dim()+dim for dim in dims ]   
+        remaining_dims = [dim for dim in np.arange(inputs.dim()) if not(dim in int_dims)] 
+        permutations = remaining_dims+int_dims
+        self.permutations = permutations
+        
+        #Permute 
+        permuted_inputs = inputs.permute(tuple(permutations))
+        self.permuted_size = permuted_inputs.size()
+        
+        # Reshape
+        reshape = tuple([permuted_inputs.size(k) for k,_ in enumerate(remaining_dims)]+[-1]) 
+        reshaped_inputs = permuted_inputs.reshape(reshape)
+
+        self.reshaped_inputs_dim =  reshaped_inputs.size()
+        return(reshaped_inputs)
+    
+    def inverse_reshape_permute(self,normalized_tensor):
+        # Reshape and inverse-permute:
+        normalized_tensor = normalized_tensor.reshape(self.permuted_size) #Un-flatten
+
+        inverse_permute = torch.argsort(torch.LongTensor(self.permutations)).tolist()
+        normalized_tensor = normalized_tensor.permute(inverse_permute) # inverse permutation 
+        return(normalized_tensor)
+
+    def unormalize_tensor(self,inputs: torch.Tensor, dims: list, minmaxnorm: bool = False, standardize: bool = False):
+        if not self.normalized:
+            raise ValueError('Tensor is not Normalized')
+        else:
+            self.normalize_tensor(inputs, dims, minmaxnorm, standardize,reverse=True)
+
+    def normalize_tensor(self, dims: list, minmaxnorm: bool = False, standardize: bool = False,reverse=False):
+        '''
+        args 
+        -----
+        inputs : n-dimension torch Tensor
+        dims :  dimension through which we want to retrieve min/max or mean/std
+        minmaxnorm : MinMax-Normalization if True
+        standardize: Z-standardization if True 
+
+        Examples:
+            inputs = torch.randn(8,4,2,3,6)
+            dims = [0,-1,-2]
+            minmaxnorm  = True
+
+            output is a Tensor object whose 'tensor' attribute is normalized (or unormalized)
+            it returns the minmax-normalization of 'inputs' through dimensions 0,4,3. 
+        '''
+
+        reshaped_inputs = self.reshape_input(self.tensor,dims)
+
+        # Get Min, Max, Mean, Std if not already available 
+        self.get_stats(reshaped_inputs)
+
+        # Normalize
+        normalized_tensor = self.transform(reshaped_inputs,minmaxnorm,standardize,reverse)
+
+        # reshape-back, inverse-permute
+        normalized_tensor = self.inverse_reshape_permute(normalized_tensor)
+
+        return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = ~reverse)
+    
+
+
+
 class DataSet(object):
     '''
     attributes
@@ -643,7 +745,15 @@ class DataSet(object):
         self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
 
 
+    def standardize(self,x,reverse = False):
+        ''' Standardization : z <- (x-mu) / sigma'''
+        if reverse:
+            x = x*(self.std) + self.mean
+        else:
+            x = (x-self.mean)/ self.std
+
     def minmaxnorm(self,x,reverse = False):
+        ''' MinMax Normalization : z <- (x-min) / (max-min)'''
         if reverse:
             x = x*(self.maxi - self.mini) +self.mini
         else :
