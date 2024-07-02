@@ -4,7 +4,10 @@ import torch.nn as nn
 import pandas as pd
 from datetime import datetime, timedelta
 from torch.optim import SGD,Adam,AdamW
-from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
+try:
+    from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
+except:
+    print(f'Pytorch version {torch.__version__} does not allow you to use lr-scheduler')
 import os 
 # Personnal import: 
 from load_adj import load_adj
@@ -119,6 +122,7 @@ def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahea
         df = df.loc[coverage_period]
         invalid_dates = list(set(invalid_dates) & set(coverage_period))
     dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead)
+    print(f"coverage period: {df.index.min()} - {df.index.max()}")
     return(dataset,invalid_dates)
 
 def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
@@ -147,7 +151,6 @@ def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
         # Restrain invalid_dates to the df: 
         invalid_dates = list(set(invalid_dates) & set(subway_in.index))
 
-        print(f"coverage period: {subway_in.index.min()} - {subway_in.index.max()}")
         print(f"Time-step per hour: {time_step_per_hour}")
 
     elif file_name == 'Netmob.csv':

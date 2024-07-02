@@ -693,28 +693,50 @@ class TensorDataset(object):
 
         return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = not(reverse))
     
+
 class TrainValidTest_Split_Normalize(object):
-    def __init__(self,data,dims,train_indices, valid_indices, test_indices,minmaxnorm = False,standardize = False):
+    def __init__(self,data,dims,
+                 train_indices = None , valid_indices = None, test_indices = None,
+                 first_train = None, last_train = None, first_valid = None, last_valid = None, first_test = None, last_test = None, 
+                 invalid_dates = None, 
+                 minmaxnorm = False,standardize = False):
         super(TrainValidTest_Split_Normalize,self).__init__()
         self.data = data
-        self.train_indices = train_indices
-        self.valid_indices = valid_indices
-        self.test_indices = test_indices
         self.minmaxnorm = minmaxnorm
         self.standardize = standardize
         self.dims = dims 
+
+        if train_indices is not None : self.train_indices = train_indices
+        if valid_indices is not None : self.valid_indices = valid_indices
+        if test_indices is not None : self.test_indices = test_indices
+
+        if first_train is not None : self.first_train = first_train
+        if last_train is not None : self.last_train = last_train
+
+        if first_valid is not None : self.first_valid = first_valid
+        if last_valid is not None : self.last_valid = last_valid
+
+        if first_test is not None : self.first_test = first_test
+        if last_test is not None : self.last_test = last_test
 
         self.split_data()
 
     def split_data(self):
         # Split Data within 3 groups:
-        self.data_train = self.data[self.train_indices]
-        self.data_valid = self.data[self.valid_indices]
-        self.data_test = self.data[self.test_indices]
+        if hasattr(self,'train_indices'):
+            self.data_train = self.data[self.train_indices] 
+            self.data_valid = self.data[self.valid_indices] if self.valid_indices is not None else None
+            self.data_test = self.data[self.test_indices] if self.test_indices is not None else None
+        elif hasattr(self,'first_train'):
+            self.data_train = self.data[self.first_train:self.last_train]
+            self.data_valid = self.data[self.first_valid:self.last_valid] if self.first_valid is not None else None
+            self.data_test = self.data[self.first_test:self.last_test]   if self.first_test is not None else None
+        else: 
+            raise ValueError("Neither 'train_indices' nor 'first_train' attribute has been designed ")
 
-    def load_normalize_tensor_datasets(self):
+    def load_normalize_tensor_datasets(self,mini = None, maxi = None, mean = None, std = None):
         print('Tackling Training Set')
-        train_dataset = TensorDataset(self.data_train)
+        train_dataset = TensorDataset(self.data_train, mini = mini, maxi = maxi, mean=mean, std=std)
         train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
 
         # Normalize thank to stats from Training Set 
@@ -728,7 +750,68 @@ class TrainValidTest_Split_Normalize(object):
         test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)   
 
         return(train_dataset,valid_dataset,test_dataset)
+    
 
+class FeatureVectorBuilder(object):
+    '''
+    Shift : 
+    1 Week : Mean to predict t+s we need what happened the same day, same hour, same minute, one week ago. 
+    which means t+s - 672 
+
+    1 Day : Mean to predict t+s we need what happened the later day, same hour, same minute, 
+    which means t+s - 96 
+
+    2 historical length : to predict t+s we need what to know happened the h+s time step earlier, and we can't accès to what happened the s time step earlier
+    which means t, t-1, .. t-h   
+    '''
+    def __init__(self,step_ahead,historical_len,Days,Weeks,Day_nb_steps,Week_nb_steps,shift_from_first_elmt):
+        super(FeatureVectorBuilder,self).__init__()
+
+        self.step_ahead = step_ahead
+        self.historical_len = historical_len
+        self.Days = Days
+        self.Weeks = Weeks
+        self.Day_nb_steps = Day_nb_steps
+        self.Week_nb_steps = Week_nb_steps
+        self.shift_from_first_elmt = shift_from_first_elmt
+    
+    def build_feature_vect(self,tensor: torch.Tensor):
+        '''
+        args
+        ------
+        tensor : Torch Tensor of raw data. Shape: [T,N] or [T,N,C,H,W]
+
+        output
+        ------ 
+        output : [T',N,L] or [T',N,C,H,W,L], with L the total historical length (H+W+D) and T' = T - shift_from_first_elmt 
+        '''
+
+        # Shift Values :
+        Uwt = [torch.roll(tensor,t*self.Week_nb_steps,0) for t in range(self.Weeks,0,-1)]  
+        Udt = [torch.roll(tensor,t*self.Day_nb_steps,0) for t in range(self.Days,0,-1)]
+        Ut =  [torch.roll(tensor,self.step_ahead-1+t,0) for t in range(self.historical_len,0,-1)] 
+
+        # Stack 
+        U = torch.stack(Uwt+Udt+Ut,dim=-1)
+
+        # Remove the first elements which contains future values
+        self.U = U[self.shift_from_first_elmt:]
+
+
+    def build_target_vect(self, tensor: torch.Tensor):
+        '''
+        args 
+        ------
+        step_ahead : number of time-step ahead that we want to predict
+        tensor : tensor of raw data, without shift
+
+
+        output
+        ------
+        Target Tensor, with shift of step_ahead. 
+        '''
+        Utarget = torch.unsqueeze(tensor[self.shift_from_first_elmt:],-1) # add last dim
+        self.Utarget = Utarget
 
 
 class DataSet(object):
@@ -797,14 +880,14 @@ class DataSet(object):
         indx2colname = {k:c for k,c in enumerate(self.columns)}
         return(colname2indx,indx2colname)
     
-    def get_shift_between_set(self):
+    def get_shift_from_first_elmt(self):
         shift_week = self.Weeks if self.Weeks is not None else 0
         shift_day = self.Days if self.Days is not None else 0
         self.shift_from_first_elmt = int(max(shift_week*24*7*self.time_step_per_hour,
                                 shift_day*24*self.time_step_per_hour,
                                 self.historical_len+self.step_ahead-1
                                 ))
-        self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
+        #self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
 
 
     def standardize(self,x,reverse = False):
@@ -852,21 +935,78 @@ class DataSet(object):
     def split_K_fold(self,args,invalid_dates,netmob = False):
         '''
         Split la DataSet Initiale en K-fold
+        args 
+        -------
+
+
+        outputs
+        -------
+        fold_dataset_limits: dict -> Contains TimeStamps Limits and Indices Limits of each Fold and each training modes. 
+        examples : 
+            - fold_dataset_limits[fold_k]['valid']['timestamp']  = (Timestamp('2019-02-26 00:00:00', freq='15T'),Timestamp('2019-04-27 11:45:00', freq='15T'))
+            - fold_dataset_limits[fold_k]['valid']['tensor_indices']  = (50,146)
+
+
         '''
+        # Warning in case we don't use trafic data: 
+        if self.Weeks+self.historical_len+self.Days == 0:
+            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
+        # ...
+
+
+        self.fold_dataset_limits = {k : {name : {} for name in ['fold_limits','train','valid','test']} for k in range(args.K_fold)}
         Datasets,DataLoader_list = [],[]
         #dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list,time_slots_labels_list = [],[],[],[]
         # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
         df = self.df
-        # Récupère la DataSet de Test Commune à tous: 
+        
+
+
+        # ==========================================================================================
+        # ====================================================================================
+        # ============ PB : ON NORMALIZE LE TEST AVEC LE TOTAL ET PAS AVEC LE TRAINING SET ==================
+
+
+        # Crée une DataSet copie et y récupère la DataSet de Test Commune à tous les K-fold : 
         dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-        dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0,netmob=netmob)
-        data_loader_with_test,_,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop,args.test_prop)
+        
+        dataset_init.get_shift_from_first_elmt()   # récupère le 'shift from first elmt' pour la construction du feature vect 
+        dataset_init.get_feature_vect()  # Construction du feature vect  self.U et self.Utarget 
+
+        dataset_init.identify_forbidden_index(invalid_dates) # Retire toute les dates interdites 
+        dataset_init.mask_tensor()
+        dataset_init.mask_df()  # Get df_verif 
+
+        dataset_init.train_valid_test_split(args.train_prop,args.valid_prop,args.test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
+        dataset_init.split_tensors() # Récupère U_test, Utarget_test, NetMob_test, Weather_test etc....  dans 'dataset_init.contextual_tensors.items()' 
+        # 
+        # ...
+        # On peut maintenant appeler dataset_init.U_test pour récupérer le test_set dans 'init', qu'il faut maintenant Normaliser avec les min/max des Train DataSet de chaque fold. 
+        # ...
+        #
+        # ................................................................................
+
+
+        # ANCIENNE VERSION A RETIRER : 
+        # dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0,netmob=netmob)
+        # _,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop,args.test_prop)
+        # dict_dataloader = dataset_init.get_dataloader()
+        # ==========================================================================================
+        # ==========================================================================================
+
+
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
-        df = df[: dataset_init.first_test_date]  
+        df_hold_out = df[: dataset_init.first_test_date]  
+
+        # ================================================================================================================================================================
+        for k in range(args.K_fold): 
+            self.fold_dataset_limits[k]['test']['timestamp'] = (dataset_init.first_test_date,dataset_init.last_test_date)
+        # ================================================================================================================================================================
+
 
         # Récupère la Taille de cette DataFrame
-        n = len(df)
+        n = len(df_hold_out)
 
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
         valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
@@ -876,37 +1016,54 @@ class DataSet(object):
         for k in range(args.K_fold):
             # Slicing 
             if args.validation == 'wierd_blocked':
-                df_tmps = df[int((k/args.K_fold)*n):int(((k+1)/args.K_fold)*n)]
+                l_lim_fold = int((k/args.K_fold)*n)
+                u_lim_fold = int(((k+1)/args.K_fold)*n)
+
+                df_tmps = df_hold_out[l_lim_fold:u_lim_fold]
+
 
             if args.validation == 'sliding_window':
                 width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
-                init_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
+                l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
+                
+
                 if k == args.K_fold - 1:
-                    df_tmps = df[init_pos:]             
+                    u_lim_pos = n
                 else:
-                    df_tmps = df[init_pos:init_pos+width_dataset]                   
+                    u_lim_pos = l_lim_pos + width_dataset
+
+                df_tmps = df_hold_out[l_lim_pos:u_lim_pos]          
+
+            # ================================================================================================================================================================
+            self.fold_dataset_limits[k]['fold_limits']['df_indices'] = (l_lim_pos,u_lim_pos)
+            self.fold_dataset_limits[k]['fold_limits']['timestamp'] = (df_hold_out.index[l_lim_pos],df_hold_out.index[u_lim_pos])
+            # ================================================================================================================================================================         
 
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
             dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
-            if dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days == 0:
-                print(f"! H+D+W = {dataset_init.Weeks+dataset_init.historical_len+dataset_init.Days}, which mean the Tensor U will be set to a Null vector")
 
-            data_loader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(args,invalid_dates,train_prop_tmps, valid_prop_tmps, 0)
-            data_loader['test'] = data_loader_with_test['test']
 
-            # Risque de merder ici : Car dataset.tmps de contextual tensor mais  
+            time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(args,invalid_dates,train_prop_tmps, valid_prop_tmps, 0)
+            dict_dataloader = dataset_tmps.get_dataloader()
+
+            dict_dataloader['test'] = data_loader_with_test['test']
+
+
+            # ================ Set Every Test-related information thank to dataset_init ================
             dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
-            # ...
-
             dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
             dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
             dataset_tmps.df_verif_test = dataset_init.df_verif_test
             dataset_tmps.df_test = dataset_init.df_test
-             
+             # ================ ........................................................ ================
+
+
             Datasets.append(dataset_tmps)
-            DataLoader_list.append(data_loader)
+            DataLoader_list.append(dict_dataloader)
+            
+
 
         return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     
@@ -936,29 +1093,28 @@ class DataSet(object):
         shifted_dates = Dwt+Ddt+Dt
         return(shifted_dates)
 
-    def shift_values(self):
-        # Weekkly periodic
-        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Weeks-i)*self.Week_nb_steps).values),2) for i in range(self.Weeks)]
-        # Daily periodic
-        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Days-i)*self.Day_nb_steps).values),2) for i in range(self.Days)]
-         # Recent Historic pattern 
-        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
-        shifted_values = Uwt+Udt+Ut
-        return(shifted_values)
-
-    def remove_forbidden_prediction(self,invalid_dates):
+    def identify_forbidden_index(self,invalid_dates):
         # Mask for dataframe df_verif
         df_shifted_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])  # Concat forbidden indexes within each columns
-        forbidden_index = df_shifted_forbiden.index.unique()  # drop dupplicates
 
+        # Identify forbidden df indexes
+        self.forbidden_index = df_shifted_forbiden.index.unique()  # drop dupplicates
+
+        # Identify forbidden Tensor Indices 
+        self.forbidden_indice_U = self.forbidden_index - self.shift_from_first_elmt  #shift index to get back to corresponding indices
+    
+    def mask_tensor(self):
         # Mask for Tensor U, Utarget
-        forbidden_indice_U = forbidden_index - self.shift_from_first_elmt  #shift index to get back to corresponding indices
-        mask_U =  [e for e in np.arange(self.U.shape[0]) if e not in forbidden_indice_U]
-
-        # Apply Mask
+        mask_U =  [e for e in np.arange(self.U.shape[0]) if e not in self.forbidden_indice_U]
+        # Apply mask 
         self.U = self.U[mask_U]
         self.Utarget = self.Utarget[mask_U]
-        self.df_verif = self.df_shifted.drop(forbidden_index)
+    
+    def mask_df(self):
+        self.df_verif = self.df_shifted.drop(self.forbidden_index)
+
+
+
 
     def get_df_shifted(self):
         # Get the shifted "Dates" of Feature Vector and Target
@@ -967,49 +1123,27 @@ class DataSet(object):
         Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
         self.df_shifted = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:] 
 
-    def get_U_shifted(self):
-        shifted_values = self.shift_values()
-        self.Utarget = torch.unsqueeze(torch.Tensor(self.df.values),2)[self.shift_from_first_elmt:]
-        try:
-            self.U = torch.cat(shifted_values,dim=2)[:][self.shift_from_first_elmt:]
-        except:
-            assert self.Weeks+self.historical_len+self.Days == 0, 'something is going wrong with the previous line'
-            self.U = self.Utarget*0
-
-
     def get_feature_vect(self): 
+        raw_data_tensor = torch.tensor(self.df.values)
         # Get shifted Feature Vector and shifted Target
-        self.get_U_shifted()       
-        # Get the df of associated TimeStamp of the shifter Feature Vector and shifted Target
+        featurevectorbuilder = FeatureVectorBuilder(self.step_ahead,self.historical_len,self.Days,self.Weeks,self.Day_nb_steps,self.Week_nb_steps,self.shift_from_first_elmt)
+        featurevectorbuilder.build_feature_vect(raw_data_tensor)
+        featurevectorbuilder.build_target_vect(raw_data_tensor)
+
+        self.U = featurevectorbuilder.U
+        self.Utarget = featurevectorbuilder.Utarget
+        
+        # Get the df of associated TimeStamp of the shifted Feature Vector and shifted Target
         self.get_df_shifted()
 
-    def split_tensors(self):
-        ''' Split tensor U in Train/Valid/Test part '''
-        # Trafic Input 
-        self.U_train = self.U[self.first_train_U:self.last_train_U]
-        self.U_valid = self.U[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None   
-        self.U_test = self.U[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
 
-        # Target
-        self.Utarget_train = self.Utarget[self.first_train_U:self.last_train_U] 
-        self.Utarget_valid = self.Utarget[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None
-        self.Utarget_test = self.Utarget[self.first_test_U:self.last_test_U] if self.first_test_U is not None else None
-
-        # Contextual Tensor:
-        for name, contextual_tensor in self.contextual_tensors.items():
-            setattr(self, f"{name}_train",contextual_tensor[self.first_train_U:self.last_train_U] )
-            setattr(self, f"{name}_valid",contextual_tensor[self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None) 
-            setattr(self, f"{name}_test",contextual_tensor[self.first_test_U:self.last_test_U]  if self.first_test_U is not None else None)
-
-        #if self.time_slots_labels is not None : 
-        #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
-        #    self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
-        #    self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
-
-    def train_valid_test_split(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
+    def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
         # Split with iterative method 
-        split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
-        if os.path.exists(split_path):
+        if hasattr(self,'Dataset_save_folder'):
+            split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
+        else:
+            split_path = ''
+        if split_path and (os.path.exists(split_path)):   #not empty & path exist
             try:
                 split_limits = read_object(split_path)
             except:
@@ -1018,7 +1152,7 @@ class DataSet(object):
                 print(f"split_limits.pkl has never been saved or issue with last .pkl save")
         else : 
             split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-            save_object(split_limits, split_path)
+            if split_path: save_object(split_limits, split_path)  #if not empty, save it 
 
         first_predicted_train_date= split_limits['first_predicted_train_date']
         last_predicted_train_date = split_limits['last_predicted_train_date']
@@ -1065,30 +1199,7 @@ class DataSet(object):
         self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
         self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
 
-    def split_normalize_load_feature_vect(self,args,invalid_dates,train_prop,valid_prop,test_prop
-                                          #,calib_prop,batch_size,calendar_class
-                                          ):
-        self.get_shift_between_set()   # get shift indice and shift date from the first element / between each dataset 
-        self.get_feature_vect()  # Build 'df_shifted'.
-        self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
-
-        # Get Index to Split df, U, Utarget, time_slots_labels
-        self.train_valid_test_split(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
-
-        # Normalize 
-        self.normalize_df(minmaxnorm = True)   # Normalize dataset.df thank to dataset.train_df
-
-        # Re-load U and U_target, while df is now correctly normalized
-        self.get_feature_vect()  # Build 'df_shifted'.
-        self.remove_forbidden_prediction(invalid_dates) # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
-
-        # get Associated time_slots_labels >
-        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self)
-
-        # Split U in  U_train, U_valid, U_test thanks to 'df_verif' and the date limits of the df_train/df_valid/df_test
-        # ADD self.contextual_tensor_train/valid/test
-        self.split_tensors()
-
+    def get_dataloader(self):
         #   DataLoader 
         #DictDataLoader_object = DictDataLoader(self,args)
         #dict_dataloader = DictDataLoader_object.get_dictdataloader(args.batch_size)
@@ -1099,7 +1210,7 @@ class DataSet(object):
         test_tuple =  self.U_test,self.Utarget_test,{getattr(self,f"{name}_test") for name in self.contextual_tensors.keys()}   # subway_X[test_subset],subway_Y[test_subset], dict(netmob = netmob[test_subset], calendar = calendar[test_subset])
 
         # Load DictDataLoader: 
-        DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,args)
+        DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,self.args)
         dict_dataloader = DictDataLoader_object.get_dictdataloader()
         
         # =============== Ajout ===============
@@ -1108,69 +1219,69 @@ class DataSet(object):
         if 'test' in dict_dataloader.keys(): self.test_loader = dict_dataloader['test']
         if 'cal' in dict_dataloader.keys(): self.cal_loader = dict_dataloader['cal']
         # =============== Ajout ===============
-        return(dict_dataloader,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+        return(dict_dataloader)
 
-    # =====================================================================================================================================
-    # Probablement à supprimer : 
 
-    def remove_invalid_dates(self,invalid_dates):
-        if invalid_dates is not None:
-            invalid_dates = invalid_dates.intersection(self.df.index)
-            tmps_df = self.df.drop(invalid_dates)
-        else:
-            tmps_df = self.df
+    def split_normalize_load_feature_vect(self,args,invalid_dates,train_prop,valid_prop,test_prop
+                                          #,calib_prop,batch_size,calendar_class
+                                          ):
+        self.get_shift_from_first_elmt()   # get shift indice and shift date from the first element / between each dataset 
+        self.get_feature_vect()  # Build 'df_shifted'.
+        
+        # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
+        self.identify_forbidden_index(invalid_dates) 
+        self.mask_tensor()
+        self.mask_df()  # df_verif
 
-        self.remaining_dataset = tmps_df
+        # Get Index to Split df, U, Utarget, time_slots_labels
+        self.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
 
-    def shift_data(self):
+        # Get all the splitted train/valid/test input tensors. Normalize Them 
+        self.split_tensors()
 
-        # Weekkly periodic
-        Uwt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Weeks-i)*self.Week_nb_steps).values),2) for i in range(self.Weeks)]
-        Dwt = [self.df_dates.shift((self.Weeks-i)*self.Week_nb_steps) for i in range(self.Weeks)] 
+        # ================ FAIRE QULEQUE CHOSE POUR LE TIME-SLOTS LABELS. ESSAYER DE LES INTEGRER DANS LE CONTEXTUAL TENSORS  ================
+        #
+        # get Associated time_slots_labels (from df_verif)
+        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self)
+        #
+        #
+        # ================ ................................................................................................ ================
 
-        # Daily periodic
-        Udt = [torch.unsqueeze(torch.Tensor(self.df.shift((self.Days-i)*self.Day_nb_steps).values),2) for i in range(self.Days)]
-        Ddt = [self.df_dates.shift((self.Days-i)*self.Day_nb_steps) for i in range(self.Days)] 
-
-        # Recent Historic pattern 
-        Ut =  [torch.unsqueeze(torch.Tensor(self.df.shift(self.step_ahead+(self.historical_len-i)).values),2) for i in range(1,self.historical_len+1)]
-        Dt = [self.df_dates.shift(self.step_ahead+(self.historical_len-i)) for i in range(1,self.historical_len+1)] 
-
-        shifted_values = Uwt+Udt+Ut
-        shifted_dates = Dwt+Ddt+Dt
-
-        return(shifted_values,shifted_dates)
-
-    def get_invalid_indx(self,invalid_dates:list):
-        '''invalid_dates:  list of Tmestamp dates 
-        from a list of dates, return 'invalid_indices_tensor', which correspond to the forbidden indices in the Tensor
-        and return 'invalid_indx_df' which correspond to the forbidden index within the dataframe (where the first index can be > 0)'''
-        # Get all the row were the invalid dates are used 
-        df_verif_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])
-
-        # Get the associated index 
-        self.invalid_indx_df = df_verif_forbiden.index
-
-        # Shift them in relation to the tensor 
-        self.invalid_indices_tensor = self.invalid_indx_df - self.shift_from_first_elmt
-
-        return(self.invalid_indices_tensor,self.invalid_indx_df)
+        return(time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     
-    def remove_indices(self,invalid_indices_tensor):
-        ''' Remove the invalid sequences matching to invalid dates.
-        Sequences have already been shifted, so there is (len(df_init)-shift_from_first_elmt elements) elements left.
-        - The first index of df_verif is 0+shift_from_first_elmt
-        - The last index of df_verif is len(df_init)
-        We then have to remove the invalid sequences from U, and keep the remaining dates from 'df_verif'
-        '''
-        selected_indices = [e for e in np.arange(self.U.shape[0]) if e not in invalid_indices_tensor]  
-        selected_dates_index = [e for e in np.arange(self.shift_from_first_elmt,self.U.shape[0]+self.shift_from_first_elmt) if e not in self.invalid_indx_df]
-        self.U = self.U[selected_indices]
-        self.Utarget = self.Utarget[selected_indices]
-        self.remaining_dates = self.df_shifted.loc[selected_dates_index,[f't+{self.step_ahead-1}']]
-        return(self.U,self.Utarget,self.remaining_dates)
+    def set_train_valid_test_tensor_attribute(self,name,tensor,dims,ref_for_normalization):
+        mini, maxi, mean, std = ref_for_normalization.min(),ref_for_normalization.max(),ref_for_normalization.mean(),ref_for_normalization.std()
+        splitter = TrainValidTest_Split_Normalize(tensor,dims,
+                                    first_train = self.first_train_U, last_train= self.last_train_U,
+                                    first_valid= self.first_valid_U, last_valid = self.last_valid_U,
+                                    first_test = self.first_test_U, last_test = self.last_test_U,
+                                    minmaxnorm = True,standardize = False)
 
+        train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.load_normalize_tensor_datasets(mini = mini, maxi = maxi, mean = mean, std = std)
+        setattr(self,f"{name}_train", train_tensor_ds.tensor)
+        setattr(self,f"{name}_valid", valid_tensor_ds.tensor)
+        setattr(self,f"{name}_test", test_tensor_ds.tensor)
+        # ....
 
+    def split_tensors(self):
+        ''' Split input tensors  in Train/Valid/Test part '''
+        # Get U_train, U_valid, U_test
+        self.set_train_valid_test_tensor_attribute('U',self.U,dims=[-1],ref_for_normalization = self.df_train.values)
+
+        # Get Utarget_train, Utarget_valid, Utarget_test
+        self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget,dims=[-1],ref_for_normalization = self.df_train.values)
+
+        # Get NetMob_train, NetMob_valid, NetMob_test, Weather_train etc etc ...
+        for name, tensor_dict in self.contextual_tensors.items():
+            feature_vect = tensor_dict['feature_vect']
+            dims = tensor_dict['dims']
+            raw_data = tensor_dict['raw_data']
+            self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data)
+
+        #if self.time_slots_labels is not None : 
+        #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
+        #    self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
+        #    self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
 
 
 
