@@ -734,21 +734,23 @@ class TrainValidTest_Split_Normalize(object):
         else: 
             raise ValueError("Neither 'train_indices' nor 'first_train' attribute has been designed ")
 
-    def load_normalize_tensor_datasets(self,mini = None, maxi = None, mean = None, std = None):
+    def load_normalize_tensor_datasets(self,mini = None, maxi = None, mean = None, std = None, normalize = False):
         print('Tackling Training Set')
         train_dataset = TensorDataset(self.data_train, mini = mini, maxi = maxi, mean=mean, std=std)
-        train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
 
         # Normalize thank to stats from Training Set 
         print('Tackling Validation Set')
         valid_dataset = TensorDataset(self.data_valid,mini = train_dataset.mini, maxi = train_dataset.maxi, mean = train_dataset.mean, std = train_dataset.std)
-        valid_dataset = valid_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
 
         # Normalize thank to stats from Training Set 
         print('Tackling Testing Set')
         test_dataset = TensorDataset(self.data_test,mini = train_dataset.mini, maxi = train_dataset.maxi, mean = train_dataset.mean, std = train_dataset.std)
-        test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)   
+           
 
+        if normalize:
+            train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
+            valid_dataset = valid_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
+            test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
         return(train_dataset,valid_dataset,test_dataset)
     
 
@@ -932,6 +934,31 @@ class DataSet(object):
             self.df = self.minmaxnorm(self.df,reverse = True)
         self.normalized = False
 
+    def clean_dataset_get_tensor_and_train_valid_test_split(self,df,invalid_dates,train_prop,valid_prop,test_prop,normalize):
+        '''
+        Create a DataSet object from pandas dataframe. Retrieve associated Feature Vector and Target Vector. Remove forbidden indices (dates). Then split it into Train/Valid/Test inputs.
+        '''
+        dataset = DataSet(df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
+                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
+        
+        dataset.get_shift_from_first_elmt()   # récupère le 'shift from first elmt' pour la construction du feature vect 
+        dataset.get_feature_vect()  # Construction du feature vect  self.U et self.Utarget 
+
+        # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
+        dataset.identify_forbidden_index(invalid_dates) # Retire toute les dates interdites 
+        dataset.mask_tensor()
+        dataset.mask_df()  # Get df_verif 
+
+        dataset.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
+        dataset.split_tensors(normalize) # Récupère U_test, Utarget_test, NetMob_test, Weather_test etc....  dans 'dataset_init.contextual_tensors.items()' 
+        return(dataset)
+    
+    def warning(self):
+        '''Warning in case we don't use trafic data: '''
+        if self.Weeks+self.historical_len+self.Days == 0:
+            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
+
+
     def split_K_fold(self,args,invalid_dates,netmob = False):
         '''
         Split la DataSet Initiale en K-fold
@@ -948,43 +975,14 @@ class DataSet(object):
 
 
         '''
-        # Warning in case we don't use trafic data: 
-        if self.Weeks+self.historical_len+self.Days == 0:
-            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
-        # ...
-
-
+        self.warning()
         self.fold_dataset_limits = {k : {name : {} for name in ['fold_limits','train','valid','test']} for k in range(args.K_fold)}
         Datasets,DataLoader_list = [],[]
-        #dic_class2rpz_list,dic_rpz2class_list,nb_words_embedding_list,time_slots_labels_list = [],[],[],[]
-        # Récupère la df (On garde les valeurs interdite pour le moment, on les virera après. Il est important de les virer pour la normalisation, pour pas Normaliser la donnée avec des valeurs qui n'ont pas de sens.)
-        df = self.df
-        
-
-
-        # ==========================================================================================
-        # ====================================================================================
-        # ============ PB : ON NORMALIZE LE TEST AVEC LE TOTAL ET PAS AVEC LE TRAINING SET ==================
 
 
         # Crée une DataSet copie et y récupère la DataSet de Test Commune à tous les K-fold : 
-        dataset_init = DataSet(self.df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
-                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-        
-        dataset_init.get_shift_from_first_elmt()   # récupère le 'shift from first elmt' pour la construction du feature vect 
-        dataset_init.get_feature_vect()  # Construction du feature vect  self.U et self.Utarget 
-
-        dataset_init.identify_forbidden_index(invalid_dates) # Retire toute les dates interdites 
-        dataset_init.mask_tensor()
-        dataset_init.mask_df()  # Get df_verif 
-
-        dataset_init.train_valid_test_split(args.train_prop,args.valid_prop,args.test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
-        dataset_init.split_tensors() # Récupère U_test, Utarget_test, NetMob_test, Weather_test etc....  dans 'dataset_init.contextual_tensors.items()' 
-        # 
-        # ...
+        dataset_init = self.clean_dataset_get_tensor_and_train_valid_test_split(self.df,invalid_dates,args.train_prop,args.valid_prop,args.test_prop, normalize = False)
         # On peut maintenant appeler dataset_init.U_test pour récupérer le test_set dans 'init', qu'il faut maintenant Normaliser avec les min/max des Train DataSet de chaque fold. 
-        # ...
-        #
         # ................................................................................
 
 
@@ -997,7 +995,7 @@ class DataSet(object):
 
 
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
-        df_hold_out = df[: dataset_init.first_test_date]  
+        df_hold_out = self.df[: dataset_init.first_test_date]  
 
         # ================================================================================================================================================================
         for k in range(args.K_fold): 
@@ -1237,7 +1235,7 @@ class DataSet(object):
         self.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
 
         # Get all the splitted train/valid/test input tensors. Normalize Them 
-        self.split_tensors()
+        self.split_tensors(normalize = True)
 
         # ================ FAIRE QULEQUE CHOSE POUR LE TIME-SLOTS LABELS. ESSAYER DE LES INTEGRER DANS LE CONTEXTUAL TENSORS  ================
         #
@@ -1249,34 +1247,38 @@ class DataSet(object):
 
         return(time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     
-    def set_train_valid_test_tensor_attribute(self,name,tensor,dims,ref_for_normalization):
-        mini, maxi, mean, std = ref_for_normalization.min(),ref_for_normalization.max(),ref_for_normalization.mean(),ref_for_normalization.std()
+    def set_train_valid_test_tensor_attribute(self,name,tensor,dims,ref_for_normalization = None, normalize = False):
+        if normalize : 
+            mini, maxi, mean, std = ref_for_normalization.min(),ref_for_normalization.max(),ref_for_normalization.mean(),ref_for_normalization.std()
+        else : 
+            mini, maxi, mean, std = None, None, None, None
+
         splitter = TrainValidTest_Split_Normalize(tensor,dims,
                                     first_train = self.first_train_U, last_train= self.last_train_U,
                                     first_valid= self.first_valid_U, last_valid = self.last_valid_U,
                                     first_test = self.first_test_U, last_test = self.last_test_U,
                                     minmaxnorm = True,standardize = False)
 
-        train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.load_normalize_tensor_datasets(mini = mini, maxi = maxi, mean = mean, std = std)
+        train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.load_normalize_tensor_datasets(mini = mini, maxi = maxi, mean = mean, std = std, normalize = normalize)
         setattr(self,f"{name}_train", train_tensor_ds.tensor)
         setattr(self,f"{name}_valid", valid_tensor_ds.tensor)
         setattr(self,f"{name}_test", test_tensor_ds.tensor)
         # ....
 
-    def split_tensors(self):
+    def split_tensors(self,normalize):
         ''' Split input tensors  in Train/Valid/Test part '''
         # Get U_train, U_valid, U_test
-        self.set_train_valid_test_tensor_attribute('U',self.U,dims=[-1],ref_for_normalization = self.df_train.values)
+        self.set_train_valid_test_tensor_attribute('U',self.U,dims=[-1],ref_for_normalization = self.df_train.values, normalize = normalize)
 
         # Get Utarget_train, Utarget_valid, Utarget_test
-        self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget,dims=[-1],ref_for_normalization = self.df_train.values)
+        self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget,dims=[-1],ref_for_normalization = self.df_train.values, normalize = normalize)
 
         # Get NetMob_train, NetMob_valid, NetMob_test, Weather_train etc etc ...
         for name, tensor_dict in self.contextual_tensors.items():
             feature_vect = tensor_dict['feature_vect']
             dims = tensor_dict['dims']
             raw_data = tensor_dict['raw_data']
-            self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data)
+            self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
 
         #if self.time_slots_labels is not None : 
         #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
