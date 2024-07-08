@@ -9,27 +9,18 @@ try:
 except:
     print(f'Pytorch version {torch.__version__} does not allow you to use lr-scheduler')
 import os 
+
 # Personnal import: 
-from load_adj import load_adj
-from config import optimizer_specific_lr, get_config_embed, get_parameters,display_config
-from calendar_class import get_time_slots_labels
-from load_DataSet import load_normalized_dataset
-from DL_class import DictDataLoader,QuantileLoss,DataSet
+from config import optimizer_specific_lr, get_config_embed, get_parameters
+from DL_class import QuantileLoss
+from dataset import  DataSet
 from TE_transfer_learning import TE_transfer
-from save_results import Dataset_get_save_folder, read_object, save_object 
 
 # Models : 
-from dl_models.CNN_based_model import CNN
-from dl_models.MTGNN import gtnet
-from dl_models.RNN_based_model import RNN
-from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
-from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
-from dl_models.dcrnn_model import DCRNNModel
 from dl_models.full_model import full_model
 
-# Load Loss 
 
-def match_period_coverage(dataset,netmob_T):
+def match_period_coverage_with_netmob(dataset):
     coverage_dataset = dataset.df.index
     coverage_netmob =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
     coverage = list(set(coverage_dataset)& set(coverage_netmob))

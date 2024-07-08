@@ -1,40 +1,8 @@
 import pandas as pd 
 import numpy as np
-import time
-
 import torch 
 import torch.nn as nn 
-import os 
-import pkg_resources
 
-
-from torch.cuda.amp import autocast,GradScaler
-
-# Personnal import: 
-from chrono import Chronometer
-from profiler import print_memory_usage,get_cpu_usage
-from metrics import evaluate_metrics
-from utilities import get_higher_quantile
-from datetime import timedelta
-from split_df import train_valid_test_split_iterative_method
-from calendar_class import get_time_slots_labels
-from PI_object import PI_object
-from paths import save_folder
-from loader import DictDataLoader
-try :
-    from plotting_bokeh import generate_bokeh
-except:
-    print('no plotting bokeh available')
-from save_results import update_results_df, results2dict,Dataset_get_save_folder,read_object,save_object,save_best_model_and_update_json,load_json_file,get_trial_id
-try: 
-    from ray import tune,train
-    ray_version = pkg_resources.get_distribution("ray").version
-    if ray_version.startswith('2.7'):
-        report = train.report
-    else:
-        report = tune.report
-except : 
-    print('Training and Hyper-parameter tuning with Ray is not possible')
 
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
@@ -56,649 +24,12 @@ class QuantileLoss(nn.Module):
         loss = torch.mean(torch.sum(losses,dim = -1))   #  Loss commune pour toutes les stations. sinon loss par stations : torch.mean(torch.sum(losses,dim = -1),dim = 0)
 
         return(loss)
-    
 
-class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz,show_figure = True):
-        super(MultiModelTrainer).__init__()
-        trial_id1,trial_id2 = get_trial_id(args)
-        self.trial_id1 = trial_id1
-        self.trial_id2 = trial_id2
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2,show_figure= show_figure) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
-        self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
-        self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
-        self.alpha = args.alpha 
-        self.picp = []   
-        self.mpiw = []
-
-    def K_fold_validation(self,mod_plot = 50,station = 0):
-        results_by_fold = pd.DataFrame()
-        for k,trainer in enumerate(self.Trainers):
-            # Train valid model 
-            if k == 0:
-                print('\n')
-            print(f"K_fold {k}")
-            results_df = trainer.train_and_valid(mod = 10000,mod_plot = mod_plot,station = station)
-
-            # Add Loss 
-            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).to(self.Loss_train).unsqueeze(0)],axis =  0) 
-            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss).to(self.Loss_valid).unsqueeze(0)],axis =  0) 
-            # Testing
-            if self.alpha is not None:
-                preds,Y_true,_ = trainer.test_prediction(training_mode = 'test')
-                pi = PI_object(preds,Y_true,self.alpha,type_calib = 'classic')
-                self.picp.append(pi.picp)
-                self.mpiw.append(pi.mpiw)
-            
-
-            results_df['fold'] = k
-            results_df.to_csv(f"{save_folder}results/{trainer.trial_id}_results.csv")
-            results_by_fold = pd.concat([results_by_fold,results_df])
-
-        mean_picp = torch.Tensor(self.picp).mean()
-        mean_mpiw = torch.Tensor(self.mpiw).mean() 
-        assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
-
-
-        # On recupère une loss moyenne sur les K-fold. On prend le minimum atteint par cette moyenne.
-        dict_scores,dict_last = {},{}
-        for L_loss,name in zip([self.Loss_train,self.Loss_valid],['train_loss','valid_loss']):
-
-            # Score: 
-            score, indices = L_loss.min(dim = -1)
-            score = score.mean()
-            std_score = torch.Tensor([L_loss[k,i] for k,i in enumerate(indices)]).std()
-            dict_scores.update({f"score_{name}": score.item(),
-                                f"std_{name}": std_score.item()})
-            # ...
-
-            # Last Score: 
-            last_score = L_loss.mean(dim = 0)[-1]
-            last_std = L_loss.std(dim = 0)[-1]
-            dict_last.update({f"last_{name}": last_score.item(),
-                                f"last_std_{name}": last_std.item()})
-
-
-        # ...
-
-        return(results_by_fold,mean_picp,mean_mpiw,dict_last,dict_scores)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
-
-
-    
-
-class Trainer(object):
-        ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
-        super().__init__()
-        self.dataset = dataset
-        self.dataloader = dataloader
-        self.training_mode = 'train'
-        self.optimizer = optimizer
-        self.loss_function = loss_function
-        self.model = model 
-        self.scheduler = scheduler
-        if args.mixed_precision:
-            self.scaler = GradScaler()
-        self.train_loss = []
-        self.valid_loss = []
-        self.calib_loss =[]
-        self.args = args
-        self.alpha = args.alpha
-        self.args_embedding = args_embedding
-        #self.save_path  = f"best_model.pkl" if save_dir is not None else None
-        self.fold = fold
-        #self.save_dir = f"{save_dir}fold{fold}/" 
-        self.best_valid = np.inf
-        self.dic_class2rpz = dic_class2rpz
-        self.picp_list = []
-        self.mpiw_list = []
-        self.show_figure = show_figure
-        if trial_id1 is None:
-            if fold is None: 
-                trial_id1,trial_id2 = get_trial_id(args,fold)
-                self.trial_id = f"{trial_id1}{-1}{trial_id2}"
-            else:
-                self.trial_id = get_trial_id(args,fold)
-
-        else:
-            self.trial_id = f"{trial_id1}{fold}{trial_id2}"
-        if fold is not None:
-            self.args.current_fold = fold
-
-    def save_best_model(self,checkpoint,epoch,performance):
-        ''' Save best model in .pkl format'''
-        #update checkpoint
-        checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
-        save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = 'save/best_models/')
-        # torch.save(checkpoint, f"{self.save_dir}{self.save_path}")   
-
-    def plot_bokeh_and_save_results(self,results_df,epoch,station):
-        Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
-        trial_save = f'latent_space_e{epoch}'
-        pi,pi_cqr = generate_bokeh(self,self.dataloader,
-                                    self.dataset,Q,self.args,self.dic_class2rpz,
-                                    self.trial_id,
-                                    trial_save,station = station,
-                                    show_figure = self.show_figure,
-                                    save_plot = True
-                                    )
-        valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
-        if pi is None:
-            picp,mpiw = None, None
-        else:
-            picp,mpiw = pi.picp,pi.mpiw
-
-        dict_row = results2dict(self.args,epoch,picp,mpiw,valid_loss,train_loss)
-        results_df = update_results_df(results_df,dict_row) 
-        return(results_df)
-
-    def train_valid_one_epoch(self):
-        # Train and Valid each epoch 
-        self.training_mode = 'train'
-        self.model.train()   #Activate Dropout 
-        self.loop_epoch()
-        self.training_mode = 'validate'
-        self.model.eval()   # Desactivate Dropout 
-        self.loop_epoch() 
-
-        # Update scheduler after each Epoch 
-        self.chrono.torch_scheduler()
-        self.update_scheduler()
-        self.chrono.torch_scheduler()
-
-        # Follow Update of Testing Metrics 
-        self.chrono.track_pi()
-        pi = self.track_pi()
-        self.ray_tune_track(pi)
-        self.chrono.track_pi()
-
-    def update_scheduler(self):
-        if self.scheduler is not None:
-            self.scheduler.step()
-
-    def display_usefull_information(self,epoch,mod,t0):
-        if mod is not None:
-            if epoch%mod==0:
-                print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
-            if epoch == 1:
-                print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
-    
-    def get_pi_from_prediction(self):
-        # Calibration 
-        Q = self.conformal_calibration(self.args.alpha,self.dataset,
-                                    conformity_scores_type = self.args.conformity_scores_type,
-                                    quantile_method = self.args.quantile_method,print_info = False)  
-        # Testing
-        preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
-        #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
-
-        # get PI
-        pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
-
-        return(pi)
-    
-    def track_pi(self):
-        if self.args.track_pi:
-            pi = self.get_pi_from_prediction()
-            self.picp_list.append(pi.picp)
-            self.mpiw_list.append(pi.mpiw)
-            return(pi)
-        else:
-            return(None)
-
-
-    def ray_tune_track(self,pi):
-        if self.args.ray:
-            if pi is not None:
-                # Report usefull metrics
-                report({"Loss_model" : self.valid_loss[-1], 
-                            "MPIW" : pi.mpiw,
-                            "PICP" : pi.picp}) 
-            else:
-                report({"Loss_model" : self.valid_loss[-1]})
-
-    def prefetch_to_device(self,loader):
-        if loader is not None :
-            return [(x.to(self.args.device, non_blocking=self.args.non_blocking), y.to(self.args.device, non_blocking=self.args.non_blocking), [t.to(self.args.device, non_blocking=self.args.non_blocking) for t in T])
-            for x, y, *T in loader]
-        else :
-            return None
-    
-    def train_and_valid(self,mod = None, mod_plot = None,station = 0):
-        print(f'start training')
-        checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
-
-        # Plot Init Latent Space and Accuracy (from random initialization) 
-        if mod_plot is not None: 
-            results_df = self.plot_bokeh_and_save_results(pd.DataFrame(),-1,station)
-        else:
-            results_df = None
-
-        self.chrono = Chronometer()
-        self.chrono.start()
-        max_memory = 0
-        
-
-        for epoch in range(self.args.epochs):
-            self.chrono.next_iter()
-            t0 = time.time()
-            # Train and Valid each epoch 
-            self.train_valid_one_epoch()
-
-            # Save best model (only if it's not a ray tuning)
-            self.chrono.save_model()
-            if (self.valid_loss[-1] < self.best_valid) & (not(self.args.ray)):
-                self.best_valid = self.valid_loss[-1]
-                performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
-                self.save_best_model(checkpoint,epoch,performance)
-            self.chrono.save_model()
-
-
-            # Plot Latent Space and get accuracy 
-            self.chrono.plotting()
-            self.display_usefull_information(epoch,mod,t0)
-            if mod_plot is not None:
-                if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
-                    results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
-            self.chrono.plotting()
-
-            # Keep track on cpu-usage 
-            max_memory = get_cpu_usage(max_memory)
-
-
-        self.chrono.save_model()
-        performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
-        self.save_best_model(checkpoint,epoch,performance)
-        
-        print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
-
-        self.chrono.save_model()
-
-        self.chrono.stop()
-        self.chrono.display()
-        print(print_memory_usage(max_memory))
-
-        return(results_df)
-    
-    
-    def prefetch(self):
-        self.chrono.prefetch_all_data()
-        if hasattr(self,'already_prefetch'):
-            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataset.train_loader)
-        else:
-            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataset.train_loader) #if hasattr(self.dataset,'train_loader'): 
-            self.dataset.prefetch_valid_loader = self.prefetch_to_device(self.dataset.valid_loader) #if hasattr(self.dataset,'valid_loader'): 
-            self.dataset.prefetch_test_loader = self.prefetch_to_device(self.dataset.test_loader) #if hasattr(self.dataset,'test_loader'): 
-            self.dataset.prefetch_cal_loader = self.prefetch_to_device(self.dataset.cal_loader) #if hasattr(self.dataset,'cal_loader'): 
-            self.already_prefetch = True
-        self.chrono.prefetch_all_data()
-            
-    def get_loader(self):
-        if self.args.prefetch_all:
-            #loader = self.dataloader_gpu[self.training_mode]
-            if self.training_mode == 'train': loader = self.dataset.prefetch_train_loader
-            if self.training_mode == 'validate': loader = self.dataset.prefetch_valid_loader
-            if self.training_mode == 'test': loader = self.dataset.prefetch_test_loader
-            if self.training_mode == 'cal': loader = self.dataset.prefetch_cal_loader           
-        else:
-            if self.training_mode == 'train': loader = self.dataset.train_loader
-            if self.training_mode == 'validate': loader = self.dataset.valid_loader
-            if self.training_mode == 'test': loader = self.dataset.test_loader
-            if self.training_mode == 'cal': loader = self.dataset.cal_loader
-                #loader = self.dataloader[self.training_mode]
-        return(loader)
-    
-    def load_to_device(self,x_b,y_b,T_b):
-        # If not already Pre-fetch: 
-        if self.args.prefetch_all:
-            t_b = T_b[self.args.calendar_class]
-        else:
-            t_b = T_b[self.args.calendar_class]
-            x_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking)
-            y_b = y_b.to(self.args.device,non_blocking = self.args.non_blocking)
-            t_b = t_b.to(self.args.device,non_blocking = self.args.non_blocking)
-        
-            
-        return(x_b,y_b,t_b)
-    
-    def loop_batch(self,x_b,y_b,t_b,nb_samples,loss_epoch):
-        #Forward 
-        if self.training_mode=='train':
-            self.chrono.forward()
-
-        if self.args.mixed_precision:
-            with autocast():
-                if self.args_embedding : 
-                    pred = self.model(x_b,t_b.long())
-                else:
-                    pred = self.model(x_b)
-                loss = self.loss_function(pred,y_b)
-        else:
-            if self.args_embedding : 
-                pred = self.model(x_b,t_b.long())
-            else:
-                pred = self.model(x_b)
-            loss = self.loss_function(pred,y_b)       
-
-        # Back propagation (after each mini-batch)
-        if self.training_mode == 'train': 
-            self.chrono.backward()
-            loss = self.backpropagation(loss)
-
-        # Keep track on metrics 
-        nb_samples += x_b.shape[0]
-        loss_epoch += loss.item()*x_b.shape[0]
-
-        if self.training_mode == 'train': 
-            self.chrono.update()      
-            self.chrono.next_iter()
-        return(nb_samples,loss_epoch)
-        
-    def loop_through_batchs(self,loader):
-        ''' Small difference whether we first prefetch or not (T_b or *T_b) '''
-        nb_samples,loss_epoch = 0,0
-        if self.args.prefetch_all:
-            for x_b,y_b,T_b in loader:  #  self.dataloader_gpu[self.training_mode] 
-                x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
-                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
-        else:
-            for x_b,y_b,*T_b in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
-                x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
-                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
-        return(nb_samples,loss_epoch)
-
-    def loop_epoch(self):
-        if self.training_mode=='validation':
-            self.chrono.validation()
-
-        if (self.args.prefetch_all) & (self.training_mode=='train'):
-            self.prefetch()
-            
-        with torch.set_grad_enabled(self.training_mode=='train'):
-            loader = self.get_loader()
-            nb_samples,loss_epoch = self.loop_through_batchs(loader)
-  
-
-        if self.training_mode=='validation':
-            self.chrono.validation()
-        self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
-
-    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
-        ''' 
-        Quantile estimator (i.e NN model) is trained on the proper set
-        Conformity scores computed with quantile estimator on the calibration set
-        And then the empirical th-quantile Q is computed with the conformity scores and quantile function
-
-        inputs
-        -------
-        - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
-        - dataset : DataSet object. Allow us to unormalize tensor
-        '''
-        if calibration_calendar_class is None:
-            calibration_calendar_class = self.args.calendar_class
-        str_info = ''
-        self.model.eval()
-        with torch.no_grad():
-            # Load Calibration Dataset :
-            data = [[x_b,y_b,t_b[self.args.calendar_class],t_b[calibration_calendar_class]] for  x_b,y_b,*t_b in self.dataloader['cal']]
-            X_cal,Y_cal,T_pred,T_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_,_] in data]).to(self.args.device),torch.cat([t_pred for [_,_,t_pred,_] in data]).to(self.args.device),torch.cat([t_cal for [_,_,_,t_cal] in data]).to(self.args.device)
-
-            # Forward Pass: 
-            if self.args_embedding : 
-                preds = self.model(X_cal,T_pred.long())
-            else:
-                preds = self.model(X_cal) 
-
-            if len(preds.size()) == 2:
-                preds = preds.unsqueeze(1)
-            # ...
-
-
-            # get lower and upper band
-            if preds.size(-1) == 2:
-                lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
-        
-            elif preds.size(-1) == 1:
-                lower_q,upper_q = preds,preds 
-            else:
-                raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
-            # ...
-            
-            # unormalized lower and upper band  
-            lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.args.device),dataset.unormalize_tensor(upper_q,device = self.args.device)
-            Y_cal = dataset.unormalize_tensor(Y_cal,device = self.args.device)
-            # ...
-
-            # Get Confority scores: 
-            if conformity_scores_type == 'max_residual':
-                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.args.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-            if conformity_scores_type == 'max_residual_plus_middle':
-                str_info = str_info+ "\n|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'"
-                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-            # ...
-
-            # Get Quantile:
-            # If classic Calibration:
-            if quantile_method == 'classic':  
-                quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.args.device)
-                #Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
-                Q = get_higher_quantile(self.conformity_scores,quantile_order,device = self.args.device)
-                output = Q
-
-            # If Calibration by group of T_labels: 
-            if quantile_method == 'compute_quantile_by_class':  # Calcul Higher Quantil for each calendar class. Several label can belongs to the same calendar class. The Quantile is computed through all residual of label of the same class
-                #calendar_class = torch.cat([t_cal for [_,_,_,t_cal] in data])
-                dic_label2Q = {}
-            # ...
-
-
-                # Compute quantile for each calendar class : 
-                nb_label_with_quantile_1 = 0
-                for label in T_cal.unique():
-                    indices = torch.nonzero(T_cal == label,as_tuple = True)[0]
-                    quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.args.device)  # Quantile for each class, so the quantile order is different as each class has a different length
-                    quantile_order = min(torch.Tensor([1]).to(self.args.device),quantile_order)
-                    if quantile_order == 1: 
-                        nb_label_with_quantile_1 +=1
-                        #print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
-                    conformity_scores_i = self.conformity_scores[indices]
-                    scores_counts = conformity_scores_i.size(0)
-                    Q_i = get_higher_quantile(conformity_scores_i,quantile_order,device = self.args.device)
-                    #Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
-                    dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
-
-                str_info = str_info+ f"\nProportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(T_cal.unique()))}"
-                output = dic_label2Q
-        
-        if print_info:
-            print(str_info)
-
-        return(output)
-    
-    def CQR_PI(self,preds,Y_true,alpha,Q,T_labels = None):
-        pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels)
-        self.pi = pi
-        return(pi)
-
-
-    def backpropagation(self,loss):
-        self.optimizer.zero_grad()
-        if self.args.mixed_precision:
-            self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
-        else:
-            loss.backward()
-            self.optimizer.step()
-        return(loss)
-    
-    def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None):
-        self.training_mode = training_mode
-        if allow_dropout:
-            self.model.train()
-        else: 
-            self.model.eval()
-        with torch.no_grad():       
-            if X is None:
-                data = [[x_b,y_b,t_b[self.args.calendar_class]] for  x_b,y_b,*t_b in self.dataloader[training_mode]]
-                X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
-            if self.args_embedding : 
-                Pred = self.model(X,T_labels.long())
-            else:
-                Pred = self.model(X) 
-                
-        return(Pred,Y_true,T_labels)
-
-    def testing(self,dataset, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
-        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
-
-        test_pred = dataset.unormalize_tensor(test_pred, device = self.args.device)
-        Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)
-
-        #df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
-        return(test_pred,Y_true,T_labels)#,df_metrics)  
-    
-    def update_loss_list(self,loss_epoch,nb_samples,training_mode):
-        if training_mode == 'train':
-            self.train_loss.append(loss_epoch/nb_samples)
-        elif training_mode == 'validate':
-            self.valid_loss.append(loss_epoch/nb_samples)
-        elif training_mode == 'calibrate':
-            self.calib_loss.append(loss_epoch/nb_samples)
-
-
-class TensorDataset(object):
-    def __init__(self,tensor,mini=None,maxi=None,mean=None,std=None, normalized = False):
-        super(TensorDataset,self).__init__()
-        if mini is not None: self.mini = mini 
-        if maxi is not None: self.maxi = maxi 
-        if mean is not None: self.mean = mean 
-        if std is not None: self.std = std 
-        self.normalized = normalized
-        self.tensor = tensor 
-
-    def get_stats(self,inputs):
-        ''' Return Min, Max, Mean and Std of inputs through the last dimension'''
-        #Min and Max through last dim 
-        if (not(hasattr(self,'mini'))):
-            self.mini = inputs.min(-1).values  
-        if (not(hasattr(self,'maxi'))): 
-            self.maxi = inputs.max(-1).values
-        if (not(hasattr(self,'mean'))):
-            self.mean= inputs.mean(-1)
-        if (not(hasattr(self,'std'))): 
-            self.std = inputs.std(-1)  #Min and Max through last dim 
-
-    def transform(self,inputs: torch.Tensor, minmaxnorm: bool = False, standardize: bool = False, reverse: bool = False ):
-
-        # MinMax Normalization
-        if minmaxnorm:
-            stacked_mini = torch.stack([self.mini]*self.reshaped_inputs_dim[-1],-1)
-            stacked_maxi = torch.stack([self.maxi]*self.reshaped_inputs_dim[-1],-1)
-
-            if reverse:
-                return((inputs*(stacked_maxi-stacked_mini) + stacked_mini))
-            else: 
-                output_with_nan_and_inf = (inputs - stacked_mini)/(stacked_maxi-stacked_mini)  # Sometimes issues when divided by 0
-                return(self.tackle_nan_inf_values(output_with_nan_and_inf))
-        # ...
-            
-        # Z-Standardization 
-        elif standardize:
-            stacked_mean = torch.stack([self.mean]*self.reshaped_inputs_dim[-1],-1)
-            stacked_std = torch.stack([self.std]*self.reshaped_inputs_dim[-1],-1)
-
-            if reverse:
-                return(inputs*stacked_std + stacked_mean)
-            else: 
-                output_with_nan_and_inf = (inputs - stacked_mean)/(stacked_std)  # Sometimes issues when divided by 0
-                return(self.tackle_nan_inf_values(output_with_nan_and_inf)) 
-        # ...
-
-        else:
-            raise ValueError('Standardization method has not been precised. Set minamxnorm = True or standardize = True')
-
-            
-            
-    def tackle_nan_inf_values(self,output_with_nan_and_inf):
-        '''For each channel and each station, we can have some issues when the minimum from Training Set is equal to its Maximum. We then can't normalize the dataset and set the values to 0. '''
-        regular_values_set_to_0 =  torch.isinf(output_with_nan_and_inf).sum()
-        Values_with_normalization_issues = (torch.isnan(output_with_nan_and_inf) + torch.isinf(output_with_nan_and_inf)).sum()
-        print('Values with issues: ','{:.3%}'.format(Values_with_normalization_issues.item()/output_with_nan_and_inf.numel() ))
-        print('Regular Values that we have to set to 0: ','{:.3%}'.format(regular_values_set_to_0.item()/output_with_nan_and_inf.numel() ))
-        output = torch.nan_to_num(output_with_nan_and_inf,0,0,0)  # Set 0 when devided by maxi - mini = 0 (0 when Nan, 0 when +inf, 0 when -inf
-        return(output)
-    
-
-    def reshape_input(self,inputs,dims):
-        # Design Permutation tuple: 
-        int_dims = [dim if dim>=0 else inputs.dim()+dim for dim in dims ]   
-        remaining_dims = [dim for dim in np.arange(inputs.dim()) if not(dim in int_dims)] 
-        permutations = remaining_dims+int_dims
-        self.permutations = permutations
-        
-        #Permute 
-        permuted_inputs = inputs.permute(tuple(permutations))
-        self.permuted_size = permuted_inputs.size()
-        
-        # Reshape
-        reshape = tuple([permuted_inputs.size(k) for k,_ in enumerate(remaining_dims)]+[-1]) 
-        reshaped_inputs = permuted_inputs.reshape(reshape)
-
-        self.reshaped_inputs_dim =  reshaped_inputs.size()
-        return(reshaped_inputs)
-    
-    def inverse_reshape_permute(self,normalized_tensor):
-        # Reshape and inverse-permute:
-        normalized_tensor = normalized_tensor.reshape(self.permuted_size) #Un-flatten
-
-        inverse_permute = torch.argsort(torch.LongTensor(self.permutations)).tolist()
-        normalized_tensor = normalized_tensor.permute(inverse_permute) # inverse permutation 
-        return(normalized_tensor)
-
-    def unormalize_tensor(self,inputs: torch.Tensor, dims: list, minmaxnorm: bool = False, standardize: bool = False):
-        if not self.normalized:
-            raise ValueError('Tensor is not Normalized')
-        else:
-            self.normalize_tensor(inputs, dims, minmaxnorm, standardize,reverse=True)
-
-    def normalize_tensor(self, dims: list, minmaxnorm: bool = False, standardize: bool = False,reverse=False):
-        '''
-        args 
-        -----
-        inputs : n-dimension torch Tensor
-        dims :  dimension through which we want to retrieve min/max or mean/std
-        minmaxnorm : MinMax-Normalization if True
-        standardize: Z-standardization if True 
-
-        Examples:
-            inputs = torch.randn(8,4,2,3,6)
-            dims = [0,-1,-2]
-            minmaxnorm  = True
-
-            output is a Tensor object whose 'tensor' attribute is normalized (or unormalized)
-            it returns the minmax-normalization of 'inputs' through dimensions 0,4,3. 
-        '''
-
-        reshaped_inputs = self.reshape_input(self.tensor,dims)
-
-        # Get Min, Max, Mean, Std if not already available 
-        self.get_stats(reshaped_inputs)
-
-        # Normalize
-        normalized_tensor = self.transform(reshaped_inputs,minmaxnorm,standardize,reverse)
-
-        # reshape-back, inverse-permute
-        normalized_tensor = self.inverse_reshape_permute(normalized_tensor)
-
-        return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = not(reverse))
-    
 
 class TrainValidTest_Split_Normalize(object):
     def __init__(self,data,dims,
                  train_indices = None , valid_indices = None, test_indices = None,
                  first_train = None, last_train = None, first_valid = None, last_valid = None, first_test = None, last_test = None, 
-                 invalid_dates = None, 
                  minmaxnorm = False,standardize = False):
         super(TrainValidTest_Split_Normalize,self).__init__()
         self.data = data
@@ -733,26 +64,60 @@ class TrainValidTest_Split_Normalize(object):
             self.data_test = self.data[self.first_test:self.last_test]   if self.first_test is not None else None
         else: 
             raise ValueError("Neither 'train_indices' nor 'first_train' attribute has been designed ")
+        
 
-    def load_normalize_tensor_datasets(self,mini = None, maxi = None, mean = None, std = None, normalize = False):
+    def load_normalize_tensor_datasets(self,mini = None, maxi = None, mean = None, std = None):
+        '''Load TensorDataset (train_dataset) object from data_train.
+        Define TensorDataset object from valid (valid_dataset) and test (test_dataset). 
+        Associate statistics from train dataset to valid and test dataset
+        Normalize them according to their statistics 
+        '''
+        # Define train_dataset and normalize it
         print('Tackling Training Set')
         train_dataset = TensorDataset(self.data_train, mini = mini, maxi = maxi, mean=mean, std=std)
+        train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
 
-        # Normalize thank to stats from Training Set 
+        # Define valid_dataset
         print('Tackling Validation Set')
-        valid_dataset = TensorDataset(self.data_valid,mini = train_dataset.mini, maxi = train_dataset.maxi, mean = train_dataset.mean, std = train_dataset.std)
+        valid_dataset = TensorDataset(self.data_valid,mini = train_dataset.mini , maxi = train_dataset.maxi, mean = train_dataset.mean , std = train_dataset.std )
 
-        # Normalize thank to stats from Training Set 
+        # Define test_dataset
         print('Tackling Testing Set')
-        test_dataset = TensorDataset(self.data_test,mini = train_dataset.mini, maxi = train_dataset.maxi, mean = train_dataset.mean, std = train_dataset.std)
-           
+        test_dataset = TensorDataset(self.data_test,mini = train_dataset.mini , maxi = train_dataset.maxi, mean = train_dataset.mean , std = train_dataset.std )
+        
+        
+        # Normalize thank to stats from Training Set 
+        valid_dataset = valid_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
+        test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
 
-        if normalize:
-            train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
-            valid_dataset = valid_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
-            test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
         return(train_dataset,valid_dataset,test_dataset)
+
+class InvalidDatesCleaner(object):
+    '''
+    Object which remove all the forbidden dates / forbidden indices from a array of indices.
+
+    args 
+    ----
+    invalid_dates :  list of invalid timestamp which should be removed from every dataset
+    invalid_indices : list of indices corresponding to the invalid timestamp which should be removed from every dataset 
+    df_index : list of time-stamp corresponding to time-slots of the data
+    '''
+    def __init__(self,invalid_dates : pd.core.indexes.datetimes.DatetimeIndex = None, invalid_indices : np.array = None,df_index : pd.core.indexes.base.Index = None):
+        super(InvalidDatesCleaner,self).__init__()
+        self.invalid_dates = invalid_dates
+        self.invalid_indices = invalid_indices
+
+        if self.invalid_indices is None:
+            self.match_date_to_indices(df_index)
+
+
+    def clean_indices(self,indices):
+        mask = np.isin(indices,self.invalid_indices, invert = True)
+        return(indices[mask])
     
+    def match_date_to_indices(self,df_index):
+        self.invalid_indices = df_index.isin(self.invalid_dates).nonzero()[0].tolist()
+
 
 class FeatureVectorBuilder(object):
     '''
@@ -816,270 +181,31 @@ class FeatureVectorBuilder(object):
         self.Utarget = Utarget
 
 
-class DataSet(object):
-    '''
-    attributes
-    -------------
-    df : contain the current df you are working on. It's the full df, normalized or not
-    init_df : contain the initial df, no normalized. It's the full initial dataset.
-    '''
-    def __init__(self,df=None,init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,
-                 train_df = None,cleaned_df = None,Weeks = None, Days = None, historical_len = None,step_ahead = None):
-        
-        if df is not None:
-            self.length = len(df)
-            self.df = df
-            self.columns = df.columns
-            self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
+class DatesVerifFeatureVect(object):
+    ''' From dataframe with TimeStamp Index, and historical elements, return df_verif'''
+    def __init__(self,df_dates, Weeks = 0, Days = 0, historical_len = 0, step_ahead = 1, time_step_per_hour = 4):
 
-        self.normalized = normalized
-        self.time_step_per_hour = time_step_per_hour
-        self.train_df = train_df
-        if time_step_per_hour is not None :
-            self.Week_nb_steps = int(7*24*self.time_step_per_hour)
-            self.Day_nb_steps = int(24*self.time_step_per_hour)
-        else : 
-            self.Week_nb_steps = None
-            self.Day_nb_steps = None
+        self.df_dates = df_dates
 
-        if mini is not None: 
-            self.mini = mini
-        else : 
-            self.mini = df.min()
-
-        if maxi is not None: 
-            self.maxi = maxi
-        else : 
-            self.maxi = df.max()
-
-        if mean is not None:
-            self.mean = mean
-        else:
-            self.mean = df.mean()
-
-        if init_df is not None:
-            self.init_df = init_df
-        else:
-            self.init_df = df
-
-        self.shift_from_first_elmt = None
-        self.U = None
-        self.Utarget = None
-        self.df_verif = None
-        self.df_shifted = None
-        self.invalid_indx_df = None
-        self.remaining_dates = None
-        self.time_slots_labels = None
-        self.step_ahead = step_ahead
         self.Weeks = Weeks
         self.Days = Days
         self.historical_len = historical_len
-        self.cleaned_df = cleaned_df
+        self.step_ahead = step_ahead
 
-        
-    def bijection_name_indx(self):
-        colname2indx = {c:k for k,c in enumerate(self.columns)}
-        indx2colname = {k:c for k,c in enumerate(self.columns)}
-        return(colname2indx,indx2colname)
-    
+        self.Week_nb_steps = int(7*24*time_step_per_hour)
+        self.Day_nb_steps = int(24*time_step_per_hour)
+        self.time_step_per_hour = time_step_per_hour
+
+        self.get_shift_from_first_elmt() 
+        self.get_df_shifted()
+
     def get_shift_from_first_elmt(self):
-        shift_week = self.Weeks if self.Weeks is not None else 0
-        shift_day = self.Days if self.Days is not None else 0
+        shift_week = self.Weeks
+        shift_day = self.Days
         self.shift_from_first_elmt = int(max(shift_week*24*7*self.time_step_per_hour,
                                 shift_day*24*self.time_step_per_hour,
                                 self.historical_len+self.step_ahead-1
                                 ))
-        #self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
-
-
-    def standardize(self,x,reverse = False):
-        ''' Standardization : z <- (x-mu) / sigma'''
-        if reverse:
-            x = x*(self.std) + self.mean
-        else:
-            x = (x-self.mean)/ self.std
-
-    def minmaxnorm(self,x,reverse = False):
-        ''' MinMax Normalization : z <- (x-min) / (max-min)'''
-        if reverse:
-            x = x*(self.maxi - self.mini) +self.mini
-        else :
-            x = (x-self.mini)/(self.maxi-self.mini)
-        return x   
-
-
-    def minmax_normalize_df(self):
-
-        self.mini = self.df_train.min()
-        self.maxi = self.df_train.max()
-        self.mean = self.df_train.mean()
-
-        # Normalize : 
-        normalized_df = self.minmaxnorm(self.df)  # Normalize the entiere dataset
-
-        # Update state : 
-        self.df = normalized_df
-        self.normalized = True
-
-    def normalize_df(self,minmaxnorm = True):
-        assert self.normalized == False, 'Dataframe might be already normalized'
-        if minmaxnorm:
-            self.minmax_normalize_df()
-        else:
-            raise Exception('Normalization has not been coded')
-        
-    def unormalize_df(self,minmaxnorm):
-        assert self.normalized == True, 'Dataframe might be already UN-normalized'
-        if minmaxnorm:
-            self.df = self.minmaxnorm(self.df,reverse = True)
-        self.normalized = False
-
-    def clean_dataset_get_tensor_and_train_valid_test_split(self,df,invalid_dates,train_prop,valid_prop,test_prop,normalize):
-        '''
-        Create a DataSet object from pandas dataframe. Retrieve associated Feature Vector and Target Vector. Remove forbidden indices (dates). Then split it into Train/Valid/Test inputs.
-        '''
-        dataset = DataSet(df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
-                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-        
-        dataset.get_shift_from_first_elmt()   # récupère le 'shift from first elmt' pour la construction du feature vect 
-        dataset.get_feature_vect()  # Construction du feature vect  self.U et self.Utarget 
-
-        # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
-        dataset.identify_forbidden_index(invalid_dates) # Retire toute les dates interdites 
-        dataset.mask_tensor()
-        dataset.mask_df()  # Get df_verif 
-
-        dataset.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
-        dataset.split_tensors(normalize) # Récupère U_test, Utarget_test, NetMob_test, Weather_test etc....  dans 'dataset_init.contextual_tensors.items()' 
-        return(dataset)
-    
-    def warning(self):
-        '''Warning in case we don't use trafic data: '''
-        if self.Weeks+self.historical_len+self.Days == 0:
-            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
-
-
-    def split_K_fold(self,args,invalid_dates,netmob = False):
-        '''
-        Split la DataSet Initiale en K-fold
-        args 
-        -------
-
-
-        outputs
-        -------
-        fold_dataset_limits: dict -> Contains TimeStamps Limits and Indices Limits of each Fold and each training modes. 
-        examples : 
-            - fold_dataset_limits[fold_k]['valid']['timestamp']  = (Timestamp('2019-02-26 00:00:00', freq='15T'),Timestamp('2019-04-27 11:45:00', freq='15T'))
-            - fold_dataset_limits[fold_k]['valid']['tensor_indices']  = (50,146)
-
-
-        '''
-        self.warning()
-        self.fold_dataset_limits = {k : {name : {} for name in ['fold_limits','train','valid','test']} for k in range(args.K_fold)}
-        Datasets,DataLoader_list = [],[]
-
-
-        # Crée une DataSet copie et y récupère la DataSet de Test Commune à tous les K-fold : 
-        dataset_init = self.clean_dataset_get_tensor_and_train_valid_test_split(self.df,invalid_dates,args.train_prop,args.valid_prop,args.test_prop, normalize = False)
-        # On peut maintenant appeler dataset_init.U_test pour récupérer le test_set dans 'init', qu'il faut maintenant Normaliser avec les min/max des Train DataSet de chaque fold. 
-        # ................................................................................
-
-
-        # ANCIENNE VERSION A RETIRER : 
-        # dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0,netmob=netmob)
-        # _,_,_,_ = dataset_init.split_normalize_load_feature_vect(args,invalid_dates,args.train_prop, args.valid_prop,args.test_prop)
-        # dict_dataloader = dataset_init.get_dataloader()
-        # ==========================================================================================
-        # ==========================================================================================
-
-
-        # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
-        df_hold_out = self.df[: dataset_init.first_test_date]  
-
-        # ================================================================================================================================================================
-        for k in range(args.K_fold): 
-            self.fold_dataset_limits[k]['test']['timestamp'] = (dataset_init.first_test_date,dataset_init.last_test_date)
-        # ================================================================================================================================================================
-
-
-        # Récupère la Taille de cette DataFrame
-        n = len(df_hold_out)
-
-        # Adapt Valid and Train Prop (cause we want Test_prop = 0)
-        valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
-        train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)
-        
-        # Découpe la dataframe en K_fold 
-        for k in range(args.K_fold):
-            # Slicing 
-            if args.validation == 'wierd_blocked':
-                l_lim_fold = int((k/args.K_fold)*n)
-                u_lim_fold = int(((k+1)/args.K_fold)*n)
-
-                df_tmps = df_hold_out[l_lim_fold:u_lim_fold]
-
-
-            if args.validation == 'sliding_window':
-                width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
-                l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
-                
-
-                if k == args.K_fold - 1:
-                    u_lim_pos = n
-                else:
-                    u_lim_pos = l_lim_pos + width_dataset
-
-                df_tmps = df_hold_out[l_lim_pos:u_lim_pos]          
-
-            # ================================================================================================================================================================
-            self.fold_dataset_limits[k]['fold_limits']['df_indices'] = (l_lim_pos,u_lim_pos)
-            self.fold_dataset_limits[k]['fold_limits']['timestamp'] = (df_hold_out.index[l_lim_pos],df_hold_out.index[u_lim_pos])
-            # ================================================================================================================================================================         
-
-            # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
-            dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
-                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
-
-
-            time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(args,invalid_dates,train_prop_tmps, valid_prop_tmps, 0)
-            dict_dataloader = dataset_tmps.get_dataloader()
-
-            dict_dataloader['test'] = data_loader_with_test['test']
-
-
-            # ================ Set Every Test-related information thank to dataset_init ================
-            dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
-            dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
-            dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
-            dataset_tmps.df_verif_test = dataset_init.df_verif_test
-            dataset_tmps.df_test = dataset_init.df_test
-             # ================ ........................................................ ================
-
-
-            Datasets.append(dataset_tmps)
-            DataLoader_list.append(dict_dataloader)
-            
-
-
-        return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
-    
-
-    def unormalize(self,timeserie):
-        if not(self.normalized):
-            print('The df might be already unormalized')
-        return(timeserie*(self.maxi - self.mini)+self.mini)
-    
-    def unormalize_tensor(self,tensor, axis = -1,device = 'cpu'):
-        maxi_ = torch.Tensor(self.maxi.values).unsqueeze(axis).to(device)
-        mini_ = torch.Tensor(self.mini.values).unsqueeze(axis).to(device)
-        unormalized = tensor*(maxi_ - mini_)+mini_
-        return unormalized
-    
-    def get_time_serie(self,station):
-        timeserie = TimeSerie(ts = self.df[[station]],init_ts = self.init_df[[station]],mini = self.mini[station],maxi = self.maxi[station],mean = self.mean[station], normalized = self.normalized)
-        return(timeserie)
 
     def shift_dates(self):
         # Weekkly periodic
@@ -1091,29 +217,6 @@ class DataSet(object):
         shifted_dates = Dwt+Ddt+Dt
         return(shifted_dates)
 
-    def identify_forbidden_index(self,invalid_dates):
-        # Mask for dataframe df_verif
-        df_shifted_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])  # Concat forbidden indexes within each columns
-
-        # Identify forbidden df indexes
-        self.forbidden_index = df_shifted_forbiden.index.unique()  # drop dupplicates
-
-        # Identify forbidden Tensor Indices 
-        self.forbidden_indice_U = self.forbidden_index - self.shift_from_first_elmt  #shift index to get back to corresponding indices
-    
-    def mask_tensor(self):
-        # Mask for Tensor U, Utarget
-        mask_U =  [e for e in np.arange(self.U.shape[0]) if e not in self.forbidden_indice_U]
-        # Apply mask 
-        self.U = self.U[mask_U]
-        self.Utarget = self.Utarget[mask_U]
-    
-    def mask_df(self):
-        self.df_verif = self.df_shifted.drop(self.forbidden_index)
-
-
-
-
     def get_df_shifted(self):
         # Get the shifted "Dates" of Feature Vector and Target
         shifted_dates = self.shift_dates()
@@ -1121,201 +224,17 @@ class DataSet(object):
         Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
         self.df_shifted = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:] 
 
-    def get_feature_vect(self): 
-        raw_data_tensor = torch.tensor(self.df.values)
-        # Get shifted Feature Vector and shifted Target
-        featurevectorbuilder = FeatureVectorBuilder(self.step_ahead,self.historical_len,self.Days,self.Weeks,self.Day_nb_steps,self.Week_nb_steps,self.shift_from_first_elmt)
-        featurevectorbuilder.build_feature_vect(raw_data_tensor)
-        featurevectorbuilder.build_target_vect(raw_data_tensor)
+    def identify_forbidden_index(self,invalid_dates):
+        '''Get forbidden index of the df_dates and associated forbidden indices of the Torch Tensor'''
+        # Mask for dataframe df_verif
+        df_shifted_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])  # Concat forbidden indexes within each columns
+        # Identify forbidden df indexes
+        self.forbidden_index = df_shifted_forbiden.index.unique()  # drop dupplicates
+        # Identify forbidden Tensor Indices 
+        self.forbidden_indice_U = self.forbidden_index - self.shift_from_first_elmt  #shift index to get back to corresponding indices
 
-        self.U = featurevectorbuilder.U
-        self.Utarget = featurevectorbuilder.Utarget
-        
-        # Get the df of associated TimeStamp of the shifted Feature Vector and shifted Target
-        self.get_df_shifted()
-
-
-    def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop,time_slots_labels = None):
-        # Split with iterative method 
-        if hasattr(self,'Dataset_save_folder'):
-            split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
-        else:
-            split_path = ''
-        if split_path and (os.path.exists(split_path)):   #not empty & path exist
-            try:
-                split_limits = read_object(split_path)
-            except:
-                split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-                save_object(split_limits, split_path)
-                print(f"split_limits.pkl has never been saved or issue with last .pkl save")
-        else : 
-            split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-            if split_path: save_object(split_limits, split_path)  #if not empty, save it 
-
-        first_predicted_train_date= split_limits['first_predicted_train_date']
-        last_predicted_train_date = split_limits['last_predicted_train_date']
-        first_predicted_valid_date = split_limits['first_predicted_valid_date']
-        last_predicted_valid_date = split_limits['last_predicted_valid_date']
-        first_predicted_test_date = split_limits['first_predicted_test_date']
-        last_predicted_test_date = split_limits['last_predicted_test_date']
-
-        # Keep track on predicted limits (dates): 
-        self.first_predicted_train_date,self.last_predicted_train_date = first_predicted_train_date,last_predicted_train_date
-        self.first_predicted_valid_date,self.last_predicted_valid_date = first_predicted_valid_date,last_predicted_valid_date
-        self.first_predicted_test_date,self.last_predicted_test_date = first_predicted_test_date,last_predicted_test_date
-
-        # Keep track on DataFrame Verif:
-        predicted_dates = self.df_verif.iloc[:,-1]
-        self.df_verif_train = self.df_verif[( predicted_dates >= self.first_predicted_train_date) & (predicted_dates < self.last_predicted_train_date)]
-        self.df_verif_valid = self.df_verif[(predicted_dates >= self.first_predicted_valid_date) & (predicted_dates < self.last_predicted_valid_date)] if self.last_predicted_valid_date is not None else None
-        self.df_verif_test = self.df_verif[(predicted_dates >= self.first_predicted_test_date) & (predicted_dates < self.last_predicted_test_date)]  if self.last_predicted_test_date is not None else None
-
-        # Keep track on DataFrame Limits (dates): 
-        self.first_train_date,self.last_train_date = self.df_verif_train.iat[0,0] ,self.df_verif_train.iat[-1,-1]
-        if valid_prop > 1e-3 :
-            self.first_valid_date,self.last_valid_date = self.df_verif_valid.iat[0,0] ,self.df_verif_valid.iat[-1,-1]
-        else:
-            self.first_valid_date,self.last_valid_date = None, None
-
-        if test_prop > 1e-3 :
-            self.first_test_date,self.last_test_date = self.df_verif_test.iat[0,0] ,self.df_verif_test.iat[-1,-1]
-        else:
-            self.first_test_date,self.last_test_date = None, None
-        
-        # Get All the involved dates and keep track on splitted DataFrame 
-        self.df_train = self.df.reindex(self.df_verif_train.stack().unique())
-        self.df_valid = self.df.reindex(self.df_verif_valid.stack().unique()) if valid_prop > 1e-3 else None
-        self.df_test = self.df.reindex(self.df_verif_test.stack().unique()) if test_prop > 1e-3 else None
-
-        # Get all the limits for U / Utarget split : 
-        self.first_train_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_train_date].index[0])
-        self.last_train_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_train_date].index[0])
-
-        self.first_valid_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_valid_date].index[0]) if valid_prop > 1e-3 else None
-        self.last_valid_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_valid_date].index[0]) if valid_prop > 1e-3 else None
-
-        self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
-        self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
-
-    def get_dataloader(self):
-        #   DataLoader 
-        #DictDataLoader_object = DictDataLoader(self,args)
-        #dict_dataloader = DictDataLoader_object.get_dictdataloader(args.batch_size)
-
-        # Train, Valid, Test split : 
-        train_tuple =  self.U_train,self.Utarget_train,{getattr(self,f"{name}_train") for name in self.contextual_tensors.keys()} # subway_X[train_subset],subway_Y[train_subset], dict(netmob = netmob[train_subset], calendar = calendar[train_subset])
-        valid_tuple =  self.U_valid,self.Utarget_valid,{getattr(self,f"{name}_valid") for name in self.contextual_tensors.keys()}  # subway_X[valid_subset],subway_Y[valid_subset], dict(netmob = netmob[valid_subset], calendar = calendar[valid_subset])
-        test_tuple =  self.U_test,self.Utarget_test,{getattr(self,f"{name}_test") for name in self.contextual_tensors.keys()}   # subway_X[test_subset],subway_Y[test_subset], dict(netmob = netmob[test_subset], calendar = calendar[test_subset])
-
-        # Load DictDataLoader: 
-        DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,self.args)
-        dict_dataloader = DictDataLoader_object.get_dictdataloader()
-        
-        # =============== Ajout ===============
-        if 'train' in dict_dataloader.keys(): self.train_loader = dict_dataloader['train']
-        if 'validate' in dict_dataloader.keys(): self.valid_loader = dict_dataloader['validate']
-        if 'test' in dict_dataloader.keys(): self.test_loader = dict_dataloader['test']
-        if 'cal' in dict_dataloader.keys(): self.cal_loader = dict_dataloader['cal']
-        # =============== Ajout ===============
-        return(dict_dataloader)
-
-
-    def split_normalize_load_feature_vect(self,args,invalid_dates,train_prop,valid_prop,test_prop
-                                          #,calib_prop,batch_size,calendar_class
-                                          ):
-        self.get_shift_from_first_elmt()   # get shift indice and shift date from the first element / between each dataset 
-        self.get_feature_vect()  # Build 'df_shifted'.
-        
-        # Build 'df_verif' , which is df_shifted without sequences which contains invalid date
-        self.identify_forbidden_index(invalid_dates) 
-        self.mask_tensor()
-        self.mask_df()  # df_verif
-
-        # Get Index to Split df, U, Utarget, time_slots_labels
-        self.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
-
-        # Get all the splitted train/valid/test input tensors. Normalize Them 
-        self.split_tensors(normalize = True)
-
-        # ================ FAIRE QULEQUE CHOSE POUR LE TIME-SLOTS LABELS. ESSAYER DE LES INTEGRER DANS LE CONTEXTUAL TENSORS  ================
-        #
-        # get Associated time_slots_labels (from df_verif)
-        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self)
-        #
-        #
-        # ================ ................................................................................................ ================
-
-        return(time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
-    
-    def set_train_valid_test_tensor_attribute(self,name,tensor,dims,ref_for_normalization = None, normalize = False):
-        if normalize : 
-            mini, maxi, mean, std = ref_for_normalization.min(),ref_for_normalization.max(),ref_for_normalization.mean(),ref_for_normalization.std()
-        else : 
-            mini, maxi, mean, std = None, None, None, None
-
-        splitter = TrainValidTest_Split_Normalize(tensor,dims,
-                                    first_train = self.first_train_U, last_train= self.last_train_U,
-                                    first_valid= self.first_valid_U, last_valid = self.last_valid_U,
-                                    first_test = self.first_test_U, last_test = self.last_test_U,
-                                    minmaxnorm = True,standardize = False)
-
-        train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.load_normalize_tensor_datasets(mini = mini, maxi = maxi, mean = mean, std = std, normalize = normalize)
-        setattr(self,f"{name}_train", train_tensor_ds.tensor)
-        setattr(self,f"{name}_valid", valid_tensor_ds.tensor)
-        setattr(self,f"{name}_test", test_tensor_ds.tensor)
-        # ....
-
-    def split_tensors(self,normalize):
-        ''' Split input tensors  in Train/Valid/Test part '''
-        # Get U_train, U_valid, U_test
-        self.set_train_valid_test_tensor_attribute('U',self.U,dims=[-1],ref_for_normalization = self.df_train.values, normalize = normalize)
-
-        # Get Utarget_train, Utarget_valid, Utarget_test
-        self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget,dims=[-1],ref_for_normalization = self.df_train.values, normalize = normalize)
-
-        # Get NetMob_train, NetMob_valid, NetMob_test, Weather_train etc etc ...
-        for name, tensor_dict in self.contextual_tensors.items():
-            feature_vect = tensor_dict['feature_vect']
-            dims = tensor_dict['dims']
-            raw_data = tensor_dict['raw_data']
-            self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
-
-        #if self.time_slots_labels is not None : 
-        #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
-        #    self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
-        #    self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
-
-
-
-class TimeSerie(object):
-    def __init__(self,ts,init_ts = None,mini = None, maxi = None, mean = None, normalized = False):
-        self.length = len(ts)
-        self.ts = ts
-        self.normalized = normalized
-        if mini is not None: 
-            self.mini = mini
-        else : 
-            self.mini = ts.min()
-        if maxi is not None: 
-            self.maxi = maxi
-        else : 
-            self.maxi = ts.max()
-        if mean is not None:
-            self.mean = mean
-        else:
-            self.mean = ts.mean()
-        if init_ts is not None:
-            self.init_ts = init_ts
-        else:
-            self.init_ts = ts
-        
-    def normalize(self):
-        if self.normalized:
-            print('The TimeSerie might be already normalized')
-        minmaxnorm = lambda x : (x-self.mini)/(self.maxi-self.mini)
-        return(minmaxnorm(self.init_ts))
-    
-    def unormalize(self):
-        if not(self.normalized):
-            print('The TimeSerie might be already unnormalized')
-        return(self.ts*(self.maxi - self.mini)+self.mini)
+    def get_df_verif(self,invalid_dates):
+        # Identify forbidden_index from the df_shifted 
+        self.identify_forbidden_index(invalid_dates)
+        # Mask shifted from all the forbidden index
+        self.df_verif = self.df_shifted.drop(self.forbidden_index)
