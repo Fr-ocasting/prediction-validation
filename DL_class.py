@@ -3,7 +3,6 @@ import numpy as np
 import torch 
 import torch.nn as nn 
 
-
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
         super().__init__()
@@ -24,73 +23,6 @@ class QuantileLoss(nn.Module):
         loss = torch.mean(torch.sum(losses,dim = -1))   #  Loss commune pour toutes les stations. sinon loss par stations : torch.mean(torch.sum(losses,dim = -1),dim = 0)
 
         return(loss)
-
-
-class TrainValidTest_Split_Normalize(object):
-    def __init__(self,data,dims,
-                 train_indices = None , valid_indices = None, test_indices = None,
-                 first_train = None, last_train = None, first_valid = None, last_valid = None, first_test = None, last_test = None, 
-                 minmaxnorm = False,standardize = False):
-        super(TrainValidTest_Split_Normalize,self).__init__()
-        self.data = data
-        self.minmaxnorm = minmaxnorm
-        self.standardize = standardize
-        self.dims = dims 
-
-        if train_indices is not None : self.train_indices = train_indices
-        if valid_indices is not None : self.valid_indices = valid_indices
-        if test_indices is not None : self.test_indices = test_indices
-
-        if first_train is not None : self.first_train = first_train
-        if last_train is not None : self.last_train = last_train
-
-        if first_valid is not None : self.first_valid = first_valid
-        if last_valid is not None : self.last_valid = last_valid
-
-        if first_test is not None : self.first_test = first_test
-        if last_test is not None : self.last_test = last_test
-
-        self.split_data()
-
-    def split_data(self):
-        # Split Data within 3 groups:
-        if hasattr(self,'train_indices'):
-            self.data_train = self.data[self.train_indices] 
-            self.data_valid = self.data[self.valid_indices] if self.valid_indices is not None else None
-            self.data_test = self.data[self.test_indices] if self.test_indices is not None else None
-        elif hasattr(self,'first_train'):
-            self.data_train = self.data[self.first_train:self.last_train]
-            self.data_valid = self.data[self.first_valid:self.last_valid] if self.first_valid is not None else None
-            self.data_test = self.data[self.first_test:self.last_test]   if self.first_test is not None else None
-        else: 
-            raise ValueError("Neither 'train_indices' nor 'first_train' attribute has been designed ")
-        
-
-    def load_normalize_tensor_datasets(self,mini = None, maxi = None, mean = None, std = None):
-        '''Load TensorDataset (train_dataset) object from data_train.
-        Define TensorDataset object from valid (valid_dataset) and test (test_dataset). 
-        Associate statistics from train dataset to valid and test dataset
-        Normalize them according to their statistics 
-        '''
-        # Define train_dataset and normalize it
-        print('Tackling Training Set')
-        train_dataset = TensorDataset(self.data_train, mini = mini, maxi = maxi, mean=mean, std=std)
-        train_dataset = train_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
-
-        # Define valid_dataset
-        print('Tackling Validation Set')
-        valid_dataset = TensorDataset(self.data_valid,mini = train_dataset.mini , maxi = train_dataset.maxi, mean = train_dataset.mean , std = train_dataset.std )
-
-        # Define test_dataset
-        print('Tackling Testing Set')
-        test_dataset = TensorDataset(self.data_test,mini = train_dataset.mini , maxi = train_dataset.maxi, mean = train_dataset.mean , std = train_dataset.std )
-        
-        
-        # Normalize thank to stats from Training Set 
-        valid_dataset = valid_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
-        test_dataset = test_dataset.normalize_tensor(self.dims, self.minmaxnorm, self.standardize, reverse = False)
-
-        return(train_dataset,valid_dataset,test_dataset)
 
 class InvalidDatesCleaner(object):
     '''

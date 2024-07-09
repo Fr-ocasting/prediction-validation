@@ -1,6 +1,5 @@
 import pandas as pd 
 
-
 def find_nearest_date(date_series, date, inferior=True):
     """
     Find the nearest index of the timestamp <= or >= 'date' in 'date_series'.
