@@ -15,7 +15,7 @@ from calendar_class import get_time_slots_labels
 
 
 class TrainValidTest_Split_Normalize(object):
-    def __init__(self,data,dims,
+    def __init__(self,data,dims = None,
                  train_indices = None , valid_indices = None, test_indices = None,
                  first_train = None, last_train = None, first_valid = None, last_valid = None, first_test = None, last_test = None, 
                  minmaxnorm = False,standardize = False):
@@ -705,6 +705,7 @@ class DataSet(object):
                 feature_vect = tensor_dict['feature_vect']
                 dims = tensor_dict['dims']
                 raw_data = tensor_dict['raw_data']
+                normalize = tensor_dict['normalize']
                 self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
         else:
             print('\nNo Contextual Data has been considered')

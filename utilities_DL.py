@@ -20,8 +20,12 @@ from TE_transfer_learning import TE_transfer
 from dl_models.full_model import full_model
 
 
-def match_period_coverage_with_netmob(dataset):
-    coverage_dataset = dataset.df.index
+def match_period_coverage_with_netmob(filename):
+    if (filename == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
+        coverage_dataset = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
+    else:
+        raise ValueError("The coverage period of this filename has not been defined")
+
     coverage_netmob =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
     coverage = list(set(coverage_dataset)& set(coverage_netmob))
     
