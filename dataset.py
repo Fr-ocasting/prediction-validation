@@ -13,6 +13,7 @@ from save_results import save_object,read_object,Dataset_get_save_folder
 from calendar_class import get_time_slots_labels
 # ...
 
+
 class TrainValidTest_Split_Normalize(object):
     def __init__(self,data,dims,
                  train_indices = None , valid_indices = None, test_indices = None,
@@ -60,7 +61,7 @@ class TrainValidTest_Split_Normalize(object):
         Normalize them according to their statistics 
         '''
         # Define train_dataset and normalize it
-        print('Tackling Training Set')
+        print('\n','Tackling Training Set')
         train_dataset = TensorDataset(self.data_train, mini = mini, maxi = maxi, mean=mean, std=std)
         if normalize:
             train_dataset = train_dataset.normalize_tensor(train_dataset.tensor, self.dims, self.minmaxnorm, self.standardize, reverse = False,feature_vect=feature_vect)
@@ -71,17 +72,18 @@ class TrainValidTest_Split_Normalize(object):
         std =    train_dataset.std if hasattr(train_dataset,'std') else None 
 
         # Define valid_dataset
-        print('Tackling Validation Set')
         valid_dataset = TensorDataset(self.data_valid,mini = mini , maxi = maxi, mean = mean , std = std )
 
         # Define test_dataset
-        print('Tackling Testing Set')
         test_dataset = TensorDataset(self.data_test,mini = mini , maxi = maxi, mean = mean , std = std )
         
         
         # Normalize thank to stats from Training Set 
         if normalize:
+            print('\n','Tackling Validation Set')
             valid_dataset = valid_dataset.normalize_tensor(valid_dataset.tensor,self.dims, self.minmaxnorm, self.standardize, reverse = False,feature_vect=feature_vect)
+
+            print('\n','Tackling Testing Set')
             test_dataset = test_dataset.normalize_tensor(test_dataset.tensor, self.dims, self.minmaxnorm, self.standardize, reverse = False,feature_vect=feature_vect)
 
         return(train_dataset,valid_dataset,test_dataset)
@@ -237,16 +239,8 @@ class TensorDataset(object):
             reshaped_inputs = self.reshape_input(tensor,dims)
             self.get_stats(reshaped_inputs)
 
-        if False:
-            # Normalize
-            normalized_tensor = self.transform(reshaped_inputs,minmaxnorm,standardize,reverse)
-
-            # reshape-back, inverse-permute
-            normalized_tensor = self.inverse_reshape_permute(normalized_tensor)
-        
-        else:
-            normalized_tensor = self.transform(tensor,minmaxnorm,standardize,reverse,dims,feature_vect)
-            self.normalized = True
+        normalized_tensor = self.transform(tensor,minmaxnorm,standardize,reverse,dims,feature_vect)
+        self.normalized = True
 
         return TensorDataset(normalized_tensor,mini=self.mini,maxi=self.maxi,mean=self.mean,std=self.std, normalized = not(reverse))
     
@@ -269,7 +263,7 @@ class DataSet(object):
     df : contain the current df you are working on. It's the full df, normalized or not
     init_df : contain the initial df, no normalized. It's the full initial dataset.
     '''
-    def __init__(self,df=None,tensor = None, dates = None, init_df = None,mini= None, maxi = None, mean = None, normalized = False,time_step_per_hour = None,
+    def __init__(self,df=None,tensor = None, dates = None, init_df = None, normalized = False,time_step_per_hour = None,
                  train_df = None,cleaned_df = None,Weeks = None, Days = None, historical_len = None,step_ahead = None):
         
         if df is not None:
@@ -296,7 +290,8 @@ class DataSet(object):
         else : 
             self.Week_nb_steps = None
             self.Day_nb_steps = None
-
+        
+        '''
         if mini is not None: 
             self.mini = mini
         else : 
@@ -311,6 +306,7 @@ class DataSet(object):
             self.mean = mean
         else:
             self.mean = df.mean()
+        '''
 
         if init_df is not None:
             self.init_df = init_df
@@ -467,11 +463,14 @@ class DataSet(object):
             dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
 
 
-            time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = dataset_tmps.split_normalize_load_feature_vect(invalid_dates,
-                                                                                                                              train_prop = train_prop_tmps,
-                                                                                                                              valid_prop = valid_prop_tmps,
-                                                                                                                              test_prop =  0,
-                                                                                                                              dims_agg= dims)
+            dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop = train_prop_tmps,valid_prop = valid_prop_tmps,test_prop =  0, dims_agg= dims)
+
+            # ================ FAIRE QULEQUE CHOSE POUR LE TIME-SLOTS LABELS. ESSAYER DE LES INTEGRER DANS LE CONTEXTUAL TENSORS  ================
+            #
+            time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset_tmps)
+            #
+            # ================ ................................................................................................ ================
+
             dict_dataloader = dataset_tmps.get_dataloader()
 
             dict_dataloader['test'] = data_loader_with_test['test']
@@ -549,12 +548,14 @@ class DataSet(object):
         self.first_predicted_train_date,self.last_predicted_train_date = first_predicted_train_date,last_predicted_train_date
         self.first_predicted_valid_date,self.last_predicted_valid_date = first_predicted_valid_date,last_predicted_valid_date
         self.first_predicted_test_date,self.last_predicted_test_date = first_predicted_test_date,last_predicted_test_date
+        # ...
 
         # Keep track on DataFrame Verif:
         predicted_dates = self.df_verif.iloc[:,-1]
         self.df_verif_train = self.df_verif[( predicted_dates >= self.first_predicted_train_date) & (predicted_dates < self.last_predicted_train_date)]
         self.df_verif_valid = self.df_verif[(predicted_dates >= self.first_predicted_valid_date) & (predicted_dates < self.last_predicted_valid_date)] if self.last_predicted_valid_date is not None else None
         self.df_verif_test = self.df_verif[(predicted_dates >= self.first_predicted_test_date) & (predicted_dates < self.last_predicted_test_date)]  if self.last_predicted_test_date is not None else None
+        # ...
 
         # Keep track on DataFrame Limits (dates): 
         self.first_train_date,self.last_train_date = self.df_verif_train.iat[0,0] ,self.df_verif_train.iat[-1,-1]
@@ -567,13 +568,9 @@ class DataSet(object):
             self.first_test_date,self.last_test_date = self.df_verif_test.iat[0,0] ,self.df_verif_test.iat[-1,-1]
         else:
             self.first_test_date,self.last_test_date = None, None
+        # ...
         
-        # Get All the involved dates and keep track on splitted DataFrame 
-        #self.df_train = self.df.reindex(self.df_verif_train.stack().unique())
-        #self.df_valid = self.df.reindex(self.df_verif_valid.stack().unique()) if valid_prop > 1e-3 else None
-        #self.df_test = self.df.reindex(self.df_verif_test.stack().unique()) if test_prop > 1e-3 else None
-
-        # ====== Keep track on data (unique) used for train,valid and test, so that we can compute MinMax-Normalization
+        # Keep track on data used to build Train/Valid/Test Feature Vector, so that we can compute MinMax-Normalization
         reindex_train = self.df_verif_train.stack().unique()
         indices = self.df_dates[self.df_dates['date'].isin(reindex_train)].index.tolist()
         self.train_input = self.raw_values[indices]
@@ -591,8 +588,7 @@ class DataSet(object):
             self.test_input = self.raw_values[indices]
         else :
             self.test_input = None
-        # =======
-
+        # ...
 
         # Get all the limits for U / Utarget split : 
         self.first_train_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_train_date].index[0])
@@ -603,6 +599,7 @@ class DataSet(object):
 
         self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
         self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
+        # ...
 
     def get_dataloader(self):
         #   DataLoader 
@@ -639,16 +636,6 @@ class DataSet(object):
         # Get all the splitted train/valid/test input tensors. Normalize Them 
         self.split_tensors(normalize = True, dims_agg =dims_agg)
 
-        # ================ FAIRE QULEQUE CHOSE POUR LE TIME-SLOTS LABELS. ESSAYER DE LES INTEGRER DANS LE CONTEXTUAL TENSORS  ================
-        #
-        # get Associated time_slots_labels (from df_verif)
-        time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(self)
-        #
-        #
-        # ================ ................................................................................................ ================
-
-        return(time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
-
 
     def set_train_valid_test_tensor_attribute(self,name,tensor,dims_agg,ref_for_normalization = None, normalize = False):
         ''' 
@@ -670,8 +657,10 @@ class DataSet(object):
         
         if normalize : 
             # Get stats from the reference dataset, which mean dimension - 1 with respect to the neural network input 
+            print('Tackling reference for normalization')
             ref_tensor_df = TensorDataset(ref_for_normalization)
-            ref_tensor_df = ref_tensor_df.normalize_tensor(ref_tensor_df.tensor,dims = dims_agg, minmaxnorm = True, standardize = False,reverse=False,feature_vect = False)
+            reshaped_inputs = ref_tensor_df.reshape_input(ref_tensor_df.tensor,dims=dims_agg)
+            ref_tensor_df.get_stats(reshaped_inputs)
             mini, maxi, mean, std = ref_tensor_df.mini,ref_tensor_df.maxi,ref_tensor_df.mean,ref_tensor_df.std  # 
 
         else : 
@@ -691,7 +680,7 @@ class DataSet(object):
         # ....
 
     def display_info_on_inputs(self):
-        print('U size: ',self.U.size(),'Utarget size: ',self.Utarget.size())
+        print('\nU size: ',self.U.size(),'Utarget size: ',self.Utarget.size())
         print('U_train size: ',self.U_train.size(),'Utarget_train size: ',self.Utarget_train.size())
         if hasattr(self,'U_valid'): print('U_valid size: ',self.U_valid.size(),'Utarget_valid size: ',self.Utarget_valid.size()) 
         if hasattr(self,'U_test'): print('U_test size: ', self.U_test.size(),'Utarget_test size: ',self.Utarget_test.size())
@@ -718,13 +707,22 @@ class DataSet(object):
                 raw_data = tensor_dict['raw_data']
                 self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
         else:
-            print('No Contextual Data has been considered')
+            print('\nNo Contextual Data has been considered')
 
         #if self.time_slots_labels is not None : 
         #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
         #    self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
         #    self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
 
+
+
+class PersonnalInput(DataSet):
+    def __init__(self,invalid_dates,*args, **kwargs):
+        super(PersonnalInput,self).__init__(*args, **kwargs)
+        self.invalid_dates = invalid_dates
+        
+    def preprocess(self,train_prop,valid_prop,test_prop,dims_agg):
+        self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop,dims_agg)
 
 
 

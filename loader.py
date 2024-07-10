@@ -65,11 +65,11 @@ class CustomDataLoder(object):
         self.calib_prop = args.calib_prop
         self.batch_size = args.batch_size 
 
-        self.num_workers = args.num_workers
-        self.persistent_workers = args.persistent_workers
-        self.pin_memory = args.pin_memory
-        self.prefetch_factor = args.prefetch_factor
-        self.drop_last = args.drop_last
+        self.num_workers = args.num_workers if torch.cuda.is_available() else 0 
+        self.persistent_workers = args.persistent_workers if torch.cuda.is_available() else False 
+        self.pin_memory = args.pin_memory if torch.cuda.is_available() else False 
+        self.prefetch_factor = args.prefetch_factor if torch.cuda.is_available() else 2 
+        self.drop_last = args.drop_last if torch.cuda.is_available() else False 
         # ...
 
     def call_dataloader(self,training_mode):
@@ -141,14 +141,14 @@ class DictDataLoader(object):
         if self.calib_prop is not None:
             return dict(train = train_loader.dataloader,
                         valid = valid_loader.dataloader,
-                        test = test_loader.dataloader)
-                        
+                        test = test_loader.dataloader,
+                        cal = calib_loader.dataloader
+                        )     
         
         else: 
             return dict(train = train_loader.dataloader,
                         valid = valid_loader.dataloader,
-                        test = test_loader.dataloader,
-                        cal = calib_loader.dataloader
+                        test = test_loader.dataloader
                         )
         
 class CustomDataset(Dataset):
@@ -211,108 +211,3 @@ if __name__ == '__main__':
     x_b,y_b,contextual_data_b  = next(iter(train_loader)) #x_b,y_b,*contextual_data_b
 
     print(x_b.size(),y_b.size(), contextual_data_b[0].size(),contextual_data_b[1].size())
-
-
-"""
-    # ===== ..... Ancienne Version, pas assez souple à l'ajout / enlèvement de Dataset: ..... =====
-
-    class CustomDataset(Dataset):
-        def __init__(self,X,Y,*T):
-            self.X = X
-            self.Y = Y
-            self.T = T
-            
-        def __len__(self):
-            return len(self.X)
-        
-        def __getitem__(self,idx):
-            #T_data = [t[idx] for t in self.T]
-            T_data = tuple(t[idx] for t in self.T)
-            return self.X[idx], self.Y[idx], *T_data
-        
-
-    class DictDataLoader(object):
-        ## DataLoader Classique pour le moment, puis on verra pour faire de la blocked cross validation
-        '''
-        args
-        -----
-        '''
-        def __init__(self,dataset,args):
-            super().__init__()
-            self.dataloader = {}
-            self.calib_prop = args.calib_prop
-            self.dataset = dataset
-            self.args = args
-
-        def get_attr_limits_proper_calib(self):
-            ''' Generate the random indices for Calibration set and Proper set '''
-            indices = torch.randperm(self.dataset.U_train.size(0)) 
-            split = int(self.dataset.U_train.size(0)*self.calib_prop)
-
-            self.dataset.indices_cal  = indices[split:]
-            self.dataset.indices_train = indices[:split]
-
-        def split_proper_calib(self):
-            ''' Split the training set in Proper and Calibration set '''
-            # Proper Set
-            self.proper_set_x = self.dataset.U_train[self.dataset.indices_train]
-            self.time_slots_calib = {calendar_class: self.dataset.time_slots_train[calendar_class][self.dataset.indices_cal] for calendar_class in range(len(self.dataset.nb_class))}
-            self.proper_set_y = self.dataset.Utarget_train[self.dataset.indices_train] if hasattr(self.dataset,'Utarget_train') else None
-
-            # Calib Set : 
-            self.calib_set_x = self.dataset.U_train[self.dataset.indices_cal]
-            self.time_slots_proper = {calendar_class: self.dataset.time_slots_train[calendar_class][self.dataset.indices_train] for calendar_class in range(len(self.dataset.nb_class)) } 
-            self.calib_set_y = self.dataset.Utarget_train[self.dataset.indices_cal] if hasattr(self.dataset,'Utarget_train') else None
-
-
-        def append_set_to_list(self):
-            ''' Generate Feature Vector, Targets and Time-Slot for each training mode (train, validation, test, cal), wether it exists calibration or not.'''
-            if hasattr(self.dataset,'proper_set_x'):
-                Sequences = [self.dataset.proper_set_x,self.dataset.U_valid,self.dataset.U_test,self.dataset.calib_set_x]
-                Targets = [self.dataset.proper_set_y,self.dataset.Utarget_valid,self.dataset.Utarget_test,self.dataset.calib_set_y]  if hasattr(self.dataset,'proper_set_y') else None
-                Time_slots_list = [self.dataset.time_slots_proper,self.dataset.time_slots_valid,self.dataset.time_slots_test,self.dataset.time_slots_calib]
-                Names = ['train','validate','test','cal']
-            
-            else:
-                Sequences = [self.dataset.U_train,self.dataset.U_valid,self.dataset.U_test]
-                Targets = [self.dataset.Utarget_train,self.dataset.Utarget_valid,self.dataset.Utarget_test] if hasattr(self.dataset,'Utarget_train') else None
-                Time_slots_list = [self.dataset.time_slots_train,self.dataset.time_slots_valid,self.dataset.time_slots_test]
-                Names = ['train','validate','test']
-
-            return(Sequences,Targets,Time_slots_list,Names)
-
-
-        def get_dictdataloader(self,batch_size):
-
-            # Load Sequences, Targets, Time-Slots and Names
-            if self.calib_prop is not None:
-                self.get_attr_limits_proper_calib()
-                self.split_proper_calib()
-            Sequences,Targets,Time_slots_list,Names = self.append_set_to_list()
-            # ...
-
-            
-            for feature_vector,target,L_time_slot,training_mode in zip(Sequences,Targets,Time_slots_list,Names):
-                if feature_vector is not None:
-                    inputs = CustomDataset(feature_vector,target,*list(L_time_slot.values())) 
-                    # inputs = list(zip(feature_vector,target,*list(L_time_slot.values()) ))
-                    # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,num_replicas=idr_torch.size,rank=idr_torch.rank,shuffle= ...)
-                    self.dataloader[training_mode] = DataLoader(inputs, 
-                                                                batch_size=(feature_vector.size(0) if training_mode=='cal' else batch_size),
-                                                                shuffle = (training_mode == 'train'),
-                                                                #sampler=sampler,
-                                                                num_workers=self.args.num_workers,
-                                                                persistent_workers=self.args.persistent_workers,
-                                                                pin_memory=self.args.pin_memory,
-                                                                prefetch_factor=self.args.prefetch_factor,
-                                                                drop_last=self.args.drop_last
-                                                                ) 
-                else:
-                    self.dataloader[training_mode] = None
-
-            return(self.dataloader)
-
-    # =============== ....................
-"""
-
-
