@@ -24,6 +24,60 @@ class QuantileLoss(nn.Module):
 
         return(loss)
 
+
+class TensorLimitsKeeper(object):
+    '''
+    Object which stores all the limits from cleaned FeatureVector
+    '''
+    def __init__(self, split_limits,df_dates,df_verif, train_prop,valid_prop, test_prop,step_ahead):
+        self.split_limits = split_limits
+        self.df_dates = df_dates
+        self.df_verif = df_verif
+        self.predicted_dates = df_verif.iloc[:,-1]
+        self.train_prop = train_prop
+        self.valid_prop = valid_prop
+        self.test_prop = test_prop
+        self.step_ahead = step_ahead
+
+    def get_local_df_verif(self,training_mode):
+        '''Set attribute associated to  df_verif_train, df_verif_valid, and df_verif_test '''
+        if self.split_limits[f"last_predicted_{training_mode}_date"] is not None:
+            
+            setattr(self,f"df_verif_{training_mode}",self.df_verif[(self.predicted_dates >= self.split_limits[f"first_predicted_{training_mode}_date"]) & 
+                                                                   (self.predicted_dates < self.split_limits[f"last_predicted_{training_mode}_date"]) 
+                                                                   ]
+            )
+
+    def keep_track_on_df_limits(self,training_mode):
+        '''Set attribute to keep track on Train/Valid/Test df limits : first_{training_mode}_date and last_{training_mode}_date  '''
+        if getattr(self,f"{training_mode}_prop") > 1e-3:
+            setattr(self,f"first_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[0,0])
+            setattr(self,f"last_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[-1,-1])
+        else :
+            setattr(self,f"first_{training_mode}_date",None)
+            setattr(self,f"last_{training_mode}_date",None)
+
+    def get_raw_values_indices(self,training_mode):
+        ''' Set attribute to keep trakc on Train/Valid/Test Tensor limits with a list of indices'''
+        if getattr(self,f"{training_mode}_prop") > 1e-3:
+            reindex = getattr(self, f"df_verif_{training_mode}").stack().unique()
+            setattr(self,f"{training_mode}_indices",self.df_dates[self.df_dates['date'].isin(reindex)].index.tolist())
+
+    def get_raw_tensor_input_by_training_mode(self,dataset,training_mode):
+        if getattr(self,f"{training_mode}_prop") > 1e-3:
+            setattr(dataset,f"{training_mode}_input",dataset.raw_values[getattr(self,f"{training_mode}_indices")])
+
+    def keep_track_on_feature_vect_limits(self,training_mode):
+        if getattr(self,f"{training_mode}_prop") > 1e-3:
+            attribute_first = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.split_limits[f"first_predicted_{training_mode}_date"]]).index[0]
+            attribute_last = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.split_limits[f"last_predicted_{training_mode}_date"]]).index[0]
+            setattr(self,f"first_{training_mode}_U",attribute_first)
+            setattr(self,f"first_{training_mode}_U",attribute_last)
+        else: 
+            setattr(self,f"first_{training_mode}_U",None)
+            setattr(self,f"first_{training_mode}_U",None)
+
+
 class InvalidDatesCleaner(object):
     '''
     Object which remove all the forbidden dates / forbidden indices from a array of indices.

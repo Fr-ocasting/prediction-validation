@@ -6,7 +6,7 @@ from datetime import timedelta
 
 
 # Personnal Import 
-from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect
+from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeeper
 from train_valid_test_split import train_valid_test_split_iterative_method
 from loader import DictDataLoader
 from save_results import save_object,read_object,Dataset_get_save_folder
@@ -520,6 +520,42 @@ class DataSet(object):
         # ...
         self.mask_tensor()
 
+
+    def get_dic_split_limits(self,train_prop,valid_prop,test_prop):
+        # Split with iterative method 
+        if hasattr(self,'Dataset_save_folder'):
+            split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
+        else:
+            split_path = ''
+        if split_path and (os.path.exists(split_path)):   #not empty & path exist
+            try:
+                split_limits = read_object(split_path)
+            except:
+                split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+                save_object(split_limits, split_path)
+                print(f"split_limits.pkl has never been saved or issue with last .pkl save")
+        else : 
+            split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+            if split_path: save_object(split_limits, split_path)  #if not empty, save it 
+
+        return(split_limits)
+
+
+    def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop):
+
+        split_limits = self.get_dic_split_limits(train_prop,valid_prop,test_prop)
+
+        tensor_limits_keeper = TensorLimitsKeeper(split_limits,self.df_dates,self.df_verif,train_prop,valid_prop, test_prop,self.step_ahead)
+        for training_mode in ['train','valid','test']:
+            tensor_limits_keeper.get_local_df_verif(training_mode)   # Build DataFrame Verif associated to each training mode
+            tensor_limits_keeper.keep_track_on_df_limits(training_mode)   # Keep track on DataFrame Limits (dates)
+            tensor_limits_keeper.get_raw_values_indices(training_mode)
+            tensor_limits_keeper.get_raw_tensor_input_by_training_mode(self,training_mode)
+            tensor_limits_keeper.keep_track_on_feature_vect_limits(training_mode)
+        
+        self.tensor_limits_keeper = tensor_limits_keeper
+    
+    '''
     def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop):
         # Split with iterative method 
         if hasattr(self,'Dataset_save_folder'):
@@ -600,6 +636,7 @@ class DataSet(object):
         self.first_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.first_predicted_test_date].index[0]) if test_prop > 1e-3 else None
         self.last_test_U = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.last_predicted_test_date].index[0]) if test_prop > 1e-3 else None
         # ...
+    '''
 
     def get_dataloader(self):
         #   DataLoader 
@@ -639,7 +676,6 @@ class DataSet(object):
 
     def set_train_valid_test_tensor_attribute(self,name,tensor,dims_agg,ref_for_normalization = None, normalize = False):
         ''' 
-
         args
         ----
         ref_for_normalization: represents the reference to be used for normalization.
@@ -667,9 +703,9 @@ class DataSet(object):
             mini, maxi, mean, std = None, None, None, None
 
         splitter = TrainValidTest_Split_Normalize(tensor,dims_agg,
-                                    first_train = self.first_train_U, last_train= self.last_train_U,
-                                    first_valid= self.first_valid_U, last_valid = self.last_valid_U,
-                                    first_test = self.first_test_U, last_test = self.last_test_U,
+                                    first_train = self.tensor_limits_keeper.first_train_U, last_train= self.tensor_limits_keeper.last_train_U,
+                                    first_valid= self.tensor_limits_keeper.first_valid_U, last_valid = self.tensor_limits_keeper.last_valid_U,
+                                    first_test = self.tensor_limits_keeper.first_test_U, last_test = self.tensor_limits_keeper.last_test_U,
                                     minmaxnorm = True,standardize = False)
 
 
