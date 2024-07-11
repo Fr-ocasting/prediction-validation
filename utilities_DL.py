@@ -35,15 +35,35 @@ def match_period_coverage_with_netmob(filename):
         return(coverage_netmob)
 
 
-def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
-    args.num_nodes = n_vertex
-    loss_function = get_loss(args.loss_function_type,args)
-
+def get_args_embedding(args,nb_words_embedding):
     if args.time_embedding:
         config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
         args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
     else:
         args_embedding = None
+    return(args_embedding)
+
+
+def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+    args.num_nodes = n_vertex
+    loss_function = get_loss(args.loss_function_type,args)
+    args_embedding = get_args_embedding(args,nb_words_embedding)
+
+    model,opt,sched = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+
+    if args.TE_transfer:
+        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
+            model  = TE_transfer(model,n_vertex,args,model_dir = 'data/')
+        else:
+            print('TE impossible')
+    
+    return(loss_function,model,opt,sched,args_embedding)
+    
+
+def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+    args.num_nodes = n_vertex
+    loss_function = get_loss(args.loss_function_type,args)
+    args_embedding = get_args_embedding(args,nb_words_embedding)
 
     model_opt_sched_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
     Model_list = [model_opt[0] for model_opt in model_opt_sched_list]

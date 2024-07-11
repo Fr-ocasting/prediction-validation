@@ -277,7 +277,7 @@ class DataSet(object):
             # >>>> [T,N,C,H,W] for an succession of T time-steps,  N spatial units, C channel by image (mobile app_1, .., mobile app_C), and H*W the image dimension
             # >>>> [T,N,C] for a succession of T time-steps, N spatial units, and C channel  (speed,flow, density)
             self.length = tensor.size(0)
-            self.raw_values = tensor
+            self.raw_values = tensor.to(torch.float32)
             self.df_dates = pd.DataFrame(dates,index = np.arange(self.length),columns = ['date'])
 
 
@@ -554,13 +554,26 @@ class DataSet(object):
             tensor_limits_keeper.keep_track_on_feature_vect_limits(training_mode)
         
         self.tensor_limits_keeper = tensor_limits_keeper
-    
 
     def get_dataloader(self):
-        #   DataLoader 
-        #DictDataLoader_object = DictDataLoader(self,args)
-        #dict_dataloader = DictDataLoader_object.get_dictdataloader(args.batch_size)
+        ''' Build DataLoader '''
+        # Train, Valid, Test split : 
+        contextual_train  = {name: self.contextual_tensors[name]['train'] for name in self.contextual_tensors.keys()} #[self.contextual_tensors[name]['train'] for name in self.contextual_tensors.keys()]
+        contextual_valid  = {name: self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()]
+        contextual_test  =  {name: self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()] 
 
+        train_tuple =  self.U_train,self.Utarget_train, contextual_train # *contextual_train
+        valid_tuple =  self.U_valid,self.Utarget_valid, contextual_valid  # *contextual_valid
+        test_tuple =  self.U_test,self.Utarget_test, contextual_test # *contextual_test
+
+        # Load DictDataLoader: 
+        DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,self.args)
+        dict_dataloader = DictDataLoader_object.get_dictdataloader()
+        self.dataloader = dict_dataloader
+
+    """
+    def get_dataloader(self):
+        '''Reutrn dataloader dict: keys = ['train','valid','test','cal']''' 
         # Train, Valid, Test split : 
         train_tuple =  self.U_train,self.Utarget_train,{getattr(self,f"{name}_train") for name in self.contextual_tensors.keys()} # subway_X[train_subset],subway_Y[train_subset], dict(netmob = netmob[train_subset], calendar = calendar[train_subset])
         valid_tuple =  self.U_valid,self.Utarget_valid,{getattr(self,f"{name}_valid") for name in self.contextual_tensors.keys()}  # subway_X[valid_subset],subway_Y[valid_subset], dict(netmob = netmob[valid_subset], calendar = calendar[valid_subset])
@@ -572,11 +585,12 @@ class DataSet(object):
         
         # =============== Ajout ===============
         if 'train' in dict_dataloader.keys(): self.train_loader = dict_dataloader['train']
-        if 'validate' in dict_dataloader.keys(): self.valid_loader = dict_dataloader['validate']
+        if 'valid' in dict_dataloader.keys(): self.valid_loader = dict_dataloader['valid']
         if 'test' in dict_dataloader.keys(): self.test_loader = dict_dataloader['test']
         if 'cal' in dict_dataloader.keys(): self.cal_loader = dict_dataloader['cal']
         # =============== Ajout ===============
         return(dict_dataloader)
+    """
 
 
     def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,dims_agg
@@ -653,16 +667,17 @@ class DataSet(object):
 
         self.display_info_on_inputs()
 
-        # Get NetMob_train, NetMob_valid, NetMob_test, Weather_train etc etc ...
-        if hasattr(self,'contextual_tensors'):
-            for name, tensor_dict in self.contextual_tensors.items():
-                feature_vect = tensor_dict['feature_vect']
-                dims = tensor_dict['dims']
-                raw_data = tensor_dict['raw_data']
-                normalize = tensor_dict['normalize']
-                self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
-        else:
-            print('\nNo Contextual Data has been considered')
+        if False : 
+            # Get NetMob_train, NetMob_valid, NetMob_test, Weather_train etc etc ...
+            if hasattr(self,'contextual_tensors'):
+                for name, tensor_dict in self.contextual_tensors.items():
+                    feature_vect = tensor_dict['feature_vect']
+                    dims = tensor_dict['dims']
+                    raw_data = tensor_dict['raw_data']
+                    normalize = tensor_dict['normalize']
+                    self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
+            else:
+                print('\nNo Contextual Data has been considered')
 
         #if self.time_slots_labels is not None : 
         #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
@@ -672,9 +687,10 @@ class DataSet(object):
 
 
 class PersonnalInput(DataSet):
-    def __init__(self,invalid_dates,*args, **kwargs):
+    def __init__(self,invalid_dates,arg_parser,*args, **kwargs):
         super(PersonnalInput,self).__init__(*args, **kwargs)
         self.invalid_dates = invalid_dates
+        self.args = arg_parser
         
     def preprocess(self,train_prop,valid_prop,test_prop,dims_agg):
         self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop,dims_agg)

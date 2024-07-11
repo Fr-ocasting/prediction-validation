@@ -101,10 +101,10 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,dataloader,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
+    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True,pos_calendar = 0):
         super().__init__()
         self.dataset = dataset
-        self.dataloader = dataloader
+        self.dataloader = dataset.dataloader
         self.training_mode = 'train'
         self.optimizer = optimizer
         self.loss_function = loss_function
@@ -126,6 +126,7 @@ class Trainer(object):
         self.picp_list = []
         self.mpiw_list = []
         self.show_figure = show_figure
+        self.pos_calendar = pos_calendar
         if trial_id1 is None:
             if fold is None: 
                 trial_id1,trial_id2 = get_trial_id(args,fold)
@@ -171,7 +172,7 @@ class Trainer(object):
         self.training_mode = 'train'
         self.model.train()   #Activate Dropout 
         self.loop_epoch()
-        self.training_mode = 'validate'
+        self.training_mode = 'valid'
         self.model.eval()   # Desactivate Dropout 
         self.loop_epoch() 
 
@@ -203,8 +204,8 @@ class Trainer(object):
                                     conformity_scores_type = self.args.conformity_scores_type,
                                     quantile_method = self.args.quantile_method,print_info = False)  
         # Testing
-        preds,Y_true,T_labels = self.test_prediction(training_mode = 'validate')
-        #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'validate')
+        preds,Y_true,T_labels = self.test_prediction(training_mode = 'valid')
+        #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'valid')
 
         # get PI
         pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
@@ -298,44 +299,41 @@ class Trainer(object):
     def prefetch(self):
         self.chrono.prefetch_all_data()
         if hasattr(self,'already_prefetch'):
-            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataset.train_loader)
+            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataloader['train'])
         else:
-            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataset.train_loader) #if hasattr(self.dataset,'train_loader'): 
-            self.dataset.prefetch_valid_loader = self.prefetch_to_device(self.dataset.valid_loader) #if hasattr(self.dataset,'valid_loader'): 
-            self.dataset.prefetch_test_loader = self.prefetch_to_device(self.dataset.test_loader) #if hasattr(self.dataset,'test_loader'): 
-            self.dataset.prefetch_cal_loader = self.prefetch_to_device(self.dataset.cal_loader) #if hasattr(self.dataset,'cal_loader'): 
+            self.dataset.prefetch_train_loader = self.prefetch_to_device(self.dataloader['train']) #if hasattr(self.dataset,'train_loader'): 
+            self.dataset.prefetch_valid_loader = self.prefetch_to_device(self.dataloader['valid']) #if hasattr(self.dataset,'valid_loader'): 
+            self.dataset.prefetch_test_loader = self.prefetch_to_device(self.dataloader['test']) #if hasattr(self.dataset,'test_loader'): 
+            self.dataset.prefetch_cal_loader = self.prefetch_to_device(self.dataloader['cal']) #if hasattr(self.dataset,'cal_loader'): 
             self.already_prefetch = True
         self.chrono.prefetch_all_data()
             
     def get_loader(self):
         if self.args.prefetch_all:
+            raise ValueError('prefetch_all bizarre, à re-coder')
             #loader = self.dataloader_gpu[self.training_mode]
             if self.training_mode == 'train': loader = self.dataset.prefetch_train_loader
-            if self.training_mode == 'validate': loader = self.dataset.prefetch_valid_loader
+            if self.training_mode == 'valid': loader = self.dataset.prefetch_valid_loader
             if self.training_mode == 'test': loader = self.dataset.prefetch_test_loader
             if self.training_mode == 'cal': loader = self.dataset.prefetch_cal_loader           
         else:
-            if self.training_mode == 'train': loader = self.dataset.train_loader
-            if self.training_mode == 'validate': loader = self.dataset.valid_loader
-            if self.training_mode == 'test': loader = self.dataset.test_loader
-            if self.training_mode == 'cal': loader = self.dataset.cal_loader
-                #loader = self.dataloader[self.training_mode]
+            if self.training_mode == 'train': loader = self.dataloader['train']
+            if self.training_mode == 'valid': loader = self.dataloader['valid']
+            if self.training_mode == 'test': loader = self.dataloader['test']
+            if self.training_mode == 'cal': loader = self.dataloader['cal']
         return(loader)
     
-    def load_to_device(self,x_b,y_b,T_b):
+    def load_to_device(self,x_b,y_b,contextual_b): # T_b
         # If not already Pre-fetch: 
-        if self.args.prefetch_all:
-            t_b = T_b[self.args.calendar_class]
-        else:
-            t_b = T_b[self.args.calendar_class]
+        if not(self.args.prefetch_all):
+            #t_b = T_b[self.args.calendar_class]
             x_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking)
             y_b = y_b.to(self.args.device,non_blocking = self.args.non_blocking)
-            t_b = t_b.to(self.args.device,non_blocking = self.args.non_blocking)
-        
+            contextual_b = [c_b.to(self.args.device,non_blocking = self.args.non_blocking) for c_b in contextual_b]
             
-        return(x_b,y_b,t_b)
+        return(x_b,y_b,contextual_b)
     
-    def loop_batch(self,x_b,y_b,t_b,nb_samples,loss_epoch):
+    def loop_batch(self,x_b,y_b,contextual_b,nb_samples,loss_epoch):
         #Forward 
         if self.training_mode=='train':
             self.chrono.forward()
@@ -343,12 +341,14 @@ class Trainer(object):
         if self.args.mixed_precision:
             with autocast():
                 if self.args_embedding : 
+                    t_b = contextual_b[self.pos_calendar]
                     pred = self.model(x_b,t_b.long())
                 else:
                     pred = self.model(x_b)
                 loss = self.loss_function(pred,y_b)
         else:
             if self.args_embedding : 
+                t_b = contextual_b[self.pos_calendar]
                 pred = self.model(x_b,t_b.long())
             else:
                 pred = self.model(x_b)
@@ -371,14 +371,16 @@ class Trainer(object):
     def loop_through_batchs(self,loader):
         ''' Small difference whether we first prefetch or not (T_b or *T_b) '''
         nb_samples,loss_epoch = 0,0
+
         if self.args.prefetch_all:
+            raise ValueError('prefetch_all not correctly implemented')
             for x_b,y_b,T_b in loader:  #  self.dataloader_gpu[self.training_mode] 
                 x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
                 nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
         else:
-            for x_b,y_b,*T_b in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
-                x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
-                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
+            for x_b,y_b,contextual_b in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
+                x_b,y_b,contextual_b = self.load_to_device(x_b,y_b,contextual_b)
+                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,contextual_b,nb_samples,loss_epoch)
         return(nb_samples,loss_epoch)
 
     def loop_epoch(self):
@@ -391,7 +393,7 @@ class Trainer(object):
         with torch.set_grad_enabled(self.training_mode=='train'):
             loader = self.get_loader()
             nb_samples,loss_epoch = self.loop_through_batchs(loader)
-  
+
 
         if self.training_mode=='validation':
             self.chrono.validation()
@@ -410,12 +412,16 @@ class Trainer(object):
         '''
         if calibration_calendar_class is None:
             calibration_calendar_class = self.args.calendar_class
+            pos_calibration_calendar_class = self.pos_calendar
         str_info = ''
         self.model.eval()
         with torch.no_grad():
             # Load Calibration Dataset :
-            data = [[x_b,y_b,t_b[self.args.calendar_class],t_b[calibration_calendar_class]] for  x_b,y_b,*t_b in self.dataloader['cal']]
-            X_cal,Y_cal,T_pred,T_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_,_] in data]).to(self.args.device),torch.cat([t_pred for [_,_,t_pred,_] in data]).to(self.args.device),torch.cat([t_cal for [_,_,_,t_cal] in data]).to(self.args.device)
+            data = [[x_b,y_b,contextual_b[self.pos_calendar],contextual_b[pos_calibration_calendar_class]] for  x_b,y_b,contextual_b in self.dataloader['cal']]
+            X_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(self.args.device)
+            Y_cal = torch.cat([y_b for [_,y_b,_,_] in data]).to(self.args.device)
+            T_pred = torch.cat([t_pred for [_,_,t_pred,_] in data]).to(self.args.device)
+            T_cal = torch.cat([t_cal for [_,_,_,t_cal] in data]).to(self.args.device)
 
             # Forward Pass: 
             if self.args_embedding : 
@@ -514,7 +520,7 @@ class Trainer(object):
             self.model.eval()
         with torch.no_grad():       
             if X is None:
-                data = [[x_b,y_b,t_b[self.args.calendar_class]] for  x_b,y_b,*t_b in self.dataloader[training_mode]]
+                data = [[x_b,y_b,contextual_b[self.pos_calendar][self.args.calendar_class]] for  x_b,y_b,*contextual_b in self.dataloader[training_mode]]
                 X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             if self.args_embedding : 
                 Pred = self.model(X,T_labels.long())
@@ -535,7 +541,7 @@ class Trainer(object):
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):
         if training_mode == 'train':
             self.train_loss.append(loss_epoch/nb_samples)
-        elif training_mode == 'validate':
+        elif training_mode == 'valid':
             self.valid_loss.append(loss_epoch/nb_samples)
-        elif training_mode == 'calibrate':
+        elif training_mode == 'cal':
             self.calib_loss.append(loss_epoch/nb_samples)

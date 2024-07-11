@@ -13,11 +13,11 @@ class calib_prop_splitter(object):
     calib_prop : proportion of calibration set within  training set
     '''
 
-    def __init__(self,U,U_target,contextual_tensor,calib_prop):
+    def __init__(self,U,U_target,contextual_tensors,calib_prop):
         super(calib_prop_splitter,self).__init__()
         self.U = U
         self.U_target = U_target
-        self.contextual_tensor = contextual_tensor    
+        self.contextual_tensors = contextual_tensors    
         self.calib_prop = calib_prop
 
         self.get_attr_limits_proper_calib()
@@ -36,12 +36,12 @@ class calib_prop_splitter(object):
         ''' Split the training set in Proper and Calibration set '''
         # Proper Set
         self.proper_set_x = self.U[self.indices_train]
-        self.proper_contextual = {name_ds: tensor[self.indices_train] for name_ds,tensor in self.contextual_tensor.items()}
+        self.proper_contextual = {name_ds: tensor[self.indices_train] for name_ds,tensor in self.contextual_tensors.items()}
         self.proper_set_y = self.U_target[self.indices_train]
 
         # Calib Set : 
         self.calib_set_x = self.U[self.indices_cal]
-        self.calib_contextual = {name_ds: tensor[self.indices_cal] for name_ds,tensor in self.contextual_tensor.items()}
+        self.calib_contextual = {name_ds: tensor[self.indices_cal] for name_ds,tensor in self.contextual_tensors.items()}
         self.calib_set_y = self.U[self.indices_cal]
 
 
@@ -101,9 +101,9 @@ class DictDataLoader(object):
 
     def load_train(self):
         # Load Train:
-        U,U_target,contextual_tensor = self.train_tuple
+        U,U_target,contextual_tensors = self.train_tuple
         if self.calib_prop is not None :
-            splitter = calib_prop_splitter(U,U_target,contextual_tensor,self.calib_prop)
+            splitter = calib_prop_splitter(U,U_target,contextual_tensors,self.calib_prop)
             train_loader = CustomDataLoder(splitter.proper_set_x,splitter.proper_set_y,splitter.proper_contextual,self.args, shuffle = False)  #already shuffled 
             train_loader.call_dataloader('train')
 
@@ -112,7 +112,7 @@ class DictDataLoader(object):
             return(train_loader,calib_loader)
 
         else:
-            train_loader = CustomDataLoder(U,U_target,contextual_tensor,self.args, shuffle = True) 
+            train_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = True) 
             train_loader.call_dataloader('train')
             return(train_loader,None)
         # ...
