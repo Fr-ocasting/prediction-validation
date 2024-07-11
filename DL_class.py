@@ -69,13 +69,13 @@ class TensorLimitsKeeper(object):
 
     def keep_track_on_feature_vect_limits(self,training_mode):
         if getattr(self,f"{training_mode}_prop") > 1e-3:
-            attribute_first = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.split_limits[f"first_predicted_{training_mode}_date"]]).index[0]
-            attribute_last = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.split_limits[f"last_predicted_{training_mode}_date"]]).index[0]
+            attribute_first = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.split_limits[f"first_predicted_{training_mode}_date"]].index[0])
+            attribute_last = self.df_verif.index.get_loc(self.df_verif[self.df_verif[f"t+{self.step_ahead - 1}"] == self.split_limits[f"last_predicted_{training_mode}_date"]].index[0])
             setattr(self,f"first_{training_mode}_U",attribute_first)
-            setattr(self,f"first_{training_mode}_U",attribute_last)
+            setattr(self,f"last_{training_mode}_U",attribute_last)
         else: 
             setattr(self,f"first_{training_mode}_U",None)
-            setattr(self,f"first_{training_mode}_U",None)
+            setattr(self,f"last_{training_mode}_U",None)
 
 
 class InvalidDatesCleaner(object):
