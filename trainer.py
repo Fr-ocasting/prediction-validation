@@ -358,6 +358,7 @@ class Trainer(object):
                 pred = self.model(x_b,t_b.long())
             else:
                 pred = self.model(x_b)
+
             loss = self.loss_function(pred,y_b)       
 
         # Back propagation (after each mini-batch)

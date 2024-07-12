@@ -8,7 +8,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     if model_name== 'CNN':
         config = dict(model_name= model_name,epochs = [50],
                       enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
-                    c_in = 1, C_outs = [[16,2]],H_dims = [[16,16]],out_dim = 2, padding = 0
+                    c_in = 1, C_outs = [[16,2]],H_dims = [[16,16]], padding = 0
                     ) 
 
     if model_name== 'MTGNN':
@@ -16,7 +16,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                     enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',   # VERIFIER CA  !!!!!!!!!!!!!!!!!!!!!!!
                     dilation_exponential=1,
                     c_in = 1,conv_channels=32, residual_channels=32, 
-                    skip_channels=64, end_channels=128,out_dim=2,layers=3,layer_norm_affline=True, 
+                    skip_channels=64, end_channels=128,layers=3,layer_norm_affline=True, 
                     gcn_true = True, # learn graph structure
                     buildA_true = True, # learn graph structure
                     gcn_depth = 2,propalpha=0.05,predefined_A=None,# pour la Graph Convolution
@@ -41,7 +41,6 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         graph_conv_type = ['graph_conv'], # ['cheb_graph_conv', 'graph_conv'],
                         gso_type = ['sym_norm_lap'], # ['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj'],
                         enable_bias = 'True',
-                        out_dim = 2,
                         adj_type = 'dist',
                         enable_padding = True,
 
@@ -96,7 +95,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['weight_decay'] = 0.0005
     config['momentum'] = 0.99
-    config['loss_function_type'] = 'quantile'
+    config['loss_function_type'] = 'quantile' # MSE
     config['single_station']= False
     config['batch_size'] = 32
     config['lr'] = 1e-3
