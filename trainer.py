@@ -198,13 +198,13 @@ class Trainer(object):
             if epoch == 1:
                 print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
     
-    def get_pi_from_prediction(self):
+    def get_pi_from_prediction(self,training_mode='valid'):
         # Calibration 
         Q = self.conformal_calibration(self.args.alpha,self.dataset,
                                     conformity_scores_type = self.args.conformity_scores_type,
                                     quantile_method = self.args.quantile_method,print_info = False)  
         # Testing
-        preds,Y_true,T_labels = self.test_prediction(training_mode = 'valid')
+        preds,Y_true,T_labels = self.test_prediction(training_mode = training_mode)
         #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'valid')
 
         # get PI
@@ -399,7 +399,7 @@ class Trainer(object):
             self.chrono.validation()
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def conformal_calibration(self,alpha,dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
+    def conformal_calibration(self,alpha,tensor_dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -408,7 +408,7 @@ class Trainer(object):
         inputs
         -------
         - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
-        - dataset : DataSet object. Allow us to unormalize tensor
+        - tensor_dataset : TensorDataset object. Allow us to unormalize tensor
         '''
         if calibration_calendar_class is None:
             calibration_calendar_class = self.args.calendar_class
@@ -445,8 +445,9 @@ class Trainer(object):
             # ...
             
             # unormalized lower and upper band  
-            lower_q, upper_q = dataset.unormalize_tensor(lower_q,device = self.args.device),dataset.unormalize_tensor(upper_q,device = self.args.device)
-            Y_cal = dataset.unormalize_tensor(Y_cal,device = self.args.device)
+            lower_q = tensor_dataset.unormalize_tensor(inputs = lower_q,dims = tensor_dataset.dims,feature_vect = False ) # ,device = self.args.device
+            upper_q  = tensor_dataset.unormalize_tensor(inputs = upper_q,dims = tensor_dataset.dims,feature_vect = False ) # , device = self.args.device
+            Y_cal = tensor_dataset.unormalize_tensor(inputs = Y_cal, dims = tensor_dataset.dims, feature_vect = False ) # ,device = self.args.device
             # ...
 
             # Get Confority scores: 
