@@ -11,6 +11,7 @@ import json
 
 ###############################
 #Author : Bertrand CABOT from IDRIS(CNRS)
+#Modified by Romain ROCHAS from LICIT-ECO7 
 ########################
 
 class Chronometer:

@@ -119,16 +119,16 @@ class DictDataLoader(object):
 
     def load_valid(self):
         # Load Valid:
-        U,U_target,contextual_tensor = self.valid_tuple
-        valid_loader = CustomDataLoder(U,U_target,contextual_tensor,self.args, shuffle = False)
+        U,U_target,contextual_tensors = self.valid_tuple
+        valid_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = False)
         valid_loader.call_dataloader('valid')
         return(valid_loader)
         # ...
 
     def load_test(self):
         # Load Test: 
-        U,U_target,contextual_tensor = self.test_tuple
-        test_loader = CustomDataLoder(U,U_target,contextual_tensor,self.args, shuffle = False)
+        U,U_target,contextual_tensors = self.test_tuple
+        test_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = False)
         test_loader.call_dataloader('test')
         return(test_loader)
         # ...
@@ -155,15 +155,20 @@ class CustomDataset(Dataset):
     def __init__(self,X,Y,contextual):
         self.X = X
         self.Y = Y
-        self.contextual = contextual
+        if len(contextual) > 0: self.contextual = contextual 
         
     def __len__(self):
         return len(self.X)
     
     def __getitem__(self,idx):
         #T_data = [t[idx] for t in self.T]
-        Contextual_data = tuple(contextual_tensor[idx] for _,contextual_tensor in self.contextual.items())
-        return self.X[idx], self.Y[idx], Contextual_data
+        if hasattr(self,'contextual'):
+            Contextual_data = tuple(contextual_tensor[idx] for _,contextual_tensor in self.contextual.items())
+            return self.X[idx], self.Y[idx], Contextual_data
+        else:
+            return self.X[idx], self.Y[idx]
+
+
 
 if __name__ == '__main__':
     import argparse 

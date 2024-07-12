@@ -26,6 +26,12 @@ class full_model(nn.Module):
 
 
 def load_model(args,args_embedding,dic_class2rpz):
+    # Define Output dimension: 
+    if args.loss_function_type == 'MSE': out_dim = 1
+    elif args.loss_function_type == 'quantile': out_dim = 2
+    else: raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    # ...
+    
     if args.model_name == 'CNN': 
         model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
@@ -33,7 +39,7 @@ def load_model(args,args_embedding,dic_class2rpz):
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
                     dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
-                    skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
+                    skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=out_dim, 
                     layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
         
     if args.model_name == 'DCRNN':
@@ -55,7 +61,7 @@ def load_model(args,args_embedding,dic_class2rpz):
             blocks.append([128])
         elif Ko > 0:
             blocks.append([128, 128])
-        blocks.append([args.out_dim])
+        blocks.append([out_dim])
 
         #print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
         #print(f'Blocks: {blocks}')

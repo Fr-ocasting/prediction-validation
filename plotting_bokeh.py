@@ -10,10 +10,9 @@ from paths import save_folder
 from PI_object import PI_object
 # ...
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True,calibration_calendar_class = None):
-    if calibration_calendar_class is None:
-        calibration_calendar_class = args.calendar_class
-    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station,calibration_calendar_class)
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True,pos_calibration_calendar_class = None):
+
+    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station,pos_calibration_calendar_class)
     p2 = plot_loss(trainer)
     
     if args.time_embedding:
@@ -46,7 +45,7 @@ def hm2hour(hm):
 
 def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     # Get unique labels : 
-    data = [[x_b,y_b,t_b[trainer.args.calendar_class]] for  x_b,y_b,*t_b in data_loader['test']]
+    data = [[x_b,y_b,t_b[trainer.pos_calendar]] for  x_b,y_b,t_b in data_loader['test']]
     T_test = torch.cat([t_b for [_,_,t_b] in data])
     labels = T_test.unique().long().to(args.device)
     # ...
@@ -176,7 +175,7 @@ def plot_loss(trainer,location = "top_right"):
     return(p)
 
 
-def plot_prediction(trainer,dataset,Q,args,station,calibration_calendar_class,location = "top_right"):
+def plot_prediction(trainer,dataset,Q,args,station,pos_calibration_calendar_class,location = "top_right"):
     
     (preds,Y_true,T_labels) = trainer.testing(dataset)
     if len(preds.size()) == 2:
@@ -184,12 +183,19 @@ def plot_prediction(trainer,dataset,Q,args,station,calibration_calendar_class,lo
     # ...
 
     # PI
-    data = [t_b[calibration_calendar_class] for  x_b,y_b,*t_b in trainer.dataloader['test']]
-    T_labels_cal= torch.cat(data).to(trainer.args.device)
-
     if preds.size(-1) > 1:
+        # Define PI classic
         pi = PI_object(preds,Y_true,alpha = args.alpha, type_calib = 'classic')     # PI 'classic' :
-        pi_cqr = PI_object(preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels_cal)      # PI 'CQR' 
+        # ...
+
+        # Define CQR according a specified clustering by a calibration calendar class:
+        if pos_calibration_calendar_class is None:
+            pos_calibration_calendar_class = trainer.positions['calendar']
+        data = [t_b[pos_calibration_calendar_class] for  x_b,y_b,t_b in trainer.dataloader['test']]
+        T_labels_cal= torch.cat(data).to(trainer.args.device)
+        pi_cqr = PI_object(preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels_cal)   
+        # ...
+
         # str legend
         str_picp,str_mpiw = f"{'{:.2%}'.format(pi.picp)}" , f"{'{:.2f}'.format(pi.mpiw)}"
         str_picp_cqr, str_mpiw_cqr = f"{'{:.2%}'.format(pi_cqr.picp)}" , f"{'{:.2f}'.format(pi_cqr.mpiw)}"
@@ -209,28 +215,28 @@ def plot_prediction(trainer,dataset,Q,args,station,calibration_calendar_class,lo
     
     if preds.size(-1)>1:
         # PI bands     
-        p.line(dataset.df_verif_test.iloc[:,-1], pi_cqr.upper[:,station,0].cpu().numpy(), 
+        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi_cqr.upper[:,station,0].cpu().numpy(), 
             legend_label=f"PI \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}", 
             line_dash="dashed", line_width=1, color="green")
-        p.line(dataset.df_verif_test.iloc[:,-1], pi_cqr.lower[:,station,0].cpu().numpy(), line_dash="dashed", line_width=1, color="green")
+        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi_cqr.lower[:,station,0].cpu().numpy(), line_dash="dashed", line_width=1, color="green")
         # ...
         
         # Quantile Band
-        p.line(dataset.df_verif_test.iloc[:,-1], pi.upper[:,station,0].cpu().numpy(), 
+        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi.upper[:,station,0].cpu().numpy(), 
             legend_label=f"Quantile  {args.alpha/2} - {1-args.alpha/2} \n PICP: {str_picp} \n MPIW: {str_mpiw}", 
             line_dash="dashed", line_width=1, color="red")
-        p.line(dataset.df_verif_test.iloc[:,-1], pi.lower[:,station,0].cpu().numpy(),line_dash="dashed", line_width=1, color="red")    
+        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi.lower[:,station,0].cpu().numpy(),line_dash="dashed", line_width=1, color="red")    
         # ...
 
     else:
         # Predicted Values
-        p.line(dataset.df_verif_test.iloc[:,-1], preds[:,station,0].cpu().numpy(), 
+        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], preds[:,station,0].cpu().numpy(), 
             legend_label=f"Prediction", 
             line_dash="dashed", line_width=1, color="red")
 
     
     # True Value: 
-    p.line(dataset.df_verif_test.iloc[:,-1], Y_true[:,station,0].cpu().numpy(), legend_label="True Value", line_width=2, color="blue")
+    p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], Y_true[:,station,0].cpu().numpy(), legend_label="True Value", line_width=2, color="blue")
     # ...
     
     #p.legend.location = location

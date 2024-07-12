@@ -53,7 +53,7 @@ class TrainValidTest_Split_Normalize(object):
             raise ValueError("Neither 'train_indices' nor 'first_train' attribute has been designed ")
         
 
-    def split_normalize_tensor_datasets(self,normalizer = None, normalize = True,feature_vect = True):
+    def split_normalize_tensor_datasets(self,normalizer = None):
         '''Load TensorDataset (train_dataset) object from data_train.
         Define TensorDataset object from valid (valid_dataset) and test (test_dataset). 
         Associate statistics from train dataset to valid and test dataset
@@ -63,13 +63,13 @@ class TrainValidTest_Split_Normalize(object):
         valid_dataset = TensorDataset(self.data_valid, normalized = False, normalizer=normalizer)
         test_dataset = TensorDataset(self.data_test,normalized = False, normalizer=normalizer)
 
-        if normalize:
+        if normalizer is not None:
             print('\n','Tackling Training Set')
-            train_dataset.normalize(feature_vect)
+            train_dataset.normalize(feature_vect = True)
             print('\n','Tackling Validation Set')
-            valid_dataset.normalize(feature_vect)
+            valid_dataset.normalize(feature_vect = True)
             print('\n','Tackling Testing Set')
-            test_dataset.normalize(feature_vect)
+            test_dataset.normalize(feature_vect = True)
         
         return(train_dataset,valid_dataset,test_dataset)
 
@@ -536,7 +536,7 @@ class DataSet(object):
         self.split_tensors(normalize = True)
 
 
-    def set_train_valid_test_tensor_attribute(self,name,tensor,ref_for_normalization = None, normalize = False):
+    def set_train_valid_test_tensor_attribute(self,name,tensor):
         ''' 
         args
         ----
@@ -553,7 +553,6 @@ class DataSet(object):
         >>>> output : mini.size() = [5,7],  mean.size() = [5,7] ....
         '''
 
-        normalizer = Normalizer(reference = ref_for_normalization,minmaxnorm = self.minmaxnorm, standardize = self.standardize, dims = self.dims) if normalize else None
 
         splitter = TrainValidTest_Split_Normalize(tensor,
                                     first_train = self.tensor_limits_keeper.first_train_U, last_train= self.tensor_limits_keeper.last_train_U,
@@ -562,14 +561,11 @@ class DataSet(object):
                                     minmaxnorm = self.minmaxnorm,standardize = self.standardize)
         
         
-        train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(normalizer, normalize=normalize,feature_vect=True)
+        train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(normalizer = self.normalizer)
 
-
-        #train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(mini = mini, maxi = maxi, mean = mean, std = std, normalize=normalize,feature_vect=True)
-
-        setattr(self,f"{name}_ds_train", train_tensor_ds)
-        setattr(self,f"{name}_ds_valid", valid_tensor_ds)
-        setattr(self,f"{name}_ds_test", test_tensor_ds)
+        #setattr(self,f"{name}_ds_train", train_tensor_ds)
+        #setattr(self,f"{name}_ds_valid", valid_tensor_ds)
+        #setattr(self,f"{name}_ds_test", test_tensor_ds)
 
         setattr(self,f"{name}_train", train_tensor_ds.tensor)
         setattr(self,f"{name}_valid", valid_tensor_ds.tensor)
@@ -588,11 +584,12 @@ class DataSet(object):
 
     def split_tensors(self,normalize):
         ''' Split input tensors  in Train/Valid/Test part '''
+        self.normalizer = Normalizer(reference = self.train_input,minmaxnorm = self.minmaxnorm, standardize = self.standardize, dims = self.dims) if normalize else None
         # Get U_train, U_valid, U_test
-        self.set_train_valid_test_tensor_attribute('U',self.U,ref_for_normalization = self.train_input, normalize = normalize)
+        self.set_train_valid_test_tensor_attribute('U',self.U)
 
         # Get Utarget_train, Utarget_valid, Utarget_test 
-        self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget,ref_for_normalization = self.train_input, normalize = normalize)
+        self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget)
 
         self.display_info_on_inputs()
 

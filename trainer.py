@@ -101,7 +101,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True,pos_calendar = 0):
+    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True,positions = {}):
         super().__init__()
         self.dataset = dataset
         self.dataloader = dataset.dataloader
@@ -116,6 +116,9 @@ class Trainer(object):
         self.valid_loss = []
         self.calib_loss =[]
         self.args = args
+        if self.args.loss_function_type != 'quantile':
+            self.args.track_pi = False
+
         self.alpha = args.alpha
         self.args_embedding = args_embedding
         #self.save_path  = f"best_model.pkl" if save_dir is not None else None
@@ -126,7 +129,10 @@ class Trainer(object):
         self.picp_list = []
         self.mpiw_list = []
         self.show_figure = show_figure
-        self.pos_calendar = pos_calendar
+        if 'calendar' in list(positions.keys()):
+            self.pos_calendar = positions['calendar']
+        if 'netmob' in list(positions.keys()):
+            self.pos_netmob = positions['netmob']    
         if trial_id1 is None:
             if fold is None: 
                 trial_id1,trial_id2 = get_trial_id(args,fold)
@@ -200,7 +206,7 @@ class Trainer(object):
     
     def get_pi_from_prediction(self,training_mode='valid'):
         # Calibration 
-        Q = self.conformal_calibration(self.args.alpha,self.dataset,
+        Q = self.conformal_calibration(self.args.alpha,
                                     conformity_scores_type = self.args.conformity_scores_type,
                                     quantile_method = self.args.quantile_method,print_info = False)  
         # Testing
@@ -285,7 +291,7 @@ class Trainer(object):
         performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
         self.save_best_model(checkpoint,epoch,performance)
         
-        print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+        print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.tensor_limits_keeper.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
 
         self.chrono.save_model()
 
@@ -329,7 +335,7 @@ class Trainer(object):
             #t_b = T_b[self.args.calendar_class]
             x_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking)
             y_b = y_b.to(self.args.device,non_blocking = self.args.non_blocking)
-            contextual_b = [c_b.to(self.args.device,non_blocking = self.args.non_blocking) for c_b in contextual_b]
+            if contextual_b is not None: contextual_b = [c_b.to(self.args.device,non_blocking = self.args.non_blocking) for c_b in contextual_b]
             
         return(x_b,y_b,contextual_b)
     
@@ -378,7 +384,12 @@ class Trainer(object):
                 x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
                 nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
         else:
-            for x_b,y_b,contextual_b in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
+            for inputs in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
+                if len(self.dataset.contextual_tensors)>0:
+                    x_b,y_b,contextual_b = inputs
+                else:
+                    x_b,y_b = inputs
+                    contextual_b = None
                 x_b,y_b,contextual_b = self.load_to_device(x_b,y_b,contextual_b)
                 nb_samples,loss_epoch = self.loop_batch(x_b,y_b,contextual_b,nb_samples,loss_epoch)
         return(nb_samples,loss_epoch)
@@ -399,7 +410,7 @@ class Trainer(object):
             self.chrono.validation()
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
 
-    def conformal_calibration(self,alpha,tensor_dataset,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
+    def conformal_calibration(self,alpha,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -408,7 +419,6 @@ class Trainer(object):
         inputs
         -------
         - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
-        - tensor_dataset : TensorDataset object. Allow us to unormalize tensor
         '''
         if calibration_calendar_class is None:
             calibration_calendar_class = self.args.calendar_class
@@ -445,9 +455,9 @@ class Trainer(object):
             # ...
             
             # unormalized lower and upper band  
-            lower_q = tensor_dataset.unormalize_tensor(inputs = lower_q,dims = tensor_dataset.dims,feature_vect = False ) # ,device = self.args.device
-            upper_q  = tensor_dataset.unormalize_tensor(inputs = upper_q,dims = tensor_dataset.dims,feature_vect = False ) # , device = self.args.device
-            Y_cal = tensor_dataset.unormalize_tensor(inputs = Y_cal, dims = tensor_dataset.dims, feature_vect = False ) # ,device = self.args.device
+            lower_q = self.dataset.normalizer.unormalize_tensor(inputs = lower_q,feature_vect = True ) # ,device = self.args.device
+            upper_q  = self.dataset.normalizer.unormalize_tensor(inputs = upper_q,feature_vect = True ) # , device = self.args.device
+            Y_cal = self.dataset.normalizer.unormalize_tensor(inputs = Y_cal, feature_vect = True ) # ,device = self.args.device
             # ...
 
             # Get Confority scores: 
@@ -521,7 +531,7 @@ class Trainer(object):
             self.model.eval()
         with torch.no_grad():       
             if X is None:
-                data = [[x_b,y_b,contextual_b[self.pos_calendar][self.args.calendar_class]] for  x_b,y_b,*contextual_b in self.dataloader[training_mode]]
+                data = [[x_b,y_b,contextual_b[self.pos_calendar]] for  x_b,y_b,contextual_b in self.dataloader[training_mode]]
                 X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             if self.args_embedding : 
                 Pred = self.model(X,T_labels.long())
@@ -530,11 +540,12 @@ class Trainer(object):
                 
         return(Pred,Y_true,T_labels)
 
-    def testing(self,dataset, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
+    def testing(self, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
         (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
 
-        test_pred = dataset.unormalize_tensor(test_pred, device = self.args.device)
-        Y_true = dataset.unormalize_tensor(Y_true, device = self.args.device)
+        # Set feature_vect = True cause output last dimension = 2 if quantile_loss or = 1.
+        test_pred = self.dataset.normalizer.unormalize_tensor(inputs = test_pred,feature_vect = True) #  device = self.args.device
+        Y_true = self.dataset.normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
 
         #df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
         return(test_pred,Y_true,T_labels)#,df_metrics)  
