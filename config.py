@@ -101,11 +101,18 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['lr'] = 1e-3
     config['dropout'] = 0.2
 
-    config['num_workers'] = 1 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
-    config['persistent_workers'] = True # False 
-    config['pin_memory'] = True # False 
-    config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
-    config['drop_last'] = False  # True
+    if torch.cuda.is_available():
+        config['num_workers'] = 2 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+        config['persistent_workers'] = True # False 
+        config['pin_memory'] = True # False 
+        config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
+        config['drop_last'] = False  # True
+    else:
+        config['num_workers'] = 0 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+        config['persistent_workers'] = False # False 
+        config['pin_memory'] = True # False 
+        config['prefetch_factor'] = None # None, 2,3,4,5 ... 
+        config['drop_last'] = False  # True      
     
     
     config['non_blocking'] = True

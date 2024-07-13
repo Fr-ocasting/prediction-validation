@@ -530,15 +530,39 @@ class Trainer(object):
             self.model.train()
         else: 
             self.model.eval()
-        with torch.no_grad():       
+        Preds,Y_true = [],[]
+        with torch.no_grad():
+            # Testing à modifier. 
+            # Essayer de voir s'il n'y a pas des méthode (.loop) que je peux directement utiliser au lieu de encore
+            # re-définir une méthode qui n'a pas trop d'intérêt ici.
+
+            # Algo:
+            # for inputs in dataloader: 
+            #   pred = model(inputs)
+
+            # Gérer les input (x_b,y_b ou x_b,y_b,contextual_b) dans le forward de model ?????
+            '''
             if X is None:
                 data = [[x_b,y_b,contextual_b[self.pos_calendar]] for  x_b,y_b,contextual_b in self.dataloader[training_mode]]
                 X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
             if self.args_embedding : 
                 Pred = self.model(X,T_labels.long())
-            else:
+            else :
                 Pred = self.model(X) 
-                
+            '''
+            for inputs in self.dataloader[training_mode]:
+                if len(self.contextual_tensors)>0:
+                    x_b,y_b,contextual_b = inputs
+                    Pred = self.model(x_b,contextual_b)
+                else:
+                    x_b,y_b = inputs
+                    Pred = self.model(x_b)
+                Preds.append(Pred)
+                Y_true.append(y_b)
+            Preds = torch.cat(Preds)
+            Y_true = torch.cat(Y_true)
+
+
         return(Pred,Y_true,T_labels)
 
     def testing(self, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']

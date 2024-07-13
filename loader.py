@@ -65,11 +65,11 @@ class CustomDataLoder(object):
         self.calib_prop = args.calib_prop
         self.batch_size = args.batch_size 
 
-        self.num_workers = args.num_workers if torch.cuda.is_available() else 0 
-        self.persistent_workers = args.persistent_workers if torch.cuda.is_available() else False 
-        self.pin_memory = args.pin_memory if torch.cuda.is_available() else False 
-        self.prefetch_factor = args.prefetch_factor if torch.cuda.is_available() else 2 
-        self.drop_last = args.drop_last if torch.cuda.is_available() else False 
+        self.num_workers = args.num_workers 
+        self.persistent_workers = args.persistent_workers 
+        self.pin_memory = args.pin_memory 
+        self.prefetch_factor = args.prefetch_factor 
+        self.drop_last = args.drop_last 
         # ...
 
     def call_dataloader(self,training_mode):
