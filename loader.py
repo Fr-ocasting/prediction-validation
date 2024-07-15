@@ -42,7 +42,7 @@ class calib_prop_splitter(object):
         # Calib Set : 
         self.calib_set_x = self.U[self.indices_cal]
         self.calib_contextual = {name_ds: tensor[self.indices_cal] for name_ds,tensor in self.contextual_tensors.items()}
-        self.calib_set_y = self.U[self.indices_cal]
+        self.calib_set_y = self.U_target[self.indices_cal]
 
 
 class CustomDataLoder(object):

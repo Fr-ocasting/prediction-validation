@@ -86,6 +86,8 @@ class Chronometer:
         self.start_forward = None
         self.start_valid = None
         self.val_time = None
+        self.start_calib = None
+        self.cal_time = None
         self.time_point = None
         self.start_plotting = None
         self.start_save_model = None
@@ -214,6 +216,14 @@ class Chronometer:
         else: 
             self.val_time = datetime.now() - self.start_valid
             self.start_valid = None
+
+    '''
+    def calibration(self):
+        if self.start_calib==None: self.start_calib = datetime.now()
+        else: 
+            self.cal_time = datetime.now() - self.start_calib
+            self.start_calib = None
+    '''
 
     def display(self):
         if self.stop_proc and self.start_proc: print(">>> Training complete in: " + str(self.stop_proc - self.start_proc))

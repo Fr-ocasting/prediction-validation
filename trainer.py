@@ -23,11 +23,10 @@ except :
     print('Training and Hyper-parameter tuning with Ray is not possible')
 
 from profiler import print_memory_usage,get_cpu_usage
-from metrics import evaluate_metrics
-from utilities import get_higher_quantile
 
 from save_results import results2dict, update_results_df, save_best_model_and_update_json, get_trial_id
 from PI_object import PI_object
+from PI_calibration import Calibrator
 from paths import save_folder
 
 
@@ -58,8 +57,8 @@ class MultiModelTrainer(object):
             self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss).to(self.Loss_valid).unsqueeze(0)],axis =  0) 
             # Testing
             if self.alpha is not None:
-                preds,Y_true,_ = trainer.test_prediction(training_mode = 'test')
-                pi = PI_object(preds,Y_true,self.alpha,type_calib = 'classic')
+                Preds,Y_true,T_labels = trainer.test_prediction(training_mode = 'test')
+                pi = PI_object(Preds,Y_true,self.alpha,type_calib = 'classic')
                 self.picp.append(pi.picp)
                 self.mpiw.append(pi.mpiw)
             
@@ -129,10 +128,6 @@ class Trainer(object):
         self.picp_list = []
         self.mpiw_list = []
         self.show_figure = show_figure
-        if 'calendar' in list(positions.keys()):
-            self.pos_calendar = positions['calendar']
-        if 'netmob' in list(positions.keys()):
-            self.pos_netmob = positions['netmob']    
         if trial_id1 is None:
             if fold is None: 
                 trial_id1,trial_id2 = get_trial_id(args,fold)
@@ -180,7 +175,7 @@ class Trainer(object):
         self.loop_epoch()
         self.training_mode = 'valid'
         self.model.eval()   # Desactivate Dropout 
-        self.loop_epoch() 
+        Preds,Y_true,T_labels = self.loop_epoch() 
 
         # Update scheduler after each Epoch 
         self.chrono.torch_scheduler()
@@ -189,7 +184,7 @@ class Trainer(object):
 
         # Follow Update of Testing Metrics 
         self.chrono.track_pi()
-        pi = self.track_pi()
+        pi = self.track_pi(Preds,Y_true,T_labels)
         self.ray_tune_track(pi)
         self.chrono.track_pi()
 
@@ -204,26 +199,26 @@ class Trainer(object):
             if epoch == 1:
                 print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
     
-    def get_pi_from_prediction(self,training_mode='valid'):
-        # Calibration 
+    def get_pi_from_prediction(self,Preds,Y_true,T_labels):
+
+        # Get Quantile tensor from Calibration with 'cal' datalaoder:
         Q = self.conformal_calibration(self.args.alpha,
                                     conformity_scores_type = self.args.conformity_scores_type,
                                     quantile_method = self.args.quantile_method,print_info = False)  
-        # Testing
-        preds,Y_true,T_labels = self.test_prediction(training_mode = training_mode)
-        #preds,Y_true,T_labels = self.testing(self,self.dataset, allow_dropout = False, training_mode = 'valid')
+        # ...
 
-        # get PI
-        pi = self.CQR_PI(preds,Y_true,self.args.alpha,Q,T_labels)
+        # get PI from Prediction and apply the Calibration :
+        cqr_pi = self.CQR_PI(Preds,Y_true,self.args.alpha,Q,T_labels)
+        # ....
 
-        return(pi)
+        return(cqr_pi)
     
-    def track_pi(self):
+    def track_pi(self,Preds,Y_true,T_labels):
         if self.args.track_pi:
-            pi = self.get_pi_from_prediction()
-            self.picp_list.append(pi.picp)
-            self.mpiw_list.append(pi.mpiw)
-            return(pi)
+            cqr_pi = self.get_pi_from_prediction(Preds,Y_true,T_labels)
+            self.picp_list.append(cqr_pi.picp)
+            self.mpiw_list.append(cqr_pi.mpiw)
+            return(cqr_pi)
         else:
             return(None)
 
@@ -267,12 +262,12 @@ class Trainer(object):
             self.train_valid_one_epoch()
 
             # Save best model (only if it's not a ray tuning)
-            self.chrono.save_model()
             if (self.valid_loss[-1] < self.best_valid) & (not(self.args.ray)):
+                self.chrono.save_model()
                 self.best_valid = self.valid_loss[-1]
                 performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
                 self.save_best_model(checkpoint,epoch,performance)
-            self.chrono.save_model()
+                self.chrono.save_model()
 
 
             # Plot Latent Space and get accuracy 
@@ -286,14 +281,13 @@ class Trainer(object):
             # Keep track on cpu-usage 
             max_memory = get_cpu_usage(max_memory)
 
+        if (not(self.args.ray)):
+            self.chrono.save_model()
+            performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
+            self.save_best_model(checkpoint,epoch,performance)
+            print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.tensor_limits_keeper.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+            self.chrono.save_model()
 
-        self.chrono.save_model()
-        performance = {'valid_loss': self.best_valid, 'epoch':performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
-        self.save_best_model(checkpoint,epoch,performance)
-        
-        print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.tensor_limits_keeper.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
-
-        self.chrono.save_model()
 
         self.chrono.stop()
         self.chrono.display()
@@ -346,20 +340,11 @@ class Trainer(object):
 
         if self.args.mixed_precision:
             with autocast():
-                if self.args_embedding : 
-                    t_b = contextual_b[self.pos_calendar]
-                    pred = self.model(x_b,t_b.long())
-                else:
-                    pred = self.model(x_b)
-                loss = self.loss_function(pred,y_b)
+                pred = self.model(x_b,contextual_b)
         else:
-            if self.args_embedding : 
-                t_b = contextual_b[self.pos_calendar]
-                pred = self.model(x_b,t_b.long())
-            else:
-                pred = self.model(x_b)
+                pred = self.model(x_b,contextual_b)
 
-            loss = self.loss_function(pred,y_b)       
+        loss = self.loss_function(pred,y_b) 
 
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
@@ -373,43 +358,61 @@ class Trainer(object):
         if self.training_mode == 'train': 
             self.chrono.update()      
             self.chrono.next_iter()
-        return(nb_samples,loss_epoch)
+
+        if 'calibration_calendar' in self.args.contextual_positions.keys(): 
+            t_label =  contextual_b[self.args.contextual_positions['calibration_calendar']]
+        else: 
+            t_label = None
+        return(pred,y_b,t_label,nb_samples,loss_epoch)
         
-    def loop_through_batchs(self,loader):
+    def loop_through_batches(self,loader):
         ''' Small difference whether we first prefetch or not (T_b or *T_b) '''
         nb_samples,loss_epoch = 0,0
+        Preds,Y_true,T_labels = [],[],[]
 
         if self.args.prefetch_all:
             raise ValueError('prefetch_all not correctly implemented')
-            for x_b,y_b,T_b in loader:  #  self.dataloader_gpu[self.training_mode] 
-                x_b,y_b,t_b = self.load_to_device(x_b,y_b,T_b)
-                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,t_b,nb_samples,loss_epoch)
-        else:
-            for inputs in loader:  #for x_b,y_b,*T_b in self.dataloader[self.training_mode]:
-                if len(self.dataset.contextual_tensors)>0:
-                    x_b,y_b,contextual_b = inputs
-                else:
-                    x_b,y_b = inputs
-                    contextual_b = None
-                x_b,y_b,contextual_b = self.load_to_device(x_b,y_b,contextual_b)
-                nb_samples,loss_epoch = self.loop_batch(x_b,y_b,contextual_b,nb_samples,loss_epoch)
-        return(nb_samples,loss_epoch)
+
+        for inputs in loader:
+            if len(self.dataset.contextual_tensors)>0:
+                x_b,y_b,contextual_b = inputs
+            else:
+                x_b,y_b = inputs
+                contextual_b = None
+
+            x_b,y_b,contextual_b = self.load_to_device(x_b,y_b,contextual_b)
+            pred,y_b,t_label,nb_samples,loss_epoch = self.loop_batch(x_b,y_b,contextual_b,nb_samples,loss_epoch)
+
+            Preds.append(pred)
+            Y_true.append(y_b)
+            T_labels.append(t_label)
+
+        # Torch concat : 
+        Preds = torch.cat(Preds)
+        Y_true = torch.cat(Y_true)
+        if t_label is not None: T_labels = torch.cat(T_labels)
+        # ... 
+    
+        return(Preds,Y_true,T_labels,nb_samples,loss_epoch)
 
     def loop_epoch(self):
-        if self.training_mode=='validation':
-            self.chrono.validation()
+        if self.training_mode=='valid': self.chrono.validation()
+        #if self.training_mode=='cal': self.chrono.calibration()
+        
 
         if (self.args.prefetch_all) & (self.training_mode=='train'):
             self.prefetch()
             
         with torch.set_grad_enabled(self.training_mode=='train'):
             loader = self.get_loader()
-            nb_samples,loss_epoch = self.loop_through_batchs(loader)
+            Preds,Y_true,T_labels,nb_samples,loss_epoch = self.loop_through_batches(loader)
 
 
-        if self.training_mode=='validation':
-            self.chrono.validation()
+        if self.training_mode=='valid':self.chrono.validation()
+        #if self.training_mode=='cal': self.chrono.calibration()
+
         self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
+        return Preds,Y_true,T_labels
 
     def conformal_calibration(self,alpha,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
         ''' 
@@ -421,91 +424,27 @@ class Trainer(object):
         -------
         - alpha : is the miscoverage rate. such as  P(Y in C(X)) >= 1- alpha 
         '''
-        if calibration_calendar_class is None:
-            calibration_calendar_class = self.args.calendar_class
-            pos_calibration_calendar_class = self.pos_calendar
-        str_info = ''
-        self.model.eval()
-        with torch.no_grad():
-            # Load Calibration Dataset :
-            data = [[x_b,y_b,contextual_b[self.pos_calendar],contextual_b[pos_calibration_calendar_class]] for  x_b,y_b,contextual_b in self.dataloader['cal']]
-            X_cal = torch.cat([x_b for [x_b,_,_,_] in data]).to(self.args.device)
-            Y_cal = torch.cat([y_b for [_,y_b,_,_] in data]).to(self.args.device)
-            T_pred = torch.cat([t_pred for [_,_,t_pred,_] in data]).to(self.args.device)
-            T_cal = torch.cat([t_cal for [_,_,_,t_cal] in data]).to(self.args.device)
+        # Load calibrator
+        calibrator = Calibrator(alpha,self.args.device)
 
-            # Forward Pass: 
-            if self.args_embedding : 
-                preds = self.model(X_cal,T_pred.long())
-            else:
-                preds = self.model(X_cal) 
+        # Predict : set attributes Preds, Y_cal, T_cal
+        calibrator.get_prediction(self)
 
-            if len(preds.size()) == 2:
-                preds = preds.unsqueeze(1)
-            # ...
+        # Lower / Upper band 
+        calibrator.get_lower_upper_bands()
+        calibrator.unormalize(self)
 
+        # Get conformity scores
+        calibrator.get_conformity_scores(conformity_scores_type)
 
-            # get lower and upper band
-            if preds.size(-1) == 2:
-                lower_q,upper_q = preds[...,0].unsqueeze(-1),preds[...,1].unsqueeze(-1)   # The Model return ^q_l and ^q_u associated to x_b
+        # Get calendar labels to compute calibration by group of time-slot
+        #calibrator.get_calendar_label_for_grouped_calibration(self,self.args.contextual_positions)
+
+        # Get Quatile Tensor
+        calibrator.get_quantile_tensor(quantile_method)
+
         
-            elif preds.size(-1) == 1:
-                lower_q,upper_q = preds,preds 
-            else:
-                raise ValueError(f"Shape of model's prediction: {preds.size()}. Last dimension should be 1 or 2.")
-            # ...
-            
-            # unormalized lower and upper band  
-            lower_q = self.dataset.normalizer.unormalize_tensor(inputs = lower_q,feature_vect = True ) # ,device = self.args.device
-            upper_q  = self.dataset.normalizer.unormalize_tensor(inputs = upper_q,feature_vect = True ) # , device = self.args.device
-            Y_cal = self.dataset.normalizer.unormalize_tensor(inputs = Y_cal, feature_vect = True ) # ,device = self.args.device
-            # ...
-
-            # Get Confority scores: 
-            if conformity_scores_type == 'max_residual':
-                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q).to(self.args.device) # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-            if conformity_scores_type == 'max_residual_plus_middle':
-                str_info = str_info+ "\n|!| Conformity scores computation is not based on 'max(ql-y, y-qu)'"
-                self.conformity_scores = torch.max(lower_q-Y_cal,Y_cal-upper_q) + ((lower_q>Y_cal)(upper_q<Y_cal))*(upper_q - lower_q)/2  # Element-wise maximum        #'max(lower_q-y_b,y_b-upper_q)' is the quantile regression error function
-            # ...
-
-            # Get Quantile:
-            # If classic Calibration:
-            if quantile_method == 'classic':  
-                quantile_order = torch.Tensor([np.ceil((1 - alpha)*(X_cal.size(0)+1))/X_cal.size(0)]).to(self.args.device)
-                #Q = torch.quantile(self.conformity_scores, quantile_order, dim = 0).to(self.device) #interpolation = 'higher'
-                Q = get_higher_quantile(self.conformity_scores,quantile_order,device = self.args.device)
-                output = Q
-
-            # If Calibration by group of T_labels: 
-            if quantile_method == 'compute_quantile_by_class':  # Calcul Higher Quantil for each calendar class. Several label can belongs to the same calendar class. The Quantile is computed through all residual of label of the same class
-                #calendar_class = torch.cat([t_cal for [_,_,_,t_cal] in data])
-                dic_label2Q = {}
-            # ...
-
-
-                # Compute quantile for each calendar class : 
-                nb_label_with_quantile_1 = 0
-                for label in T_cal.unique():
-                    indices = torch.nonzero(T_cal == label,as_tuple = True)[0]
-                    quantile_order = torch.Tensor([np.ceil((1 - alpha)*(indices.size(0)+1))/indices.size(0)]).to(self.args.device)  # Quantile for each class, so the quantile order is different as each class has a different length
-                    quantile_order = min(torch.Tensor([1]).to(self.args.device),quantile_order)
-                    if quantile_order == 1: 
-                        nb_label_with_quantile_1 +=1
-                        #print(f"label {label} has only {indices.size(0)} elements in his class. We then use quantile order = 1")
-                    conformity_scores_i = self.conformity_scores[indices]
-                    scores_counts = conformity_scores_i.size(0)
-                    Q_i = get_higher_quantile(conformity_scores_i,quantile_order,device = self.args.device)
-                    #Q_i = torch.quantile(conformity_scores_i, quantile_order, dim = 0)#interpolation = 'higher'
-                    dic_label2Q[label.item()]= {'Q': Q_i,'count':scores_counts}
-
-                str_info = str_info+ f"\nProportion of label with quantile order set to 1: {'{:.1%}'.format(nb_label_with_quantile_1/len(T_cal.unique()))}"
-                output = dic_label2Q
-        
-        if print_info:
-            print(str_info)
-
-        return(output)
+        return(calibrator.Q)
     
     def CQR_PI(self,preds,Y_true,alpha,Q,T_labels = None):
         pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels)
@@ -530,50 +469,20 @@ class Trainer(object):
             self.model.train()
         else: 
             self.model.eval()
-        Preds,Y_true = [],[]
+
         with torch.no_grad():
-            # Testing à modifier. 
-            # Essayer de voir s'il n'y a pas des méthode (.loop) que je peux directement utiliser au lieu de encore
-            # re-définir une méthode qui n'a pas trop d'intérêt ici.
+            Preds,Y_true,T_labels = self.loop_epoch()
 
-            # Algo:
-            # for inputs in dataloader: 
-            #   pred = model(inputs)
-
-            # Gérer les input (x_b,y_b ou x_b,y_b,contextual_b) dans le forward de model ?????
-            '''
-            if X is None:
-                data = [[x_b,y_b,contextual_b[self.pos_calendar]] for  x_b,y_b,contextual_b in self.dataloader[training_mode]]
-                X,Y_true,T_labels= torch.cat([x_b for [x_b,_,_] in data]).to(self.args.device),torch.cat([y_b for [_,y_b,_] in data]).to(self.args.device), torch.cat([t_b for [_,_,t_b] in data]).to(self.args.device)
-            if self.args_embedding : 
-                Pred = self.model(X,T_labels.long())
-            else :
-                Pred = self.model(X) 
-            '''
-            for inputs in self.dataloader[training_mode]:
-                if len(self.contextual_tensors)>0:
-                    x_b,y_b,contextual_b = inputs
-                    Pred = self.model(x_b,contextual_b)
-                else:
-                    x_b,y_b = inputs
-                    Pred = self.model(x_b)
-                Preds.append(Pred)
-                Y_true.append(y_b)
-            Preds = torch.cat(Preds)
-            Y_true = torch.cat(Y_true)
-
-
-        return(Pred,Y_true,T_labels)
+        return(Preds,Y_true,T_labels)
 
     def testing(self, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
-        (test_pred,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
+        (Preds,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
 
         # Set feature_vect = True cause output last dimension = 2 if quantile_loss or = 1.
-        test_pred = self.dataset.normalizer.unormalize_tensor(inputs = test_pred,feature_vect = True) #  device = self.args.device
+        Preds = self.dataset.normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
         Y_true = self.dataset.normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
 
-        #df_metrics = evaluate_metrics(test_pred,Y_true,metrics)
-        return(test_pred,Y_true,T_labels)#,df_metrics)  
+        return(Preds,Y_true,T_labels)
     
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):
         if training_mode == 'train':
@@ -582,3 +491,4 @@ class Trainer(object):
             self.valid_loss.append(loss_epoch/nb_samples)
         elif training_mode == 'cal':
             self.calib_loss.append(loss_epoch/nb_samples)
+

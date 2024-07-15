@@ -100,6 +100,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['batch_size'] = 32
     config['lr'] = 1e-3
     config['dropout'] = 0.2
+    config['contextual_positions'] = {}
 
     if torch.cuda.is_available():
         config['num_workers'] = 2 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
@@ -111,7 +112,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         config['num_workers'] = 0 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
         config['persistent_workers'] = False # False 
         config['pin_memory'] = True # False 
-        config['prefetch_factor'] = None # None, 2,3,4,5 ... 
+        config['prefetch_factor'] = 2 #None # None, 2,3,4,5 ... 
         config['drop_last'] = False  # True      
     
     
@@ -138,6 +139,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['alpha'] = 0.1
     config['conformity_scores_type'] = 'max_residual'   # Define the function to compute the non-conformity scores
     config['quantile_method'] =  'compute_quantile_by_class' # 'classic' Define type of method used to calcul quantile.  'classic':  Quantile through the entiere dataset  / 'weekday_hour': 
+    config['calibration_calendar_class'] = 0  # Calibrates data by defined calendar-class 
 
     # Config Time Embedding: 
     config['position'] = 'input'  # Position of time_embedding module : before or after the core model
@@ -148,6 +150,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['embedding_dim'] = 3
     config['multi_embedding'] = False
     config['TE_transfer'] = False
+
     # Config DataSet:
     config['H'] = 6
     config['W'] = 1
@@ -175,6 +178,13 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     # Add other parameters:
     for key in other_params.keys():
         config[key] = other_params[key]
+    # ...
+
+    # Define Output dimension: 
+        if config['loss_function_type'] == 'MSE': out_dim = 1
+        elif config['loss_function_type'] == 'quantile': out_dim = 2
+        else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
+        config['out_dim'] = out_dim
     # ...
 
     return(config)

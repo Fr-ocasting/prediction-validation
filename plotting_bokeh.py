@@ -10,9 +10,9 @@ from paths import save_folder
 from PI_object import PI_object
 # ...
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True,pos_calibration_calendar_class = None):
+def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True):
 
-    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station,pos_calibration_calendar_class)
+    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station)
     p2 = plot_loss(trainer)
     
     if args.time_embedding:
@@ -45,8 +45,8 @@ def hm2hour(hm):
 
 def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
     # Get unique labels : 
-    data = [[x_b,y_b,t_b[trainer.pos_calendar]] for  x_b,y_b,t_b in data_loader['test']]
-    T_test = torch.cat([t_b for [_,_,t_b] in data])
+    data = [contextual_b[args.contextual_positions['calendar']] for  _,_,contextual_b in data_loader['test']]
+    T_test = torch.cat(data)
     labels = T_test.unique().long().to(args.device)
     # ...
 
@@ -175,26 +175,26 @@ def plot_loss(trainer,location = "top_right"):
     return(p)
 
 
-def plot_prediction(trainer,dataset,Q,args,station,pos_calibration_calendar_class,location = "top_right"):
+def plot_prediction(trainer,dataset,Q,args,station,location = "top_right"):
     
-    (preds,Y_true,T_labels) = trainer.testing(dataset)
-    if len(preds.size()) == 2:
-        preds = preds.unsqueeze(1)
+    Preds,Y_true,T_labels = trainer.testing(dataset,training_mode = 'test')
+    if len(Preds.size()) == 2:
+        Preds = Preds.unsqueeze(1)
     # ...
 
     # PI
-    if preds.size(-1) > 1:
+    if Preds.size(-1) > 1:
         # Define PI classic
-        pi = PI_object(preds,Y_true,alpha = args.alpha, type_calib = 'classic')     # PI 'classic' :
+        pi = PI_object(Preds,Y_true,alpha = args.alpha, type_calib = 'classic')     # PI 'classic' :
         # ...
 
         # Define CQR according a specified clustering by a calibration calendar class:
-        if pos_calibration_calendar_class is None:
-            pos_calibration_calendar_class = trainer.positions['calendar']
-        data = [t_b[pos_calibration_calendar_class] for  x_b,y_b,t_b in trainer.dataloader['test']]
-        T_labels_cal= torch.cat(data).to(trainer.args.device)
-        pi_cqr = PI_object(preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels_cal)   
+        if 'calibration_calendar' in args.contextual_positions.keys():
+            pi_cqr = PI_object(Preds,Y_true,alpha = args.alpha, Q = Q, type_calib = 'CQR',T_labels = T_labels)   
+        else:
+            pi_cqr = pi
         # ...
+
 
         # str legend
         str_picp,str_mpiw = f"{'{:.2%}'.format(pi.picp)}" , f"{'{:.2f}'.format(pi.mpiw)}"
@@ -213,7 +213,7 @@ def plot_prediction(trainer,dataset,Q,args,station,pos_calibration_calendar_clas
     p = figure(title=title,x_axis_type='datetime', x_axis_label='Time', y_axis_label='Demand volume', width=900, height=400)
     p.add_layout(Legend(), 'right')
     
-    if preds.size(-1)>1:
+    if Preds.size(-1)>1:
         # PI bands     
         p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi_cqr.upper[:,station,0].cpu().numpy(), 
             legend_label=f"PI \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}", 
@@ -230,7 +230,7 @@ def plot_prediction(trainer,dataset,Q,args,station,pos_calibration_calendar_clas
 
     else:
         # Predicted Values
-        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], preds[:,station,0].cpu().numpy(), 
+        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], Preds[:,station,0].cpu().numpy(), 
             legend_label=f"Prediction", 
             line_dash="dashed", line_width=1, color="red")
 

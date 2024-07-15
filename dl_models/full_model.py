@@ -18,20 +18,28 @@ class full_model(nn.Module):
         self.core_model = load_model(args,args_embedding,dic_class2rpz)
         self.te = TE_module(args,args_embedding,dic_class2rpz) if args.time_embedding else None
 
-    def forward(self,x,time_elt = None):
+        # Add positions for each contextual data:
+        if 'calendar' in args.contextual_positions.keys(): 
+            self.pos_calendar = args.contextual_positions['calendar']
+        if 'netmob' in args.contextual_positions.keys(): 
+            self.pos_netmob = args.contextual_positions['netmob']
+        # ...
+
+    def forward(self,x,contextual = None):
+        # if calendar data is on : 
         if self.te is not None:
+            time_elt = contextual[self.pos_calendar].long()
             x = self.te(x,time_elt)
+        # ...
+
+        # Core model 
         x = self.core_model(x)
+        # ...
+
         return(x)
 
 
 def load_model(args,args_embedding,dic_class2rpz):
-    # Define Output dimension: 
-    if args.loss_function_type == 'MSE': out_dim = 1
-    elif args.loss_function_type == 'quantile': out_dim = 2
-    else: raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
-    # ...
-    
     if args.model_name == 'CNN': 
         model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
@@ -39,7 +47,7 @@ def load_model(args,args_embedding,dic_class2rpz):
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
                     dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
-                    skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=out_dim, 
+                    skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
                     layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
         
     if args.model_name == 'DCRNN':
@@ -61,7 +69,7 @@ def load_model(args,args_embedding,dic_class2rpz):
             blocks.append([128])
         elif Ko > 0:
             blocks.append([128, 128])
-        blocks.append([out_dim])
+        blocks.append([args.out_dim])
 
         #print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
         #print(f'Blocks: {blocks}')
