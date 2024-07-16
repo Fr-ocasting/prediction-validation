@@ -5,6 +5,7 @@ from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
+from dl_models.video_encoder import VideoEncoder_module
 
 from load_adj import load_adj
 import numpy as np 
@@ -17,6 +18,7 @@ class full_model(nn.Module):
         super(full_model,self).__init__()
         self.core_model = load_model(args,args_embedding,dic_class2rpz)
         self.te = TE_module(args,args_embedding,dic_class2rpz) if args.time_embedding else None
+        self.netmob_vision = VideoEncoder_module(args) if 'netmob' in args.contextual_positions.keys() else None
 
         # Add positions for each contextual data:
         if 'calendar' in args.contextual_positions.keys(): 
@@ -26,11 +28,19 @@ class full_model(nn.Module):
         # ...
 
     def forward(self,x,contextual = None):
+        
+        # if NetMob data is on :
+        if self.netmob_vision is not None: 
+            netmob_video_batch = contextual[self.pos_netmob]
+            x = self.netmob_vision(x,netmob_video_batch)
+        # ...
+
         # if calendar data is on : 
         if self.te is not None:
             time_elt = contextual[self.pos_calendar].long()
             x = self.te(x,time_elt)
         # ...
+
 
         # Core model 
         x = self.core_model(x)
