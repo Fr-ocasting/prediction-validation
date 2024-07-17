@@ -20,6 +20,16 @@ from TE_transfer_learning import TE_transfer
 from dl_models.full_model import full_model
 
 
+def forward_and_display_info(model,inputs):
+    nb_total_param = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('Model parameters: ',nb_total_param)
+    output =model(inputs)
+    print('input size: ',inputs.size())
+    print('output size: ',output.size(),'\n')
+    print(model)
+    return(output)
+
+
 def match_period_coverage_with_netmob(filename):
     if (filename == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
         coverage_dataset = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
@@ -44,12 +54,12 @@ def get_args_embedding(args,nb_words_embedding):
     return(args_embedding)
 
 
-def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None,args_vision = None):
     args.num_nodes = n_vertex
     loss_function = get_loss(args.loss_function_type,args)
     args_embedding = get_args_embedding(args,nb_words_embedding)
 
-    model,opt,sched = load_model_and_optimizer(args,args_embedding,dic_class2rpz)
+    model,opt,sched = load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision)
 
     if args.TE_transfer:
         if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
@@ -60,12 +70,12 @@ def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex 
     return(loss_function,model,opt,sched,args_embedding)
     
 
-def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None,arg_vision = None):
     args.num_nodes = n_vertex
     loss_function = get_loss(args.loss_function_type,args)
     args_embedding = get_args_embedding(args,nb_words_embedding)
 
-    model_opt_sched_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz) for _ in range(args.K_fold)]
+    model_opt_sched_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision) for _ in range(args.K_fold)]
     Model_list = [model_opt[0] for model_opt in model_opt_sched_list]
     if args.TE_transfer:
         if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
@@ -120,8 +130,8 @@ def find_nearest_date(date_series, date, inferior=True):
     
     return nearest_index,nearest_indice
 
-def load_model_and_optimizer(args,args_embedding,dic_class2rpz):
-    model =  full_model(args,args_embedding,dic_class2rpz).to(args.device)
+def load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision=None):
+    model =  full_model(args,args_embedding,dic_class2rpz,args_vision).to(args.device)
     #model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
     # Config optimizer:
     optimizer = choose_optimizer(model,args)

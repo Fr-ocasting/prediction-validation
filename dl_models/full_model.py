@@ -5,7 +5,7 @@ from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
-from dl_models.video_encoder import VideoEncoder_module
+from dl_models.vision_models.simple_feature_extractor import SimpleFeatureExtractor
 
 from load_adj import load_adj
 import numpy as np 
@@ -14,11 +14,11 @@ import torch.nn as nn
 
 
 class full_model(nn.Module):
-    def __init__(self,args,args_embedding,dic_class2rpz):
+    def __init__(self,args,args_embedding,dic_class2rpz,args_vision = None):
         super(full_model,self).__init__()
-        self.core_model = load_model(args,args_embedding,dic_class2rpz)
+        self.core_model = load_model(args,args_embedding,dic_class2rpz,args_vision)
         self.te = TE_module(args,args_embedding,dic_class2rpz) if args.time_embedding else None
-        self.netmob_vision = VideoEncoder_module(args) if 'netmob' in args.contextual_positions.keys() else None
+        self.netmob_vision = SimpleFeatureExtractor(**args_vision) if 'netmob' in args.contextual_positions.keys() else None
 
         # Add positions for each contextual data:
         if 'calendar' in args.contextual_positions.keys(): 
@@ -28,11 +28,30 @@ class full_model(nn.Module):
         # ...
 
     def forward(self,x,contextual = None):
-        
+        if x.dim() == 3:
+            x = x.unsqueeze(1)
+
+        B,C,N,L = x.size()
+
         # if NetMob data is on :
         if self.netmob_vision is not None: 
+
+            # [B,N,C,H,W,L]
             netmob_video_batch = contextual[self.pos_netmob]
-            x = self.netmob_vision(x,netmob_video_batch)
+            B,N,C_netmob,H,W,L = netmob_video_batch.size()
+
+            # Reshape:  [B,N,C,H,W,L] -> [B*N,C,H,W,L]
+            netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
+
+            # Forward : [B*N,C,H,W,L] ->  [B*N,Z] 
+            extracted_feature = self.netmob_vision(netmob_video_batch)
+
+            # Reshape  [B*N,Z] -> [B,C,N,Z]
+            extracted_feature = extracted_feature.reshape(B,N,-1)
+            extracted_feature = extracted_feature.unsqueeze(1)
+
+            # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
+            x = torch.cat([x,extracted_feature],dim = -1)
         # ...
 
         # if calendar data is on : 
@@ -49,7 +68,7 @@ class full_model(nn.Module):
         return(x)
 
 
-def load_model(args,args_embedding,dic_class2rpz):
+def load_model(args,args_embedding,dic_class2rpz,args_vision):
     if args.model_name == 'CNN': 
         model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
@@ -99,9 +118,9 @@ def load_model(args,args_embedding,dic_class2rpz):
         gso = torch.from_numpy(gso).to(args.device)
 
         if args.graph_conv_type == 'cheb_graph_conv':
-            model = STGCNChebGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
+            model = STGCNChebGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz,args_vision = args_vision).to(args.device)
         else:
-            model = STGCNGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz).to(args.device)
+            model = STGCNGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz,args_vision = args_vision).to(args.device)
         
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"

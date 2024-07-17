@@ -27,7 +27,7 @@ class STGCNChebGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, gso, blocks, n_vertex,args_embedding = None,dic_class2rpz=None):
+    def __init__(self, args, gso, blocks, n_vertex,args_embedding = None,dic_class2rpz=None,args_vision = None):
         super(STGCNChebGraphConv, self).__init__()
         self.out_dim = blocks[-1][-1]
         modules = []
@@ -42,6 +42,9 @@ class STGCNChebGraphConv(nn.Module):
 
         if args_embedding is not None:
             Ko = Ko + args_embedding.embedding_dim
+        
+        if args_vision is not None:
+            Ko = Ko + args_vision['out_dim']
 
         self.Ko = Ko
         if self.Ko > 1:
@@ -54,29 +57,12 @@ class STGCNChebGraphConv(nn.Module):
             self.silu = nn.SiLU()
             self.dropout = nn.Dropout(p=args.dropout)
 
-        if False :
-            if args_embedding is not None:
-                mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
-                self.multi_embedding = args.multi_embedding
-                self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,n_embedding= n_vertex if self.multi_embedding else 1 )
-                self.Tembedding_position = args_embedding.position
-                self.N_repeat = 1 if self.multi_embedding else n_vertex
 
-
-    def forward(self, x, time_elt = None):
+    def forward(self, x):
         if len(x.size())<4:
             x = x.unsqueeze(1)
 
         B,C,N,L = x.size()
-
-        if False:
-            if time_elt is not None:
-                if self.Tembedding_position == 'input':
-                    time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
-                    if not(self.multi_embedding):
-                        time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                    time_elt = time_elt.reshape(B,C,N,-1)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
-                    x = torch.cat([x,time_elt],dim = -1)
 
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
@@ -84,13 +70,6 @@ class STGCNChebGraphConv(nn.Module):
         x = self.st_blocks(x)
 
         B,C,L,N = x.size()
-        if time_elt is not None:
-            if self.Tembedding_position == 'output': 
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
-                if not(self.multi_embedding):
-                    time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                time_elt = time_elt.reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
-                x = torch.cat([x,time_elt],dim = 2)
 
         if self.Ko > 1:
             x = self.output(x)
@@ -132,7 +111,7 @@ class STGCNGraphConv(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args,gso, blocks, n_vertex,args_embedding = None,dic_class2rpz =None):
+    def __init__(self, args,gso, blocks, n_vertex,args_embedding = None,dic_class2rpz =None,args_vision = None):
         super(STGCNGraphConv, self).__init__()
         self.out_dim = blocks[-1][-1]
         modules = []
@@ -147,6 +126,8 @@ class STGCNGraphConv(nn.Module):
             Ko = args.L if args.L > 0 else 1
         if args_embedding is not None:
             Ko = Ko + args_embedding.embedding_dim
+        if args_vision is not None:
+            Ko = Ko + args_vision['out_dim']
         # ----
         self.Ko = Ko
 
@@ -160,28 +141,12 @@ class STGCNGraphConv(nn.Module):
             self.silu = nn.SiLU()
             self.do = nn.Dropout(p=args.dropout)
 
-        if False: 
-            if args_embedding is not None:
-                #mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1], bank_holiday) for _, (week, time, bank_holiday) in sorted(dic_class2rpz.items())]).to(args.device)
-                mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz.items())]).to(args.device)
-                self.multi_embedding = args.multi_embedding
-                self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor, n_embedding= n_vertex if self.multi_embedding else 1)
-                self.Tembedding_position = args_embedding.position
-                self.N_repeat = 1 if self.multi_embedding else n_vertex
 
-    def forward(self, x,time_elt = None):
+    def forward(self, x):
         if len(x.size())<4:
             x = x.unsqueeze(1)
         B,C,N,L = x.size()
 
-        if False:
-            if time_elt is not None:
-                if self.Tembedding_position == 'input':
-                    time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
-                    if not(self.multi_embedding):
-                        time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                    time_elt = time_elt.reshape(B,C,N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
-                    x = torch.cat([x,time_elt],dim = -1)
 
         #x : [B,C,N,L]
         # st_blocks inputs: [B,C,L,N]. Therefore, we need to permute: 
@@ -189,23 +154,12 @@ class STGCNGraphConv(nn.Module):
         x = self.st_blocks(x)
         # st_blocks outputs: [B, C_out, L-4*nb_blocks, N])
         B,C,L,N = x.size() 
-        if time_elt is not None:
-            if self.Tembedding_position == 'output':
-                time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim]
-                if not(self.multi_embedding):
-                    time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-                time_elt = time_elt.reshape(B,C,-1,N)   # [B,embedding_dim] -> [B,C,embedding_dim,N]
-
-                x = torch.cat([x,time_elt],dim = 2)
-        
-        
         if self.Ko > 1:
             x = self.output(x)
         elif self.Ko == 0:
             x = self.fc1(x.permute(0, 2, 3, 1))
             x = self.relu(x)
             x = self.fc2(x).permute(0, 3, 1, 2)
-
         x = x.squeeze()
         if B ==1:
             x = x.unsqueeze(0)

@@ -5,8 +5,6 @@ import torch.nn.functional as F
 import argparse
 from functools import partial
 
-
-
 class VideoEncoder_module(nn.Module):
     def __init__(self):
         super(VideoEncoder_module,self).__init__()
@@ -25,7 +23,7 @@ class VideoEncoder_module(nn.Module):
         '''
         blabla
 
- 
+
 def conv1x3x3(in_planes, mid_planes, stride=1):
     return nn.Conv3d(in_planes,
                      mid_planes,
@@ -53,6 +51,7 @@ def conv1x1x1(in_planes, out_planes, stride=1):
 
 
 class BasicBlock(nn.Module):
+
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1, downsample=None):
@@ -79,6 +78,7 @@ class BasicBlock(nn.Module):
         self.stride = stride
 
     def forward(self, x):
+
         residual = x
 
         out = self.conv1_s(x)
