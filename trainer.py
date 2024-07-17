@@ -477,6 +477,9 @@ class Trainer(object):
 
     def testing(self, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
         (Preds,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
+        Preds = Preds.detach().cpu()
+        Y_true = Y_true.detach().cpu()
+        T_labels = T_labels.detach().cpu()
 
         # Set feature_vect = True cause output last dimension = 2 if quantile_loss or = 1.
         Preds = self.dataset.normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
