@@ -87,7 +87,66 @@ def resize_tensor(T_i, H,W, positions):
     return(new_T_i)
 
 
+def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days):
+    '''
+    For a specific app, but for each day, read Two CSV: UL/DL 
+    
+    outputs:
+    --------
+    4-th order Tensor [nb_days,N,nb_tiles,24H]
+    
+    N : number of spatial units (subway stations)
+    nb_tiles:  number of cellules 100x100m
+    24H: 96 time steps through each days
+    '''
+    # for each days  
+    Tensors_days = []
+    for day in folder_days:
+        Tensors_days,metadata = tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile)
+    Tensors_days = torch.stack(Tensors_days,dim=0)
+    return(Tensors_days,metadata)
+
+def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile):
+    '''
+    For a specific day and a specific app, read Two CSV: UL/DL 
+    
+    outputs:
+    --------
+    List of 2 elements (UL/DL) of a 3-th order Tensor [N,nb_tiles,24H]
+    
+    N : number of spatial units (subway stations)
+    nb_tiles:  number of cellules 100x100m
+    24H: 96 time steps through each days
+    '''
+    txt_paths = sorted(glob.glob(os.path.join(f'{netmob_data_folder_path}/{app}/{day}', "*.txt")))
+    # For each transfert mode:
+    Tensors_transfer,transfer_modes = [],[]
+    for path in txt_paths:
+        Tensors,transfer_mode,metadata = read_csv(path,result,metadata,day,maxi_nb_tile)
+        Tensors_transfer.append(Tensors)
+        transfer_modes.append(transfer_mode)
+    Tensors_transfer = torch.stack(Tensors_transfer,dim=0) 
+
+
+    # Update metadata
+    for station in result['COD_TRG']:
+        metadata[station]['mode_transfer'] = transfer_modes
+    Tensors_days.append(Tensors_transfer)
+    return(Tensors_days,metadata)
+
+
 def read_csv(path,result,metadata,day,maxi_nb_tile):
+    '''
+    Read a single CSV
+    
+    outputs:
+    --------
+    3-th order Tensor [N,nb_tiles,24H]
+    
+    N : number of spatial units (subway stations)
+    nb_tiles:  number of cellules 100x100m
+    24H: 96 time steps through each days
+    '''
     transfer_mode = path.split('.')[-2].split('_')[-1]
     day_str = str(day)
     day_str = datetime.strptime(day_str, '%Y%m%d')
@@ -114,32 +173,6 @@ def read_csv(path,result,metadata,day,maxi_nb_tile):
     Tensors = torch.stack(Tensors,dim = 0)
 
     return(Tensors,transfer_mode,metadata)
-
-def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days):
-    # for each days  
-    Tensors_days = []
-    for day in folder_days:
-        Tensors_days,metadata = tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile)
-    Tensors_days = torch.stack(Tensors_days,dim=0)
-    return(Tensors_days,metadata)
-
-def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile):
-    txt_paths = sorted(glob.glob(os.path.join(f'{netmob_data_folder_path}/{app}/{day}', "*.txt")))
-    # For each transfert mode:
-    Tensors_transfer,transfer_modes = [],[]
-    for path in txt_paths:
-        Tensors,transfer_mode,metadata = read_csv(path,result,metadata,day,maxi_nb_tile)
-        Tensors_transfer.append(Tensors)
-        transfer_modes.append(transfer_mode)
-    Tensors_transfer = torch.stack(Tensors_transfer,dim=0) 
-
-
-    # Update metadata
-    for station in result['COD_TRG']:
-        metadata[station]['mode_transfer'] = transfer_modes
-    Tensors_days.append(Tensors_transfer)
-    return(Tensors_days,metadata)
-
 
 def find_ids_within_epsilon(gdf1,gdf2,epsilon):
     gdf1 = gdf1.to_crs(epsg=2154)
