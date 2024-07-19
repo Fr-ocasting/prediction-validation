@@ -2,7 +2,7 @@ from dl_models.time_embedding import TE_module
 from dl_models.CNN_based_model import CNN
 from dl_models.MTGNN import gtnet
 from dl_models.RNN_based_model import RNN
-from dl_models.STGCN import STGCNChebGraphConv, STGCNGraphConv
+from dl_models.STGCN import STGCN
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
 from dl_models.vision_models.simple_feature_extractor import SimpleFeatureExtractor
@@ -25,7 +25,7 @@ class full_model(nn.Module):
             self.pos_calendar = args.contextual_positions['calendar']
         if 'netmob' in args.contextual_positions.keys(): 
             self.pos_netmob = args.contextual_positions['netmob']
-            
+
         if 'subway_in' in args.dataset_names :
             self.remove_trafic_inputs = False
         else:
@@ -43,7 +43,7 @@ class full_model(nn.Module):
             >>>> contextual[calendar]: [B]
         '''
         if self.remove_trafic_inputs:
-            x = torch.Tensor()
+            x = torch.Tensor().to(x)
         else:
             if x.dim() == 3:
                 x = x.unsqueeze(1)
@@ -105,11 +105,24 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
         model = DCRNNModel(adj, **model_kwargs)
         
     if args.model_name == 'STGCN':
-        Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num
-        if args.enable_padding:
-            Ko = args.L
+
+        # Set Ko : Last Temporal Channel dimension before passing through output module :
+        if args.enable_padding: 
+            Ko = args.L  # if args.L > 0 else 1
+        else :
+            Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num    
+
+        # With padding, the output channel dimension will stay constant and equal to L
+        # Sometimes, with no Trafic Data, L = 0, then we have to set Ko = 1, independant of L
+
         if args_embedding is not None:
             Ko = Ko + args_embedding.embedding_dim
+
+        if args_vision is not None:
+            Ko = Ko + args_vision['out_dim']
+        #  ...
+
+        # Define Blocks  (should be in a STGCN config file...)
         blocks = []
         blocks.append([1])
         for l in range(args.stblock_num):
@@ -119,10 +132,10 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
         elif Ko > 0:
             blocks.append([128, 128])
         blocks.append([args.out_dim])
+        # ...
 
-        #print(f"Ko: {Ko}, enable padding: {args.enable_padding}")
-        #print(f'Blocks: {blocks}')
-        # Intégrer les deux fonction calc_gso et calc_chebynet_gso. Regarder comment est représenté l'input.
+
+        # Compute Weighted Adjacency Matrix: 
         adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
         adj[adj < args.threeshold] = 0
         
@@ -136,11 +149,10 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
             gso = np.array([[1]]).astype(dtype=np.float32)
             num_nodes = 1
         gso = torch.from_numpy(gso).to(args.device)
+        # ...
 
-        if args.graph_conv_type == 'cheb_graph_conv':
-            model = STGCNChebGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz,args_vision = args_vision).to(args.device)
-        else:
-            model = STGCNGraphConv(args,gso, blocks, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz,args_vision = args_vision).to(args.device)
+        
+        model = STGCN(args,gso, blocks,Ko, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz,args_vision = args_vision).to(args.device)
         
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
