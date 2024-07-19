@@ -81,29 +81,29 @@ class TimeEmbedding(nn.Module):
     
 
 class TE_module(nn.Module):
-    def __init__(self,args,args_embedding = None,dic_class2rpz = None):
+    def __init__(self,args,args_embedding,dic_class2rpz):
         super(TE_module, self).__init__()
-        self.args = args
-        if args_embedding is not None:
-            mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz[args.calendar_class].items())]).to(args.device)
-            self.multi_embedding = args.multi_embedding
-            self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor, n_embedding= args.num_nodes if self.multi_embedding else 1)
-            self.Tembedding_position = args_embedding.position
-            self.N_repeat = 1 if self.multi_embedding else args.num_nodes
 
-    def forward(self,x, time_elt = None):
-        if len(x.size())<4:
-            x = x.unsqueeze(1)
-        B,C,N,L = x.size()
-    
+        mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz[args.calendar_class].items())]).to(args.device)
+        self.multi_embedding = args.multi_embedding
+        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor, n_embedding= args.num_nodes if self.multi_embedding else 1)
+        self.Tembedding_position = args_embedding.position
+        self.N_repeat = 1 if self.multi_embedding else args.num_nodes
+        self.C = args.C
+        self.N = args.N
+
+
+
+    def forward(self,time_elt):
+        mini_batch_size = time_elt.size(0)
         if self.Tembedding_position == 'input':
             time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
             if not(self.multi_embedding):
-                time_elt = time_elt.repeat(1,self.N_repeat*C,1)
-            time_elt = time_elt.reshape(B,C,N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
-            x = torch.cat([x,time_elt],dim = -1)
+                time_elt = time_elt.repeat(1,self.N_repeat*self.C,1)
+            time_elt = time_elt.reshape(mini_batch_size,self.C,self.N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
+
         else:
             raise NotImplementedError(f'Position {self.Tembedding_position} has not been implemented')
 
-        return(x)
+        return(time_elt)
     

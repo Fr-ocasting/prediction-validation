@@ -4,7 +4,7 @@ from datetime import datetime
 import numpy as np 
 
 # Personnal Import 
-from DL_utilities import DataSet
+from utilities_DL import DataSet
 from load_data import load_subway_15_min 
 from utilities import get_distance_matrix
 

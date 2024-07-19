@@ -28,10 +28,17 @@ class full_model(nn.Module):
         # ...
 
     def forward(self,x,contextual = None):
+        ''' 
+        Args:
+        -----
+        x : 4-th order Tensor: Trafic Flow historical inputs [B,C,N,L]
+        contextual : list of contextual data. 
+            >>>> contextual[netmob_position]: [B,N,C,H,W,L]
+            >>>> contextual[calendar]: [B]
+        '''
         if x.dim() == 3:
             x = x.unsqueeze(1)
 
-        B,C,N,L = x.size()
 
         # if NetMob data is on :
         if self.netmob_vision is not None: 
@@ -57,7 +64,9 @@ class full_model(nn.Module):
         # if calendar data is on : 
         if self.te is not None:
             time_elt = contextual[self.pos_calendar].long()
-            x = self.te(x,time_elt)
+            time_elt = self.te(time_elt)
+
+            x = torch.cat([x,time_elt],dim = -1)
         # ...
 
 
