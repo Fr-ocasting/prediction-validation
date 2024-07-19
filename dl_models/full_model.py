@@ -25,6 +25,12 @@ class full_model(nn.Module):
             self.pos_calendar = args.contextual_positions['calendar']
         if 'netmob' in args.contextual_positions.keys(): 
             self.pos_netmob = args.contextual_positions['netmob']
+            
+        if 'subway_in' in args.dataset_names :
+            self.remove_trafic_inputs = False
+        else:
+            self.remove_trafic_inputs = True
+            print('PREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !')
         # ...
 
     def forward(self,x,contextual = None):
@@ -36,8 +42,11 @@ class full_model(nn.Module):
             >>>> contextual[netmob_position]: [B,N,C,H,W,L]
             >>>> contextual[calendar]: [B]
         '''
-        if x.dim() == 3:
-            x = x.unsqueeze(1)
+        if self.remove_trafic_inputs:
+            x = torch.Tensor()
+        else:
+            if x.dim() == 3:
+                x = x.unsqueeze(1)
 
 
         # if NetMob data is on :
@@ -64,8 +73,10 @@ class full_model(nn.Module):
         # if calendar data is on : 
         if self.te is not None:
             time_elt = contextual[self.pos_calendar].long()
+            # Extract feature: [B] -> [B,C,N,L_calendar]
             time_elt = self.te(time_elt)
-
+            
+            # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
             x = torch.cat([x,time_elt],dim = -1)
         # ...
 
