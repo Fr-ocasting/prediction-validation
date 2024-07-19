@@ -241,7 +241,7 @@ class Trainer(object):
             return None
     
     def train_and_valid(self,mod = None, mod_plot = None,station = 0):
-        print(f'start training')
+        print(f'\nstart training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
 
         # Plot Init Latent Space and Accuracy (from random initialization) 

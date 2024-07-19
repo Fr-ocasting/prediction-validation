@@ -30,7 +30,7 @@ class full_model(nn.Module):
             self.remove_trafic_inputs = False
         else:
             self.remove_trafic_inputs = True
-            print('PREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !')
+            print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
         # ...
 
     def forward(self,x,contextual = None):
