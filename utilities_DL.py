@@ -25,7 +25,11 @@ def forward_and_display_info(model,inputs):
     print('Model parameters: ',nb_total_param)
     output =model(inputs)
     print('input size: ',inputs.size())
-    print('output size: ',output.size(),'\n')
+
+    if type(output) != tuple: 
+        print('output size: ',output.size(),'\n')
+    else:
+        print('output size: ',output[0][0].size(),'\n')
     print(model)
     return(output)
 

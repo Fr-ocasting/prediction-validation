@@ -253,3 +253,100 @@ def load_netmob_gdf(folder_path = '../../Data/NetMob/',data_folder = '../../Data
 
     return(Netmob_gdf_joined,working_zones)
 
+if __name__ == '__main__':
+    
+    import pickle
+
+    # Init: 
+    data_folder_path = '../../../data/'
+    save_folder = f"{data_folder_path}NetMob_tensor/"
+    netmob_data_folder_path = f"{data_folder_path}NetMob/"
+
+    # Load Ref Subway: 
+    ref_subway = load_subway_shp(folder_path = data_folder_path)
+
+    # Parameters: size of netmob image 
+    step_south_north = 287  # Incremente by 287-ids when passing from south to north. 
+    epsilon=1000  #epsilon : radius, in meter (1000m) 
+    # W,H = 2*(epsilon//100 + 1), 2*(epsilon//100 + 1)
+
+    '''
+    Define the NetMob Geodatarame associated to Lyon City.
+    Build 'result' which keep track on tile-ids associated to each subway stations
+    '''
+    if not os.path.exists(save_folder):
+        os.makedirs(save_folder)
+
+    # Load subway gdf adn NetMob gdf
+    Netmob_gdf,working_zones = load_netmob_gdf(folder_path = netmob_data_folder_path,
+                                data_folder = '../Data/lyon_iris_shapefile/', 
+                                geojson_path = 'Lyon.geojson',
+                                zones_path = 'lyon.shp')
+    Netmob_gdf_dropped = Netmob_gdf.drop_duplicates(subset = ['tile_id'])  # Some Doubles are exis
+
+    # Get Cell-Id within epsilon : 
+    result,joined = find_ids_within_epsilon(Netmob_gdf_dropped,ref_subway,epsilon=epsilon) 
+    maxi_nb_tile =  result.apply(lambda row: len(row.tile_id),axis=1).max()
+    print(f"Maximum number of NetMob Cell associated to a subway station: {maxi_nb_tile}")
+
+
+    '''
+    Load NetMob Data From raw Data
+    Build 4-th order Tensor :  [nb_days,N,nb_tiles,24H]
+
+        nb_days: number of available days (from 16 march to 31 May 2019)
+        N : number of spatial units (subway stations)
+        nb_tiles:  number of cellules 100x100m
+        24H: 96 time steps through each days
+
+    ''' 
+    apps = [app for app in listdir(netmob_data_folder_path) if ((app != 'Lyon.geojson') and (not app.startswith('.'))) ]   # Avoid hidden folder and Lyon.geojson
+    Tensors = []
+    # For each app
+    for app in apps: 
+        print('App: ',app)
+        metadata = {result['COD_TRG'][station_ind] : {} for station_ind in range(len(result))}
+        folder_days = [day for day in listdir(f'{netmob_data_folder_path}/{app}') if (not day.startswith('.')) ]
+        Tensors_days,metadata = tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days)
+        torch.save(Tensors_days,f"{save_folder}{app}.pt")
+        pickle.dump(metadata,open(f"{save_folder}{app}_metadata.pkl",'wb'))
+
+    #Load Tensor example:
+    app = 'Apple_Video'
+
+    Apple_Video_meta = pickle.load(open(f"{save_folder}{app}_metadata.pkl","rb"))
+    Apple_Video = torch.load(f"{save_folder}{app}.pt")  #[day, transfer_mode, Station, Tile_id, (hour,minutes)]
+    print(f"{app} Tensor: {Apple_Video.size()}")
+    # ....
+
+
+    ''' 
+    Build and Save NetMob Tensor Image associated to a station 'i': 
+    NetMob Tensor Image: 5-th order Tensor [T]
+    '''
+    for i in range(len(ref_subway)):
+        List_channel_of_station_i = []
+        for app in apps: 
+
+            metadata = pickle.load(open(f"{save_folder}{app}_metadata.pkl","rb"))
+            T = torch.load(f"{save_folder}{app}.pt")  #[day, transfer_mode, Station, Tile_id, (hour,minutes)]
+
+            stations = list(metadata.keys())
+            station = stations[i]
+            tile_ids = np.array(metadata[station]['tile_id'])
+
+            T_i = get_station_data_and_permute_reshape(T,i)
+            resized_T_i = build_image(T_i,tile_ids,epsilon,step_south_north)
+            List_channel_of_station_i.append(resized_T_i)
+
+
+        name_save = f"station_{station}"
+        print(name_save)
+        Station_i_with_all_channel = torch.cat(List_channel_of_station_i, dim=1)
+        torch.save(Station_i_with_all_channel,f"{save_folder}{name_save}.pt")
+
+    # Load the saved image : 
+    station = 'AMP'
+    T_amp = torch.load(f"{save_folder}station_{station}.pt")  #[day, transfer_mode, Station, Tile_id, (hour,minutes)]
+    T_amp.size()
+    # ...
