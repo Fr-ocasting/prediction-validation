@@ -4,11 +4,12 @@ from ray.tune.search.hyperopt import HyperOptSearch
 import torch
 
 def get_scheduler(epochs,name='ASHA', metric= 'Loss_model', mode = 'min'):
+    grace_period = 15 if epochs>15 else epochs
     if name == 'ASHA':
         scheduler = ASHAScheduler(metric=metric,
             mode=mode,
             max_t=epochs,  # Maximum of run epochs 
-            grace_period=15,     # Minimum of run epochs 
+            grace_period=grace_period,     # Minimum of run epochs 
             reduction_factor=2,  # 100*(1/reduction_factor) % of all trials are kept each time they are reduced
         )
     elif name is None:

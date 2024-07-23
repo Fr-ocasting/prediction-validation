@@ -283,7 +283,6 @@ class Trainer(object):
 
         if (not(self.args.ray)):
             self.chrono.save_model()
-
             self.performance = {'valid_loss': self.best_valid, 'epoch':self.performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
             self.save_best_model(checkpoint,epoch,self.performance)
             print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.tensor_limits_keeper.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
