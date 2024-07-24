@@ -5,7 +5,7 @@ from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCN
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
-from dl_models.vision_models.simple_feature_extractor import SimpleFeatureExtractor
+from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling
 
 from load_adj import load_adj
 import numpy as np 
@@ -13,12 +13,44 @@ import torch
 import torch.nn as nn
 
 
+import inspect
+
+def filter_args(func, args):
+    sig = inspect.signature(func)
+    valid_args = {k: v for k, v in args.items() if k in sig.parameters}
+    return valid_args
+
+
+def load_vision_model(args_vision):
+    if args_vision['model_name'] == 'ImageAvgPooling':
+        filered_args = filter_args(ImageAvgPooling, args_vision)
+        return ImageAvgPooling(**filered_args) 
+    
+    elif args_vision['model_name'] == 'MinimalFeatureExtractor':
+        filered_args = filter_args(MinimalFeatureExtractor, args_vision)
+        return MinimalFeatureExtractor(**filered_args)
+    
+    elif args_vision['model_name'] == 'FeatureExtractor_ResNetInspired':
+        filered_args = filter_args(FeatureExtractor_ResNetInspired, args_vision)
+        return FeatureExtractor_ResNetInspired(**filered_args)
+    else:
+        NotImplementedError(f"Model {args_vision['model_name']} has not been implemented")
+
+
+
 class full_model(nn.Module):
-    def __init__(self,args,args_embedding,dic_class2rpz,args_vision = None):
+    def __init__(self,args,args_embedding,dic_class2rpz,args_vision):
         super(full_model,self).__init__()
-        self.core_model = load_model(args,args_embedding,dic_class2rpz,args_vision)
+
+        # === Vision NetMob ===
+        self.netmob_vision =  load_vision_model(args_vision) if 'netmob' in args.contextual_positions.keys() else None  
+
+        # === TE ===
         self.te = TE_module(args,args_embedding,dic_class2rpz) if args.time_embedding else None
-        self.netmob_vision = SimpleFeatureExtractor(**args_vision) if 'netmob' in args.contextual_positions.keys() else None
+
+        # === Trafic Model ===
+        self.core_model = load_model(args,args_embedding,dic_class2rpz,args_vision)
+
 
         # Add positions for each contextual data:
         if 'calendar' in args.contextual_positions.keys(): 
@@ -82,6 +114,7 @@ class full_model(nn.Module):
 
 
         # Core model 
+
         x = self.core_model(x)
         # ...
 

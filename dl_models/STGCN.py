@@ -8,11 +8,6 @@ import dl_models.STGCN_layer as layers
 # ============================================================
 
 
-
-
-
-
-
 class STGCN(nn.Module):
     # STGCN contains 'TGTND TGTND TNFF' structure
 
@@ -92,9 +87,11 @@ class STGCN(nn.Module):
             if self.Ko > 1:
                 x = self.output(x)
             elif self.Ko == 0:
+                # [B,C,L',N] ->  [B,1,L',N]
                 x = self.fc1(x.permute(0, 2, 3, 1))
                 x = self.relu(x)
                 x = self.fc2(x).permute(0, 3, 1, 2)
+
             x = x.squeeze()
             if B ==1:
                 x = x.unsqueeze(0)
