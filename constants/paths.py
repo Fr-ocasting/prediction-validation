@@ -1,7 +1,12 @@
 import os 
-
+import torch 
 # Usual paths: 
-folder_path = 'data/'
+if torch.cuda.is_available():
+    folder_path = '../../../../data/' 
+else:
+    folder_path = '../../../../Data/'
+
+
 save_folder = 'save/'
 # Load subway in data:
 #file_name = 'preprocessed_subway_15_min.csv'

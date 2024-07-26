@@ -173,7 +173,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['current_fold'] = 0
 
     # ===   ===
-    config['abs_path'] = f"{os.path.abspath(os.getcwd())}/"
+    config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
 
     # Add other parameters:
     for key in other_params.keys():
