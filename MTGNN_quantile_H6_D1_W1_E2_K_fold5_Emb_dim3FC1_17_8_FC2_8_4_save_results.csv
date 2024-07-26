@@ -1,2 +1,0 @@
-,CalendarClass,Position,Specific_lr,Type_calendar,Multi_Emb,TE_transfer,single_station,PICP_mean,MPIW_mean,last_train_loss,last_std_train_loss,last_valid_loss,last_std_valid_loss,score_train_loss,std_train_loss,score_valid_loss,std_valid_loss
-0,3,input,False,tuple,False,False,False,0.9476306438446045,0.3877545893192291,0.02821505069732666,0.002627765526995063,0.024830441921949387,0.005026808474212885,0.02821505069732666,0.002627765526995063,0.024830441921949387,0.005026808474212885

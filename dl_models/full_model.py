@@ -7,7 +7,7 @@ from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
 from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling
 
-from load_adj import load_adj
+from build_inputs.load_adj import load_adj
 import numpy as np 
 import torch
 import torch.nn as nn

@@ -7,9 +7,9 @@ from datetime import timedelta
 
 # Personnal Import 
 from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeeper
-from train_valid_test_split import train_valid_test_split_iterative_method
+from utils.train_valid_test_split import train_valid_test_split_iterative_method
 from loader import DictDataLoader
-from save_results import save_object,read_object,Dataset_get_save_folder
+from utils.save_results import save_object,read_object,Dataset_get_save_folder
 from calendar_class import get_time_slots_labels
 # ...
 

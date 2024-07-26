@@ -6,10 +6,10 @@ from torch.cuda.amp import autocast,GradScaler
 
 
 try :
-    from plotting_bokeh import generate_bokeh
+    from plotting.plotting_bokeh import generate_bokeh
 except:
     print('no plotting bokeh available')
-from chrono import Chronometer
+from profiler.chrono import Chronometer
 
 import pkg_resources
 try: 
@@ -22,12 +22,11 @@ try:
 except : 
     print('Training and Hyper-parameter tuning with Ray is not possible')
 
-from profiler import print_memory_usage,get_cpu_usage
-
-from save_results import results2dict, update_results_df, save_best_model_and_update_json, get_trial_id
-from PI_object import PI_object
-from PI_calibration import Calibrator
-from paths import save_folder
+from profiler.profiler import print_memory_usage,get_cpu_usage
+from utils.save_results import results2dict, update_results_df, save_best_model_and_update_json, get_trial_id
+from PI.PI_object import PI_object
+from PI.PI_calibration import Calibrator
+from constants.paths import save_folder
 
 
 class MultiModelTrainer(object):
