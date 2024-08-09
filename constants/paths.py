@@ -7,7 +7,7 @@ else:
     folder_path = '../../../../Data/'
 
 
-save_folder = 'save/'
+SAVE_DIRECTORY = '../save/'
 # Load subway in data:
 #file_name = 'preprocessed_subway_15_min.csv'
 #file_name = 'subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'
@@ -16,7 +16,7 @@ file_name = 'subway_IN_interpol_neg_15_min_2019_2020.csv'
 # Load CRITER data : 
 #file_name = 'preprocessed_CRITER_6min.csv'
 
-results_folder = f"{save_folder}results/"
+results_folder = f"{SAVE_DIRECTORY}results/"
 if not(os.path.exists(results_folder)):
     os.makedirs(results_folder)
 

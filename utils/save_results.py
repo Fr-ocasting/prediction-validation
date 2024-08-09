@@ -10,8 +10,8 @@ try:
 except ModuleNotFoundError:
     import pickle
 import random 
-from datetime import date
-
+from datetime import datetime
+#from datetime import date
 
 def get_trial_id(args,fold = None):
     if args.loss_function_type == 'quantile':
@@ -24,13 +24,16 @@ def get_trial_id(args,fold = None):
     t = 1 if args.time_embedding is True else 0
     s = 1 if args.scheduler is True else 0
 
+
+    trial_id0 = f"{datetime.now().strftime('%Y_%m_%d_%H_%M')}_{random.randint(1,100000)}"
+
     if fold is None:
-        trial_id1 = f"{random.randint(1,100000)}_{args.model_name}_F{args.K_fold}f"
-        trial_id2 = f"_{args.batch_size}_{args.epochs}_{l}{t}{s}_{date.today().strftime('%d_%m_%Y')}"
+        trial_id1 = f"{trial_id0}_{args.model_name}_F{args.K_fold}f"
+        trial_id2 = f"_{args.batch_size}_{args.epochs}_{l}{t}{s}"
         return(trial_id1,trial_id2)
     
     else : 
-        trial_id = f"{random.randint(1,100000)}_{args.model_name}_F{args.K_fold}f{fold}_{args.batch_size}_{args.epoch}_{l}{t}{s}_{date.today().strftime('%d_%m_%Y')}"
+        trial_id = f"{trial_id0}_{args.model_name}_F{args.K_fold}f{fold}_{args.batch_size}_{args.epoch}_{l}{t}{s}"
         return(trial_id)
 
 def load_json_file(save_dir):
@@ -60,11 +63,11 @@ def update_json(args,json_file,trial_id,performance,save_dir):
     pickle.dump(json_file,open(f"{save_dir}model_args.pkl",'wb'))
 
 
-def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir = 'save/best_models/'):
+def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir):
     ''' '''
     json_file = load_json_file(save_dir)
     update_json(args,json_file,trial_id,performance,save_dir)
-    torch.save(checkpoint, f"{save_dir}{trial_id}_best_model.pkl")
+    torch.save(checkpoint, f"{save_dir}{trial_id}.pkl")
     
 
 

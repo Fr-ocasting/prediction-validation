@@ -26,7 +26,7 @@ from profiler.profiler import print_memory_usage,get_cpu_usage
 from utils.save_results import results2dict, update_results_df, save_best_model_and_update_json, get_trial_id
 from PI.PI_object import PI_object
 from PI.PI_calibration import Calibrator
-from constants.paths import save_folder
+from constants.paths import SAVE_DIRECTORY
 
 
 class MultiModelTrainer(object):
@@ -63,7 +63,7 @@ class MultiModelTrainer(object):
             
 
             results_df['fold'] = k
-            results_df.to_csv(f"{save_folder}results/{trainer.trial_id}_results.csv")
+            results_df.to_csv(f"{SAVE_DIRECTORY}results/{trainer.trial_id}_results.csv")
             results_by_fold = pd.concat([results_by_fold,results_df])
 
         mean_picp = torch.Tensor(self.picp).mean()
@@ -119,9 +119,7 @@ class Trainer(object):
 
         self.alpha = args.alpha
         self.args_embedding = args_embedding
-        #self.save_path  = f"best_model.pkl" if save_dir is not None else None
         self.fold = fold
-        #self.save_dir = f"{save_dir}fold{fold}/" 
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz
         self.picp_list = []
@@ -139,12 +137,13 @@ class Trainer(object):
         if fold is not None:
             self.args.current_fold = fold
 
+        self.best_model_save_directory = f"{SAVE_DIRECTORY}/best_models/"
+
     def save_best_model(self,checkpoint,epoch,performance):
         ''' Save best model in .pkl format'''
         #update checkpoint
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
-        save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = 'save/best_models/')
-        # torch.save(checkpoint, f"{self.save_dir}{self.save_path}")   
+        save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = self.best_model_save_directory)
 
     def plot_bokeh_and_save_results(self,results_df,epoch,station):
         Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]

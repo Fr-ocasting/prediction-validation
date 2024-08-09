@@ -6,9 +6,24 @@ from bokeh.models import ColumnDataSource, Toggle, CustomJS,HoverTool, Legend
 from bokeh.layouts import layout,row,column
 
 import torch
-from constants.paths import save_folder 
+from constants.paths import SAVE_DIRECTORY 
 from PI.PI_object import PI_object
 # ...
+
+def plot_bokeh(trainer,args):
+    if args.loss_function_type == 'quantile':
+        Q = trainer.conformal_calibration(args.alpha,conformity_scores_type =args.conformity_scores_type, quantile_method = args.quantile_method)  # calibration for PI 90%
+    else:
+        Q = None
+    station = 0
+    pi,pi_cqr = generate_bokeh(trainer,trainer.dataloader,
+                                        trainer.dataset,Q,args,trainer.dic_class2rpz,
+                                        station = station,
+                                        show_figure = True,
+                                        save_plot = False
+                                        )
+    return(pi,pi_cqr)
+
 
 def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True):
 
@@ -20,7 +35,7 @@ def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = N
     else:
         p3 = None
 
-    save_dir = f'{save_folder}plot/{trial_id}/'
+    save_dir = f'{SAVE_DIRECTORY}plot/{trial_id}/'
     combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure,save_plot)
     return(pi,pi_cqr)
 

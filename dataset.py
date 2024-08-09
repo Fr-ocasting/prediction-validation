@@ -357,13 +357,6 @@ class DataSet(object):
         # ................................................................................
 
 
-        # ANCIENNE VERSION A RETIRER : 
-        # dataset_init.Dataset_save_folder = Dataset_get_save_folder(args,K_fold = 1,fold=0,netmob=netmob)
-        # _,_,_,_ = dataset_init.split_normalize_load_feature_vect(invalid_dates,args.train_prop, args.valid_prop,args.test_prop)
-        # dict_dataloader = dataset_init.get_dataloader()
-        # ==========================================================================================
-        # ==========================================================================================
-
 
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df_hold_out = self.df[: dataset_init.first_test_date]  

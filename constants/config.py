@@ -6,13 +6,13 @@ import os
 
 def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     if model_name== 'CNN':
-        config = dict(model_name= model_name,epochs = [50],
+        config = dict(model_name= model_name,#epochs = [50],
                       enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                     c_in = 1, C_outs = [[16,2]],H_dims = [[16,16]], padding = 0
                     ) 
 
     if model_name== 'MTGNN':
-        config = dict(model_name= model_name,epochs = [30],
+        config = dict(model_name= model_name,#epochs = [30],
                     enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',   # VERIFIER CA  !!!!!!!!!!!!!!!!!!!!!!!
                     dilation_exponential=1,
                     c_in = 1,conv_channels=32, residual_channels=32, 
@@ -31,7 +31,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     if (model_name == 'STGCN') or  (model_name == 'stgcn'):
         # Utilise la distance adjacency matrix 
-        config = dict(model_name= model_name,epochs = [100],
+        config = dict(model_name= model_name,#epochs = [100],
                         calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
@@ -63,7 +63,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
 
     if model_name== 'LSTM':
-        config = dict(model_name= model_name,epochs = [30],
+        config = dict(model_name= model_name,#epochs = [30],
                         calib_prop = [0.5], 
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
@@ -72,7 +72,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         )
         
     if model_name == 'GRU':
-        config = dict(model_name= model_name,epochs = [30],
+        config = dict(model_name= model_name,#epochs = [30],
                         calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
@@ -81,7 +81,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         )
 
     if model_name == 'RNN':
-        config = dict(model_name= model_name,epochs = [30], 
+        config = dict(model_name= model_name,#epochs = [30], 
                        calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
 
@@ -100,6 +100,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['batch_size'] = 32
     config['lr'] = 1e-3
     config['dropout'] = 0.2
+    config['epochs'] = 100 if torch.cuda.is_available() else 2
     config['contextual_positions'] = {}
 
     if torch.cuda.is_available():
@@ -125,13 +126,13 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['prefetch_all'] = False
 
     # Scheduler 
-    config['scheduler'] = True  # None
-    config['torch_scheduler_milestone'] = 40
-    config['torch_scheduler_gamma'] = 0.99
-    config['torch_scheduler_lr_start_factor'] = 0.1
+    config['scheduler'] =  None #True
+    config['torch_scheduler_milestone'] = 40 # if scheduler == True 
+    config['torch_scheduler_gamma'] = 0.99 # if scheduler == True 
+    config['torch_scheduler_lr_start_factor'] = 0.1 # if scheduler == True 
 
     # === Ray config ===
-    config['ray'] = True
+    config['ray'] = False # True
     config['ray_scheduler'] = 'ASHA' #None
     config['ray_search_alg'] = None #  'HyperOpt'
 
@@ -164,7 +165,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
-    config['track_pi'] = True
+    config['track_pi'] = False #True
 
     # Validation, K-fold
     config['validation'] = 'sliding_window'  # classic / sliding_window / 
@@ -239,6 +240,41 @@ def get_parameters(config,description = None ):
 
     args = parser.parse_args(args=[])
     return(args)
+
+
+def update_modif(args):
+    #Update modification:
+    if args.loss_function_type == 'MSE': out_dim = 1
+    elif args.loss_function_type == 'quantile': out_dim = 2
+    else: raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    args.out_dim = out_dim
+
+    return(args)
+
+
+def update_args(args,subway_ds,dataset_names,positions):
+
+    # Update args according datasets choice: 
+    args.dataset_names = dataset_names
+    args.contextual_positions = positions
+
+    if not 'subway_in' in dataset_names:
+        args.L = 0
+
+    if subway_ds.U_train.dim() == 3:
+        args.C = 1
+        args.N = subway_ds.U_train.size(1) 
+    elif subway_ds.U_train.dim() == 4:
+        args.C = subway_ds.U_train.size(1)
+        args.N = subway_ds.U_train.size(2) 
+    else:
+        raise NotImplementedError("Feature vector like 'subway_ds.U_train' doesn't have the expected shape")
+    # ...
+    args.num_nodes = subway_ds.raw_values.size(1)
+
+    return(args)
+
+
 
 def display_config(args,args_embedding):
     # Args 

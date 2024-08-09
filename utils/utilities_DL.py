@@ -15,9 +15,19 @@ from constants.config import optimizer_specific_lr, get_config_embed, get_parame
 from DL_class import QuantileLoss
 from dataset import  DataSet
 from TE_transfer_learning import TE_transfer
-
-# Models : 
 from dl_models.full_model import full_model
+
+
+def get_small_ds(small_ds,coverage,args):
+    if small_ds:
+        args.time_slot_limit = 1500
+        coverage = coverage[: args.time_slot_limit]
+        args.W = 0
+        args.D = 0
+        print(f'Seulement les { args.time_slot_limit} premiers time-slots sont utilisés.')
+    else:
+        args.time_slot_limit = None
+    return(coverage,args)
 
 
 def forward_and_display_info(model,inputs):

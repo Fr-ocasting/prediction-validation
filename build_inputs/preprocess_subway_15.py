@@ -8,9 +8,9 @@ from utils.utilities_DL import DataSet
 from utils.utilities import get_distance_matrix
 
 if __name__ == '__main__':
-    from load_data import load_subway_15_min 
+    from build_inputs.load_raw_data import load_subway_15_min 
 else:
-    from build_inputs.load_data import load_subway_15_min 
+    from build_inputs.load_raw_data import load_subway_15_min 
 
 import geopandas as gpd
 from shapely.geometry import Point 

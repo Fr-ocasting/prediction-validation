@@ -109,10 +109,10 @@ class FeatureVectorBuilder(object):
     '''
     Shift : 
     1 Week : Mean to predict t+s we need what happened the same day, same hour, same minute, one week ago. 
-    which means t+s - 672 
+    which means t+s - Week_nb_steps     
 
     1 Day : Mean to predict t+s we need what happened the later day, same hour, same minute, 
-    which means t+s - 96 
+    which means t+s - Day_nb_steps 
 
     2 historical length : to predict t+s we need what to know happened the h+s time step earlier, and we can't accès to what happened the s time step earlier
     which means t, t-1, .. t-h   
