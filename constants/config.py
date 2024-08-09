@@ -126,7 +126,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['prefetch_all'] = False
 
     # Scheduler 
-    config['scheduler'] =  None #True
+    config['scheduler'] = True # None
     config['torch_scheduler_milestone'] = 40 # if scheduler == True 
     config['torch_scheduler_gamma'] = 0.99 # if scheduler == True 
     config['torch_scheduler_lr_start_factor'] = 0.1 # if scheduler == True 
