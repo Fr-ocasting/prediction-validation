@@ -25,8 +25,8 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
 
     if 'netmob' in dataset_names:
         contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
-                                        'valid': NetMob_ds.U_valid,
-                                        'test': NetMob_ds.U_test}
+                                        'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
+                                        'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
                                         }
                                         )
         
@@ -42,9 +42,10 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
 
 
 
-def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name):
+def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name, normalize = True):
+
     # Load subway-in DataSet:
-    subway_ds,dataset,invalid_dates = load_subway_in(file_name,args,coverage)
+    subway_ds,dataset,invalid_dates = load_subway_in(file_name,args,coverage,normalize)
 
     # Calendar data for Calibration : 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
@@ -53,11 +54,11 @@ def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_mo
     args,dic_class2rpz,dic_rpz2class,nb_words_embedding,args_embedding = tackle_calendar(dataset_names,args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # Netmob: 
-    args_vision,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name)
+    args_vision,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
     subway_ds,positions = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
     # Update/Set arguments: 
     args = update_args(args,subway_ds,dataset_names,positions)
-    return(subway_ds,positions,args,args_vision,args_embedding,dic_class2rpz)
+    return(subway_ds,NetMob_ds,positions,args,args_vision,args_embedding,dic_class2rpz)

@@ -1,4 +1,4 @@
-from build_inputs.load_preprocesssed_dataset import load_complete_ds
+from build_inputs.load_preprocessed_dataset import load_complete_ds
 from dl_models.full_model import full_model
 from plotting.plotting_bokeh import plot_bokeh
 from trainer import Trainer
@@ -23,7 +23,7 @@ def load_optimizer_and_scheduler(model,args):
 def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name):
 
     # Load DataSet, DataLoader, Args :
-    (subway_ds,positions,args,args_vision,args_embedding,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
+    (subway_ds,NetMob_ds,positions,args,args_vision,args_embedding,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
 
     # Load Model:
     model = load_model(args,args_embedding,dic_class2rpz,args_vision)

@@ -25,7 +25,8 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
-                     social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram']
+                     social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram'],
+                     normalize = True
                      ):
     '''Load NetMob Data:
     outputs:
@@ -41,12 +42,23 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
         trafic_pos = find_positions(selected_apps,apps)
         trafic_pos = [2*k for k in trafic_pos] + [2*k+1 for k in trafic_pos]
         assert len(apps) == 136//2 # Tensor.size(1) =nb_mode_transfer x nb_apps =2*68  = 136
+
+
+        netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
+        '''
         if args.time_slot_limit is not None:
             netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:args.time_slot_limit,trafic_pos,:,:] for station in columns])
         else:
             netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
+        '''
+            
         netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))
+
+        # Replace problematic time-slots:
         netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+
+        # Keep only time-slots associated to the dataset:
+        netmob_T = netmob_T[dataset.time_slot_limits]
 
     else:
         netmob_T = torch.randn(dataset.length,40,2,8,8)  # (7400,40,67,22,22)
@@ -58,15 +70,15 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
 
     NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = dataset.df_dates,
                            time_step_per_hour = dataset.time_step_per_hour,Weeks = args.W, Days = args.D, historical_len = args.H,step_ahead = args.step_ahead,minmaxnorm = True,dims =[0,3,4])
-    NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop)
+    NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,normalize)
 
     return(NetMob_ds)
 
 
 
-def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name):
+def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name,normalize = True):
     if 'netmob' in dataset_names:
-        NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns )
+        NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns, normalize = normalize )
         C_netmob = NetMob_ds.U_train.size(2)  # [B,N,C,H,W,L]
         L = NetMob_ds.U_train.size(5)
 

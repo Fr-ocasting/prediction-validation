@@ -119,17 +119,23 @@ class DictDataLoader(object):
 
     def load_valid(self):
         # Load Valid:
-        U,U_target,contextual_tensors = self.valid_tuple
-        valid_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = False)
-        valid_loader.call_dataloader('valid')
+        if self.valid_tuple is not None:
+            U,U_target,contextual_tensors = self.valid_tuple
+            valid_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = False)
+            valid_loader.call_dataloader('valid')
+        else:
+            valid_loader = None
         return(valid_loader)
         # ...
 
     def load_test(self):
         # Load Test: 
-        U,U_target,contextual_tensors = self.test_tuple
-        test_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = False)
-        test_loader.call_dataloader('test')
+        if self.test_tuple is not None:
+            U,U_target,contextual_tensors = self.test_tuple
+            test_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = False)
+            test_loader.call_dataloader('test')
+        else:
+            test_loader = None
         return(test_loader)
         # ...
 
@@ -140,15 +146,15 @@ class DictDataLoader(object):
 
         if self.calib_prop is not None:
             return dict(train = train_loader.dataloader,
-                        valid = valid_loader.dataloader,
-                        test = test_loader.dataloader,
+                        valid = valid_loader.dataloader if valid_loader is not None else None,
+                        test = test_loader.dataloader if test_loader is not None else None,
                         cal = calib_loader.dataloader
                         )     
         
         else: 
             return dict(train = train_loader.dataloader,
-                        valid = valid_loader.dataloader,
-                        test = test_loader.dataloader
+                        valid = valid_loader.dataloader if valid_loader is not None else None,
+                        test = test_loader.dataloader if test_loader is not None else None
                         )
         
 class CustomDataset(Dataset):

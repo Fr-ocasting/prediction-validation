@@ -113,14 +113,14 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         config['num_workers'] = 0 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
         config['persistent_workers'] = False # False 
         config['pin_memory'] = True # False 
-        config['prefetch_factor'] = 2 #None # None, 2,3,4,5 ... 
+        config['prefetch_factor'] = None # None, 2,3,4,5 ... 
         config['drop_last'] = False  # True      
     
     
     config['non_blocking'] = True
 
-    config['mixed_precision'] = True
-    config['torch_compile'] = True
+    config['mixed_precision'] = False #True
+    config['torch_compile'] = False #True
     config['backend'] = 'inductor' #'cudagraphs'
 
     config['prefetch_all'] = False
@@ -242,13 +242,30 @@ def get_parameters(config,description = None ):
     return(args)
 
 
-def update_modif(args):
+def update_modif(args,name_gpu='cuda'):
     #Update modification:
-    if args.loss_function_type == 'MSE': out_dim = 1
-    elif args.loss_function_type == 'quantile': out_dim = 2
-    else: raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
-    args.out_dim = out_dim
+    if args.loss_function_type == 'MSE': 
+        args.out_dim = 1
+        args.alpha = None
+    elif args.loss_function_type == 'quantile': 
+        args.out_dim = 2
+        args.alpha = 0.1
+    else: 
+        raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    #...
+    
+    # Modification according GPU availability: 
+    if torch.cuda.is_available():
+            args.device = name_gpu
+            args.batch_size = 256
+    else :
+        args.device = 'cpu'
+        args.batch_size = 32
+    # ...
 
+    print(f"Model: {args.model_name}, K_fold = {args.K_fold}") 
+    print(f"!!! Loss function: {args.loss_function_type} ")
+    print("!!! Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     return(args)
 
 

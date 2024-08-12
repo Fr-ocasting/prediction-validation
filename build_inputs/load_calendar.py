@@ -17,7 +17,17 @@ def load_calendar(subway_ds):
                                     first_test = tensor_limits_keeper.first_test_U, last_test = tensor_limits_keeper.last_test_U)
 
         train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(normalizer = None)
-        calendar_U_train,calendar_U_valid,calendar_U_test = train_tensor_ds.tensor,valid_tensor_ds.tensor,test_tensor_ds.tensor
+        calendar_U_train =train_tensor_ds.tensor
+        if valid_tensor_ds is not None: 
+            calendar_U_valid = valid_tensor_ds.tensor
+        else:
+            calendar_U_valid = None
+
+        if test_tensor_ds is not None: 
+            calendar_U_test  = test_tensor_ds.tensor
+        else: 
+            calendar_U_test = None
+
         dict_calendar_U_train[calendar_class] = calendar_U_train
         dict_calendar_U_valid[calendar_class] = calendar_U_valid
         dict_calendar_U_test[calendar_class] = calendar_U_test

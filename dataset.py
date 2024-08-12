@@ -13,6 +13,8 @@ from utils.save_results import save_object,read_object,Dataset_get_save_folder
 from calendar_class import get_time_slots_labels
 # ...
 
+#from build_inputs.load_subway_in import preprocess_subway_in                    
+#from build_inputs.load_preprocessed_dataset import load_complete_ds
 
 class TrainValidTest_Split_Normalize(object):
     def __init__(self,data,
@@ -47,8 +49,8 @@ class TrainValidTest_Split_Normalize(object):
             self.data_test = self.data[self.test_indices] if self.test_indices is not None else None
         elif hasattr(self,'first_train'):
             self.data_train = self.data[self.first_train:self.last_train]
-            self.data_valid = self.data[self.first_valid:self.last_valid] if self.first_valid is not None else None
-            self.data_test = self.data[self.first_test:self.last_test]   if self.first_test is not None else None
+            self.data_valid = self.data[self.first_valid:self.last_valid] if hasattr(self,'first_valid') else None
+            self.data_test = self.data[self.first_test:self.last_test]   if hasattr(self,'first_test') else None
         else: 
             raise ValueError("Neither 'train_indices' nor 'first_train' attribute has been designed ")
         
@@ -60,16 +62,30 @@ class TrainValidTest_Split_Normalize(object):
         Normalize them according to their statistics 
         '''
         train_dataset = TensorDataset(self.data_train, normalized = False, normalizer=normalizer)
-        valid_dataset = TensorDataset(self.data_valid, normalized = False, normalizer=normalizer)
-        test_dataset = TensorDataset(self.data_test,normalized = False, normalizer=normalizer)
+
+
+        if hasattr(self,'first_valid'): 
+            valid_dataset = TensorDataset(self.data_valid, normalized = False, normalizer=normalizer)
+        else:
+            valid_dataset = None
+
+        if hasattr(self,'first_test'):  
+            test_dataset = TensorDataset(self.data_test,normalized = False, normalizer=normalizer)
+        else : 
+            test_dataset = None
 
         if normalizer is not None:
             print('\n','Tackling Training Set')
             train_dataset.normalize(feature_vect = True)
-            print('\n','Tackling Validation Set')
-            valid_dataset.normalize(feature_vect = True)
-            print('\n','Tackling Testing Set')
-            test_dataset.normalize(feature_vect = True)
+
+            if hasattr(self,'first_valid'): 
+                print('\n','Tackling Validation Set')
+                valid_dataset.normalize(feature_vect = True)
+
+            if hasattr(self,'first_test'): 
+                print('\n','Tackling Testing Set')
+                test_dataset.normalize(feature_vect = True)
+
         
         return(train_dataset,valid_dataset,test_dataset)
 
@@ -355,8 +371,8 @@ class DataSet(object):
         dataset_init = self.clean_dataset_get_tensor_and_train_valid_test_split(self.df,invalid_dates,args.train_prop,args.valid_prop,args.test_prop, normalize = False)
         # On peut maintenant appeler dataset_init.U_test pour récupérer le test_set dans 'init', qu'il faut maintenant Normaliser avec les min/max des Train DataSet de chaque fold. 
         # ................................................................................
-
-
+        # 
+        dataset_init.time_slot_limits = ...
 
         # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
         df_hold_out = self.df[: dataset_init.first_test_date]  
@@ -371,30 +387,48 @@ class DataSet(object):
         n = len(df_hold_out)
 
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
-        valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
         train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)
-        
+        valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
+
+        args.train_prop = train_prop_tmps
+        args.valid_prop = valid_prop_tmps
+
         # Découpe la dataframe en K_fold 
         for k in range(args.K_fold):
             # Slicing 
-            if args.validation == 'wierd_blocked':
-                l_lim_fold = int((k/args.K_fold)*n)
-                u_lim_fold = int(((k+1)/args.K_fold)*n)
-
-                df_tmps = df_hold_out[l_lim_fold:u_lim_fold]
-
-
             if args.validation == 'sliding_window':
                 width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
                 l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
-                
-
                 if k == args.K_fold - 1:
                     u_lim_pos = n
                 else:
                     u_lim_pos = l_lim_pos + width_dataset
 
-                df_tmps = df_hold_out[l_lim_pos:u_lim_pos]          
+                df_tmps = df_hold_out[l_lim_pos:u_lim_pos]         
+
+            # Traditionnal pre-process : 
+            dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
+                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
+            subway_ds_tmps = preprocess_subway_in(dataset_tmps,args,invalid_dates)         
+ 
+            subway_ds_tmps,positions,args,args_vision,args_embedding,dic_class2rpz = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name,subway_ds = subway_ds_tmps, dataset = dataset_tmps, invalid_dates = invalid_dates)   
+
+            #  ...
+
+            # Add Test-limits, Test dataset, Test-dataloader:
+            #
+            # ....
+
+            # Append dataset and dataloader to list: 
+            #
+            # ...
+
+
+
+
+
+
+
 
             # ================================================================================================================================================================
             self.fold_dataset_limits[k]['fold_limits']['df_indices'] = (l_lim_pos,u_lim_pos)
@@ -404,7 +438,11 @@ class DataSet(object):
             # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
             dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
+            dataset_init.time_slot_limits = ...
+            
+            if False:
+                # A re-implémenter. Pas idéal avec NetMob de >100GB
+                dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
 
 
             dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop = train_prop_tmps,valid_prop = valid_prop_tmps,test_prop =  0, dims_agg= dims)
@@ -442,6 +480,7 @@ class DataSet(object):
         # Apply mask 
         self.U = self.U[mask_U]
         self.Utarget = self.Utarget[mask_U]
+
 
 
     def get_feature_vect(self,invalid_dates): 
@@ -499,16 +538,17 @@ class DataSet(object):
         
         self.tensor_limits_keeper = tensor_limits_keeper
 
+
     def get_dataloader(self):
         ''' Build DataLoader '''
         # Train, Valid, Test split : 
         contextual_train  = {name: self.contextual_tensors[name]['train'] for name in self.contextual_tensors.keys()} #[self.contextual_tensors[name]['train'] for name in self.contextual_tensors.keys()]
-        contextual_valid  = {name: self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()]
-        contextual_test  =  {name: self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()] 
+        contextual_valid  = {name: self.contextual_tensors[name]['valid'] if 'valid' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()}   # [self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()]
+        contextual_test  =  {name: self.contextual_tensors[name]['test'] if 'test' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()] 
 
         train_tuple =  self.U_train,self.Utarget_train, contextual_train # *contextual_train
-        valid_tuple =  self.U_valid,self.Utarget_valid, contextual_valid  # *contextual_valid
-        test_tuple =  self.U_test,self.Utarget_test, contextual_test # *contextual_test
+        valid_tuple =  (self.U_valid,self.Utarget_valid, contextual_valid)  if hasattr(self,'U_valid') else None # *contextual_valid
+        test_tuple =  (self.U_test,self.Utarget_test, contextual_test) if hasattr(self,'U_test') else None# *contextual_test
 
         # Load DictDataLoader: 
         DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,self.args)
@@ -516,7 +556,7 @@ class DataSet(object):
         self.dataloader = dict_dataloader
 
 
-    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop
+    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,normalize = True
                                           #,calib_prop,batch_size,calendar_class
                                           ):
         self.get_shift_from_first_elmt()   # get shift indice and shift date from the first element / between each dataset 
@@ -526,7 +566,7 @@ class DataSet(object):
         self.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
 
         # Get all the splitted train/valid/test input tensors. Normalize Them 
-        self.split_tensors(normalize = True)
+        self.split_tensors(normalize = normalize)
 
 
     def set_train_valid_test_tensor_attribute(self,name,tensor):
@@ -545,6 +585,7 @@ class DataSet(object):
         >>>> dims_agg = (0,2), tensor = torch.randn(4,5,6,7)
         >>>> output : mini.size() = [5,7],  mean.size() = [5,7] ....
         '''
+        
 
 
         splitter = TrainValidTest_Split_Normalize(tensor,
@@ -556,14 +597,16 @@ class DataSet(object):
         
         train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(normalizer = self.normalizer)
 
-        #setattr(self,f"{name}_ds_train", train_tensor_ds)
-        #setattr(self,f"{name}_ds_valid", valid_tensor_ds)
-        #setattr(self,f"{name}_ds_test", test_tensor_ds)
-
+        # Tackle Train Tensor:
         setattr(self,f"{name}_train", train_tensor_ds.tensor)
-        setattr(self,f"{name}_valid", valid_tensor_ds.tensor)
-        setattr(self,f"{name}_test", test_tensor_ds.tensor)
-        # ....
+
+        # Tackle Valid Tensor:
+        if hasattr(splitter,'first_valid'):
+            setattr(self,f"{name}_valid", valid_tensor_ds.tensor) 
+
+        # Tackle Test Tensor: 
+        if hasattr(splitter,'first_test'):
+            setattr(self,f"{name}_test", test_tensor_ds.tensor)
 
     def display_info_on_inputs(self):
         print('\nU size: ',self.U.size(),'Utarget size: ',self.Utarget.size())
@@ -610,5 +653,5 @@ class PersonnalInput(DataSet):
         self.invalid_dates = invalid_dates
         self.args = arg_parser
         
-    def preprocess(self,train_prop,valid_prop,test_prop):
-        self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop)
+    def preprocess(self,train_prop,valid_prop,test_prop,normalize = True):
+        self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop,normalize)
