@@ -4,6 +4,7 @@ from plotting.plotting_bokeh import plot_bokeh
 from trainer import Trainer
 from utils.utilities_DL import choose_optimizer, load_scheduler,get_loss
 
+
 # =======================================================================================================================
 # =======================================================================================================================
 def load_model(args,args_embedding,dic_class2rpz,args_vision):
@@ -23,7 +24,7 @@ def load_optimizer_and_scheduler(model,args):
 def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name):
 
     # Load DataSet, DataLoader, Args :
-    (subway_ds,NetMob_ds,positions,args,args_vision,args_embedding,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
+    (subway_ds,NetMob_ds,args,args_vision,args_embedding,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
 
     # Load Model:
     model = load_model(args,args_embedding,dic_class2rpz,args_vision)
@@ -31,14 +32,14 @@ def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_mod
     # Load Optimizer, Scheduler, Loss function: 
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     
-    return(model,subway_ds,loss_function,optimizer,scheduler,args,args_embedding,args_vision,positions,dic_class2rpz)
+    return(model,subway_ds,loss_function,optimizer,scheduler,args,args_embedding,args_vision,dic_class2rpz)
 
 
 def evaluate_config(dataset_names,folder_path,file_name,args,coverage,vision_model_name,mod_plot):
     # Load Model, Optimizer, Scheduler:
-    model,subway_ds,loss_function,optimizer,scheduler,args,args_embedding,args_vision,positions,dic_class2rpz = load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name)
+    model,subway_ds,loss_function,optimizer,scheduler,args,args_embedding,args_vision,dic_class2rpz = load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name)
     # Load trainer: 
-    trainer = Trainer(subway_ds,model,args,optimizer,loss_function,scheduler = scheduler,args_embedding  =args_embedding,dic_class2rpz = dic_class2rpz,show_figure = True,positions = positions)# Ajoute dans trainer, if calibration_prop is not None .... et on modifie le dataloader en ajoutant un clabration set
+    trainer = Trainer(subway_ds,model,args,optimizer,loss_function,scheduler = scheduler,args_embedding  =args_embedding,dic_class2rpz = dic_class2rpz,show_figure = True)# Ajoute dans trainer, if calibration_prop is not None .... et on modifie le dataloader en ajoutant un clabration set
     # Train Model 
     trainer.train_and_valid(mod = 1000,mod_plot = mod_plot)  # Récupère les conformity scores sur I1, avec les estimations faites precedemment 
 

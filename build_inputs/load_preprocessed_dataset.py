@@ -37,8 +37,9 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
 
     subway_ds.contextual_tensors = contextual_tensors
     subway_ds.get_dataloader()
+    subway_ds.contextual_positions = positions
 
-    return(subway_ds,positions)
+    return(subway_ds)
 
 
 
@@ -57,8 +58,8 @@ def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_mo
     args_vision,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
-    subway_ds,positions = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
+    subway_ds = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
     # Update/Set arguments: 
-    args = update_args(args,subway_ds,dataset_names,positions)
-    return(subway_ds,NetMob_ds,positions,args,args_vision,args_embedding,dic_class2rpz)
+    args = update_args(args,subway_ds,dataset_names)
+    return(subway_ds,NetMob_ds,args,args_vision,args_embedding,dic_class2rpz)

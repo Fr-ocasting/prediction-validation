@@ -103,6 +103,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['epochs'] = 100 if torch.cuda.is_available() else 2
     config['contextual_positions'] = {}
 
+
+    # Optimization 
     if torch.cuda.is_available():
         config['num_workers'] = 2 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
         config['persistent_workers'] = True # False 
@@ -116,14 +118,12 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         config['prefetch_factor'] = None # None, 2,3,4,5 ... 
         config['drop_last'] = False  # True      
     
-    
     config['non_blocking'] = True
-
     config['mixed_precision'] = False #True
     config['torch_compile'] = False #True
     config['backend'] = 'inductor' #'cudagraphs'
-
     config['prefetch_all'] = False
+    # ...
 
     # Scheduler 
     config['scheduler'] = True # None
@@ -269,11 +269,11 @@ def update_modif(args,name_gpu='cuda'):
     return(args)
 
 
-def update_args(args,subway_ds,dataset_names,positions):
+def update_args(args,subway_ds,dataset_names):
 
     # Update args according datasets choice: 
     args.dataset_names = dataset_names
-    args.contextual_positions = positions
+    args.contextual_positions = subway_ds.contextual_positions
 
     if not 'subway_in' in dataset_names:
         args.L = 0

@@ -344,7 +344,7 @@ class DataSet(object):
         if self.Weeks+self.historical_len+self.Days == 0:
             print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
 
-
+    """
     def split_K_fold(self,args,invalid_dates,netmob = False):
         '''
         Split la DataSet Initiale en K-fold
@@ -411,7 +411,7 @@ class DataSet(object):
                                    step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
             subway_ds_tmps = preprocess_subway_in(dataset_tmps,args,invalid_dates)         
  
-            subway_ds_tmps,positions,args,args_vision,args_embedding,dic_class2rpz = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name,subway_ds = subway_ds_tmps, dataset = dataset_tmps, invalid_dates = invalid_dates)   
+            subway_ds_tmps,args,args_vision,args_embedding,dic_class2rpz = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name,subway_ds = subway_ds_tmps, dataset = dataset_tmps, invalid_dates = invalid_dates)   
 
             #  ...
 
@@ -473,6 +473,7 @@ class DataSet(object):
 
 
         return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+        """
     
     def mask_tensor(self):
         # Mask for Tensor U, Utarget

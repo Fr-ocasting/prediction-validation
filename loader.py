@@ -75,16 +75,29 @@ class CustomDataLoder(object):
     def call_dataloader(self,training_mode):
         inputs = CustomDataset(self.U,self.U_target,self.contextual_tensor) 
         # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,num_replicas=idr_torch.size,rank=idr_torch.rank,shuffle= ...)
-        self.dataloader = DataLoader(inputs, 
-                                    batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
-                                    shuffle = self.shuffle,  # if hasattr, then already shuffled 
-                                    #sampler=sampler,
-                                    num_workers=self.num_workers,
-                                    persistent_workers=self.persistent_workers,
-                                    pin_memory=self.pin_memory,
-                                    prefetch_factor=self.prefetch_factor,
-                                    drop_last=self.drop_last
-                                    ) 
+
+        try:
+            self.dataloader = DataLoader(inputs, 
+                                        batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
+                                        shuffle = self.shuffle,  # if hasattr, then already shuffled 
+                                        #sampler=sampler,
+                                        num_workers=self.num_workers,
+                                        persistent_workers=self.persistent_workers,
+                                        pin_memory=self.pin_memory,
+                                        prefetch_factor=self.prefetch_factor,
+                                        drop_last=self.drop_last
+                                        ) 
+        except:
+            print('\n ===== ERROR ==== \nTry with torch >= 2.0.0 (works with 2.0.1) \nValueError: prefetch_factor option could only be specified in multiprocessing.let num_workers > 0 to enable multiprocessing')
+            self.dataloader = DataLoader(inputs, 
+                            batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
+                            shuffle = self.shuffle,  # if hasattr, then already shuffled 
+                            #sampler=sampler,
+                            num_workers=self.num_workers,
+                            persistent_workers=self.persistent_workers,
+                            pin_memory=self.pin_memory,
+                            drop_last=self.drop_last
+                            ) 
     
 
 
