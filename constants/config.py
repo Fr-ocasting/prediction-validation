@@ -263,6 +263,8 @@ def update_modif(args,name_gpu='cuda'):
         args.batch_size = 32
     # ...
 
+    args.L = args.W + args.D + args.H
+    
     print(f"Model: {args.model_name}, K_fold = {args.K_fold}") 
     print(f"!!! Loss function: {args.loss_function_type} ")
     print("!!! Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None

@@ -10,28 +10,28 @@ from constants.paths import SAVE_DIRECTORY
 from PI.PI_object import PI_object
 # ...
 
-def plot_bokeh(trainer,args):
+def plot_bokeh(trainer,normalizer,df_verif_test,args):
     if args.loss_function_type == 'quantile':
         Q = trainer.conformal_calibration(args.alpha,conformity_scores_type =args.conformity_scores_type, quantile_method = args.quantile_method)  # calibration for PI 90%
     else:
         Q = None
     station = 0
-    pi,pi_cqr = generate_bokeh(trainer,trainer.dataloader,
-                                        trainer.dataset,Q,args,trainer.dic_class2rpz,
-                                        station = station,
-                                        show_figure = True,
-                                        save_plot = False
-                                        )
+    pi,pi_cqr = generate_bokeh(trainer,normalizer,
+                               df_verif_test,Q, args,
+                               station = station,
+                                show_figure = True,
+                                save_plot = False
+                             )
     return(pi,pi_cqr)
 
 
-def generate_bokeh(trainer,data_loader,dataset,Q,args,dic_class2rpz,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True):
+def generate_bokeh(trainer,normalizer,df_verif_test,Q,args,trial_id = None,trial_save = None ,station=0,show_figure = False,save_plot = True):
 
-    pi,pi_cqr,p1 = plot_prediction(trainer,dataset,Q,args,station)
+    pi,pi_cqr,p1 = plot_prediction(trainer,normalizer,df_verif_test,Q,args,station)
     p2 = plot_loss(trainer)
     
     if args.time_embedding:
-        p3 = plot_latent_space(trainer,data_loader,args,dic_class2rpz[args.calendar_class],station)
+        p3 = plot_latent_space(trainer,trainer.dataloader,args,trainer.dic_class2rpz[args.calendar_class],station)
     else:
         p3 = None
 
@@ -58,9 +58,9 @@ def hm2hour(hm):
     
     return f"{hm[0][0]}:{m1} - {hm[1][0]}:{m2}h"
 
-def plot_latent_space(trainer,data_loader,args,dic_class2rpz,station):
+def plot_latent_space(trainer,dataloader,args,dic_class2rpz,station):
     # Get unique labels : 
-    data = [contextual_b[args.contextual_positions['calendar']] for  _,_,contextual_b in data_loader['test']]
+    data = [contextual_b[args.contextual_positions['calendar']] for  _,_,contextual_b in dataloader['test']]
     T_test = torch.cat(data)
     labels = T_test.unique().long().to(args.device)
     # ...
@@ -190,9 +190,9 @@ def plot_loss(trainer,location = "top_right"):
     return(p)
 
 
-def plot_prediction(trainer,dataset,Q,args,station,location = "top_right"):
+def plot_prediction(trainer,normalizer,df_verif_test,Q,args,station,location = "top_right"):
     
-    Preds,Y_true,T_labels = trainer.testing(dataset,training_mode = 'test')
+    Preds,Y_true,T_labels = trainer.testing(normalizer,training_mode = 'test')
     if len(Preds.size()) == 2:
         Preds = Preds.unsqueeze(1)
     # ...
@@ -230,28 +230,28 @@ def plot_prediction(trainer,dataset,Q,args,station,location = "top_right"):
     
     if Preds.size(-1)>1:
         # PI bands     
-        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi_cqr.upper[:,station,0].cpu().numpy(), 
+        p.line(df_verif_test.iloc[:,-1], pi_cqr.upper[:,station,0].cpu().numpy(), 
             legend_label=f"PI \n PICP: {str_picp_cqr} \n MPIW: {str_mpiw_cqr}", 
             line_dash="dashed", line_width=1, color="green")
-        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi_cqr.lower[:,station,0].cpu().numpy(), line_dash="dashed", line_width=1, color="green")
+        p.line(df_verif_test.iloc[:,-1], pi_cqr.lower[:,station,0].cpu().numpy(), line_dash="dashed", line_width=1, color="green")
         # ...
         
         # Quantile Band
-        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi.upper[:,station,0].cpu().numpy(), 
+        p.line(df_verif_test.iloc[:,-1], pi.upper[:,station,0].cpu().numpy(), 
             legend_label=f"Quantile  {args.alpha/2} - {1-args.alpha/2} \n PICP: {str_picp} \n MPIW: {str_mpiw}", 
             line_dash="dashed", line_width=1, color="red")
-        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], pi.lower[:,station,0].cpu().numpy(),line_dash="dashed", line_width=1, color="red")    
+        p.line(df_verif_test.iloc[:,-1], pi.lower[:,station,0].cpu().numpy(),line_dash="dashed", line_width=1, color="red")    
         # ...
 
     else:
         # Predicted Values
-        p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], Preds[:,station,0].cpu().numpy(), 
+        p.line(df_verif_test.iloc[:,-1], Preds[:,station,0].cpu().numpy(), 
             legend_label=f"Prediction", 
             line_dash="dashed", line_width=1, color="red")
 
     
     # True Value: 
-    p.line(dataset.tensor_limits_keeper.df_verif_test.iloc[:,-1], Y_true[:,station,0].cpu().numpy(), legend_label="True Value", line_width=2, color="blue")
+    p.line(df_verif_test.iloc[:,-1], Y_true[:,station,0].cpu().numpy(), legend_label="True Value", line_width=2, color="blue")
     # ...
     
     #p.legend.location = location

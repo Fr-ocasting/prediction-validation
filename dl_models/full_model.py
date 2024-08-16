@@ -114,7 +114,6 @@ class full_model(nn.Module):
 
 
         # Core model 
-
         x = self.core_model(x)
         # ...
 

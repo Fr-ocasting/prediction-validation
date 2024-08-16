@@ -101,7 +101,10 @@ class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
     def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
         super().__init__()
-        self.dataset = dataset
+        self.bool_contextual_data = len(dataset.contextual_tensors)>0
+        self.nb_train_seq = len(dataset.tensor_limits_keeper.df_verif_train)
+
+
         self.dataloader = dataset.dataloader
         self.training_mode = 'train'
         self.optimizer = optimizer
@@ -145,16 +148,18 @@ class Trainer(object):
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
         save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = self.best_model_save_directory)
 
-    def plot_bokeh_and_save_results(self,results_df,epoch,station):
+    def plot_bokeh_and_save_results(self,normalizer,df_verif_test,results_df,epoch,station):
         Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
         trial_save = f'latent_space_e{epoch}'
-        pi,pi_cqr = generate_bokeh(self,self.dataloader,
-                                    self.dataset,Q,self.args,self.dic_class2rpz,
-                                    self.trial_id,
-                                    trial_save,station = station,
-                                    show_figure = self.show_figure,
-                                    save_plot = True
-                                    )
+
+        pi,pi_cqr = generate_bokeh(self,normalizer,
+                                   df_verif_test,Q,self.args,
+                                   self.trial_id,
+                                   trial_save,
+                                   station=station,
+                                   show_figure = self.show_figure,
+                                   save_plot = True)
+
         valid_loss,train_loss = self.valid_loss[-1] if len(self.valid_loss)>0 else None, self.train_loss[-1] if len(self.train_loss)>0 else None
         if pi is None:
             picp,mpiw = None, None
@@ -238,13 +243,13 @@ class Trainer(object):
         else :
             return None
     
-    def train_and_valid(self,mod = None, mod_plot = None,station = 0):
+    def train_and_valid(self,normalizer = None,df_verif_test = None,mod = None, mod_plot = None,station = 0):
         print(f'\nstart training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
 
         # Plot Init Latent Space and Accuracy (from random initialization) 
         if mod_plot is not None: 
-            results_df = self.plot_bokeh_and_save_results(pd.DataFrame(),-1,station)
+            results_df = self.plot_bokeh_and_save_results(normalizer,df_verif_test,pd.DataFrame(),-1,station)
         else:
             results_df = None
 
@@ -273,7 +278,7 @@ class Trainer(object):
             self.display_usefull_information(epoch,mod,t0)
             if mod_plot is not None:
                 if (epoch%mod_plot == 0)|(epoch== self.args.epochs -1):
-                    results_df = self.plot_bokeh_and_save_results(results_df,(epoch+1),station)
+                    results_df = self.plot_bokeh_and_save_results(normalizer,df_verif_test,results_df,(epoch+1),station)
             self.chrono.plotting()
 
             # Keep track on cpu-usage 
@@ -283,7 +288,7 @@ class Trainer(object):
             self.chrono.save_model()
             self.performance = {'valid_loss': self.best_valid, 'epoch':self.performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
             self.save_best_model(checkpoint,epoch,self.performance)
-            print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * len(self.dataset.tensor_limits_keeper.df_verif_train))/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+            print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
             self.chrono.save_model()
 
         self.chrono.stop()
@@ -292,7 +297,7 @@ class Trainer(object):
 
         return(results_df)
     
-    
+    '''
     def prefetch(self):
         self.chrono.prefetch_all_data()
         if hasattr(self,'already_prefetch'):
@@ -304,6 +309,7 @@ class Trainer(object):
             self.dataset.prefetch_cal_loader = self.prefetch_to_device(self.dataloader['cal']) #if hasattr(self.dataset,'cal_loader'): 
             self.already_prefetch = True
         self.chrono.prefetch_all_data()
+    '''
             
     def get_loader(self):
         if self.args.prefetch_all:
@@ -371,7 +377,7 @@ class Trainer(object):
             raise ValueError('prefetch_all not correctly implemented')
 
         for inputs in loader:
-            if len(self.dataset.contextual_tensors)>0:
+            if self.bool_contextual_data:
                 x_b,y_b,contextual_b = inputs
             else:
                 x_b,y_b = inputs
@@ -398,6 +404,7 @@ class Trainer(object):
         
 
         if (self.args.prefetch_all) & (self.training_mode=='train'):
+            raise NotImplementedError('Prefetch all is not correctly imlpemented. If you do, take care not to overload the object trainer with too many elements.')
             self.prefetch()
             
         with torch.set_grad_enabled(self.training_mode=='train'):
@@ -472,15 +479,16 @@ class Trainer(object):
 
         return(Preds,Y_true,T_labels)
 
-    def testing(self, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
+    def testing(self,normalizer, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
         (Preds,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
         Preds = Preds.detach().cpu()
         Y_true = Y_true.detach().cpu()
         T_labels = T_labels.detach().cpu()
 
         # Set feature_vect = True cause output last dimension = 2 if quantile_loss or = 1.
-        Preds = self.dataset.normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
-        Y_true = self.dataset.normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
+        '''normalizer = self.dataset.normalizer.unormalize_tensor'''
+        Preds = normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
+        Y_true = normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
 
         return(Preds,Y_true,T_labels)
     

@@ -13,6 +13,9 @@ import random
 from datetime import datetime
 #from datetime import date
 
+def get_date_id():
+    return(f"{datetime.now().strftime('%Y_%m_%d_%H_%M')}_{random.randint(1,100000)}")
+
 def get_trial_id(args,fold = None):
     if args.loss_function_type == 'quantile':
         l = 0
@@ -25,7 +28,7 @@ def get_trial_id(args,fold = None):
     s = 1 if args.scheduler is True else 0
 
 
-    trial_id0 = f"{datetime.now().strftime('%Y_%m_%d_%H_%M')}_{random.randint(1,100000)}"
+    trial_id0 = get_date_id()
 
     if fold is None:
         trial_id1 = f"{trial_id0}_{args.model_name}_F{args.K_fold}f"

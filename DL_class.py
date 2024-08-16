@@ -146,7 +146,6 @@ class FeatureVectorBuilder(object):
 
         # Stack 
         U = torch.stack(Uwt+Udt+Ut,dim=-1)
-
         # Remove the first elements which contains future values
         self.U = U[self.shift_from_first_elmt:]
 
