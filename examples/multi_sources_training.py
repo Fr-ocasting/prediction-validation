@@ -1,13 +1,16 @@
-import os
-import sys
 import pandas as pd  # if not, I get this error while running a .py from terminal: 
 # ImportError: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /root/anaconda3/envs/pytorch-2.0.1_py-3.10.5/lib/python3.10/site-packages/pandas/_libs/window/aggregations.cpython-310-x86_64-linux-gnu.so)
 
-# Add parent path for package work and change current working dictory for future save: 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 #parent_dir = f"{parent_dir}/prediction_validation/"  # A utiliser sur .ipynb notebook
 if parent_dir not in sys.path:
-     sys.path.insert(0, parent_dir)
+    sys.path.insert(0,parent_dir)
+# ...
 
 
 from constants.paths import folder_path,file_name

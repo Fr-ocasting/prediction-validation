@@ -1,6 +1,18 @@
-from dl_models.vision_models.ResNet_2_1D import trivial_block_2PLus1D
 import torch
 import torch.nn as nn
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+grandparent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+if grandparent_dir not in sys.path:
+    sys.path.insert(0,grandparent_dir)
+# ...
+
+# Personnal import:
+from dl_models.vision_models.ResNet_2_1D import trivial_block_2PLus1D
+
 
 class FeatureExtractor_ResNetInspired(nn.Module):
     def __init__(self,c_in,h_dim,out_dim):

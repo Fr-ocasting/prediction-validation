@@ -1,5 +1,16 @@
 import numpy as np
 import torch 
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal imports: 
 from utils.utilities import get_higher_quantile
 
 

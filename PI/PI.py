@@ -4,14 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
 
+# Personnal imports: 
 from trainer import Trainer
 from utils.utilities_DL import get_loss,choose_optimizer
-
-if __name__ == '__main__':
-    from PI_object import PI_object
-else:
-    from PI.PI_object import PI_object
+from PI.PI_object import PI_object
 
 
 

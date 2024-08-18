@@ -2,9 +2,20 @@ from typing import Tuple, Union
 
 import torch
 from torch import nn
-from SA_conv_LSTM.constants import WeightsInitializer,DEVICE
-from SA_conv_LSTM.convlstm_cell import BaseConvLSTMCell
-from SA_conv_LSTM.self_attention_memory import SelfAttentionMemory
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+grandparent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+if grandparent_dir not in sys.path:
+    sys.path.insert(0,grandparent_dir)
+# ...
+
+# Personnal import:
+from dl_models.SA_conv_LSTM.constants import WeightsInitializer,DEVICE
+from dl_models.SA_conv_LSTM.convlstm_cell import BaseConvLSTMCell
+from dl_models.SA_conv_LSTM.self_attention_memory import SelfAttentionMemory
 
 
 class SAMConvLSTMCell(nn.Module):

@@ -1,6 +1,16 @@
 import numpy as np
 import torch
 
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal import:
 from dl_models.utils_dcrnn import calculate_scaled_laplacian,calculate_random_walk_matrix
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

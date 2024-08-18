@@ -1,6 +1,16 @@
 import torch
 import torch.nn as nn
 
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+grandparent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+if grandparent_dir not in sys.path:
+    sys.path.insert(0,grandparent_dir)
+# ...
+
+# Personnal import:
 from dl_models.vision_models.conv_3D import conv3x3x1,conv1x1x3,conv1x1x1
 
 class trivial_block_2PLus1D(nn.Module):

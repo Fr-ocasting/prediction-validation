@@ -1,21 +1,25 @@
 import pandas as pd
 from datetime import datetime
-
 import numpy as np 
-
-# Personnal Import 
-from utils.utilities_DL import DataSet
-from utils.utilities import get_distance_matrix
-
-if __name__ == '__main__':
-    from build_inputs.load_raw_data import load_subway_15_min 
-else:
-    from build_inputs.load_raw_data import load_subway_15_min 
-
 import geopandas as gpd
 from shapely.geometry import Point 
 from shapely.errors import ShapelyDeprecationWarning
 import warnings
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal import:
+from utils.utilities_DL import DataSet
+from utils.utilities import get_distance_matrix
+from build_inputs.load_raw_data import load_subway_15_min 
+
 # ======================================================
 # Function 
 # ======================================================

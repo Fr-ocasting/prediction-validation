@@ -2,8 +2,19 @@ from typing import Optional
 import torch
 from torch import nn
 from typing import Optional
-from SA_conv_LSTM.cell import SAMConvLSTMCell
-from SA_conv_LSTM.constants import DEVICE,ConvLSTMParams
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+grandparent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+if grandparent_dir not in sys.path:
+    sys.path.insert(0,grandparent_dir)
+# ...
+
+# Personnal import:
+from dl_models.SA_conv_LSTM.cell import SAMConvLSTMCell
+from dl_models.SA_conv_LSTM.constants import DEVICE,ConvLSTMParams
 
 
 class SAMConvLSTM(nn.Module):

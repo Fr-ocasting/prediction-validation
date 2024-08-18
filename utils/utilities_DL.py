@@ -8,7 +8,15 @@ try:
     from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
 except:
     print(f'Pytorch version {torch.__version__} does not allow you to use lr-scheduler')
+
+# Relative path:
+import sys 
 import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
 
 # Personnal import: 
 from constants.config import optimizer_specific_lr, get_config_embed, get_parameters

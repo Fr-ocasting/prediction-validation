@@ -1,4 +1,16 @@
 import pandas as pd
+
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+#parent_dir = f"{parent_dir}/prediction_validation/"  # A utiliser sur .ipynb notebook
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
 from utils.utilities_DL import get_DataSet_and_invalid_dates,get_MultiModel_loss_args_emb_opts
 from DL_class import MultiModelTrainer
 from constants.config import get_args

@@ -1,12 +1,20 @@
 import pandas as pd
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal inputs:
 from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer
-from DL_class import MultiModelTrainer, Trainer
+from trainer import MultiModelTrainer
 from constants.config import get_args
-from utils.save_results import build_results_df
 from constants.paths import folder_path,file_name
-import time 
 import torch
-import argparse
 
 
 def update_args_according_loss_function(args):

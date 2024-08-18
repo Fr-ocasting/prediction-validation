@@ -1,3 +1,18 @@
+import numpy as np 
+import torch
+import torch.nn as nn
+import inspect
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal import:
 from dl_models.time_embedding import TE_module
 from dl_models.CNN_based_model import CNN
 from dl_models.MTGNN import gtnet
@@ -8,12 +23,6 @@ from dl_models.dcrnn_model import DCRNNModel
 from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling
 
 from build_inputs.load_adj import load_adj
-import numpy as np 
-import torch
-import torch.nn as nn
-
-
-import inspect
 
 def filter_args(func, args):
     sig = inspect.signature(func)

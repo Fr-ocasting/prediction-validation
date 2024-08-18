@@ -2,10 +2,21 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import torch 
-from PI.PI_object import PI_object
 import matplotlib.dates as mdates
-
 from datetime import timedelta
+
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal imports:
+from PI.PI_object import PI_object
 from utils.utilities_DL import get_associated__df_verif_index
 
 

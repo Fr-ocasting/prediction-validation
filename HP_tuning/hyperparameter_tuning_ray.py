@@ -1,15 +1,24 @@
-import pandas as pd
-from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer,load_prediction
-from DL_class import Trainer
-from ray_search_space import get_search_space_ray 
-from constants.config import get_args
-from constants.paths import folder_path,file_name
 import torch
-
-from ray_config import get_ray_config
 import ray 
 from ray import tune 
+
+# Relative path:
+import sys 
 import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal imports: 
+from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer,load_prediction
+from DL_class import Trainer
+from HP_tuning.ray_search_space import get_search_space_ray 
+from HP_tuning.ray_config import get_ray_config
+from constants.config import get_args
+from constants.paths import folder_path,file_name
+
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 

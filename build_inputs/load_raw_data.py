@@ -1,6 +1,18 @@
 import pandas as pd
-from utils.utilities import str_xa2int, str2neg
 from datetime import datetime,timedelta
+
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal inputs:
+from utils.utilities import str_xa2int, str2neg
+
 
 def load_subway_15_min(txt_path, dates = None):
     ''' Return preprocessed df of "Métro 15 minutes". 

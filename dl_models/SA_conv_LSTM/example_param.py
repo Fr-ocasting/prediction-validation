@@ -1,4 +1,14 @@
-from SA_conv_LSTM.constants import WeightsInitializer 
+# Relative path:
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+grandparent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+if grandparent_dir not in sys.path:
+    sys.path.insert(0,grandparent_dir)
+# ...
+
+# Personnal import:
+from dl_models.SA_conv_LSTM.constants import WeightsInitializer 
 
 model_params: SAMSeq2SeqParams = {"attention_hidden_dims": 2,
                                     "input_seq_length": input_seq_length,
