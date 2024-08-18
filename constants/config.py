@@ -265,6 +265,11 @@ def update_modif(args,name_gpu='cuda'):
 
     args.L = args.W + args.D + args.H
     
+    # Ray tuning function can't hundle with PyTorch multiprocessing : 
+    if args.ray:
+        args.num_workers = 0
+        args.persistent_workers = False
+    
     print(f"Model: {args.model_name}, K_fold = {args.K_fold}") 
     print(f"!!! Loss function: {args.loss_function_type} ")
     print("!!! Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
