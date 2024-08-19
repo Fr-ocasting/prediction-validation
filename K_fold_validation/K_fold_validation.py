@@ -1,6 +1,7 @@
 # Relative path:
 import sys 
 import os 
+import numpy as np 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -15,7 +16,7 @@ from dataset import TensorDataset
 
 
 class KFoldSplitter(object):
-    def __init__(self,dataset_names,args,coverage,folder_path,file_name,vision_model_name):
+    def __init__(self,dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds):
         super(KFoldSplitter,self).__init__()
         self.dataset_names = dataset_names
         self.args = args
@@ -23,6 +24,7 @@ class KFoldSplitter(object):
         self.folder_path = folder_path
         self.file_name = file_name
         self.vision_model_name = vision_model_name
+        self.folds = folds
 
     def add_df_verif_test(self,subway_ds_tmps,subway_ds):
         subway_ds_tmps.tensor_limits_keeper.df_verif_test = subway_ds.tensor_limits_keeper.df_verif_test 
@@ -95,7 +97,7 @@ class KFoldSplitter(object):
         # ...
 
         # Découpe la dataframe en K_fold 
-        for k in range(args.K_fold):
+        for k in self.folds:
             # Slicing 
             print(f'\nFold n°{k}')
             if args.validation == 'sliding_window':
@@ -108,8 +110,10 @@ class KFoldSplitter(object):
                 
                 # Get df_tmps and coverage_tmps:
                 coverage_tmps = coverage_without_test[l_lim_pos:u_lim_pos] 
+                time_slot_limits = np.arange(l_lim_pos,u_lim_pos)
 
-            subway_ds_tmps,NetMob_ds_tmps,_,_,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True)  # Normalize
+
+            subway_ds_tmps,NetMob_ds_tmps,_,_,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True,time_slot_limits=time_slot_limits)  # Normalize
 
             # Tackle U_test and Utarget_test (normalize U_test with normalizer from subway_ds_TMPS):
             subway_ds_tmps = self.add_U_test_and_Utarget_test(subway_ds_tmps,subway_ds)

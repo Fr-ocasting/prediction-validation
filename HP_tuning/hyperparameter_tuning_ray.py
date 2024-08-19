@@ -12,82 +12,77 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal imports: 
-from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer,load_prediction
-from DL_class import Trainer
+from trainer import Trainer
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
-from constants.config import get_args
-from constants.paths import folder_path,file_name
+from utils.utilities_DL import get_loss,load_model_and_optimizer
+from utils.save_results import get_date_id
 
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
-def modify_args(args,name_gpu='cuda'):
-    # Modification :
-    args.epochs = 500
-    args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 5 other ones to get the metrics
-    args.single_station = False
-    args.ray = True
-    
-    if torch.cuda.is_available():
-        args.device = name_gpu
-        args.batch_size = 256
-    else :
-        args.device = 'cpu'
-        args.batch_size = 32
 
-    if args.loss_function_type == 'MSE':
-        args.out_dim = 1
-        args.alpha = None
-        args.track_pi = False
-
-    else:
-        args.out_dim = 2
-        args.alpha = 0.1
-        args.track_pi = True
-
-    print("!!! Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
-    print(f"!!! Loss function: {args.loss_function_type} ") 
-    print(f"Model: {args.model_name}, K_fold = {args.K_fold}") 
-    
-    return(args)    
-        
-## Hyper Parameter Tuning sur le Fold 0
-def load_trainer(config,folder_path,file_name,args):
-
+def HP_modification(config,args):
+    '''Update the hyperparameters'''
+    forbidden_keys = ['batch_size','train_prop','valid_prop','test_prop']
     for key, value in config.items():
-        if hasattr(args, key):
-            setattr(args, key, value)
+        if key in forbidden_keys:
+            raise ValueError(f"Key {key} cant' be modified while loading trainer for HP-tuning cause it has also impact on dataloader which is already defined")
+        else:
+            if hasattr(args, key):
+                setattr(args, key, value)
+    return(args)
 
-    Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(folder_path,file_name,args)
-    (loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = len(Datasets[0].columns))
-    dataset,dataloader,model,optimizer,scheduler = Datasets[0],DataLoader_list[0],Model_list[0],Optimizer_list[0],Scheduler_list[0]
+def load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2rpz):
+    '''Change the hyperparameters and load the model accordingly. 
+    The hyperparameters to be modified must not concern the dataloader, so don't change: 
+    - train/valid/test/calib proportion
+    - batch-size
+    '''
+    args = HP_modification(config,args)
 
-
-    trainer = Trainer(dataset,model,dataloader,
+    loss_function = get_loss(args.loss_function_type,args)
+    model,optimizer,scheduler = load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision)
+    #model_ref = ray.put(model)
+    
+    trainer = Trainer(dataset,model,
                     args,optimizer,loss_function,scheduler = scheduler,
                     args_embedding=args_embedding,dic_class2rpz=dic_class2rpz)
     return(trainer)
 
-def Train_with_tune(config,folder_path,file_name,args):
-    trainer = load_trainer(config,folder_path,file_name,args)
-    result_df = trainer.train_and_valid()
-
-    
-def run_tuning_and_save_results(args,num_samples):
+def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/'): 
+    # Load ray parameters:
     config = get_search_space_ray(args)
-    ray_scheduler,ray_search_alg,resources_per_trial,num_gpus,max_concurrent_trials,num_cpus = get_ray_config(args)
+    ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
     
-    def trainer(config):
-        return(Train_with_tune(config,folder_path,file_name,args))
-        
+    # Init Ray
     if ray.is_initialized:
         ray.shutdown()
-        ray.init(num_gpus=num_gpus,num_cpus=num_cpus)
+    ray.init(runtime_env={'working_dir': working_dir,
+                         'excludes': [f'{working_dir}/.git/',  # Exclude .git folder
+                                    f'{working_dir}/__pycache__/',  # Exclude python cache
+                                    f'{working_dir}/save/',  #Exclude save folder 
+                                    f'{working_dir}/data/',  #Exclude data folder 
+                                    ]
+                            },
+             num_gpus=num_gpus,
+             num_cpus=num_cpus
+            )
+    
+    # Put large objects into the Ray object store
+    dataset_ref = ray.put(dataset) # Put dataset (large object) in a 'Ray Object Store'. Which mean a worker won't serealize it but access to a shared memory where dataset_ref is located for everyone.
+    #dataset_ref = dataset
+    
+    
+    def train_with_tuner(config):
+        # Dereference the large objects within the worker
+        dataset = ray.get(dataset_ref)
+        trainer = load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2rpz)
+        trainer.train_and_valid()  # No plotting, No testing
+    
 
-        
     analysis = tune.run(
-            trainer,
+            lambda config: train_with_tuner(config),
             config=config,
             num_samples=num_samples,  # Increase num_samples for more random combinations
             resources_per_trial = resources_per_trial,
@@ -95,23 +90,55 @@ def run_tuning_and_save_results(args,num_samples):
             scheduler = ray_scheduler,
             search_alg = ray_search_alg,
         )
-
-    name_save = f"HyperparameterTuning/Htuning_ray_analysis_{args.model_name}_loss{args.loss_function_type}_TE_{args.time_embedding}"
-    analysis.results_df.to_csv(f'{name_save}.csv')
     
+    date_id = get_date_id()
+    name_save = f"save/HyperparameterTuning/{args.model_name}_loss{args.loss_function_type}_{date_id}"
+    analysis.results_df.to_csv(f'{working_dir}/{name_save}.csv')
     
+    return(analysis)
 
 if __name__ == '__main__': 
-    
-    # ==== GET PARAMETERS ====
-    # Load config
-    model_name = 'STGCN'  #'CNN'
-    args = get_args(model_name)
-    # Modification pour HyperParameterTuning:
-    args.time_embedding = True
-    args.loss_function_type =  'MSE' #'quantile' 
-    #args = get_args(model_name = model_name,learn_graph_structure = True)  # MTGNN
+    from constants.config import get_args,update_modif
+    from constants.paths import folder_path,file_name
+    from utils.utilities_DL import match_period_coverage_with_netmob,get_small_ds
+    from K_fold_validation.K_fold_validation import KFoldSplitter
 
-    args = modify_args(args,name_gpu='cuda:0')
-    print('abs_path: ',args.abs_path)
-    run_tuning_and_save_results(args,num_samples=1000)
+    # Set working directory (the one where you will find folder 'save/' or 'HP_tuning'):
+    current_path = notebook_dir = os.getcwd()
+    working_dir = os.path.abspath(os.path.join(current_path, '..'))
+
+    # Load config
+    model_name = 'STGCN' #'CNN'
+    args = get_args(model_name)
+
+    # Modification : 
+    args.K_fold = 5
+    args.ray = True
+    args.W = 0  # IMPORTANT AVEC NETMOB
+    args.epochs = 10
+    args.loss_function_type = 'MSE' # 'quantile'
+
+    args = update_modif(args)
+
+    # Coverage Period : 
+    small_ds = False
+    coverage = match_period_coverage_with_netmob(file_name)
+    (coverage,args) = get_small_ds(small_ds,coverage,args)
+
+    # Choose DataSet and VisionModel if needed: 
+    dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
+    vision_model_name = 'ImageAvgPooling'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
+
+
+    # Load K-fold subway-ds 
+    folds = [0] # Here we use the first fold for HP-tuning. 
+
+    # In case we need to compute the Sliding K-fold validation:
+    # folds = np.arange(1,args.K_fold)
+
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_subway_ds,args_embedding,args_vision,dic_class2rpz = K_fold_splitter.split_k_fold()
+
+    num_samples = 8
+    subway_ds = K_subway_ds[0]
+    analysis = HP_tuning(subway_ds,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir)

@@ -70,13 +70,13 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
         netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
 
         # Keep only time-slots associated to the dataset:
-        netmob_T = netmob_T[dataset.time_slot_limits]
+        if dataset.time_slot_limits is not None: netmob_T = netmob_T[dataset.time_slot_limits]
 
     else:
         netmob_T = torch.randn(dataset.length,40,2,8,8)  # (7400,40,67,22,22)
         print("Load des données NetMob .pt impossible. Création d'un random Tensor")
 
-    print('Init NetMob Dataset: ', netmob_T.size())
+    print('\nInit NetMob Dataset: ', netmob_T.size())
     print('Number of Nan Value: ',torch.isnan(netmob_T).sum())
     print('Total Number of Elements: ', netmob_T.numel(),'\n')
 

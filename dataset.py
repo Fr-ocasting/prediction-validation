@@ -203,8 +203,9 @@ class Normalizer(object):
         '''For each channel and each station, we can have some issues when the minimum from Training Set is equal to its Maximum. We then can't normalize the dataset and set the values to 0. '''
         regular_values_set_to_0 =  torch.isinf(output_with_nan_and_inf).sum()
         Values_with_normalization_issues = (torch.isnan(output_with_nan_and_inf) + torch.isinf(output_with_nan_and_inf)).sum()
-        print('Values with issues: ','{:.3%}'.format(Values_with_normalization_issues.item()/output_with_nan_and_inf.numel() ))
-        print('Regular Values that we have to set to 0: ','{:.3%}'.format(regular_values_set_to_0.item()/output_with_nan_and_inf.numel() ))
+        if (regular_values_set_to_0 > 0) or (Values_with_normalization_issues>0):
+            print('Values with issues: ','{:.3%}'.format(Values_with_normalization_issues.item()/output_with_nan_and_inf.numel() ))
+            print('Regular Values that we have to set to 0: ','{:.3%}'.format(regular_values_set_to_0.item()/output_with_nan_and_inf.numel() ))
         output = torch.nan_to_num(output_with_nan_and_inf,0,0,0)  # Set 0 when devided by maxi - mini = 0 (0 when Nan, 0 when +inf, 0 when -inf
         return(output)
     
@@ -344,137 +345,6 @@ class DataSet(object):
         if self.Weeks+self.historical_len+self.Days == 0:
             print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
 
-    """
-    def split_K_fold(self,args,invalid_dates,netmob = False):
-        '''
-        Split la DataSet Initiale en K-fold
-        args 
-        -------
-
-
-        outputs
-        -------
-        fold_dataset_limits: dict -> Contains TimeStamps Limits and Indices Limits of each Fold and each training modes. 
-        examples : 
-            - fold_dataset_limits[fold_k]['valid']['timestamp']  = (Timestamp('2019-02-26 00:00:00', freq='15T'),Timestamp('2019-04-27 11:45:00', freq='15T'))
-            - fold_dataset_limits[fold_k]['valid']['tensor_indices']  = (50,146)
-
-
-        '''
-        print(f'Compute statistics through dimensions: {self.dims} ')
-        self.warning()
-        self.fold_dataset_limits = {k : {name : {} for name in ['fold_limits','train','valid','test']} for k in range(args.K_fold)}
-        Datasets,DataLoader_list = [],[]
-
-
-        # Crée une DataSet copie et y récupère la DataSet de Test Commune à tous les K-fold : 
-        dataset_init = self.clean_dataset_get_tensor_and_train_valid_test_split(self.df,invalid_dates,args.train_prop,args.valid_prop,args.test_prop, normalize = False)
-        # On peut maintenant appeler dataset_init.U_test pour récupérer le test_set dans 'init', qu'il faut maintenant Normaliser avec les min/max des Train DataSet de chaque fold. 
-        # ................................................................................
-        # 
-        dataset_init.time_slot_limits = ...
-
-        # Fait la 'Hold-Out' séparation, pour enlever les dernier mois de TesT
-        df_hold_out = self.df[: dataset_init.first_test_date]  
-
-        # ================================================================================================================================================================
-        for k in range(args.K_fold): 
-            self.fold_dataset_limits[k]['test']['timestamp'] = (dataset_init.first_test_date,dataset_init.last_test_date)
-        # ================================================================================================================================================================
-
-
-        # Récupère la Taille de cette DataFrame
-        n = len(df_hold_out)
-
-        # Adapt Valid and Train Prop (cause we want Test_prop = 0)
-        train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)
-        valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
-
-        args.train_prop = train_prop_tmps
-        args.valid_prop = valid_prop_tmps
-
-        # Découpe la dataframe en K_fold 
-        for k in range(args.K_fold):
-            # Slicing 
-            if args.validation == 'sliding_window':
-                width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
-                l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
-                if k == args.K_fold - 1:
-                    u_lim_pos = n
-                else:
-                    u_lim_pos = l_lim_pos + width_dataset
-
-                df_tmps = df_hold_out[l_lim_pos:u_lim_pos]         
-
-            # Traditionnal pre-process : 
-            dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
-                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            subway_ds_tmps = preprocess_subway_in(dataset_tmps,args,invalid_dates)         
- 
-            subway_ds_tmps,args,args_vision,args_embedding,dic_class2rpz = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name,subway_ds = subway_ds_tmps, dataset = dataset_tmps, invalid_dates = invalid_dates)   
-
-            #  ...
-
-            # Add Test-limits, Test dataset, Test-dataloader:
-            #
-            # ....
-
-            # Append dataset and dataloader to list: 
-            #
-            # ...
-
-
-
-
-
-
-
-
-            # ================================================================================================================================================================
-            self.fold_dataset_limits[k]['fold_limits']['df_indices'] = (l_lim_pos,u_lim_pos)
-            self.fold_dataset_limits[k]['fold_limits']['timestamp'] = (df_hold_out.index[l_lim_pos],df_hold_out.index[u_lim_pos])
-            # ================================================================================================================================================================         
-
-            # On crée une DataSet à partir de df_tmps, qui a toujours la même taille, et toute les df_temps concaténée recouvre Valid Prop + Train Prop, mais pas Test Prop 
-            dataset_tmps = DataSet(df_tmps, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
-                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-            dataset_init.time_slot_limits = ...
-            
-            if False:
-                # A re-implémenter. Pas idéal avec NetMob de >100GB
-                dataset_tmps.Dataset_save_folder = Dataset_get_save_folder(args,fold=k,netmob=netmob)
-
-
-            dataset_tmps.split_normalize_load_feature_vect(invalid_dates,train_prop = train_prop_tmps,valid_prop = valid_prop_tmps,test_prop =  0, dims_agg= dims)
-
-            # ================ FAIRE QULEQUE CHOSE POUR LE TIME-SLOTS LABELS. ESSAYER DE LES INTEGRER DANS LE CONTEXTUAL TENSORS  ================
-            #
-            time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(dataset_tmps)
-            #
-            # ================ ................................................................................................ ================
-
-            dict_dataloader = dataset_tmps.get_dataloader()
-
-            dict_dataloader['test'] = data_loader_with_test['test']
-
-
-            # ================ Set Every Test-related information thank to dataset_init ================
-            dataset_tmps.U_test, dataset_tmps.Utarget_test, dataset_tmps.time_slots_test, = dataset_init.U_test, dataset_init.Utarget_test, dataset_init.time_slots_test
-            dataset_tmps.first_predicted_test_date,dataset_tmps.last_predicted_test_date = dataset_init.first_predicted_test_date,dataset_init.last_predicted_test_date
-            dataset_tmps.first_test_date,dataset_tmps.last_test_date = dataset_init.first_test_date,dataset_init.last_test_date
-            dataset_tmps.df_verif_test = dataset_init.df_verif_test
-            #dataset_tmps.df_test = dataset_init.df_test
-             # ================ ........................................................ ================
-
-
-            Datasets.append(dataset_tmps)
-            DataLoader_list.append(dict_dataloader)
-            
-
-
-        return(Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding)
-        """
-    
     def mask_tensor(self):
         # Mask for Tensor U, Utarget
         mask_U =  [e for e in np.arange(self.U.shape[0]) if e not in self.forbidden_indice_U]

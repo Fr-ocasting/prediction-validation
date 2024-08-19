@@ -88,7 +88,7 @@ class CustomDataLoder(object):
                                         drop_last=self.drop_last
                                         ) 
         except:
-            print('\n ===== ERROR ==== \nTry with torch >= 2.0.0 (works with 2.0.1) \nValueError: prefetch_factor option could only be specified in multiprocessing.let num_workers > 0 to enable multiprocessing')
+            print("\n ===== ERROR ==== \nTry with torch >= 2.0.0 (works with 2.0.1) to allow 'prefetch_factor' \nValueError: prefetch_factor option could only be specified in multiprocessing.let num_workers > 0 to enable multiprocessing")
             self.dataloader = DataLoader(inputs, 
                             batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
                             shuffle = self.shuffle,  # if hasattr, then already shuffled 

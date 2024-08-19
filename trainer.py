@@ -332,7 +332,8 @@ class Trainer(object):
             #t_b = T_b[self.args.calendar_class]
             x_b = x_b.to(self.args.device,non_blocking = self.args.non_blocking)
             y_b = y_b.to(self.args.device,non_blocking = self.args.non_blocking)
-            if contextual_b is not None: contextual_b = [c_b.to(self.args.device,non_blocking = self.args.non_blocking) for c_b in contextual_b]
+            if contextual_b is not None: 
+                contextual_b = [c_b.to(self.args.device,non_blocking = self.args.non_blocking) for c_b in contextual_b]
             
         return(x_b,y_b,contextual_b)
     
