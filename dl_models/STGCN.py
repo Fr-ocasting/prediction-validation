@@ -44,7 +44,7 @@ class STGCN(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, gso, blocks,Ko, n_vertex,args_embedding = None,dic_class2rpz=None,args_vision = None):
+    def __init__(self, args, gso, blocks,Ko, n_vertex):
         super(STGCN, self).__init__()
 
         self.out_dim = blocks[-1][-1]

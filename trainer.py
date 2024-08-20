@@ -294,6 +294,7 @@ class Trainer(object):
         self.chrono.stop()
         self.chrono.display()
         print(print_memory_usage(max_memory))
+        torch.cuda.empty_cache()
 
         return(results_df)
     

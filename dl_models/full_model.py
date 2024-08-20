@@ -21,29 +21,30 @@ from dl_models.STGCN import STGCN
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
 from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling
-
+from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
 
 def filter_args(func, args):
     sig = inspect.signature(func)
-    valid_args = {k: v for k, v in args.items() if k in sig.parameters}
-    return valid_args
+    #valid_args = {k: v for k, v in args.items() if k in sig.parameters}
+    filered_args = {k: v for k, v in vars(args).items() if k in sig.parameters}
+    return filered_args
 
 
 def load_vision_model(args_vision):
-    if args_vision['model_name'] == 'ImageAvgPooling':
+    if args_vision.model_name == 'ImageAvgPooling':
         filered_args = filter_args(ImageAvgPooling, args_vision)
         return ImageAvgPooling(**filered_args) 
     
-    elif args_vision['model_name'] == 'MinimalFeatureExtractor':
+    elif args_vision.model_name == 'MinimalFeatureExtractor':
         filered_args = filter_args(MinimalFeatureExtractor, args_vision)
         return MinimalFeatureExtractor(**filered_args)
     
-    elif args_vision['model_name'] == 'FeatureExtractor_ResNetInspired':
+    elif args_vision.model_name == 'FeatureExtractor_ResNetInspired':
         filered_args = filter_args(FeatureExtractor_ResNetInspired, args_vision)
         return FeatureExtractor_ResNetInspired(**filered_args)
     else:
-        NotImplementedError(f"Model {args_vision['model_name']} has not been implemented")
+        NotImplementedError(f"Model {args_vision.model_name} has not been implemented")
 
 
 
@@ -160,7 +161,13 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
             Ko = Ko + args_embedding.embedding_dim
 
         if args_vision is not None:
-            Ko = Ko + args_vision['out_dim']
+            # Depend wether out_dim is implicit or defined by other parameters:
+            if hasattr(args_vision,'out_dim'):
+                Ko = Ko + args_vision.out_dim
+            else:
+                vision_out_dim = args_vision.L*args_vision.h_dim//2
+                Ko = Ko + vision_out_dim
+
         #  ...
 
         # Define Blocks  (should be in a STGCN config file...)
@@ -193,7 +200,7 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
         # ...
 
         
-        model = STGCN(args,gso, blocks,Ko, num_nodes,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz,args_vision = args_vision).to(args.device)
+        model = STGCN(args,gso, blocks,Ko, num_nodes).to(args.device)
         
         number_of_st_conv_blocks = len(blocks) - 3
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
@@ -204,4 +211,7 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
         model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional, gru = True)
     if args.model_name == 'RNN':
         model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers, nonlinearity = 'tanh',bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional) 
+
+
+    model_memory_cost(model)
     return(model)

@@ -1,6 +1,6 @@
 from ray import tune
 
-def get_search_space_ray(args):
+def get_search_space_ray(args,args_vision):
     
     config = {"lr": tune.qloguniform(1e-4, 1e-1, 5e-5),
               "weight_decay" : tune.uniform(0.0005, 0.1),
@@ -28,11 +28,37 @@ def get_search_space_ray(args):
                     "gso_type" : tune.choice(['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj']),
                     "adj_type" : tune.choice(['adj','corr','dist'])
                     }
+    
+    # Tackle Core Model:
+    if args.model_name == 'STGCN':
+         config.update(config_stgcn)
 
+    # Tackle Embedding
     if args.time_embedding:
         config.update(config_embedding)
 
-    if args.model_name == 'STGCN':
-         config.update(config_stgcn)
-            
+    # Tackle Vision Models
+    if args.args_vision:
+        # ImageAvgPooling
+        if args_vision.model_name == 'ImageAvgPooling':
+            config_vision = {}  # No possible HP Tuning
+ 
+        elif args_vision.model_name == 'FeatureExtractor_ResNetInspired':
+            config_vision = {'vision_h_dim': tune.choice([8,16,32,64,128,256])} 
+             
+
+        # MinimalFeatureExtractor  
+        elif args_vision.model_name == 'MinimalFeatureExtractor':
+            config_vision = {'vision_h_dim': tune.choice([8,16,32,64,128,256])
+                             } 
+
+
+        else:
+            raise NotImplementedError(f"Model {args_vision.model_name} has not been implemented for HP Tuning")
+        
+        config.update(config_vision)
+
+
+
+
     return(config)    

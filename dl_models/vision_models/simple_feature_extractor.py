@@ -15,9 +15,9 @@ from dl_models.vision_models.ResNet_2_1D import trivial_block_2PLus1D
 
 
 class FeatureExtractor_ResNetInspired(nn.Module):
-    def __init__(self,c_in,h_dim,out_dim):
+    def __init__(self,c_in,h_dim,L):
         super(FeatureExtractor_ResNetInspired,self).__init__()
-
+        out_dim = L*h_dim//2
         self.block1 = trivial_block_2PLus1D(c_in,h_dim)
         self.maxpool = nn.MaxPool3d(kernel_size=3, stride=(2,2,1), padding=(0,0,1))
         self.block2 = trivial_block_2PLus1D(h_dim,out_dim)
@@ -41,8 +41,9 @@ class FeatureExtractor_ResNetInspired(nn.Module):
         return(x)
 
 class MinimalFeatureExtractor(nn.Module):
-    def __init__(self,c_in,out_dim,h_dim=16,L=8):
+    def __init__(self,c_in,h_dim=16,L=8):
         super(MinimalFeatureExtractor,self).__init__()
+        out_dim = L*h_dim//2
 
         self.relu = nn.ReLU()
         self.conv2d_1 = nn.Conv3d(c_in,h_dim,kernel_size=(1,3,3))
@@ -51,7 +52,7 @@ class MinimalFeatureExtractor(nn.Module):
         self.conv2d_2 = nn.Conv3d(h_dim,2*h_dim,kernel_size=(1,3,3))
         self.avgpool = nn.AdaptiveAvgPool2d((1,1))
 
-        self.fc1 = nn.Linear(2*L*h_dim,L*h_dim//2)
+        self.fc1 = nn.Linear(2*L*h_dim,out_dim)
 
 
     def forward(self,x):
@@ -98,7 +99,8 @@ class ImageAvgPooling(nn.Module):
 
 
 if __name__ == '__main__':
-    from utilities_DL import forward_and_display_info
+    from utils.utilities_DL import forward_and_display_info
+    from dl_models.vision_models.simple_feature_extractor import SimpleFeatureExtractor
 
     B,N,C,H,W,L = 32, 40, 4, 22,22,6
     netmob = torch.randn(B,N,C,H,W,L)

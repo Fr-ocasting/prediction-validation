@@ -22,7 +22,7 @@ from utils.save_results import get_date_id
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 
-def HP_modification(config,args):
+def HP_modification(config,args,args_vision):
     '''Update the hyperparameters'''
     forbidden_keys = ['batch_size','train_prop','valid_prop','test_prop']
     for key, value in config.items():
@@ -31,7 +31,10 @@ def HP_modification(config,args):
         else:
             if hasattr(args, key):
                 setattr(args, key, value)
-    return(args)
+            elif 'vision_' in key:
+                key = key.replace('vision_', '')
+                setattr(args_vision,key,value)
+    return(args,args_vision)
 
 def load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2rpz):
     '''Change the hyperparameters and load the model accordingly. 
@@ -39,7 +42,7 @@ def load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2r
     - train/valid/test/calib proportion
     - batch-size
     '''
-    args = HP_modification(config,args)
+    args,args_vision = HP_modification(config,args,args_vision)
 
     loss_function = get_loss(args.loss_function_type,args)
     model,optimizer,scheduler = load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision)
@@ -52,7 +55,7 @@ def load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2r
 
 def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/'): 
     # Load ray parameters:
-    config = get_search_space_ray(args)
+    config = get_search_space_ray(args,args_vision)
     ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
     
     # Init Ray
@@ -63,6 +66,10 @@ def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,
                                     f'{working_dir}/__pycache__/',  # Exclude python cache
                                     f'{working_dir}/save/',  #Exclude save folder 
                                     f'{working_dir}/data/',  #Exclude data folder 
+                                    '/home/rrochas/prediction_validation/.git/objects/6a/2f986b4cfd0d5c1b5370539c60cbc60376ee7c',
+                                    '/home/rrochas/prediction_validation/.git/objects/62/340d41856c322da363f152c93b2cc7ca7e1b52',
+                                    '/home/rrochas/prediction_validation/.git/objects/3f/2332cfa867063c2cfbf14628f0745c1d23aa85',
+                                    '/home/rrochas/prediction_validation/.git/objects/b8/b89fb56b6e4740dc2d54abe53a4e1c9d85b47d'
                                     ]
                             },
              num_gpus=num_gpus,
@@ -79,6 +86,13 @@ def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,
         dataset = ray.get(dataset_ref)
         trainer = load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2rpz)
         trainer.train_and_valid()  # No plotting, No testing
+
+        # Clean Memory: 
+        torch.cuda.empty_cache()
+        del trainer 
+        del dataset
+        # gc.collect()  # Clean CPU memory
+        # ...
     
 
     analysis = tune.run(
@@ -94,7 +108,7 @@ def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,
     date_id = get_date_id()
     name_save = f"save/HyperparameterTuning/{args.model_name}_loss{args.loss_function_type}_{date_id}"
     analysis.results_df.to_csv(f'{working_dir}/{name_save}.csv')
-    
+
     return(analysis)
 
 if __name__ == '__main__': 

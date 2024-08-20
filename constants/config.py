@@ -119,7 +119,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         config['drop_last'] = False  # True      
     
     config['non_blocking'] = True
-    config['mixed_precision'] = False #True
+    config['mixed_precision'] = False # True # False
     config['torch_compile'] = False #True
     config['backend'] = 'inductor' #'cudagraphs'
     config['prefetch_all'] = False
@@ -257,10 +257,10 @@ def update_modif(args,name_gpu='cuda'):
     # Modification according GPU availability: 
     if torch.cuda.is_available():
             args.device = name_gpu
-            args.batch_size = 256
+            args.batch_size = 128
     else :
         args.device = 'cpu'
-        args.batch_size = 32
+        args.batch_size = 16
     # ...
 
     args.L = args.W + args.D + args.H

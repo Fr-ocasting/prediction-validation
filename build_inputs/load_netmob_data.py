@@ -1,6 +1,6 @@
 import torch
 import glob 
-
+import argparse
 
 # Relative path:
 import sys 
@@ -90,22 +90,36 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
 
 def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name,normalize = True):
     if 'netmob' in dataset_names:
+        
+
         NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns, normalize = normalize )
         C_netmob = NetMob_ds.U_train.size(2)  # [B,N,C,H,W,L]
         L = NetMob_ds.U_train.size(5)
 
         # FeatureExtractor_ResNetInspired
         if vision_model_name == 'FeatureExtractor_ResNetInspired':
-            args_vision = {'model_name':vision_model_name, 'c_in' : C_netmob, 'h_dim': 128, 'out_dim':256}  
+            args_vision = {'model_name':vision_model_name, 'c_in' : C_netmob, 'h_dim': 128, 'L':L}  
 
         # MinimalFeatureExtractor  
         elif vision_model_name == 'MinimalFeatureExtractor':
             h_dim = 16
-            args_vision = {'model_name':vision_model_name, 'c_in' : C_netmob,'h_dim': h_dim, 'out_dim' : L*h_dim//2} 
+            args_vision = {'model_name':vision_model_name, 'c_in' : C_netmob,'h_dim': h_dim, 'L' : L}
 
         # ImageAvgPooling
         elif vision_model_name == 'ImageAvgPooling':
             args_vision = {'model_name':vision_model_name, 'out_dim' : L}
+        
+        else:
+            raise NotImplementedError(f"Model vision {vision_model_name} has not been implemented")
+        # ...
+
+        # Get args_vision:
+        parser = argparse.ArgumentParser(description='netmob')
+        for key,value in args_vision.items():
+            parser.add_argument(f'--{key}', type=type(value), default=value)
+        args_vision = parser.parse_args(args=[])
+        # ...
+
     else:
         NetMob_ds = None
         args_vision = None
