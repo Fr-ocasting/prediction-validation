@@ -119,7 +119,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         config['drop_last'] = False  # True      
     
     config['non_blocking'] = True
-    config['mixed_precision'] = False # True # False
+    config['mixed_precision'] = True # True # False
     config['torch_compile'] = False #True
     config['backend'] = 'inductor' #'cudagraphs'
     config['prefetch_all'] = False

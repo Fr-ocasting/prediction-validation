@@ -109,7 +109,16 @@ class Trainer(object):
         self.training_mode = 'train'
         self.optimizer = optimizer
         self.loss_function = loss_function
-        self.model = model 
+        
+        if args.torch_compile:
+            self.model = torch.compile(model,
+                                       fullgraph = False,
+                                       backend = args.backend,
+                                       mode = None
+                                        )
+        else:
+            self.model = model 
+
         self.scheduler = scheduler
         if args.mixed_precision:
             self.scaler = GradScaler()
@@ -346,10 +355,11 @@ class Trainer(object):
         if self.args.mixed_precision:
             with autocast():
                 pred = self.model(x_b,contextual_b)
-        else:
-                pred = self.model(x_b,contextual_b)
+                loss = self.loss_function(pred,y_b)
 
-        loss = self.loss_function(pred,y_b) 
+        else:
+            pred = self.model(x_b,contextual_b)
+            loss = self.loss_function(pred,y_b)
 
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 

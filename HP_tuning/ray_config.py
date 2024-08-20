@@ -97,7 +97,7 @@ def get_ray_config(args):
     scheduler = get_scheduler(args.epochs,args.ray_scheduler, metric= metric, mode = 'min')
     search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = None)
 
-    resources_per_trial = {'gpu':0.5,'cpu':4} if torch.cuda.is_available() else {'cpu':1}
+    resources_per_trial = {'gpu':1,'cpu':6} if torch.cuda.is_available() else {'cpu':1}
     num_gpus = 2 if torch.cuda.is_available() else 0
     num_cpus = 36 if torch.cuda.is_available() else 6
     max_concurrent_trials = 18 if torch.cuda.is_available() else 6

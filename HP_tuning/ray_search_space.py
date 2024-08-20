@@ -44,12 +44,12 @@ def get_search_space_ray(args,args_vision):
             config_vision = {}  # No possible HP Tuning
  
         elif args_vision.model_name == 'FeatureExtractor_ResNetInspired':
-            config_vision = {'vision_h_dim': tune.choice([8,16,32,64,128,256])} 
+            config_vision = {'vision_h_dim': tune.choice([8,16,32,64])} #,64,128,256
              
 
         # MinimalFeatureExtractor  
         elif args_vision.model_name == 'MinimalFeatureExtractor':
-            config_vision = {'vision_h_dim': tune.choice([8,16,32,64,128,256])
+            config_vision = {'vision_h_dim': tune.choice([8,16,32,64]) #,64,128,256
                              } 
 
 
