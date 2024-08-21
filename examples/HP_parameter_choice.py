@@ -34,12 +34,14 @@ args.loss_function_type = 'MSE' # 'quantile'
 args = update_modif(args)
 
 # Coverage Period : 
-small_ds = False
 coverage = match_period_coverage_with_netmob(file_name)
-(coverage,args) = get_small_ds(small_ds,coverage,args)
+
+# Use Small ds for fast training: 
+#small_ds = False
+#(coverage,args) = get_small_ds(small_ds,coverage,args)
 
 # Choose DataSet and VisionModel if needed: 
-dataset_names = ['netmob','subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
+dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
 vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
 
 # === Train and Evaluate Model: 

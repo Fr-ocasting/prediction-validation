@@ -148,7 +148,7 @@ class Trainer(object):
         if fold is not None:
             self.args.current_fold = fold
 
-        self.best_model_save_directory = f"{SAVE_DIRECTORY}/best_models/"
+        self.best_model_save_directory = f"{SAVE_DIRECTORY}/best_models"
 
     def save_best_model(self,checkpoint,epoch,performance):
         ''' Save best model in .pkl format'''

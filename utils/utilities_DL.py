@@ -261,7 +261,6 @@ def load_init_trainer(folder_path,file_name,args):
 
 def load_model_and_optimizer(args,dic_class2rpz):
     model =  full_model(args,dic_class2rpz).to(args.device)
-    #model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
     # Config optimizer:
     optimizer = choose_optimizer(model,args)
     scheduler = load_scheduler(optimizer,args)

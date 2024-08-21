@@ -42,7 +42,7 @@ def get_trial_id(args,fold = None):
 def load_json_file(save_dir):
     ''' Load Json-file containing ID of DeepLearning trial and all the usefull arguments'''
     # if json_file doesn't exist, build it 
-    json_save_path = f"{save_dir}model_args.pkl"
+    json_save_path = f"{save_dir}/model_args.pkl"
     if not os.path.exists(json_save_path):
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
@@ -70,7 +70,7 @@ def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_di
     ''' '''
     json_file = load_json_file(save_dir)
     update_json(args,json_file,trial_id,performance,save_dir)
-    torch.save(checkpoint, f"{save_dir}{trial_id}.pkl")
+    torch.save(checkpoint, f"{save_dir}/{trial_id}.pkl")
     
 
 

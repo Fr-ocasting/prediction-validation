@@ -112,11 +112,11 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
 
     # Save HP-results
-    analysis.results_df.to_csv(f'{working_dir}/{trial_id}.csv')
+    analysis.results_df.to_csv(f'{working_dir}/{save_dir}/{trial_id}.csv')
 
     # Keep track on other args:
-    json_file = load_json_file(save_dir)
-    update_json(args,json_file,trial_id,performance={},save_dir=save_dir)
+    json_file = load_json_file(f'{working_dir}/{save_dir}')
+    update_json(args,json_file,trial_id,performance={},save_dir=f'{working_dir}/{save_dir}')
 
     return(analysis)
 
@@ -129,6 +129,7 @@ if __name__ == '__main__':
     # Set working directory (the one where you will find folder 'save/' or 'HP_tuning'):
     current_path = notebook_dir = os.getcwd()
     working_dir = os.path.abspath(os.path.join(current_path, '..'))
+    save_dir = 'save/HyperparameterTuning'
 
     # Load config
     model_name = 'STGCN' #'CNN'
@@ -160,8 +161,8 @@ if __name__ == '__main__':
     # folds = np.arange(1,args.K_fold)
 
     K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
-    K_subway_ds,args_embedding,args_vision,dic_class2rpz = K_fold_splitter.split_k_fold()
+    K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
 
     num_samples = 8
     subway_ds = K_subway_ds[0]
-    analysis = HP_tuning(subway_ds,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir)
+    analysis = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir,save_dir)
