@@ -49,9 +49,9 @@ folds = [0] # Here we use the first fold for HP-tuning. In case we need to compu
 
 # Split in K-fold : 
 K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
-K_subway_ds,args_embedding,args_vision,dic_class2rpz = K_fold_splitter.split_k_fold()
+K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
 
 # Train on the first fold: 
 num_samples = 100
 subway_ds = K_subway_ds[0]
-analysis = HP_tuning(subway_ds,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir)
+analysis = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir)

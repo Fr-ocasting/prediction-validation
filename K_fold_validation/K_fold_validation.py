@@ -77,7 +77,7 @@ class KFoldSplitter(object):
         '''
 
         # Init
-        subway_ds,_,args,args_vision,args_embedding,dic_class2rpz = self.load_init_ds()  # build a copy of 'args'
+        subway_ds,_,args,dic_class2rpz = self.load_init_ds()  # build a copy of 'args'
         K_subway_ds = []
 
 
@@ -129,4 +129,4 @@ class KFoldSplitter(object):
             # ...
 
             K_subway_ds.append(subway_ds_tmps)
-        return K_subway_ds,args_embedding,args_vision,dic_class2rpz
+        return K_subway_ds,dic_class2rpz

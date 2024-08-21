@@ -139,7 +139,7 @@ def load_model(args,dic_class2rpz):
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
                     dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
                     skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
-                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
+                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args.args_embedding)
         
     if args.model_name == 'DCRNN':
         model_kwargs = vars(args)
@@ -157,7 +157,7 @@ def load_model(args,dic_class2rpz):
         # With padding, the output channel dimension will stay constant and equal to L
         # Sometimes, with no Trafic Data, L = 0, then we have to set Ko = 1, independant of L
 
-        if args.embedding:
+        if len(vars(args.args_embedding)):
             Ko = Ko + args.args_embedding.embedding_dim
 
         if  len(vars(args.args_vision))>0:   #if not empty 

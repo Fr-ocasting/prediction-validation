@@ -81,7 +81,7 @@ def get_point_to_evaluate(args):
 
 
 
-def choose_ray_metric(args):
+def choose_ray_metric():
     ray_version = pkg_resources.get_distribution("ray").version
     if ray_version.startswith('2.7'):
         metric = 'Loss_model'
@@ -91,11 +91,11 @@ def choose_ray_metric(args):
 
 
 def get_ray_config(args):
-    metric = choose_ray_metric(args)
+    metric = choose_ray_metric()
     points_to_evaluate = get_point_to_evaluate(args)   
 
     scheduler = get_scheduler(args.epochs,args.ray_scheduler, metric= metric, mode = 'min')
-    search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = None)
+    search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = points_to_evaluate)
 
     resources_per_trial = {'gpu':1,'cpu':6} if torch.cuda.is_available() else {'cpu':1}
     num_gpus = 2 if torch.cuda.is_available() else 0

@@ -22,7 +22,7 @@ from utils.save_results import get_date_id,load_json_file,update_json
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
 
 
-def HP_modification(config,args,args_vision):
+def HP_modification(config,args):
     '''Update the hyperparameters'''
     forbidden_keys = ['batch_size','train_prop','valid_prop','test_prop']
     for key, value in config.items():
@@ -33,29 +33,29 @@ def HP_modification(config,args,args_vision):
                 setattr(args, key, value)
             elif 'vision_' in key:
                 key = key.replace('vision_', '')
-                setattr(args_vision,key,value)
-    return(args,args_vision)
+                setattr(args.args_vision,key,value)
+    return(args)
 
-def load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2rpz):
+def load_trainer(config, dataset, args, dic_class2rpz):
     '''Change the hyperparameters and load the model accordingly. 
     The hyperparameters to be modified must not concern the dataloader, so don't change: 
     - train/valid/test/calib proportion
     - batch-size
     '''
-    args,args_vision = HP_modification(config,args,args_vision)
+    args = HP_modification(config,args)
 
-    loss_function = get_loss(args.loss_function_type,args)
-    model,optimizer,scheduler = load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision)
+    loss_function = get_loss(args)
+    model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
     #model_ref = ray.put(model)
     
     trainer = Trainer(dataset,model,
                     args,optimizer,loss_function,scheduler = scheduler,
-                    args_embedding=args_embedding,dic_class2rpz=dic_class2rpz)
+                    dic_class2rpz=dic_class2rpz)
     return(trainer)
 
-def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
+def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
     # Load ray parameters:
-    config = get_search_space_ray(args,args_vision)
+    config = get_search_space_ray(args)
     ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
     
     # Init Ray
@@ -84,7 +84,7 @@ def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,
     def train_with_tuner(config):
         # Dereference the large objects within the worker
         dataset = ray.get(dataset_ref)
-        trainer = load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2rpz)
+        trainer = load_trainer(config, dataset, args, dic_class2rpz)
         trainer.train_and_valid()  # No plotting, No testing
 
         # Clean Memory: 
@@ -110,7 +110,7 @@ def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,
     datasets_names = '_'.join(args.dataset_names)
     model_names = '_'.join([args.model_name,args.args_vision.model_name]) if hasattr(args.args_vision,'model_name')  else args.model_name
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
-    
+
     # Save HP-results
     analysis.results_df.to_csv(f'{working_dir}/{trial_id}.csv')
 

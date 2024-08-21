@@ -1,6 +1,6 @@
 from ray import tune
 
-def get_search_space_ray(args,args_vision):
+def get_search_space_ray(args):
     
     config = {"lr": tune.qloguniform(1e-4, 1e-1, 5e-5),
               "weight_decay" : tune.uniform(0.0005, 0.1),
@@ -38,23 +38,23 @@ def get_search_space_ray(args,args_vision):
         config.update(config_embedding)
 
     # Tackle Vision Models
-    if args.args_vision:
+    if len(vars(args.args_vision)) > 0:
         # ImageAvgPooling
-        if args_vision.model_name == 'ImageAvgPooling':
+        if args.args_vision.model_name == 'ImageAvgPooling':
             config_vision = {}  # No possible HP Tuning
  
-        elif args_vision.model_name == 'FeatureExtractor_ResNetInspired':
+        elif args.args_vision.model_name == 'FeatureExtractor_ResNetInspired':
             config_vision = {'vision_h_dim': tune.choice([8,16,32,64])} #,64,128,256
              
 
         # MinimalFeatureExtractor  
-        elif args_vision.model_name == 'MinimalFeatureExtractor':
+        elif args.args_vision.model_name == 'MinimalFeatureExtractor':
             config_vision = {'vision_h_dim': tune.choice([8,16,32,64]) #,64,128,256
                              } 
 
 
         else:
-            raise NotImplementedError(f"Model {args_vision.model_name} has not been implemented for HP Tuning")
+            raise NotImplementedError(f"Model {args.args_vision.model_name} has not been implemented for HP Tuning")
         
         config.update(config_vision)
 

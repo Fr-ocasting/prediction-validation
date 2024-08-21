@@ -77,41 +77,6 @@ def get_args_embedding(args,nb_words_embedding):
     return(args_embedding)
 
 
-def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None,args_vision = None):
-    args.num_nodes = n_vertex
-    loss_function = get_loss(args.loss_function_type,args)
-    args_embedding = get_args_embedding(args,nb_words_embedding)
-
-    model,opt,sched = load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision)
-
-    if args.TE_transfer:
-        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
-            model  = TE_transfer(model,n_vertex,args,model_dir = 'data/')
-        else:
-            print('TE impossible')
-    
-    return(loss_function,model,opt,sched,args_embedding)
-    
-
-def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None,arg_vision = None):
-    args.num_nodes = n_vertex
-    loss_function = get_loss(args.loss_function_type,args)
-    args_embedding = get_args_embedding(args,nb_words_embedding)
-
-    model_opt_sched_list = [load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision) for _ in range(args.K_fold)]
-    Model_list = [model_opt[0] for model_opt in model_opt_sched_list]
-    if args.TE_transfer:
-        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
-            Model_list = [TE_transfer(model,n_vertex,args,model_dir = 'data/') for model in Model_list]
-        else:
-            print('TE impossible')
-                                      
-        
-    Optimizer_list = [model_opt[1] for model_opt in model_opt_sched_list]
-    Scheduler_list = [model_opt[2] for model_opt in model_opt_sched_list]
-    return(loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding)
-
-
 def get_associated__df_verif_index(dataset,date,iloc):
     mask = (dataset.df_verif.iloc[:,iloc] == date)
     try:
@@ -152,17 +117,6 @@ def find_nearest_date(date_series, date, inferior=True):
     nearest_indice = date_series.index.get_loc(nearest_index)
     
     return nearest_index,nearest_indice
-
-def load_model_and_optimizer(args,args_embedding,dic_class2rpz,args_vision=None):
-    model =  full_model(args,args_embedding,dic_class2rpz,args_vision).to(args.device)
-    #model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
-    # Config optimizer:
-    optimizer = choose_optimizer(model,args)
-    scheduler = load_scheduler(optimizer,args)
-
-    print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
-    print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
-    return(model,optimizer,scheduler)
 
 def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False,coverage_period = None):
     df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = single_station)
@@ -260,10 +214,10 @@ def display_info_on_dataset(dataset,remaining_dates,train_indice = None,valid_in
     print(f" Len Train/Valid/Test:           {len_train}            ---            {len_valid}             ---             {len_test}\n")
     # ...
 
-def get_loss(loss_function_type,args = None):
-    if (loss_function_type == 'mse') or  (loss_function_type == 'MSE') or (loss_function_type == 'Mse'):
+def get_loss(args):
+    if (args.loss_function_type == 'mse') or  (args.loss_function_type == 'MSE') or (args.loss_function_type == 'Mse'):
         return nn.MSELoss()
-    if (loss_function_type == 'quantile') or (loss_function_type == 'Quantile') (loss_function_type == 'quantile loss') or (loss_function_type == 'QunatileLoss') or (loss_function_type == 'Qunatile Loss'):
+    if (args.loss_function_type == 'quantile') or (args.loss_function_type == 'Quantile') (args.loss_function_type == 'quantile loss') or (args.loss_function_type == 'QunatileLoss') or (args.loss_function_type == 'Qunatile Loss'):
         quantiles = torch.Tensor([args.alpha/2,1-args.alpha/2]).to(args.device)
         assert args.out_dim == len(quantiles), f"Output dimension {args.out_dim} doesn't match with the number of estimated quantiles {len(quantiles)}"
         return QuantileLoss(quantiles)
@@ -304,3 +258,52 @@ def load_init_trainer(folder_path,file_name,args):
     dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path,folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
     (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
     return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
+
+def load_model_and_optimizer(args,dic_class2rpz):
+    model =  full_model(args,dic_class2rpz).to(args.device)
+    #model = load_model(args,args_embedding,dic_class2rpz).to(args.device)
+    # Config optimizer:
+    optimizer = choose_optimizer(model,args)
+    scheduler = load_scheduler(optimizer,args)
+
+    print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
+    print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
+    return(model,optimizer,scheduler)
+
+
+# ================================ To Delete ======================================
+# ===============================             =====================================
+
+def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+    args.num_nodes = n_vertex
+    loss_function = get_loss(args)
+    args_embedding = get_args_embedding(args,nb_words_embedding)
+
+    model,opt,sched = load_model_and_optimizer(args,dic_class2rpz)
+
+    if args.TE_transfer:
+        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
+            model  = TE_transfer(model,n_vertex,args,model_dir = 'data/')
+        else:
+            print('TE impossible')
+    
+    return(loss_function,model,opt,sched,args_embedding)
+    
+
+def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
+    args.num_nodes = n_vertex
+    loss_function = get_loss(args)
+    args_embedding = get_args_embedding(args,nb_words_embedding)
+
+    model_opt_sched_list = [load_model_and_optimizer(args,dic_class2rpz) for _ in range(args.K_fold)]
+    Model_list = [model_opt[0] for model_opt in model_opt_sched_list]
+    if args.TE_transfer:
+        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
+            Model_list = [TE_transfer(model,n_vertex,args,model_dir = 'data/') for model in Model_list]
+        else:
+            print('TE impossible')
+                                      
+        
+    Optimizer_list = [model_opt[1] for model_opt in model_opt_sched_list]
+    Scheduler_list = [model_opt[2] for model_opt in model_opt_sched_list]
+    return(loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding)

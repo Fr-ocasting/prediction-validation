@@ -33,7 +33,6 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
         
 
     if 'netmob' in dataset_names:
-        args.args_vision = True
         contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
                                         'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
                                         'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
