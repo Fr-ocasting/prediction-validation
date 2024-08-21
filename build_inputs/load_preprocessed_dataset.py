@@ -63,14 +63,14 @@ def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_mo
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
 
     # Calendar data for training (with Time-Embedding):
-    args,dic_class2rpz,dic_rpz2class,nb_words_embedding,args_embedding = tackle_calendar(dataset_names,args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+    args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(dataset_names,args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # Netmob: 
-    args_vision,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name,normalize = normalize)
+    args,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
     subway_ds = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
     # Update/Set arguments: 
     args = update_args(args,subway_ds,dataset_names)
-    return(subway_ds,NetMob_ds,args,args_vision,args_embedding,dic_class2rpz)
+    return(subway_ds,NetMob_ds,args,dic_class2rpz)

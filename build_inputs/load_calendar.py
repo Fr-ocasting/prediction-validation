@@ -54,5 +54,6 @@ def tackle_calendar(dataset_names,args,dic_class2rpz,dic_rpz2class,nb_words_embe
         args.time_embedding = False
         
     args_embedding = get_args_embedding(args,nb_words_embedding)
+    args.args_embedding = args_embedding
 
-    return args,dic_class2rpz,dic_rpz2class,nb_words_embedding,args_embedding
+    return args,dic_class2rpz,dic_rpz2class,nb_words_embedding

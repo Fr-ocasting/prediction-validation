@@ -30,12 +30,12 @@ from constants.paths import SAVE_DIRECTORY
 
 
 class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,args_embedding,dic_class2rpz,show_figure = True):
+    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,dic_class2rpz,show_figure = True):
         super(MultiModelTrainer).__init__()
         trial_id1,trial_id2 = get_trial_id(args)
         self.trial_id1 = trial_id1
         self.trial_id2 = trial_id2
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,args_embedding,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2,show_figure= show_figure) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
+        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2,show_figure= show_figure) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
         self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
         self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
         self.alpha = args.alpha 
@@ -99,7 +99,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,args_embedding  =None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
+    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
         super().__init__()
         self.bool_contextual_data = len(dataset.contextual_tensors)>0
         self.nb_train_seq = len(dataset.tensor_limits_keeper.df_verif_train)
@@ -130,7 +130,6 @@ class Trainer(object):
             self.args.track_pi = False
 
         self.alpha = args.alpha
-        self.args_embedding = args_embedding
         self.fold = fold
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz

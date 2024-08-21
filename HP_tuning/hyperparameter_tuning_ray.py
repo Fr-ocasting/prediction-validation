@@ -16,7 +16,7 @@ from trainer import Trainer
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
 from utils.utilities_DL import get_loss,load_model_and_optimizer
-from utils.save_results import get_date_id
+from utils.save_results import get_date_id,load_json_file,update_json
 
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
@@ -53,7 +53,7 @@ def load_trainer(config, dataset, args, args_embedding, args_vision, dic_class2r
                     args_embedding=args_embedding,dic_class2rpz=dic_class2rpz)
     return(trainer)
 
-def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/'): 
+def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
     # Load ray parameters:
     config = get_search_space_ray(args,args_vision)
     ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
@@ -105,9 +105,18 @@ def HP_tuning(dataset,args,args_embedding,args_vision,num_samples,dic_class2rpz,
             search_alg = ray_search_alg,
         )
     
+    # Get Trial ID
     date_id = get_date_id()
-    name_save = f"save/HyperparameterTuning/{args.model_name}_loss{args.loss_function_type}_{date_id}"
-    analysis.results_df.to_csv(f'{working_dir}/{name_save}.csv')
+    datasets_names = '_'.join(args.dataset_names)
+    model_names = '_'.join([args.model_name,args.args_vision.model_name]) if hasattr(args.args_vision,'model_name')  else args.model_name
+    trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
+    
+    # Save HP-results
+    analysis.results_df.to_csv(f'{working_dir}/{trial_id}.csv')
+
+    # Keep track on other args:
+    json_file = load_json_file(save_dir)
+    update_json(args,json_file,trial_id,performance={},save_dir=save_dir)
 
     return(analysis)
 

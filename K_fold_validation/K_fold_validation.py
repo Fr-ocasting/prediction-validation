@@ -59,8 +59,8 @@ class KFoldSplitter(object):
         return(subway_ds_tmps)
     
     def load_init_ds(self):
-        subway_ds,NetMob_ds,args,args_vision,args_embedding,dic_class2rpz = load_complete_ds(self.dataset_names,self.args,self.coverage,self.folder_path,self.file_name,self.vision_model_name,normalize = False)
-        return(subway_ds,NetMob_ds,args,args_vision,args_embedding,dic_class2rpz)
+        subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.dataset_names,self.args,self.coverage,self.folder_path,self.file_name,self.vision_model_name,normalize = False)
+        return(subway_ds,NetMob_ds,args,dic_class2rpz)
 
     def split_k_fold(self):
         '''Split ds in K-fold with respected proportion train_prop/valid_prop and keep initial test dataset:
@@ -113,7 +113,7 @@ class KFoldSplitter(object):
                 time_slot_limits = np.arange(l_lim_pos,u_lim_pos)
 
 
-            subway_ds_tmps,NetMob_ds_tmps,_,_,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True,time_slot_limits=time_slot_limits)  # Normalize
+            subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True,time_slot_limits=time_slot_limits)  # Normalize
 
             # Tackle U_test and Utarget_test (normalize U_test with normalizer from subway_ds_TMPS):
             subway_ds_tmps = self.add_U_test_and_Utarget_test(subway_ds_tmps,subway_ds)

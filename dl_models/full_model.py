@@ -49,17 +49,17 @@ def load_vision_model(args_vision):
 
 
 class full_model(nn.Module):
-    def __init__(self,args,args_embedding,dic_class2rpz,args_vision):
+    def __init__(self,args,dic_class2rpz):
         super(full_model,self).__init__()
 
         # === Vision NetMob ===
-        self.netmob_vision =  load_vision_model(args_vision) if 'netmob' in args.contextual_positions.keys() else None  
+        self.netmob_vision =  load_vision_model(args.args_vision) if 'netmob' in args.contextual_positions.keys() else None  
 
         # === TE ===
-        self.te = TE_module(args,args_embedding,dic_class2rpz) if args.time_embedding else None
+        self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
 
         # === Trafic Model ===
-        self.core_model = load_model(args,args_embedding,dic_class2rpz,args_vision)
+        self.core_model = load_model(args,dic_class2rpz)
 
 
         # Add positions for each contextual data:
@@ -130,9 +130,9 @@ class full_model(nn.Module):
         return(x)
 
 
-def load_model(args,args_embedding,dic_class2rpz,args_vision):
+def load_model(args,dic_class2rpz):
     if args.model_name == 'CNN': 
-        model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
+        model = CNN(args, kernel_size = (2,1),args_embedding = args.args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
@@ -157,15 +157,15 @@ def load_model(args,args_embedding,dic_class2rpz,args_vision):
         # With padding, the output channel dimension will stay constant and equal to L
         # Sometimes, with no Trafic Data, L = 0, then we have to set Ko = 1, independant of L
 
-        if args_embedding is not None:
-            Ko = Ko + args_embedding.embedding_dim
+        if args.embedding:
+            Ko = Ko + args.args_embedding.embedding_dim
 
-        if args_vision is not None:
+        if  len(vars(args.args_vision))>0:   #if not empty 
             # Depend wether out_dim is implicit or defined by other parameters:
-            if hasattr(args_vision,'out_dim'):
-                Ko = Ko + args_vision.out_dim
+            if hasattr(args.args_vision,'out_dim'):
+                Ko = Ko + args.args_vision.out_dim
             else:
-                vision_out_dim = args_vision.L*args_vision.h_dim//2
+                vision_out_dim = args.args_vision.L*args.args_vision.h_dim//2
                 Ko = Ko + vision_out_dim
 
         #  ...

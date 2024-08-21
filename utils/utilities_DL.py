@@ -2,7 +2,8 @@ import numpy as np
 import torch 
 import torch.nn as nn 
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime
+import argparse
 from torch.optim import SGD,Adam,AdamW
 try:
     from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
@@ -72,7 +73,7 @@ def get_args_embedding(args,nb_words_embedding):
         config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
         args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
     else:
-        args_embedding = None
+        args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
     return(args_embedding)
 
 

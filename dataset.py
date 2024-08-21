@@ -9,12 +9,8 @@ from datetime import timedelta
 from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeeper
 from utils.train_valid_test_split import train_valid_test_split_iterative_method
 from loader import DictDataLoader
-from utils.save_results import save_object,read_object,Dataset_get_save_folder
-from calendar_class import get_time_slots_labels
+from utils.save_results import save_object,read_object
 # ...
-
-#from build_inputs.load_subway_in import preprocess_subway_in                    
-#from build_inputs.load_preprocessed_dataset import load_complete_ds
 
 class TrainValidTest_Split_Normalize(object):
     def __init__(self,data,

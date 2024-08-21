@@ -118,9 +118,10 @@ def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,v
         for key,value in args_vision.items():
             parser.add_argument(f'--{key}', type=type(value), default=value)
         args_vision = parser.parse_args(args=[])
+        args.args_vision = args_vision
         # ...
 
     else:
         NetMob_ds = None
-        args_vision = None
-    return args_vision,NetMob_ds
+        args.args_vision = argparse.ArgumentParser(description='netmob').parse_args(args=[])
+    return args,NetMob_ds
