@@ -17,7 +17,7 @@ def load_model(args,dic_class2rpz):
 def load_optimizer_and_scheduler(model,args):
     optimizer = choose_optimizer(model,args)
     scheduler = load_scheduler(optimizer,args)
-    loss_function = get_loss(args.loss_function_type,args)
+    loss_function = get_loss(args)
     return(optimizer,scheduler,loss_function)
 
 

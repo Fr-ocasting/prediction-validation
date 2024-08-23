@@ -14,17 +14,22 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,nb_words_embedding,embedding_dim,type_calendar,mapping_tensor,embedding_with_dense_layer = True, n_embedding = 1):
+    def __init__(self,nb_words,embedding_dim,type_calendar,mapping_tensor,calendar_class,embedding_with_dense_layer = True, n_embedding = 1):
         super(TimeEmbedding, self).__init__()
-        self.nb_words = nb_words_embedding
+        self.nb_words = nb_words
         self.embedding_with_dense_layer = embedding_with_dense_layer
         self.type_calendar = type_calendar
         self.mapping_tensor = mapping_tensor
         self.n_embedding = n_embedding
+        self.calendar_class = calendar_class
 
         if self.type_calendar == 'tuple':
-            nb_embeddings = mapping_tensor.size(1)
+            nb_embeddings = mapping_tensor.size(1)  # = size tuple = 3  (weekday, hour, minute)
+
+            # self.dic_sizes = [nb_weekdays rpz, nb_hours rpz, nb_minutes rpz] within mappin tensor (i.e represenntation of the class) 
             self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
+
+            # self.Embedding_dims ~ self.dic_sizes/2
             self.Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
 
 
@@ -33,24 +38,25 @@ class TimeEmbedding(nn.Module):
             # embedding = nn.Linear(dic_size,emb_dim*n_embedding)
 
             # Example : 
-            # Emb_hour: 
             # dic_size = 7
             # emb_dim = 3
-            # n_embedding = 40
-            # [3,3,3,3,3...... 40 fois ... 3,3,3]
+            # if n_embedding = 40:
+            # >>>> return a vector of size [40*3] which is unstack to [3,3, ... ,3] (shape = [40])
+            # >>>> each of the 7 words in dic_size has is own representation on a 3D vector.
 
-            self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim*n_embedding) for dic_size,emb_dim in zip(self.dic_sizes,self.Embedding_dims)])
+            self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim*n_embedding,bias=False) for dic_size,emb_dim in zip(self.dic_sizes,self.Embedding_dims)])
             #self.output1 = nn.Linear(sum(Embedding_dims),embedding_dim*2)
-            self.output1 = nn.Linear(sum(self.Embedding_dims),int(sum(self.Embedding_dims)/2))
+            ''' A modifier ici, à priori ne peut pas prendre en compte de Multi-Embedding'''
+            self.output1 = nn.Linear(sum(self.Embedding_dims),int(sum(self.Embedding_dims)/2)) 
             #self.output2 = nn.Linear(embedding_dim*2,embedding_dim) 
             self.output2 = nn.Linear(int(sum(self.Embedding_dims)/2),embedding_dim) 
             self.relu = nn.ReLU()
 
         elif self.type_calendar == 'unique_long_embedding' : 
             if embedding_with_dense_layer:
-                self.embedding = nn.Linear(self.nb_words,embedding_dim)
+                self.embedding = nn.Linear(self.nb_words[calendar_class],embedding_dim)
             else: 
-                self.embedding = nn.Embedding(self.nb_words,embedding_dim)
+                self.embedding = nn.Embedding(self.nb_words[calendar_class],embedding_dim)
 
         else:
             raise NotImplementedError(f"args.type_calendar '{self.type_calendar}' has not been implemented")
@@ -73,7 +79,7 @@ class TimeEmbedding(nn.Module):
 
         if self.type_calendar == 'unique_long_embedding':
             if self.embedding_with_dense_layer:
-                one_hot_encodding_matrix = nn.functional.one_hot(elt.long().squeeze(),num_classes =self.nb_words).to(elt).float()
+                one_hot_encodding_matrix = nn.functional.one_hot(elt.long().squeeze(),num_classes =self.nb_words[self.calendar_class]).to(elt).float()
                 z = self.embedding(one_hot_encodding_matrix)
             else: 
                 z = self.embedding(elt)
@@ -84,9 +90,11 @@ class TE_module(nn.Module):
     def __init__(self,args,args_embedding,dic_class2rpz):
         super(TE_module, self).__init__()
 
+        # size of mapping_tensor = number of class * 3.   3 = tuple size (weekday,hour,minute)
         mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz[args.calendar_class].items())]).to(args.device)
+
         self.multi_embedding = args.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor, n_embedding= args.num_nodes if self.multi_embedding else 1)
+        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,calendar_class = args.calendar_class, n_embedding= args.num_nodes if self.multi_embedding else 1)
         self.Tembedding_position = args_embedding.position
         self.N_repeat = 1 if self.multi_embedding else args.num_nodes
         self.C = args.C
