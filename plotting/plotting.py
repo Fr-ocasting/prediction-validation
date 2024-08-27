@@ -23,7 +23,7 @@ from utils.utilities_DL import get_associated__df_verif_index
 def plot_k_fold_split(Datasets,invalid_dates):
     if not(type(Datasets) == list):
         Datasets = [Datasets]
-    fig,ax = plt.subplots(figsize=(18,9))
+    fig,ax = plt.subplots(figsize=(14,14))
 
     # Forbidden Dates
     delta_t = timedelta(hours= 1/Datasets[0].time_step_per_hour)
@@ -52,7 +52,7 @@ def plot_k_fold_split(Datasets,invalid_dates):
             if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
-    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.3, color='grey',label = "Invalid dates and Impacted Time-Slots\nwhich couldn't be predicted")  #label = "Impacted Time-Slots which couldn't be predicted")
+    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.3, color='grey',label = "Invalid dates and Impacted Time-Slots which couldn't be predicted")  #label = "Impacted Time-Slots which couldn't be predicted")
     # ...
 
     # K-folds : 
@@ -95,18 +95,18 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
         # .........
         # For train bar
-        ax.text(lpt1 + width_predict_train / 2, i - 0.2, f'{mdates.num2date(lpt1).strftime("%m/%d")} - {mdates.num2date(lpt2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
-        ax.text(lt1 + width_train_set / 2, i + 0.2, f'{mdates.num2date(lt1).strftime("%m/%d")} - {mdates.num2date(lt2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+        ax.text(lpt1 + width_predict_train / 2, i - 0.2, f'{mdates.num2date(lpt1).strftime("%m/%d")} - {mdates.num2date(lpt2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
+        ax.text(lt1 + width_train_set / 2, i + 0.2, f'{mdates.num2date(lt1).strftime("%m/%d")} - {mdates.num2date(lt2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
 
         # For valid bar
         if not np.isnan(width_predict_valid):
-            ax.text(lpv1 + width_predict_valid / 2, i - 0.2, f'{mdates.num2date(lpv1).strftime("%m/%d")} - {mdates.num2date(lpv2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
-            ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+            ax.text(lpv1 + width_predict_valid / 2, i - 0.2, f'{mdates.num2date(lpv1).strftime("%m/%d")} - {mdates.num2date(lpv2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
+            ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
 
         # For test bar
         if not np.isnan(width_predict_test):
-            ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
-            ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+            ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
+            ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
         # ..........
 
     # ...
@@ -116,15 +116,14 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
     # Add xticks
     ax.set_xticks(dates_xticks)
-    ax.tick_params(axis='x',rotation=30,labelsize = 8)
+    ax.tick_params(axis='x',rotation=30,labelsize = 12)
 
     # Might be useless : 
     fig.autofmt_xdate()
 
     #ax.legend()
-    ax.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
+    ax.legend(bbox_to_anchor=(0.5, -0.05), loc='upper center',fontsize=16) #loc='upper left'
     plt.show()
-
 
 def plot_loss(trainer,test_pred,Y_true,window_pred = None):
     fig, (ax1,ax2) = plt.subplots(1,2,figsize = (18,6))
