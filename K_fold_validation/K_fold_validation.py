@@ -28,6 +28,11 @@ class KFoldSplitter(object):
 
     def add_df_verif_test(self,subway_ds_tmps,subway_ds):
         subway_ds_tmps.tensor_limits_keeper.df_verif_test = subway_ds.tensor_limits_keeper.df_verif_test 
+        subway_ds_tmps.tensor_limits_keeper.first_test_date = subway_ds.tensor_limits_keeper.first_test_date
+        subway_ds_tmps.tensor_limits_keeper.last_test_date =  subway_ds.tensor_limits_keeper.last_test_date
+        subway_ds_tmps.tensor_limits_keeper.first_predicted_test_date = subway_ds.tensor_limits_keeper.first_predicted_test_date
+        subway_ds_tmps.tensor_limits_keeper.last_predicted_test_date = subway_ds.tensor_limits_keeper.last_predicted_test_date
+        subway_ds_tmps.init_invalid_dates = subway_ds.invalid_dates
         return subway_ds_tmps
 
     def add_U_test_and_Utarget_test(self,subway_ds_tmps,subway_ds):

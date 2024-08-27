@@ -4,7 +4,10 @@ import torch
 if torch.cuda.is_available():
     folder_path = '../../../../data/' 
 else:
-    folder_path = '../../../../Data/'
+    #current_path = os.path.abspath(os.path.dirname(__file__))
+    #package_path = os.path.abspath(os.path.join(current_path, '..'))
+    #folder_path = '../../../../Data/'
+    folder_path = 'data/'
 
 
 SAVE_DIRECTORY = '../save/'
@@ -27,7 +30,7 @@ if not(os.path.exists(results_folder)):
 # A SUPPRIMER 
 # ================================================
 
-
+"""
 def get_save_directory(args): 
 
     # Common parameter between models:
@@ -64,4 +67,4 @@ def get_save_directory(args):
         os.makedirs(save_dir)
 
     return(save_dir)
-
+"""

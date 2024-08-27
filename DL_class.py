@@ -53,9 +53,15 @@ class TensorLimitsKeeper(object):
         if getattr(self,f"{training_mode}_prop") > 1e-3:
             setattr(self,f"first_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[0,0])
             setattr(self,f"last_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[-1,-1])
+
+            setattr(self,f"first_predicted_{training_mode}_date",self.split_limits[f"first_predicted_{training_mode}_date"])
+            setattr(self,f"last_predicted_{training_mode}_date",self.split_limits[f"last_predicted_{training_mode}_date"])
         else :
             setattr(self,f"first_{training_mode}_date",None)
             setattr(self,f"last_{training_mode}_date",None)
+
+            setattr(self,f"first_predicted_{training_mode}_date",None)
+            setattr(self,f"last_predicted_{training_mode}_date",None)
 
     def get_raw_values_indices(self,training_mode):
         ''' Set attribute to keep trakc on Train/Valid/Test Tensor limits with a list of indices'''

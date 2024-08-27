@@ -23,14 +23,14 @@ from utils.utilities_DL import get_associated__df_verif_index
 def plot_k_fold_split(Datasets,invalid_dates):
     if not(type(Datasets) == list):
         Datasets = [Datasets]
-    fig,ax = plt.subplots(figsize=(16,9))
+    fig,ax = plt.subplots(figsize=(18,9))
 
     # Forbidden Dates
     delta_t = timedelta(hours= 1/Datasets[0].time_step_per_hour)
     already_ploted = []
     for i,invalid_date in enumerate(invalid_dates):
         if (not invalid_date in already_ploted):   # Avoid to plot too many vbar
-            ax.axvspan(invalid_date, invalid_date+delta_t, alpha=0.3, color='grey',label= 'Invalid dates' if i==0 else None)
+            ax.axvspan(invalid_date, invalid_date+delta_t, alpha=0.3, color='grey') #,label= 'Invalid dates' if i==0 else None)
             date_for_grey_label = invalid_date
             already_ploted.append(invalid_date)
 
@@ -52,19 +52,24 @@ def plot_k_fold_split(Datasets,invalid_dates):
             if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
-    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.1, color='grey', label = "Impacted Time-Slots which couldn't be predicted")
+    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.3, color='grey',label = "Invalid dates and Impacted Time-Slots\nwhich couldn't be predicted")  #label = "Impacted Time-Slots which couldn't be predicted")
     # ...
 
     # K-folds : 
     dates_xticks = []
     for i,dset in enumerate(Datasets):
+        limits = dset.tensor_limits_keeper
 
         # Convert Numpy Timestamp into 'mdates num'
-        lpt1, lpt2, lpv1,lpv2,lpte1,lpte2  = mdates.date2num(dset.first_predicted_train_date),mdates.date2num(dset.last_predicted_train_date),mdates.date2num(dset.first_predicted_valid_date) ,mdates.date2num(dset.last_predicted_valid_date),mdates.date2num(dset.first_predicted_test_date) ,mdates.date2num(dset.last_predicted_test_date)
-        lt1, lt2,lv1,lv2,lte1,lte2  = mdates.date2num(dset.first_train_date),mdates.date2num(dset.last_train_date), mdates.date2num(dset.first_valid_date),mdates.date2num(dset.last_valid_date),mdates.date2num(dset.first_test_date),mdates.date2num(dset.last_test_date)
+        lpt1, lpt2, lpv1,lpv2,lpte1,lpte2  = mdates.date2num(limits.first_predicted_train_date),mdates.date2num(limits.last_predicted_train_date),mdates.date2num(limits.first_predicted_valid_date) ,mdates.date2num(limits.last_predicted_valid_date),mdates.date2num(limits.first_predicted_test_date) ,mdates.date2num(limits.last_predicted_test_date)
+        lt1, lt2,lv1,lv2,lte1,lte2  = mdates.date2num(limits.first_train_date),mdates.date2num(limits.last_train_date), mdates.date2num(limits.first_valid_date),mdates.date2num(limits.last_valid_date),mdates.date2num(limits.first_test_date),mdates.date2num(limits.last_test_date)
 
         # Display specifics dates on the plot
-        dates_xticks = dates_xticks + [x for x in [lpt1,lpt2,lpv1,lpv2,lpte1,lpte2,lt1,lt2,lv1,lv2,lte1,lte2 ] if not np.isnan(x)]  # Remove all the useless dates
+        if i == 0:
+            dates_xticks = dates_xticks + [x for x in [lt1] if not np.isnan(x)]
+        if i == len(Datasets)-1:
+            dates_xticks = dates_xticks + [x for x in [lpte2] if not np.isnan(x)]    
+        #dates_xticks = dates_xticks + [x for x in [lpt1,lpt2,lpv1,lpv2,lpte1,lpte2,lt1,lt2,lv1,lv2,lte1,lte2 ] if not np.isnan(x)]  # Remove all the useless dates
 
         # Compute Width of each horizontal bar
         width_predict_train = lpt2 - lpt1
@@ -76,16 +81,34 @@ def plot_k_fold_split(Datasets,invalid_dates):
         width_test_set = lte2 - lte1
 
         # Plot each horizontal bar (if exists):
-        ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Time-Slot within Train' if i == 0 else None)
-        ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Values in TrainSet' if i == 0 else None)
+        ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Train' if i == 0 else None)
+        ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Time-slots within TrainSet' if i == 0 else None)
 
         if not np.isnan(width_predict_valid):
             ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
-            ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Values ValidSet' if i == 0 else None)
+            ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Time-slots within ValidSet' if i == 0 else None)
 
         if not np.isnan(width_predict_test):
             ax.barh(i-0.2, width_predict_test, left=lpte1, color='forestgreen', height = 0.35, alpha = 0.7, label='Predicted Test' if i == 0 else None)
-            ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label='Values TestSet' if i == 0 else None)
+            ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label='Time-slots within TestSet' if i == 0 else None)
+
+
+        # .........
+        # For train bar
+        ax.text(lpt1 + width_predict_train / 2, i - 0.2, f'{mdates.num2date(lpt1).strftime("%m/%d")} - {mdates.num2date(lpt2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+        ax.text(lt1 + width_train_set / 2, i + 0.2, f'{mdates.num2date(lt1).strftime("%m/%d")} - {mdates.num2date(lt2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+
+        # For valid bar
+        if not np.isnan(width_predict_valid):
+            ax.text(lpv1 + width_predict_valid / 2, i - 0.2, f'{mdates.num2date(lpv1).strftime("%m/%d")} - {mdates.num2date(lpv2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+            ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+
+        # For test bar
+        if not np.isnan(width_predict_test):
+            ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+            ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=8, color='black')
+        # ..........
+
     # ...
             
     # Date formater
@@ -93,7 +116,7 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
     # Add xticks
     ax.set_xticks(dates_xticks)
-    ax.tick_params(axis='x',rotation=70)
+    ax.tick_params(axis='x',rotation=30,labelsize = 8)
 
     # Might be useless : 
     fig.autofmt_xdate()
@@ -101,8 +124,6 @@ def plot_k_fold_split(Datasets,invalid_dates):
     #ax.legend()
     ax.legend(bbox_to_anchor=(1.0, 1.0), loc='upper left')
     plt.show()
-
-
 
 
 def plot_loss(trainer,test_pred,Y_true,window_pred = None):
