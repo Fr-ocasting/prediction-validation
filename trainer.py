@@ -99,7 +99,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True,save_folder =None):
+    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id = None,show_figure = True,save_folder =None):
         super().__init__()
         self.bool_contextual_data = len(dataset.contextual_tensors)>0
         self.nb_train_seq = len(dataset.tensor_limits_keeper.df_verif_train)
@@ -136,15 +136,19 @@ class Trainer(object):
         self.picp_list = []
         self.mpiw_list = []
         self.show_figure = show_figure
-        if trial_id1 is None:
+
+        if trial_id is None:
             if fold is None: 
                 trial_id1,trial_id2 = get_trial_id(args,fold)
                 self.trial_id = f"{trial_id1}{-1}{trial_id2}"
             else:
                 self.trial_id = get_trial_id(args,fold)
-
         else:
-            self.trial_id = f"{trial_id1}{fold}{trial_id2}"
+            if fold is None:
+                self.trial_id = f"f-1_{trial_id}"
+            else:
+                self.trial_id = f"f{fold}_{trial_id}"
+
         if fold is not None:
             self.args.current_fold = fold
         

@@ -21,9 +21,30 @@ save_folder = 'K_fold_validation'
 
 # If Load config: 
 if load_config:
-    from examples.load_best_config import args,coverage,trial_id
+    from examples.load_best_config import load_best_config
+
+    trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
+    #'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
+    #'subway_in_calendar_STGCN_MSELoss_2024_08_25_22_56_92429'
+    #'netmob_subway_in_STGCN_ImageAvgPooling_MSELoss_2024_08_24_01_42_17375'
+    #'netmob_subway_in_STGCN_FeatureExtractor_ResNetInspired_MSELoss_2024_08_23_06_53_46982'
+    #'netmob_subway_in_calendar_STGCN_ImageAvgPooling_MSELoss_2024_08_27_00_16_90667'
+    #'netmob_subway_in_calendar_STGCN_FeatureExtractor_ResNetInspired_MSELoss_2024_08_28_06_04_41108'
+    
+    #'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810'
+    folder = 'save/HyperparameterTuning'
+    args,coverage = load_best_config(trial_id)
+    #Update modif validation
+    args.train_prop = 0.6
+    args.valid_prop = 0.2
+    args.test_prop = 0.2
+    args.ray = False
+    
+    #Change/Set epochs: 
+    args.epochs = 200
+
     dataset_names = args.dataset_names 
-    vision_model_name = args.vision_model_name
+    vision_model_name = args.args_vision.model_name if len(vars(args.args_vision))>0 else None
 
 # If new config : 
 else:
@@ -50,7 +71,7 @@ valid_losses = []
 for fold,ds in enumerate(ds_validation):
     model = load_model(args,dic_class2rpz)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = False,fold=fold,save_folder = save_folder)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
     trainer.train_and_valid(mod = 1000,mod_plot = None) 
     valid_losses.append(trainer.performance['valid_loss'])
 

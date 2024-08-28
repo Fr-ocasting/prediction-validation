@@ -16,33 +16,28 @@ from calendar_class import get_time_slots_labels
 from constants.paths import file_name
 
 
-# Data folder:
-folder = 'save/HyperparameterTuning'
+def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model'):
+    # Load HP-tuning results :
+    df_hp_tuning =pd.read_csv(f'{working_dir}/{folder}/{trial_id}.csv').head()
+    model_args = pickle.load(open(f'{working_dir}/{folder}/model_args.pkl','rb'))
 
-# Select a id from HP-tuning: 
-trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810'
+    # Load common args through all tuning trials:
+    args = model_args['model'][trial_id]['args']
 
-# Load HP-tuning results :
-df_hp_tuning =pd.read_csv(f'{working_dir}/{folder}/{trial_id}.csv').head()
-model_args = pickle.load(open(f'{working_dir}/{folder}/model_args.pkl','rb'))
+    # Get best config :
+    best_model = df_hp_tuning.sort_values(metric).iloc[0]
 
-# Load common args through all tuning trials:
-args = model_args['model'][trial_id]['args']
+    # Set tuned parameter from best config to 'args':
+    HP_args = [indx.replace('config/', '') for indx in best_model.index if 'config/' in indx]
+    for arg in HP_args:
+        args[arg] = best_model[f'config/{arg}']
 
-# Get best config :
-metric = '_metric/Loss_model'
-best_model = df_hp_tuning.sort_values(metric).iloc[0]
+    # Transform 'dict' to 'Namespace' object: 
+    args = Namespace(**args)
 
-# Set tuned parameter from best config to 'args':
-HP_args = [indx.replace('config/', '') for indx in best_model.index if 'config/' in indx]
-for arg in HP_args:
-    args[arg] = best_model[f'config/{arg}']
-
-# Transform 'dict' to 'Namespace' object: 
-args = Namespace(**args)
-
-# Load covergae : 
-coverage = match_period_coverage_with_netmob(file_name)
+    # Load covergae : 
+    coverage = match_period_coverage_with_netmob(file_name)
+    return(args,coverage)
 
 if __name__ == '__main__':
     # Load model with the best config:
