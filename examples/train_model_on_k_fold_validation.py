@@ -21,13 +21,13 @@ save_folder = 'K_fold_validation'
 
 # If Load config: 
 if load_config:
-    from load_best_config import args,coverage,trial_id
+    from examples.load_best_config import args,coverage,trial_id
     dataset_names = args.dataset_names 
     vision_model_name = args.vision_model_name
 
 # If new config : 
 else:
-    from load_random_config import args,coverage,trial_id,dataset_names,vision_model_name
+    from examples.load_random_config import args,coverage,trial_id,dataset_names,vision_model_name
 
 
 # Sliding Window Cross Validation 
