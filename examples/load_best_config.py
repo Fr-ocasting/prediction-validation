@@ -41,11 +41,14 @@ for arg in HP_args:
 # Transform 'dict' to 'Namespace' object: 
 args = Namespace(**args)
 
-# Load model with the best config:
+# Load covergae : 
 coverage = match_period_coverage_with_netmob(file_name)
-dataset,_,_ = load_subway_in(file_name,args,coverage)
-_,dic_class2rpz,_,_ = get_time_slots_labels(dataset,nb_class = [0,1,2,3])
-loss_function = get_loss(args)
-model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
 
-print(model)
+if __name__ == '__main__':
+    # Load model with the best config:
+    dataset,_,_ = load_subway_in(file_name,args,coverage)
+    _,dic_class2rpz,_,_ = get_time_slots_labels(dataset,nb_class = [0,1,2,3])
+    loss_function = get_loss(args)
+    model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
+
+    print(model)

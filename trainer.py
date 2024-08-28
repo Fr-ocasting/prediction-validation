@@ -99,7 +99,7 @@ class MultiModelTrainer(object):
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True):
+    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id1 = None,trial_id2 = None,show_figure = True,save_folder =None):
         super().__init__()
         self.bool_contextual_data = len(dataset.contextual_tensors)>0
         self.nb_train_seq = len(dataset.tensor_limits_keeper.df_verif_train)
@@ -147,8 +147,13 @@ class Trainer(object):
             self.trial_id = f"{trial_id1}{fold}{trial_id2}"
         if fold is not None:
             self.args.current_fold = fold
+        
+        if save_folder is not None:
+            self.best_model_save_directory = f"{SAVE_DIRECTORY}/{save_folder}/best_models"
+        else:
+            self.best_model_save_directory = f"{SAVE_DIRECTORY}/best_models"
+            
 
-        self.best_model_save_directory = f"{SAVE_DIRECTORY}/best_models"
 
     def save_best_model(self,checkpoint,epoch,performance):
         ''' Save best model in .pkl format'''

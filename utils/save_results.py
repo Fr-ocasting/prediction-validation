@@ -36,7 +36,7 @@ def get_trial_id(args,fold = None):
         return(trial_id1,trial_id2)
     
     else : 
-        trial_id = f"{trial_id0}_{args.model_name}_F{args.K_fold}f{fold}_{args.batch_size}_{args.epoch}_{l}{t}{s}"
+        trial_id = f"{trial_id0}_{args.model_name}_F{args.K_fold}f{fold}_{args.batch_size}_{args.epochs}_{l}{t}{s}"
         return(trial_id)
 
 def load_json_file(save_dir):
@@ -63,7 +63,7 @@ def update_json(args,json_file,trial_id,performance,save_dir):
     json_file['model'][trial_id] = {'args': dic_args,'performance': performance}
 
     # Save Json_file
-    pickle.dump(json_file,open(f"{save_dir}model_args.pkl",'wb'))
+    pickle.dump(json_file,open(f"{save_dir}/model_args.pkl",'wb'))
 
 
 def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir):
