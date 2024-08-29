@@ -15,7 +15,6 @@ from build_inputs.load_subway_in import load_subway_in
 from calendar_class import get_time_slots_labels
 from constants.paths import file_name
 
-
 def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model'):
     # Load HP-tuning results :
     df_hp_tuning =pd.read_csv(f'{working_dir}/{folder}/{trial_id}.csv').head()
@@ -29,17 +28,27 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
 
     # Set tuned parameter from best config to 'args':
     HP_args = [indx.replace('config/', '') for indx in best_model.index if 'config/' in indx]
+
     for arg in HP_args:
-        args[arg] = best_model[f'config/{arg}']
+        if 'vision_' in arg:
+            print('ARG: ',arg)
+            arg_vision = arg.replace('vision_', '')
+            setattr(args['args_vision'],arg_vision,best_model[f'config/{arg}'])
+        else :
+            args[arg] = best_model[f'config/{arg}']
 
     # Transform 'dict' to 'Namespace' object: 
     args = Namespace(**args)
+   
+    # Update 
+    args.ray = False  # !!!
 
     # Load covergae : 
     coverage = match_period_coverage_with_netmob(file_name)
     return(args,coverage)
 
 if __name__ == '__main__':
+    args,coverage = load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model')
     # Load model with the best config:
     dataset,_,_ = load_subway_in(file_name,args,coverage)
     _,dic_class2rpz,_,_ = get_time_slots_labels(dataset,nb_class = [0,1,2,3])

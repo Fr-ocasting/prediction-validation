@@ -14,28 +14,12 @@ if working_dir not in sys.path:
 # Personnal import 
 from utils.utilities_DL import match_period_coverage_with_netmob
 from constants.config import get_args,update_modif
-from constants.paths import folder_path,file_name
-from K_fold_validation.K_fold_validation import KFoldSplitter
-
-# Hp Tuning
-from HP_tuning.hyperparameter_tuning_ray import HP_tuning
+from constants.paths import file_name
+from examples.HP_parameter_choice import hyperparameter_tuning
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
 
 
 
-# === Train and Evaluate Model: 
-def hyperparameter_tuning(args,coverage,dataset_names,vision_model_name):
-    # Load K-fold subway-ds 
-    folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
-
-    # Split in K-fold : 
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
-    K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
-
-    # Train on the first fold: 
-    num_samples = 100
-    subway_ds = K_subway_ds[0]
-    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir)
-    return(analysis,trial_id)
 
 
 if __name__ == '__main__':
@@ -61,4 +45,12 @@ if __name__ == '__main__':
     dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
     vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
 
+
+    # HP Tuning
     analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name)
+
+    # K-fold validation with best config: 
+    epochs = 500
+
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs,folder = 'save/HyperparameterTuning')
+

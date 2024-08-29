@@ -118,7 +118,7 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
     json_file = load_json_file(f'{working_dir}/{save_dir}')
     update_json(args,json_file,trial_id,performance={},save_dir=f'{working_dir}/{save_dir}')
 
-    return(analysis)
+    return(analysis,trial_id)
 
 if __name__ == '__main__': 
     from constants.config import get_args,update_modif
@@ -165,4 +165,4 @@ if __name__ == '__main__':
 
     num_samples = 8
     subway_ds = K_subway_ds[0]
-    analysis = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir,save_dir)
+    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir,save_dir)
