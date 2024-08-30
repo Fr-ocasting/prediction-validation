@@ -104,7 +104,7 @@ class ResNet_2_1D_block(nn.Module):
     
 
 if __name__ == '__main__':
-    from utilities_DL import forward_and_display_info
+    from utils.utilities_DL import forward_and_display_info
 
     B,N,C,H,W,L = 32, 40, 4, 22,22,6
     netmob = torch.randn(B,N,C,H,W,L)
