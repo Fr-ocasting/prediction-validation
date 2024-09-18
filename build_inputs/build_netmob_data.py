@@ -87,7 +87,7 @@ def resize_tensor(T_i, H,W, positions):
     return(new_T_i)
 
 
-def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days):
+def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days,assert_transfer_mode= None ):
     '''
     For a specific app, but for each day, read Two CSV: UL/DL 
     
@@ -102,11 +102,11 @@ def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,fol
     # for each days  
     Tensors_days = []
     for day in folder_days:
-        Tensors_days,metadata = tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile)
+        Tensors_days,metadata = tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile,assert_transfer_mode)
     Tensors_days = torch.stack(Tensors_days,dim=0)
     return(Tensors_days,metadata)
 
-def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile):
+def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile, assert_transfer_mode= None ):
     '''
     For a specific day and a specific app, read Two CSV: UL/DL 
     
@@ -122,9 +122,13 @@ def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,m
     # For each transfert mode:
     Tensors_transfer,transfer_modes = [],[]
     for path in txt_paths:
-        Tensors,transfer_mode,metadata = read_csv(path,result,metadata,day,maxi_nb_tile)
-        Tensors_transfer.append(Tensors)
+        transfer_mode,columns = get_information_from_path(path)
         transfer_modes.append(transfer_mode)
+
+        if (assert_transfer_mode is None) or (assert_transfer_mode == transfer_mode):
+            Tensors,metadata = read_csv(path,result,metadata,day,maxi_nb_tile,columns)
+            Tensors_transfer.append(Tensors)
+        
     Tensors_transfer = torch.stack(Tensors_transfer,dim=0) 
 
 
@@ -134,8 +138,18 @@ def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,m
     Tensors_days.append(Tensors_transfer)
     return(Tensors_days,metadata)
 
+def get_information_from_path(path):
+    transfer_mode = path.split('.')[-2].split('_')[-1]
+    day = txt_path.split('_')[-2]
+    day_str = str(day)
+    day_str = datetime.strptime(day_str, '%Y%m%d')
+    times = [day_str + timedelta(minutes=15*i) for i in range(96)]
+    times_str = [t.strftime('%H:%M') for t in times]
+    columns = ['tile_id'] + times_str
+    return(transfer_mode,columns)
 
-def read_csv(path,result,metadata,day,maxi_nb_tile):
+
+def read_csv(path,result,metadata,day,maxi_nb_tile,columns):
     '''
     Read a single CSV
     
@@ -147,12 +161,6 @@ def read_csv(path,result,metadata,day,maxi_nb_tile):
     nb_tiles:  number of cellules 100x100m
     24H: 96 time steps through each days
     '''
-    transfer_mode = path.split('.')[-2].split('_')[-1]
-    day_str = str(day)
-    day_str = datetime.strptime(day_str, '%Y%m%d')
-    times = [day_str + timedelta(minutes=15*i) for i in range(96)]
-    times_str = [t.strftime('%H:%M') for t in times]
-    columns = ['tile_id'] + times_str
 
     Tensors = []
     df = pd.read_csv(path, sep = ' ', names = columns).set_index(['tile_id'])
@@ -172,7 +180,7 @@ def read_csv(path,result,metadata,day,maxi_nb_tile):
         metadata[station]['tile_id'] = ids
     Tensors = torch.stack(Tensors,dim = 0)
 
-    return(Tensors,transfer_mode,metadata)
+    return(Tensors,metadata)
 
 def find_ids_within_epsilon(gdf1,gdf2,epsilon):
     gdf1 = gdf1.to_crs(epsg=2154)
@@ -208,9 +216,6 @@ def load_subway_shp(folder_path = '../../Data/keolis_data_2019-2020/'):
     ref_subway.crs = 'epsg:4326'
 
     return(ref_subway)
-
-
-
 
 def load_netmob_json(data_folder, geojson_path = 'Lyon.geojson'):
     ''' Load GeoJson, and then the spatial correspondence '''
@@ -256,11 +261,20 @@ def load_netmob_gdf(folder_path = '../../Data/NetMob/',data_folder = '../../Data
 if __name__ == '__main__':
     
     import pickle
+    import torch
 
     # Init: 
-    data_folder_path = '../../../data/'
-    save_folder = f"{data_folder_path}NetMob_tensor/"
-    netmob_data_folder_path = f"{data_folder_path}NetMob/"
+    if torch.cuda.is_available():
+        data_folder_path = '../../../../data/'
+        save_folder = f"{data_folder_path}NetMob_tensor/"
+        netmob_data_folder_path = f"{data_folder_path}NetMob/"
+        PATH_iris = f'{data_folder_path}lyon_iris_shapefile/'
+    else:
+        data_folder_path = '../../../data/'
+        save_folder = f"{data_folder_path}NetMob_tensor/"
+        netmob_data_folder_path = f"{data_folder_path}NetMob/"
+        PATH_iris = '../Data/lyon_iris_shapefile/'
+
 
     # Load Ref Subway: 
     ref_subway = load_subway_shp(folder_path = data_folder_path)
@@ -279,7 +293,7 @@ if __name__ == '__main__':
 
     # Load subway gdf adn NetMob gdf
     Netmob_gdf,working_zones = load_netmob_gdf(folder_path = netmob_data_folder_path,
-                                data_folder = '../Data/lyon_iris_shapefile/', 
+                                data_folder = PATH_iris, 
                                 geojson_path = 'Lyon.geojson',
                                 zones_path = 'lyon.shp')
     Netmob_gdf_dropped = Netmob_gdf.drop_duplicates(subset = ['tile_id'])  # Some Doubles are exis

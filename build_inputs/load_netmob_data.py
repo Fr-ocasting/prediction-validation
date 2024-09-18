@@ -84,6 +84,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
                            time_step_per_hour = dataset.time_step_per_hour,Weeks = args.W, Days = args.D, historical_len = args.H,step_ahead = args.step_ahead,minmaxnorm = True,dims =[0,3,4])
     NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,normalize)
 
+
     return(NetMob_ds)
 
 
