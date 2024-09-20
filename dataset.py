@@ -71,15 +71,15 @@ class TrainValidTest_Split_Normalize(object):
             test_dataset = None
 
         if normalizer is not None:
-            print('\n','Tackling Training Set')
+            #print('\n','Tackling Training Set')
             train_dataset.normalize(feature_vect = True)
 
             if hasattr(self,'first_valid'): 
-                print('\n','Tackling Validation Set')
+                #print('\n','Tackling Validation Set')
                 valid_dataset.normalize(feature_vect = True)
 
             if hasattr(self,'first_test'): 
-                print('\n','Tackling Testing Set')
+                #print('\n','Tackling Testing Set')
                 test_dataset.normalize(feature_vect = True)
 
         

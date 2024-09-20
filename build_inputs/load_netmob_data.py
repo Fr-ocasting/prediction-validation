@@ -1,7 +1,7 @@
 import torch
 import glob 
 import argparse
-
+import pickle
 # Relative path:
 import sys 
 import os 
@@ -74,6 +74,56 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
 
     else:
         netmob_T = torch.randn(dataset.length,40,2,8,8)  # (7400,40,67,22,22)
+        print("Load des données NetMob .pt impossible. Création d'un random Tensor")
+
+    print('\nInit NetMob Dataset: ', netmob_T.size())
+    print('Number of Nan Value: ',torch.isnan(netmob_T).sum())
+    print('Total Number of Elements: ', netmob_T.numel(),'\n')
+
+    NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = dataset.df_dates,
+                           time_step_per_hour = dataset.time_step_per_hour,Weeks = args.W, Days = args.D, historical_len = args.H,step_ahead = args.step_ahead,minmaxnorm = True,dims =[0,3,4])
+    NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,normalize)
+
+
+    return(NetMob_ds)
+
+
+def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
+                     trafic_apps = ['Uber', 'Google_Maps','Waze'],
+                     music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
+                     direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
+                     social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram'],
+                     normalize = True
+                     ):
+    '''Load NetMob Data:
+    outputs:
+    --------
+    # NetMob Tensor : [T,N,C,H,W]
+    # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
+    '''
+
+    selected_apps = ['Uber','Google_Maps','Spotify','Instagram']
+
+     #T00[[0,1,6]].sum(0)
+    if torch.cuda.is_available():
+        name_save = 'NetMob_DL_video_Lyon'
+        save_path = '../../../../data'
+        netmob_T = torch.load(f'{folder_path}{name_save}.pt')  # [68, 7392, 263, 287]
+        apps = pickle.load(open(f"{save_path}/{name_save}_APP.pkl",'rb'))
+        trafic_pos = find_positions(selected_apps,apps)
+        netmob_T = netmob_T[trafic_pos]    # [len(selected_apps), 7392, 263, 287]     -> here len(selected_apps) = 4
+
+        # Re-organize Tensor
+        netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))
+
+        # Replace problematic time-slots:
+        netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+
+        # Keep only time-slots associated to the dataset:
+        if dataset.time_slot_limits is not None: netmob_T = netmob_T[dataset.time_slot_limits]
+
+    else:
+        netmob_T = torch.randn(dataset.length,4,2,22,22)  # (7400,4,22,22)
         print("Load des données NetMob .pt impossible. Création d'un random Tensor")
 
     print('\nInit NetMob Dataset: ', netmob_T.size())
