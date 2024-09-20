@@ -144,8 +144,8 @@ def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,v
         
 
         NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns, normalize = normalize )
-        C_netmob = NetMob_ds.U_train.size(2)  # [B,N,C,H,W,L]
-        L = NetMob_ds.U_train.size(5)
+        C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==5 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]
+        L = NetMob_ds.U_train.size(-1)
 
         # FeatureExtractor_ResNetInspired
         if vision_model_name == 'FeatureExtractor_ResNetInspired':
