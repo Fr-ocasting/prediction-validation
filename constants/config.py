@@ -188,6 +188,13 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
         config['out_dim'] = out_dim
     # ...
 
+    # Vision Model:
+    '''
+    if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
+    if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
+    '''
+    config['vision_input_type'] = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'  
+
     return(config)
     
 

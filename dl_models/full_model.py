@@ -53,7 +53,13 @@ class full_model(nn.Module):
         super(full_model,self).__init__()
 
         # === Vision NetMob ===
-        self.netmob_vision =  load_vision_model(args.args_vision) if 'netmob' in args.contextual_positions.keys() else None  
+         if 'netmob' in args.contextual_positions.keys():
+            self.netmob_vision = load_vision_model(args.args_vision)
+            self.vision_input_type = args.args_vision.vision_input_type
+        
+        else:
+            self.netmob_vision =  None
+            self.vision_input_type = None
 
         # === TE ===
         self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
@@ -93,20 +99,27 @@ class full_model(nn.Module):
 
         # if NetMob data is on :
         if self.netmob_vision is not None: 
-
-            # [B,N,C,H,W,L]
             netmob_video_batch = contextual[self.pos_netmob]
-            B,N,C_netmob,H,W,L = netmob_video_batch.size()
 
-            # Reshape:  [B,N,C,H,W,L] -> [B*N,C,H,W,L]
-            netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
+            if self.vision_input_type = 'image_per_stations':
+                # [B,N,C,H,W,L]
+                B,N,C_netmob,H,W,L = netmob_video_batch.size()
 
-            # Forward : [B*N,C,H,W,L] ->  [B*N,Z] 
-            extracted_feature = self.netmob_vision(netmob_video_batch)
+                # Reshape:  [B,N,C,H,W,L] -> [B*N,C,H,W,L]
+                netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
 
-            # Reshape  [B*N,Z] -> [B,C,N,Z]
-            extracted_feature = extracted_feature.reshape(B,N,-1)
-            extracted_feature = extracted_feature.unsqueeze(1)
+                # Forward : [B*N,C,H,W,L] ->  [B*N,Z] 
+                extracted_feature = self.netmob_vision(netmob_video_batch)
+
+                # Reshape  [B*N,Z] -> [B,C,N,Z]
+                extracted_feature = extracted_feature.reshape(B,N,-1)
+                extracted_feature = extracted_feature.unsqueeze(1)
+            
+            elif self.vision_input_type = 'image_per_stations':
+                print('blabla')
+                finir de remplir 
+            else:
+                raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
 
             # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
             x = torch.cat([x,extracted_feature],dim = -1)
