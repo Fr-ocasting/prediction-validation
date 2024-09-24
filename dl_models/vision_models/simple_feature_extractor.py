@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-
+torch.autograd.set_detect_anomaly(True)
+import math 
 # Relative path:
 import sys 
 import os 
@@ -13,15 +14,72 @@ if grandparent_dir not in sys.path:
 # Personnal import:
 from dl_models.vision_models.ResNet_2_1D import trivial_block_2PLus1D
 
+class ResBlock_2Plus1D(nn.Module):
+    def __init__(self, c_in, c_out):
+        super(ResBlock_2Plus1D, self).__init__()
+        self.conv_block = trivial_block_2PLus1D(c_in, c_out)
+        if c_in != c_out:
+            self.downsample = nn.Conv3d(c_in, c_out, kernel_size=1,bias = False)
+        else:
+            self.downsample = None
+
+        self.bn = nn.BatchNorm3d(c_out)
+        self.relu = nn.ReLU()
+    def forward(self, x):
+        identity = x
+        out = self.conv_block(x)
+        if self.downsample is not None:
+            identity = self.downsample(identity)
+            identity = self.bn(identity)
+        out = out+ identity
+        out = self.relu(out)
+        return out
+
+class FeatureExtractor_ResNetInspired_bis(nn.Module):
+    def __init__(self, c_in=4, out_dim=64, N=40):
+        super(FeatureExtractor_ResNetInspired_bis, self).__init__()
+        self.N = N
+        self.z_dim = out_dim
+
+        # Calcul dynamique de N_h et N_w
+        N_h = int(math.sqrt(N))
+        N_w = (N + N_h - 1) // N_h  # Division entière supérieure pour couvrir tous les nœuds
+        self.N_actual = N_h * N_w  # Nombre réel de nœuds après le pooling
+
+        # Définition des couches
+        self.init_avgpool = nn.MaxPool3d((2,2,1))
+        self.init_conv = trivial_block_2PLus1D(c_in, 32)
+        self.layer1 = ResBlock_2Plus1D(32, 64)
+        self.layer2 = ResBlock_2Plus1D(64, 128)
+        self.layer3 = ResBlock_2Plus1D(128, self.z_dim)
+        self.avgpool = nn.AdaptiveAvgPool3d((N_h, N_w, 1))
+        
+
+    def forward(self, x):
+        # x: [B, C, H, W, L]
+        if (x.size(2) > 100)&(x.size(3) > 100):
+            x = self.init_avgpool(x)  # reduce image dim
+        x = self.init_conv(x)   # [B, 32, H, W, L]
+        x = self.layer1(x)      # [B, 64, H, W, L]
+        x = self.layer2(x)      # [B, 128, H, W, L]
+        x = self.layer3(x)      # [B, z_dim, H, W, L]
+        x = self.avgpool(x)     # [B, z_dim, N_h, N_w, 1]
+        x = x.view(x.size(0), self.N_actual, self.z_dim)  # [B, N_actual, Z]
+        x = x[:, :self.N, :]    # Sélection des N premiers nœuds si N_actual > N
+        x = x.view(x.size(0), -1)  # [B, z_dim* N]
+        return x 
 
 class FeatureExtractor_ResNetInspired(nn.Module):
     def __init__(self,c_in,h_dim,L):
         super(FeatureExtractor_ResNetInspired,self).__init__()
         out_dim = L*h_dim//2
+
+        self.init_avgpool = nn.MaxPool3d((2,2,1))
         self.block1 = trivial_block_2PLus1D(c_in,h_dim)
         self.maxpool = nn.MaxPool3d(kernel_size=3, stride=(2,2,1), padding=(0,0,1))
         self.block2 = trivial_block_2PLus1D(h_dim,out_dim)
         self.avgpool = nn.AdaptiveAvgPool3d((1,1,1))
+        
     
     def forward(self,x):
         '''
@@ -33,6 +91,8 @@ class FeatureExtractor_ResNetInspired(nn.Module):
         --------
         2-th order tensor [B,out_dim]
         '''
+        if (x.size(2) > 100)&(x.size(3) > 100):
+            x = self.init_avgpool(x)  # reduce image dim
         x = self.block1(x)
         x = self.maxpool(x)
         x = self.block2(x)

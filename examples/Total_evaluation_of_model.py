@@ -20,6 +20,13 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 
 
+def HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name,epochs_for_valid):
+    # HP Tuning
+    analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name)
+
+    # K-fold validation with best config: 
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs,folder = 'save/HyperparameterTuning')
+
 
 
 if __name__ == '__main__':
@@ -37,20 +44,20 @@ if __name__ == '__main__':
 
     args = update_modif(args)
     coverage = match_period_coverage_with_netmob(file_name)
+    
+    args.batch_size = 64  #otherwise 128 if cuda.is_available()
+    
     # Use Small ds for fast training: 
     #small_ds = False
+    #args.quick_ds = False
     #(coverage,args) = get_small_ds(small_ds,coverage,args)
 
     # Choose DataSet and VisionModel if needed: 
+    
     dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
-    vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
-
-
-    # HP Tuning
-    analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name)
-
-    # K-fold validation with best config: 
-    epochs = 500
-
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs,folder = 'save/HyperparameterTuning')
+    args.vision_input_type = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'
+    vision_model_name = 'FeatureExtractor_ResNetInspired'    # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor', # 'AttentionFeatureExtractor'# 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
+    
+    epochs_for_valid = 500
+    HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name,epochs_for_valid)
 

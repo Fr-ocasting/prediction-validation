@@ -360,6 +360,7 @@ class Trainer(object):
         if self.training_mode=='train':
             self.chrono.forward()
 
+        # Plus clean : with autocast(enabled = self.args.mixed_precision):
         if self.args.mixed_precision:
             with autocast():
                 pred = self.model(x_b,contextual_b)

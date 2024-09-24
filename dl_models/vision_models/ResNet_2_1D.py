@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+torch.autograd.set_detect_anomaly(True)
 # Relative path:
 import sys 
 import os 
@@ -25,7 +25,7 @@ class trivial_block_2PLus1D(nn.Module):
         self.bn1_s = nn.BatchNorm3d(h_dim)
         self.conv1_t = conv1x1x3(h_dim, out_dim)
         self.bn1_t = nn.BatchNorm3d(out_dim)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
         self.activation = activation
 
     def forward(self,x):

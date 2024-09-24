@@ -134,4 +134,4 @@ class KFoldSplitter(object):
             # ...
 
             K_subway_ds.append(subway_ds_tmps)
-        return K_subway_ds,dic_class2rpz
+        return K_subway_ds,dic_class2rpz,args

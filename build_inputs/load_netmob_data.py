@@ -28,9 +28,15 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
     values_after = tensor[end:end+1]
 
     mean_values = (values_before + values_after) / 2
-    mean_values = mean_values.repeat(4,1,1,1,1)
 
-    tensor[start:end,:,:,:,:] = mean_values
+    if tensor.dim() == 5:
+        mean_values = mean_values.repeat(4,1,1,1,1)
+        tensor[start:end,:,:,:,:] = mean_values
+    elif tensor.dim() == 4:
+        mean_values = mean_values.repeat(4,1,1,1)
+        tensor[start:end,:,:,:] = mean_values
+    else:
+        raise NotImplementedError('dim != 4 or != 5 has not been implemented')
     return tensor
 
 def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
@@ -51,24 +57,28 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
     dims = [0,3,4]
      
     if torch.cuda.is_available():
-        apps=  glob.glob(f'{folder_path}NetMob_tensor/[!station]*.pt')
-        trafic_pos = find_positions(selected_apps,apps)
-        trafic_pos = [2*k for k in trafic_pos] + [2*k+1 for k in trafic_pos]
-        assert len(apps) == 136//2 # Tensor.size(1) =nb_mode_transfer x nb_apps =2*68  = 136
-
-
-        netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
-        '''
-        if args.time_slot_limit is not None:
-            netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:args.time_slot_limit,trafic_pos,:,:] for station in columns])
+        if args.quick_ds :
+            netmob_T = torch.randn(dataset.length,40,4,22,22)
+            print('Small NetMob_T ',netmob_T.size())
         else:
-            netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
-        '''
-            
-        netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))
+            apps=  glob.glob(f'{folder_path}NetMob_tensor/[!station]*.pt')
+            trafic_pos = find_positions(selected_apps,apps)
+            trafic_pos = [2*k for k in trafic_pos] + [2*k+1 for k in trafic_pos]
+            assert len(apps) == 136//2 # Tensor.size(1) =nb_mode_transfer x nb_apps =2*68  = 136
 
-        # Replace problematic time-slots:
-        netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+
+            netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
+            '''
+            if args.time_slot_limit is not None:
+                netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:args.time_slot_limit,trafic_pos,:,:] for station in columns])
+            else:
+                netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
+            '''
+                
+            netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))
+
+            # Replace problematic time-slots:
+            netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
 
         # Keep only time-slots associated to the dataset:
         if dataset.time_slot_limits is not None: netmob_T = netmob_T[dataset.time_slot_limits]
@@ -96,35 +106,33 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
     # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
     '''
 
-    selected_apps = ['Uber','Google_Maps','Spotify','Instagram']
+    selected_apps = ['Uber','Google_Maps','Spotify','Instagram'] #['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
     dims = [0,2,3]
 
-     #T00[[0,1,6]].sum(0)
     if torch.cuda.is_available():
-        name_save = 'NetMob_DL_video_Lyon'
-        save_path = '../../../../data'
-        netmob_T = torch.load(f'{folder_path}{name_save}.pt')  # [68, 7392, 263, 287]
-        apps = pickle.load(open(f"{save_path}/{name_save}_APP.pkl",'rb'))
-        trafic_pos = find_positions(selected_apps,apps)
-        netmob_T = netmob_T[trafic_pos]    # [C, 7392, 263, 287]     -> here C = len(selected_apps) =  4
+        if args.quick_ds :
+            netmob_T = torch.randn(dataset.length,4,80,80)
+            print('Small NetMob_T ',netmob_T.size())
+            
+        else:
+            apps =  pickle.load(open(f"{folder_path}NetMob_DL_video_Lyon_APP.pkl","rb"))
+            trafic_pos = find_positions(selected_apps,apps)
+            netmob_T = torch.load(f"{folder_path}NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]
+            netmob_T = netmob_T.permute(1,0,2,3)
 
-        # Re-organize Tensor
-        netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))  #[7392,C, 263, 287]
-
-        # Replace problematic time-slots:
-        netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+            # Replace problematic time-slots:
+            netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
 
         # Keep only time-slots associated to the dataset:
         if dataset.time_slot_limits is not None: netmob_T = netmob_T[dataset.time_slot_limits]
 
     else:
-        netmob_T = torch.randn(dataset.length,4,2,22,22)  # (7392,4,22,22)
+        netmob_T = torch.randn(dataset.length,4,22,22)  # (7392,4,22,22)
         print("Load des données NetMob .pt impossible. Création d'un random Tensor")
 
     NetMob_ds = load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset)
 
     return(NetMob_ds)
-
 
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
 
@@ -153,8 +161,8 @@ def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,v
         else:
             raise NotImplementedError(f'{vision_input_type} has not been implemented')
 
-        C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==5 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
-        L = NetMob_ds.U_train.size(-1)
+        C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
+        H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
 
         # Define Namespace 'args_vision': 
         args_vision = {'model_name':vision_model_name,'input_type':vision_input_type}
@@ -162,6 +170,9 @@ def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,v
         # FeatureExtractor_ResNetInspired
         if vision_model_name == 'FeatureExtractor_ResNetInspired':
             args_vision.update({'c_in' : C_netmob, 'h_dim': 128, 'L':L}) # out_dim = L*h_dim//2
+        
+        elif vision_model_name == 'FeatureExtractor_ResNetInspired_bis':
+            args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
 
         # MinimalFeatureExtractor  
         elif vision_model_name == 'MinimalFeatureExtractor':
@@ -171,6 +182,15 @@ def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,v
         # ImageAvgPooling
         elif vision_model_name == 'ImageAvgPooling':
             args_vision.update({'out_dim' : L}) # out_dim = L
+
+        elif vision_model_name == 'FeatureExtractorEncoderDecoder':  # (c_in=3, z_dim=64, N=40)
+            args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'H':H,'W':W,L:'L'}) 
+
+        elif vision_model_name == 'AttentionFeatureExtractor': # (c_in=3, z_dim=64, N=40)
+            args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
+
+        elif vision_model_name == 'VideoFeatureExtractorWithSpatialTemporalAttention': # (c_in=3, out_dim=64, N=40, d_model=128))
+            args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'd_model':128}) 
 
         else:
             raise NotImplementedError(f"Model vision {vision_model_name} has not been implemented")

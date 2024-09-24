@@ -3,7 +3,7 @@ from dl_models.full_model import full_model
 from plotting.plotting_bokeh import plot_bokeh
 from trainer import Trainer
 from utils.utilities_DL import choose_optimizer, load_scheduler,get_loss
-
+from K_fold_validation.K_fold_validation import KFoldSplitter
 
 # =======================================================================================================================
 # =======================================================================================================================
@@ -24,7 +24,14 @@ def load_optimizer_and_scheduler(model,args):
 def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name):
 
     # Load DataSet, DataLoader, Args :
-    (subway_ds,NetMob_ds,args,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
+    folds = [0]
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_subway_ds,dic_class2rpz,args = K_fold_splitter.split_k_fold()
+    subway_ds = K_subway_ds[0]
+    # ...
+    '''
+    (subway_ds,_,args,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
+    '''
 
     # Load Model:
     model = load_model(args,dic_class2rpz)
@@ -37,14 +44,17 @@ def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_mod
 
 def evaluate_config(dataset_names,folder_path,file_name,args,coverage,vision_model_name,mod_plot):
     # Load Model, Optimizer, Scheduler:
+
     model,subway_ds,loss_function,optimizer,scheduler,args,dic_class2rpz = load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name)
+    normalizer = subway_ds.normalizer
+    df_verif_test = subway_ds.tensor_limits_keeper.df_verif_test
     # Load trainer: 
     trainer = Trainer(subway_ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = True)# Ajoute dans trainer, if calibration_prop is not None .... et on modifie le dataloader en ajoutant un clabration set
     # Train Model 
     trainer.train_and_valid(mod = 1000,mod_plot = mod_plot)  # Récupère les conformity scores sur I1, avec les estimations faites precedemment 
 
-    pi,pi_cqr = plot_bokeh(trainer,args)
-    return(trainer,model,args,pi,pi_cqr)
+    pi,pi_cqr = plot_bokeh(trainer,normalizer,df_verif_test,args)
+    return(trainer,model,normalizer,df_verif_test,args,pi,pi_cqr)
 
 # =======================================================================================================================
 # =======================================================================================================================

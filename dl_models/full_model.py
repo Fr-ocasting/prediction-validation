@@ -20,7 +20,11 @@ from dl_models.RNN_based_model import RNN
 from dl_models.STGCN import STGCN
 from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.dcrnn_model import DCRNNModel
-from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling
+from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling,FeatureExtractor_ResNetInspired_bis
+from dl_models.vision_models.AttentionFeatureExtractor import AttentionFeatureExtractor
+from dl_models.vision_models.FeatureExtractorEncoderDecoder import FeatureExtractorEncoderDecoder
+from dl_models.vision_models.VideoFeatureExtractorWithSpatialTemporalAttention import VideoFeatureExtractorWithSpatialTemporalAttention
+
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
 
@@ -43,6 +47,23 @@ def load_vision_model(args_vision):
     elif args_vision.model_name == 'FeatureExtractor_ResNetInspired':
         filered_args = filter_args(FeatureExtractor_ResNetInspired, args_vision)
         return FeatureExtractor_ResNetInspired(**filered_args)
+                                   
+    elif args_vision.model_name == 'FeatureExtractor_ResNetInspired_bis':
+        filered_args = filter_args(FeatureExtractor_ResNetInspired_bis, args_vision)
+        return FeatureExtractor_ResNetInspired_bis(**filered_args)
+
+    elif args_vision.model_name == 'AttentionFeatureExtractor':
+        filered_args = filter_args(AttentionFeatureExtractor, args_vision)
+        return AttentionFeatureExtractor(**filered_args)
+
+    elif args_vision.model_name == 'VideoFeatureExtractorWithSpatialTemporalAttention':
+        filered_args = filter_args(VideoFeatureExtractorWithSpatialTemporalAttention, args_vision)
+        return VideoFeatureExtractorWithSpatialTemporalAttention(**filered_args)
+
+    elif args_vision.model_name == 'FeatureExtractorEncoderDecoder':
+        filered_args = filter_args(FeatureExtractorEncoderDecoder, args_vision)
+        return FeatureExtractorEncoderDecoder(**filered_args)
+                                   
     else:
         NotImplementedError(f"Model {args_vision.model_name} has not been implemented")
 
@@ -53,10 +74,12 @@ class full_model(nn.Module):
         super(full_model,self).__init__()
 
         # === Vision NetMob ===
-         if 'netmob' in args.contextual_positions.keys():
+        if 'netmob' in args.contextual_positions.keys():
+            args.args_vision.N = args.N
+            args.args_vision.H = args.H
+            args.args_vision.W = args.W
             self.netmob_vision = load_vision_model(args.args_vision)
-            self.vision_input_type = args.args_vision.vision_input_type
-        
+            self.vision_input_type = args.vision_input_type
         else:
             self.netmob_vision =  None
             self.vision_input_type = None
@@ -67,29 +90,20 @@ class full_model(nn.Module):
         # === Trafic Model ===
         self.core_model = load_model(args,dic_class2rpz)
 
+        self.N = args.N
+
 
         # Add positions for each contextual data:
         if 'calendar' in args.contextual_positions.keys(): 
             self.pos_calendar = args.contextual_positions['calendar']
         if 'netmob' in args.contextual_positions.keys(): 
             self.pos_netmob = args.contextual_positions['netmob']
-
         if 'subway_in' in args.dataset_names :
             self.remove_trafic_inputs = False
         else:
             self.remove_trafic_inputs = True
             print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
         # ...
-
-    def foward_netmob(self,netmob_video_batch):
-        ''' Foward within model and then reshape to  [B,C,N,Z]'''
-        extracted_feature = self.netmob_vision(netmob_video_batch)
-
-        # Reshape  [B*N,Z] -> [B,C,N,Z]
-        extracted_feature = extracted_feature.reshape(B,N,-1)
-        extracted_feature = extracted_feature.unsqueeze(1)
-
-        return extracted_feature
 
 
     def foward_image_per_stations(self,netmob_video_batch):
@@ -100,7 +114,11 @@ class full_model(nn.Module):
         netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
 
         # Forward : [B*N,C,H,W,L] ->  [B,C,N,Z]
-        extracted_feature = foward_netmob(self,netmob_video_batch)
+        extracted_feature = self.netmob_vision(netmob_video_batch)
+
+        # Reshape  [B*N,Z] -> [B,C,N,Z]
+        extracted_feature = extracted_feature.reshape(B,self.N,-1)
+        extracted_feature = extracted_feature.unsqueeze(1)
 
         return extracted_feature
 
@@ -108,8 +126,16 @@ class full_model(nn.Module):
         ''' Foward for input shape [B,C,H,W,L]'''
         B,C_netmob,H,W,L = netmob_video_batch.size()
 
-        # Forward : [B,C,H,W,L] ->  [B,C,N,Z]
-        extracted_feature = foward_netmob(self,netmob_video_batch)
+        # Forward : [B,C,H,W,L] ->  [B,N*Z]
+        extracted_feature = self.netmob_vision(netmob_video_batch)
+
+        # [B,N*Z] ->  [B,N,Z]
+        B,NZ = extracted_feature.size()
+        Z = NZ//self.N
+        extracted_feature = extracted_feature.view(B,self.N,Z) 
+        # ...
+
+        extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
 
         return extracted_feature
 
@@ -129,15 +155,14 @@ class full_model(nn.Module):
             if x.dim() == 3:
                 x = x.unsqueeze(1)
 
-
         # if NetMob data is on :
         if self.netmob_vision is not None: 
             netmob_video_batch = contextual[self.pos_netmob]
 
-            if self.vision_input_type = 'image_per_stations':
+            if self.vision_input_type == 'image_per_stations':
                 extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
         
-            elif self.vision_input_type = 'unique_image_through_lyon':
+            elif self.vision_input_type == 'unique_image_through_lyon':
                 extracted_feature =  self.forward_unique_image_through_lyon(netmob_video_batch)
  
             else:
