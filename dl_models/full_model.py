@@ -81,6 +81,39 @@ class full_model(nn.Module):
             print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
         # ...
 
+    def foward_netmob(self,netmob_video_batch):
+        ''' Foward within model and then reshape to  [B,C,N,Z]'''
+        extracted_feature = self.netmob_vision(netmob_video_batch)
+
+        # Reshape  [B*N,Z] -> [B,C,N,Z]
+        extracted_feature = extracted_feature.reshape(B,N,-1)
+        extracted_feature = extracted_feature.unsqueeze(1)
+
+        return extracted_feature
+
+
+    def foward_image_per_stations(self,netmob_video_batch):
+        ''' Foward for input shape [B,C,N,H,W,L]'''
+        B,N,C_netmob,H,W,L = netmob_video_batch.size()
+
+        # Reshape:  [B,N,C,H,W,L] -> [B*N,C,H,W,L]
+        netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
+
+        # Forward : [B*N,C,H,W,L] ->  [B,C,N,Z]
+        extracted_feature = foward_netmob(self,netmob_video_batch)
+
+        return extracted_feature
+
+    def forward_unique_image_through_lyon(self,netmob_video_batch):
+        ''' Foward for input shape [B,C,H,W,L]'''
+        B,C_netmob,H,W,L = netmob_video_batch.size()
+
+        # Forward : [B,C,H,W,L] ->  [B,C,N,Z]
+        extracted_feature = foward_netmob(self,netmob_video_batch)
+
+        return extracted_feature
+
+
     def forward(self,x,contextual = None):
         ''' 
         Args:
@@ -102,22 +135,11 @@ class full_model(nn.Module):
             netmob_video_batch = contextual[self.pos_netmob]
 
             if self.vision_input_type = 'image_per_stations':
-                # [B,N,C,H,W,L]
-                B,N,C_netmob,H,W,L = netmob_video_batch.size()
-
-                # Reshape:  [B,N,C,H,W,L] -> [B*N,C,H,W,L]
-                netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
-
-                # Forward : [B*N,C,H,W,L] ->  [B*N,Z] 
-                extracted_feature = self.netmob_vision(netmob_video_batch)
-
-                # Reshape  [B*N,Z] -> [B,C,N,Z]
-                extracted_feature = extracted_feature.reshape(B,N,-1)
-                extracted_feature = extracted_feature.unsqueeze(1)
-            
-            elif self.vision_input_type = 'image_per_stations':
-                print('blabla')
-                finir de remplir 
+                extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
+        
+            elif self.vision_input_type = 'unique_image_through_lyon':
+                extracted_feature =  self.forward_unique_image_through_lyon(netmob_video_batch)
+ 
             else:
                 raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
 

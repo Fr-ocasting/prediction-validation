@@ -141,7 +141,6 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
 
 
-
 def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name,normalize = True):
 
     vision_input_type = args.vision_input_type
@@ -162,16 +161,16 @@ def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,v
 
         # FeatureExtractor_ResNetInspired
         if vision_model_name == 'FeatureExtractor_ResNetInspired':
-            args_vision.update({'c_in' : C_netmob, 'h_dim': 128, 'L':L})
+            args_vision.update({'c_in' : C_netmob, 'h_dim': 128, 'L':L}) # out_dim = L*h_dim//2
 
         # MinimalFeatureExtractor  
         elif vision_model_name == 'MinimalFeatureExtractor':
             h_dim = 16
-            args_vision.update({'c_in' : C_netmob,'h_dim': h_dim, 'L' : L})
+            args_vision.update({'c_in' : C_netmob,'h_dim': h_dim, 'L' : L}) # out_dim = L*h_dim//2
 
         # ImageAvgPooling
         elif vision_model_name == 'ImageAvgPooling':
-            args_vision.update({'out_dim' : L})
+            args_vision.update({'out_dim' : L}) # out_dim = L
 
         else:
             raise NotImplementedError(f"Model vision {vision_model_name} has not been implemented")

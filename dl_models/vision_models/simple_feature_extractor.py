@@ -63,7 +63,7 @@ class MinimalFeatureExtractor(nn.Module):
 
         Outputs:
         --------
-        2-th order tensor [B,L]
+        2-th order tensor [B,Z]=[B,L*h_dim//2]
         '''
         x = x.permute(0,1,4,2,3) # [B,C,H,W,L]  -> [B,C,L,H,W]
 
