@@ -290,15 +290,15 @@ class Trainer(object):
                 self.performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
 
                 # Keep Track on Test Metrics
-                Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test')
+                Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False)
                 test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = ['mse','mae','mape'])
-                performance.update({'test_metrics': test_metrics})
+                self.performance.update({'test_metrics': test_metrics})
                 # ...
 
                 # Keep Track on Valid Metrics:
-                Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid')
+                Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid',track_loss=False)
                 valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = ['mse','mae','mape'])
-                performance.update({'valid_metrics': valid_metrics})    
+                self.performance.update({'valid_metrics': valid_metrics})    
                 # ...
                 
                 self.save_best_model(checkpoint,epoch,self.performance)
@@ -318,9 +318,10 @@ class Trainer(object):
 
         if (not(self.args.ray)):
             self.chrono.save_model()
-            self.performance = {'valid_loss': self.best_valid, 'epoch':self.performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
+            self.performance = {'valid_loss': self.best_valid,'valid_metrics':self.performance['valid_metrics'], 'test_metrics':self.performance['test_metrics'],
+                                 'epoch':self.performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
             self.save_best_model(checkpoint,epoch,self.performance)
-            print(f"Training Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+            print(f"\nTraining Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
             self.chrono.save_model()
 
         self.chrono.stop()
@@ -434,7 +435,7 @@ class Trainer(object):
     
         return(Preds,Y_true,T_labels,nb_samples,loss_epoch)
 
-    def loop_epoch(self):
+    def loop_epoch(self,track_loss=True):
         if self.training_mode=='valid': self.chrono.validation()
         #if self.training_mode=='cal': self.chrono.calibration()
         
@@ -451,7 +452,8 @@ class Trainer(object):
         if self.training_mode=='valid':self.chrono.validation()
         #if self.training_mode=='cal': self.chrono.calibration()
 
-        self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
+        if track_loss:
+            self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
         return Preds,Y_true,T_labels
 
     def conformal_calibration(self,alpha,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
@@ -503,7 +505,7 @@ class Trainer(object):
             self.optimizer.step()
         return(loss)
     
-    def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None):
+    def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None,track_loss = False):
         self.training_mode = training_mode
         if allow_dropout:
             self.model.train()
@@ -511,12 +513,12 @@ class Trainer(object):
             self.model.eval()
 
         with torch.no_grad():
-            Preds,Y_true,T_labels = self.loop_epoch()
+            Preds,Y_true,T_labels = self.loop_epoch(track_loss)
 
         return(Preds,Y_true,T_labels)
 
-    def testing(self,normalizer, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None): #metrics= ['mse','mae']
-        (Preds,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels)  # Get Normalized Pred and Y_true
+    def testing(self,normalizer, allow_dropout = False, training_mode = 'test',X = None, Y_true = None, T_labels = None,track_loss = False): #metrics= ['mse','mae']
+        (Preds,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels,track_loss)  # Get Normalized Pred and Y_true
         Preds = Preds.detach().cpu()
         Y_true = Y_true.detach().cpu()
         T_labels = T_labels.detach().cpu()
