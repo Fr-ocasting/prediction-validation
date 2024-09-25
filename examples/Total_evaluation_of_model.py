@@ -20,7 +20,7 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 
 
-def HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name,epochs_for_valid):
+def HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name):
     # HP Tuning
     analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name)
 
@@ -57,7 +57,6 @@ if __name__ == '__main__':
     dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
     args.vision_input_type = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'
     vision_model_name = 'FeatureExtractor_ResNetInspired'    # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor', # 'AttentionFeatureExtractor'# 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
-    
-    epochs_for_valid = 500
-    HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name,epochs_for_valid)
+
+    HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name)
 
