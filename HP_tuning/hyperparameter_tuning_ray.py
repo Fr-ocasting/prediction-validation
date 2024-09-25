@@ -29,11 +29,18 @@ def HP_modification(config,args):
         if key in forbidden_keys:
             raise ValueError(f"Key {key} cant' be modified while loading trainer for HP-tuning cause it has also impact on dataloader which is already defined")
         else:
-            if hasattr(args, key):
+            if key == 'scheduler':
+                if config['scheduler']['scheduler']:
+                    for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
+                         setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+
+            elif hasattr(args, key):
                 setattr(args, key, value)
             elif 'vision_' in key:
                 key = key.replace('vision_', '')
                 setattr(args.args_vision,key,value)
+            else: 
+                raise ValueError(f"Key {key} issue")
     return(args)
 
 def load_trainer(config, dataset, args, dic_class2rpz):

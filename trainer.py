@@ -24,9 +24,11 @@ except :
 
 from profiler.profiler import print_memory_usage,get_cpu_usage
 from utils.save_results import results2dict, update_results_df, save_best_model_and_update_json, get_trial_id
+from utils.metrics import evaluate_metrics
 from PI.PI_object import PI_object
 from PI.PI_calibration import Calibrator
 from constants.paths import SAVE_DIRECTORY
+
 
 
 class MultiModelTrainer(object):
@@ -286,6 +288,19 @@ class Trainer(object):
                 self.chrono.save_model()
                 self.best_valid = self.valid_loss[-1]
                 self.performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
+
+                # Keep Track on Test Metrics
+                Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test')
+                test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = ['mse','mae','mape'])
+                performance.update({'test_metrics': test_metrics})
+                # ...
+
+                # Keep Track on Valid Metrics:
+                Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid')
+                valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = ['mse','mae','mape'])
+                performance.update({'valid_metrics': valid_metrics})    
+                # ...
+                
                 self.save_best_model(checkpoint,epoch,self.performance)
                 self.chrono.save_model()
 

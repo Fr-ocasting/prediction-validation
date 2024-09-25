@@ -57,6 +57,7 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,fol
     ## Split Tuning and Validation datasets:
     # ds_tuning = K_subway_ds[0]
     ds_validation = K_subway_ds[1:]
+    del K_subway_ds
 
     ## Train on the K-1 folds:
     valid_losses = []
