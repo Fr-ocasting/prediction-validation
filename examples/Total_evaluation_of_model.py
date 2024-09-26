@@ -12,51 +12,41 @@ if working_dir not in sys.path:
 # ...
 
 # Personnal import 
-from utils.utilities_DL import match_period_coverage_with_netmob
-from constants.config import get_args,update_modif
-from constants.paths import file_name
 from examples.HP_parameter_choice import hyperparameter_tuning
 from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
 
 
 
-def HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name):
+def HP_and_valid_one_config(args,coverage,dataset_names,epochs_HP_tuning,epochs_validation,vision_model_name):
     # HP Tuning
+    args.epochs = epochs_HP_tuning
     analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name)
 
     # K-fold validation with best config: 
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs,folder = 'save/HyperparameterTuning')
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs_validation,folder = 'save/HyperparameterTuning')
 
 
 
 if __name__ == '__main__':
 
-    # Load config
+    from file00 import *
+
     model_name = 'STGCN' #'CNN'
-    args = get_args(model_name)
+    args,coverage = get_args_coverage(model_name)
 
-    # Modification : 
-    args.K_fold = 5
+    # Modification :
+    args.K_fold = 6
     args.ray = True
-    args.W = 0  # IMPORTANT AVEC NETMOB
-    args.epochs = 100
-    args.loss_function_type = 'MSE' # 'quantile'
-
-    args = update_modif(args)
-    coverage = match_period_coverage_with_netmob(file_name)
+    #args.device = 'cuda:0'
     
-    args.batch_size = 64  #otherwise 128 if cuda.is_available()
-    
-    # Use Small ds for fast training: 
-    #small_ds = False
-    #args.quick_ds = False
-    #(coverage,args) = get_small_ds(small_ds,coverage,args)
-
-    # Choose DataSet and VisionModel if needed: 
-    
-    dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
+    # Init 
+    epochs_HP_tuning = 100 
+    epochs_validation = 500
     args.vision_input_type = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'
-    vision_model_name = 'FeatureExtractor_ResNetInspired'    # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor', # 'AttentionFeatureExtractor'# 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
+    dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
+    vision_model_name = 'FeatureExtractorEncoderDecoder'  # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
+    # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
 
-    HP_and_valid_one_config(args,coverage,dataset_names,vision_model_name)
 
+    # HP and evaluate K-fold best config
+    HP_and_valid_one_config(args,coverage,dataset_names,epochs_HP_tuning,epochs_validation,vision_model_name)

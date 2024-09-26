@@ -17,7 +17,7 @@ from high_level_DL_method import load_model,load_optimizer_and_scheduler
 import numpy as np 
 
 
-def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,folder = 'save/HyperparameterTuning'):
+def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None,folder = 'save/HyperparameterTuning'):
     '''
     1. Load the best config according to our HP-Tuning
     2. Apply the K-fold validation to split inputs
@@ -34,7 +34,8 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,fol
         args.test_prop = 0.2
         
         #Change/Set epochs: 
-        args.epochs = epochs
+        if epochs is not None:
+            args.epochs = epochs
         dataset_names = args.dataset_names 
         vision_model_name = args.args_vision.model_name if len(vars(args.args_vision))>0 else None
 
