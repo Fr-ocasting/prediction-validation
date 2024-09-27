@@ -48,7 +48,7 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     ## Define fixed Dataset K_fold split for each trial: 
     folds = list(np.arange(args.K_fold))
     K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
-    K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
+    K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     ''' Plotting if necessary: '''
     #from plotting.plotting import plot_k_fold_split
