@@ -164,7 +164,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     # Split proportion
     config['train_prop'] = 0.6
-    config['calib_prop'] = 0 #0.5
+    config['calib_prop'] = None #0.5 # None     # -->  Don't set 'calib_prop = 0' otherwise bug
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
