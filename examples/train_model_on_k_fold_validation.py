@@ -61,8 +61,18 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     del K_subway_ds
 
     ## Train on the K-1 folds:
+
+    #___ Init
     valid_losses = []
+    for training_mode in ['valid','test']:
+        for metric in ['mse','mae','mape']:
+            globals()[f'{training_mode}_{metric}'] = []
+
+    training_mode_list = ['valid','test']
+    metric_list = ['mse','mae','mape']
     df_loss = pd.DataFrame()
+
+    #___ Through each fold : 
     for fold,ds in enumerate(ds_validation):
         model = load_model(args,dic_class2rpz)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
@@ -71,14 +81,29 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
 
         df_loss[f"f{fold}_train_loss"] = trainer.train_loss
         df_loss[f"f{fold}_valid_loss"] = trainer.valid_loss
+
         valid_losses.append(trainer.performance['valid_loss'])
+
+        # Keep track on metrics :
+        for training_mode in training_mode_list:
+            for metric in metric_list:          
+                l = trainer.performance[f'{training_mode}_metrics'][metric]   
+                globals()[f'{training_mode}_{metric}'].append(l)
 
     ## Save Model: 
     row = {f"fold{k}": [loss] for k,loss in enumerate(valid_losses)}
     row.update({'mean' : [np.mean(valid_losses)]})
     df_results = pd.DataFrame.from_dict(row)
     df_results.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
+
+
     df_loss.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
+    
+    
+    df_metrics = pd.DataFrame(index = training_mode_list, 
+                            data = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
+                            )
+    df_metrics.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
 
 
 

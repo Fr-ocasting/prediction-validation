@@ -3,12 +3,14 @@ from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 import torch
 
-def get_scheduler(epochs,name='ASHA', metric= 'Loss_model', mode = 'min'):
-    grace_period = 15 if epochs>15 else epochs
+def get_scheduler(HP_max_epochs,name='ASHA', metric= 'Loss_model', mode = 'min',grace_period=2):
+    if HP_max_epochs>grace_period:
+         grace_period = HP_max_epochs
+
     if name == 'ASHA':
         scheduler = ASHAScheduler(metric=metric,
             mode=mode,
-            max_t=epochs,  # Maximum of run epochs 
+            max_t=HP_max_epochs,  # Maximum of run epochs 
             grace_period=grace_period,     # Minimum of run epochs 
             reduction_factor=2,  # 100*(1/reduction_factor) % of all trials are kept each time they are reduced
         )
@@ -94,7 +96,7 @@ def get_ray_config(args):
     metric = choose_ray_metric()
     points_to_evaluate = get_point_to_evaluate(args)   
 
-    scheduler = get_scheduler(args.epochs,args.ray_scheduler, metric= metric, mode = 'min')
+    scheduler = get_scheduler(args.HP_max_epochs,args.ray_scheduler, metric= metric, mode = 'min',grace_period = args.grace_period)
     search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = points_to_evaluate)
 
     resources_per_trial = {'gpu':1,'cpu':6} if torch.cuda.is_available() else {'cpu':1}
