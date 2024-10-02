@@ -5,6 +5,7 @@ from ray import tune
 # Relative path:
 import sys 
 import os 
+import json
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -12,7 +13,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal imports: 
-from trainer import Trainer
+from trainer import Trainer, report
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
 from utils.utilities_DL import get_loss,load_model_and_optimizer
@@ -86,8 +87,8 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
     # Put large objects into the Ray object store
     dataset_ref = ray.put(dataset) # Put dataset (large object) in a 'Ray Object Store'. Which mean a worker won't serealize it but access to a shared memory where dataset_ref is located for everyone.
     #dataset_ref = dataset
-    
-    
+
+
     def train_with_tuner(config):
         # Dereference the large objects within the worker
         dataset = ray.get(dataset_ref)
@@ -100,8 +101,8 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
         del dataset
         # gc.collect()  # Clean CPU memory
         # ...
-    
 
+    
     analysis = tune.run(
             lambda config: train_with_tuner(config),
             config=config,
@@ -110,16 +111,19 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
             max_concurrent_trials = max_concurrent_trials,
             scheduler = ray_scheduler,
             search_alg = ray_search_alg,
+            fail_fast = False, # Continue even with errors 
+            raise_on_failed_trial=False,
         )
     
-    # Get Trial ID
+    # Get Trial ID (Name of the entire HP-tuning)
     date_id = get_date_id()
     datasets_names = '_'.join(args.dataset_names)
     model_names = '_'.join([args.model_name,args.args_vision.model_name]) if hasattr(args.args_vision,'model_name')  else args.model_name
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
 
-    # Save HP-results
+    # Keep track only on successfull trials:
     analysis.results_df.to_csv(f'{working_dir}/{save_dir}/{trial_id}.csv')
+    
 
     # Keep track on other args:
     json_file = load_json_file(f'{working_dir}/{save_dir}')
