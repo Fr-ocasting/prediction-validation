@@ -60,15 +60,17 @@ def get_point_to_evaluate(args):
     else:
         raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {args.model_name} has not been implemented' ) 
 
-    point_to_evaluate.update({'dropout': 0.1,
-                                'lr': 5e-3,
-                                'momentum':0.99,
-                                'weight_decay':0.005,
-                                'scheduler' : True,
-                                'torch_scheduler_milestone' : 5,
-                                'torch_scheduler_gamma' :0.99,
-                                'torch_scheduler_lr_start_factor':0.2
-                                })
+    for point in point_to_evaluate:
+        point.update({'dropout': 0.1,
+                                    'lr': 5e-3,
+                                    'momentum':0.99,
+                                    'weight_decay':0.005,
+                                    'scheduler' : True,
+                                    'torch_scheduler_milestone' : 5,
+                                    'torch_scheduler_gamma' :0.99,
+                                    'torch_scheduler_lr_start_factor':0.2
+                                    })
+
     return(point_to_evaluate)
 
 
