@@ -4,7 +4,7 @@ from ray.tune.search.hyperopt import HyperOptSearch
 import torch
 
 def get_scheduler(HP_max_epochs,name='ASHA', metric= 'Loss_model', mode = 'min',grace_period=2):
-    if HP_max_epochs>grace_period:
+    if HP_max_epochs<=grace_period:
          grace_period = HP_max_epochs
 
     if name == 'ASHA':
