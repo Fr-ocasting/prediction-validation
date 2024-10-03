@@ -38,26 +38,12 @@ def get_search_alg(name,metric,mode,points_to_evaluate = None):
 
 def get_point_to_evaluate(args):
     if args.model_name == 'STGCN':
-        point_to_evaluate = [{
-            'Kt': 3,
+        point_to_evaluate = [
+            {'Kt': 4,
             'Ks': 2,
-            'graph_conv_type': 'graph_conv',
-            'gso_type': 'sym_norm_lap',
-            'adj_type':'dist',
-            'dropout': 0.2,
-            'lr': 1e-4,
-            'momentum':0.99,
-            'weight_decay':0.005},
-            {
-            'Kt': 4,
-            'Ks': 2,
-            'graph_conv_type': 'graph_conv',
-            'gso_type': 'rw_norm_lap',
-            'adj_type':'dist',
-            'dropout': 0.15,
-            'lr': 4e-4,
-            'momentum':0.87,
-            'weight_decay':0.05,
+            'graph_conv_type': 'cheb_graph_conv',
+            'gso_type': 'rw_renorm_lap',
+            'adj_type':'corr',
             'stblock_num':3,
             'act_fun':'gtu'}
             ]
@@ -69,16 +55,20 @@ def get_point_to_evaluate(args):
         }]
 
     elif args.model_name == 'DCRNN':
-        point_to_evaluate = [{
-            'torch_scheduler_milestone' : 40,
-            'torch_scheduler_gamma' :0.99,
-            'torch_scheduler_lr_start_factor' : 0.1,
-            
-
-        }]
+        point_to_evaluate = [{}]
 
     else:
         raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {args.model_name} has not been implemented' ) 
+
+    point_to_evaluate.update({'dropout': 0.1,
+                                'lr': 5e-3,
+                                'momentum':0.99,
+                                'weight_decay':0.005,
+                                'scheduler' : True,
+                                'torch_scheduler_milestone' : 5,
+                                'torch_scheduler_gamma' :0.99,
+                                'torch_scheduler_lr_start_factor':0.2
+                                })
     return(point_to_evaluate)
 
 

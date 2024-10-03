@@ -157,7 +157,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
 
     # Config DataSet:
     config['H'] = 6
-    config['W'] = 1
+    config['W'] = 0
     config['D'] = 1
     config['step_ahead'] = 1
     config['L'] = config['H']+config['W']+config['D']

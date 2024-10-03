@@ -151,9 +151,9 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
 def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name,normalize = True):
 
-    vision_input_type = args.vision_input_type
-
     if 'netmob' in dataset_names:
+        vision_input_type = args.vision_input_type
+
         if vision_input_type == 'image_per_stations':
             NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns, normalize = normalize)
         elif vision_input_type == 'unique_image_through_lyon':

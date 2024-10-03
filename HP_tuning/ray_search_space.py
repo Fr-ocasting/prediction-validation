@@ -7,7 +7,7 @@ def get_search_space_ray(args):
               "momentum" : tune.uniform(0.80, 0.99),
               "dropout" : tune.uniform(0,0.9),
               "scheduler" : tune.choice([{'scheduler':True,
-                                            "torch_scheduler_milestone": tune.qrandint(10, 300, 4),
+                                            "torch_scheduler_milestone": tune.quniform(1, 100, 1),
                                             "torch_scheduler_gamma": tune.uniform(0.985, 0.999),
                                             "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1), 
                                         },
