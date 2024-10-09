@@ -118,8 +118,8 @@ def find_nearest_date(date_series, date, inferior=True):
     
     return nearest_index,nearest_indice
 
-def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,single_station = False,coverage_period = None):
-    df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,single_station = single_station)
+def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,dataset_names,single_station = False,coverage_period = None):
+    df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,dataset_names,single_station = single_station)
     if coverage_period is not None:
         df = df.loc[coverage_period]
         invalid_dates = list(set(invalid_dates) & set(coverage_period))
@@ -127,7 +127,7 @@ def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahea
     print(f"coverage period: {df.index.min()} - {df.index.max()}")
     return(dataset,invalid_dates)
 
-def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
+def load_raw_data(abs_path,folder_path,file_name,dataset_names,single_station = False,):
     if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (file_name=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):
         subway_in = pd.read_csv(abs_path + folder_path+file_name,index_col = 0)
         subway_in.columns.name = 'Station'
@@ -136,6 +136,8 @@ def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
         subway_in = subway_in[['Ampère Victor Hugo']] if single_station else subway_in
 
         # Define Invalid Dates : 
+
+        # __ Subway-In invalid-dates:
         list_of_invalid_period = []
         list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
         list_of_invalid_period.append([datetime(2019,1,30,8,15),datetime(2019,1,30,10,30)])
@@ -144,6 +146,13 @@ def load_raw_data(abs_path,folder_path,file_name,single_station = False,):
         list_of_invalid_period.append([datetime(2019,6,26,11),datetime(2019,6,28,4)])
         list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
         list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
+
+        # __ NetMob invalid-dates:
+        if 'netmob' in dataset_names:
+            list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
+            list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
+            list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
+
 
         invalid_dates = []
         time_step_per_hour = (60*60)/(subway_in.iloc[1].name - subway_in.iloc[0].name).seconds

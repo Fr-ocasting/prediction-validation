@@ -42,7 +42,7 @@ def load_subway_in(file_name,args,coverage,normalize=True,time_slot_limits = Non
 
     '''
     dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path, 'data/',file_name,
-                                                        args.W,args.D,args.H,args.step_ahead,
+                                                        args.W,args.D,args.H,args.step_ahead,args.dataset_names,
                                                         single_station = False,coverage_period = coverage)
     dataset.time_slot_limits = time_slot_limits
     

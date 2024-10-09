@@ -19,7 +19,7 @@ def find_positions(applications, file_list):
     positions = []
     for app in applications:
         for idx, file_path in enumerate(file_list):
-            if app in file_path:
+            if app == file_path:
                 positions.append(idx)
     return positions
 
@@ -94,10 +94,11 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
 
 def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
-                     music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
+                     music_apps = ['Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
                      social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram'],
-                     normalize = True
+                     normalize = True,
+                     restricted = True
                      ):
     '''Load NetMob Data:
     outputs:
@@ -106,7 +107,7 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
     # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
     '''
 
-    selected_apps = ['Uber','Google_Maps','Spotify','Instagram'] #['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
+    selected_apps = ['Uber','Google_Maps','Instagram'] #['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
     dims = [0,2,3]
 
     if torch.cuda.is_available():
@@ -117,7 +118,10 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
         else:
             apps =  pickle.load(open(f"{folder_path}NetMob_DL_video_Lyon_APP.pkl","rb"))
             trafic_pos = find_positions(selected_apps,apps)
-            netmob_T = torch.load(f"{folder_path}NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]
+            if restricted:
+                netmob_T = torch.load(f"{folder_path}NetMob_DL_video_Lyon.pt")[trafic_pos,:,110:-40,85:-55]
+            else:
+                netmob_T = torch.load(f"{folder_path}NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]                
             netmob_T = netmob_T.permute(1,0,2,3)
 
             # Replace problematic time-slots:
