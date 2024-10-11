@@ -126,7 +126,7 @@ def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,m
         transfer_modes.append(transfer_mode)
 
         if (assert_transfer_mode is None) or (assert_transfer_mode == transfer_mode):
-            Tensors,metadata = read_csv(path,result,metadata,day,maxi_nb_tile,columns)
+            Tensors,metadata = read_csv(path,result,metadata,maxi_nb_tile,columns)
             Tensors_transfer.append(Tensors)
         
     Tensors_transfer = torch.stack(Tensors_transfer,dim=0) 
@@ -140,7 +140,7 @@ def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,m
 
 def get_information_from_path(path):
     transfer_mode = path.split('.')[-2].split('_')[-1]
-    day = txt_path.split('_')[-2]
+    day = path.split('_')[-2]
     day_str = str(day)
     day_str = datetime.strptime(day_str, '%Y%m%d')
     times = [day_str + timedelta(minutes=15*i) for i in range(96)]
@@ -149,7 +149,7 @@ def get_information_from_path(path):
     return(transfer_mode,columns)
 
 
-def read_csv(path,result,metadata,day,maxi_nb_tile,columns):
+def read_csv(path,result,metadata,maxi_nb_tile,columns):
     '''
     Read a single CSV
     
