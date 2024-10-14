@@ -103,6 +103,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['epochs'] = 100 if torch.cuda.is_available() else 2
     config['contextual_positions'] = {}
     config['quick_ds'] = False #if True then load small tensor with torch.randn(), instead of big one with pickle.load() and torch concat
+    config['netmob_transfer_mode'] = 'DL'
 
 
     # Optimization 

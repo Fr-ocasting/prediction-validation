@@ -19,7 +19,8 @@ def find_positions(applications, file_list):
     positions = []
     for app in applications:
         for idx, file_path in enumerate(file_list):
-            if app == file_path:
+            file_name = file_path.split('/')[-1].split('.')[0]
+            if app == file_name:
                 positions.append(idx)
     return positions
 
@@ -53,7 +54,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
     # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
     '''
 
-    selected_apps = trafic_apps # music_apps  # direct_messenger_apps # social_networks_apps
+    selected_apps = ['Google_Maps'] #trafic_apps # music_apps  # direct_messenger_apps # social_networks_apps
     dims = [0,3,4]
      
     if torch.cuda.is_available():
@@ -62,19 +63,24 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
             print('Small NetMob_T ',netmob_T.size())
         else:
             apps=  glob.glob(f'{folder_path}NetMob_tensor/[!station]*.pt')
+            print(apps[0])
             trafic_pos = find_positions(selected_apps,apps)
-            trafic_pos = [2*k for k in trafic_pos] + [2*k+1 for k in trafic_pos]
-            assert len(apps) == 136//2 # Tensor.size(1) =nb_mode_transfer x nb_apps =2*68  = 136
-
-
-            netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
-            '''
-            if args.time_slot_limit is not None:
-                netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:args.time_slot_limit,trafic_pos,:,:] for station in columns])
-            else:
-                netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
-            '''
+            print('Trafic pos: ',trafic_pos)
+            if args.netmob_transfer_mode is None: 
+                trafic_pos = [2*k for k in trafic_pos] + [2*k+1 for k in trafic_pos]
+                print('Transfer Modes: DL and UL')
+            elif args.netmob_transfer_mode == 'DL':
+                trafic_pos = [2*k for k in trafic_pos] 
+                print('Transfer Modes: DL')
+            elif args.netmob_transfer_mode == 'UL':
+                trafic_pos = [2*k+1 for k in trafic_pos]
+                print('Transfer Modes: UL')
                 
+                
+            assert len(apps) == 136//2 # Tensor.size(1) =nb_mode_transfer x nb_apps =2*68  = 136
+            
+            # Select specific apps 
+            netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
             netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))
 
             # Replace problematic time-slots:
