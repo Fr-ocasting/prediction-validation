@@ -37,7 +37,7 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
         mean_values = mean_values.repeat(4,1,1,1)
         tensor[start:end,:,:,:] = mean_values
     else:
-        raise NotImplementedError('dim != 4 or != 5 has not been implemented')
+        raise NotImplementedError(f'dim {tensor.dim} has not been implemented')
     return tensor
 
 def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
@@ -45,7 +45,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
                      social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram'],
-                     normalize = True
+                     normalize = True,
                      ):
     '''Load NetMob Data:
     outputs:
@@ -55,7 +55,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
     '''
 
     selected_apps = ['Google_Maps'] #trafic_apps # music_apps  # direct_messenger_apps # social_networks_apps
-    dims = [0,3,4]
+    dims = [0,3,4] 
      
     if torch.cuda.is_available():
         if args.quick_ds :
@@ -100,11 +100,11 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
 
 def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
-                     music_apps = ['Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
+                     music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
                      social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram'],
                      normalize = True,
-                     restricted = True
+                         restricted = True 
                      ):
     '''Load NetMob Data:
     outputs:
@@ -113,7 +113,7 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
     # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
     '''
 
-    selected_apps = ['Uber','Google_Maps','Instagram'] #['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
+    selected_apps = ['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
     dims = [0,2,3]
 
     if torch.cuda.is_available():
@@ -158,12 +158,11 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
 
 
-
 def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name,normalize = True):
 
     if 'netmob' in dataset_names:
         vision_input_type = args.vision_input_type
-
+        
         if vision_input_type == 'image_per_stations':
             NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns, normalize = normalize)
         elif vision_input_type == 'unique_image_through_lyon':

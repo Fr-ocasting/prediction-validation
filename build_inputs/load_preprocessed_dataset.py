@@ -33,17 +33,15 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
         
 
     if 'netmob' in dataset_names:
-        contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
-                                        'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
-                                        'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
-                                        }
-                                        )
-        
-        pos_netmob = list(contextual_tensors.keys()).index('netmob')
-        positions['netmob'] = pos_netmob
-        
-
-
+        if not (args.vision_input_type == 'NetMob_TS'):
+            contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
+                                            'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
+                                            'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
+                                            }
+                                            )
+            
+            pos_netmob = list(contextual_tensors.keys()).index('netmob')
+            positions['netmob'] = pos_netmob
 
     subway_ds.contextual_tensors = contextual_tensors
     subway_ds.get_dataloader()

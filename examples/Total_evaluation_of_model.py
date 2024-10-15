@@ -44,8 +44,8 @@ if __name__ == '__main__':
     args.grace_period = 2
     args.HP_max_epochs = 100
 
-    args.vision_input_type = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'
-    dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
+    args.vision_input_type = 'NetMob_TS' # 'image_per_stations' # 'unique_image_through_lyon' # NetMob_TS
+    dataset_names = ['subway_in','netmob'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
     vision_model_name = 'FeatureExtractorEncoderDecoder'  # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
 

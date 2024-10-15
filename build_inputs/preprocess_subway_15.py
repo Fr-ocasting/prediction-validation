@@ -24,6 +24,23 @@ from build_inputs.load_raw_data import load_subway_15_min
 # Function 
 # ======================================================
 
+def get_subway_lanes():
+    subway_A = ['Perrache','Ampère Victor Hugo','Bellecour','Cordeliers', 
+                'Hôtel de ville - Louis Pradel','Foch','Masséna','Charpennes', 
+                'République Villeurbanne', 'Gratte Ciel','Flachet','Cusset','Laurent Bonnevay', 'La soie']
+    
+    subway_B = ['Charpennes','Brotteaux','Part-Dieu', 'Place Guichard', 'Saxe - Gambetta','Jean Macé',  'Place Jean Jaurès','Debourg', 'Stade de Gerland',"Gare d'Oullins"]
+
+    subway_C = ['Hôtel de ville - Louis Pradel','Croix Paquet', 'Croix-Rousse', 'Hénon', 'Cuire']
+
+    subway_D = ['Gare de Vaise','Valmy','Gorge de Loup', 'Vieux Lyon','Bellecour','Guillotière','Saxe - Gambetta','Garibaldi','Sans Souci', 'Monplaisir Lumière',  'Grange Blanche','Laënnec','Mermoz - Pinel','Parilly', 'Gare de Vénissieux'] 
+
+    return({'A':subway_A,
+            'B':subway_B,
+            'C':subway_C,
+            'D':subway_D})
+
+
 def get_trigram_correspondance():
     ''' Some surprise : 
         Vieux Lyon : Jea

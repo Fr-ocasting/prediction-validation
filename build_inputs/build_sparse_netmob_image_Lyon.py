@@ -16,7 +16,7 @@ if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
 
-def tackle_one_days_entire_map(txt_path,Lyon_ids,k0,kn,N,P,netmob_data_folder_path,app,day,transfer_mode,columns):
+def tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_folder_path,app,day,transfer_mode,columns):
     #Read CSV
     txt_path = glob.glob(os.path.join(f'{netmob_data_folder_path}/{app}/{day}',f"*_{transfer_mode}.txt"))[0]
     transfer_mode,columns = get_information_from_path(txt_path)
@@ -151,7 +151,7 @@ if __name__ == '__main__':
         T_days = []
         folder_days = [day for day in os.listdir(f'{netmob_data_folder_path}/{app}') if (not day.startswith('.'))] 
         for day in folder_days:
-            T = tackle_one_days_entire_map(txt_path,Lyon_ids,k0,kn,N,P,netmob_data_folder_path,app,day,transfer_mode,columns)
+            T = tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_folder_path,app,day,transfer_mode,columns)
             T_days.append(T)
         T_days = torch.cat(T_days)
         T_apps.append(T_days)
