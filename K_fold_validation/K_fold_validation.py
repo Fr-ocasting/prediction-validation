@@ -63,8 +63,8 @@ class KFoldSplitter(object):
 
         return(subway_ds_tmps)
     
-    def load_init_ds(self):
-        subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.dataset_names,self.args,self.coverage,self.folder_path,self.file_name,self.vision_model_name,normalize = False)
+    def load_init_ds(self,normalize = False):
+        subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.dataset_names,self.args,self.coverage,self.folder_path,self.file_name,self.vision_model_name,normalize = normalize)
         return(subway_ds,NetMob_ds,args,dic_class2rpz)
 
     def split_k_fold(self):
@@ -82,7 +82,7 @@ class KFoldSplitter(object):
         '''
 
         # Init
-        subway_ds,_,args,dic_class2rpz = self.load_init_ds()  # build a copy of 'args'
+        subway_ds,_,args,dic_class2rpz = self.load_init_ds(normalize = False)  # build a copy of 'args'
         K_subway_ds = []
 
 
@@ -129,7 +129,7 @@ class KFoldSplitter(object):
             # Add df_verif_test : 
             subway_ds_tmps = self.add_df_verif_test(subway_ds_tmps,subway_ds)
 
-            # Tackle dataloader: load dataloader again (call it 2 times so longer but easier to implement)
+            # Tackle dataloader: load dataloader again (call it 2 times: within 'load_complete_ds', and then here. It's longer but easier to implement)
             subway_ds_tmps.get_dataloader()
             # ...
 

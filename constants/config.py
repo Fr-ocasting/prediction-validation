@@ -103,7 +103,8 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['epochs'] = 100 if torch.cuda.is_available() else 2
     config['contextual_positions'] = {}
     config['quick_ds'] = False #if True then load small tensor with torch.randn(), instead of big one with pickle.load() and torch concat
-    config['netmob_transfer_mode'] = 'DL'
+    config['netmob_transfer_mode'] = 'DL' # 'UL' # None # -> Use as NetMob input only 'DL' or 'UL' transfer mode, or both
+    config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
 
 
     # Optimization 
