@@ -62,9 +62,12 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
 
     ## Specific case if we want to validate on the init entiere dataset:
     if args.evaluate_complete_ds: 
-        subway_ds,_,args,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
+        args.train_prop = 0.6
+        args.valid_prop = 0.2
+        args.test_prop = 0.2
+        subway_ds,_,_,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
         ds_validation.append(subway_ds)
-
+        del subway_ds
 
     ## Train on the K-1 folds:
 
