@@ -108,10 +108,6 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
                 globals()[f'{training_mode}_{metric}'].append(l)
 
 
-
-
-
-
     ## Save Model: 
     row = {f"fold{k}": [loss] for k,loss in enumerate(valid_losses)}
     row.update({'mean' : [np.mean(valid_losses)]})
