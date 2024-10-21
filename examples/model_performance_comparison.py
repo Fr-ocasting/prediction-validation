@@ -20,7 +20,7 @@ model_name ='STGCN' #'MTGNN' # 'STGCN'  #'CNN' # 'DCRNN'
 args = get_args(model_name)
 
 # Modification :
-args.epochs = 200
+args.epochs = 800
 args.W = 0
 args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
 args.ray = False
@@ -40,7 +40,7 @@ dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','ca
 vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
 
 
-save_folder = 'K_fold_validation/traing_without_HP_tuning'
+save_folder = 'K_fold_validation/training_without_HP_tuning'
 
 init_train_prop,init_valid_prop,init_test_prop = args.train_prop,args.valid_prop,args.test_prop
 for dataset_names in [["subway_in"],["subway_in","calendar"]]:

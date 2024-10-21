@@ -170,7 +170,7 @@ if __name__ == '__main__':
     # Case 1. HP tuning have been computed on the first fold. We are training on the K-1 other folds
     # ----------
     if False:
-        save_folder = 'K_fold_validation'
+        save_folder = 'K_fold_validation/training_with_HP_tuning'
         load_config = True
         trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
         epochs = 500
