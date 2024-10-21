@@ -42,12 +42,21 @@ vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'Fe
 
 save_folder = 'K_fold_validation/traing_without_HP_tuning'
 
+init_train_prop,init_valid_prop,init_test_prop = args.train_prop,args.valid_prop,args.test_prop
 for dataset_names in [["subway_in"],["subway_in","calendar"]]:
+    print(f"\nModel perf on {dataset_names} with {model_name}")
+
+    # Keep good proportion even if we temporally change them during the process
+    args.train_prop,args.valid_prop,args.test_prop = init_train_prop,init_valid_prop,init_test_prop
+    
+
     date_id = get_date_id()
     datasets_names = '_'.join(dataset_names)
-    model_names = '_'.join([args.model_name,args.args_vision.model_name]) if hasattr(args.args_vision,'model_name')  else args.model_name
+    model_names = '_'.join([args.model_name,vision_model_name]) if 'netmob' in dataset_names  else args.model_name
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds,hp_tuning_on_first_fold = False,trial_id = trial_id,save_folder=save_folder)
 
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
+
+    

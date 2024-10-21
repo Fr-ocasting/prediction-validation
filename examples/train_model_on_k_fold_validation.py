@@ -39,7 +39,7 @@ def load_configuration(trial_id,load_config,epochs):
 
     return args,coverage,dataset_names,vision_model_name,folds
 
-def train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds):
+def train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
         
     # Sliding Window Cross Validation 
     ## Define fixed Dataset K_fold split for each trial: 
@@ -54,7 +54,10 @@ def train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds):
 
     ## Split Tuning and Validation datasets:
     # ds_tuning = K_subway_ds[0]
-    ds_validation = K_subway_ds[1:]
+    if hp_tuning_on_first_fold :
+        ds_validation = K_subway_ds[1:]
+    else:
+        ds_validation = K_subway_ds
     del K_subway_ds
 
     ## Specific case if we want to validate on the init entiere dataset:
@@ -131,7 +134,7 @@ def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,
     df_metrics.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
 
 
-def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None):
+def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None,hp_tuning_on_first_fold= True):
     '''
     1. Load the best config according to our HP-Tuning
     2. Apply the K-fold validation to split inputs
@@ -143,7 +146,7 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     args,coverage,dataset_names,vision_model_name,folds = load_configuration(trial_id,load_config,epochs)
 
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder)
 
     # 5.
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
@@ -171,7 +174,7 @@ if __name__ == '__main__':
         load_config = True
         trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
         epochs = 500
-        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs)
+        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,hp_tuning_on_first_fold = True)
 
 
     # Case 2. We just need to test some configuration, where we set the configuration from 'load_random_config.py:
@@ -184,6 +187,6 @@ if __name__ == '__main__':
         load_config = False
         trial_id = 'train_random_config'
         epochs = 200
-        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs)
+        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,hp_tuning_on_first_fold=False)
 
 
