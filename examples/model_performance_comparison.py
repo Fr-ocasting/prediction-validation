@@ -1,38 +1,53 @@
 import sys
 import os
-import numpy as np 
+
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-
+import pandas as pd
+import numpy as np 
+from train_model_on_k_fold_validation import train_valid_K_models,save_model_metrics
 from utils.utilities_DL import match_period_coverage_with_netmob
-
 from constants.config import get_args,update_modif
-from constants.paths import file_name
-
+from constants.paths import file_name,SAVE_DIRECTORY
+from utils.save_results import get_date_id
 
 # ==== GET PARAMETERS ====
 model_name ='STGCN' #'MTGNN' # 'STGCN'  #'CNN' # 'DCRNN'
 args = get_args(model_name)
 
 # Modification :
-args.epochs = 10
+args.epochs = 200
 args.W = 0
 args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
 args.ray = False
 args.loss_function_type = 'MSE'  #'MSE' # 'quantile'
 
-# evaluation on the first fold only :
-args.evaluate_complete_ds = False
+#  evaluation on the first fold only :
+args.evaluate_complete_ds = False  # evaluation on the first fold only :
 folds =  [0] #  list(np.arange(args.K_fold))  # [0]
+# ...
 
 update_modif(args)
 coverage = match_period_coverage_with_netmob(file_name)
+
 
 # Choose DataSet and VisionModel if needed: 
 dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
 vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
 
+
+save_folder = 'K_fold_validation/traing_without_HP_tuning'
+
+for dataset_names in [["subway_in"],["subway_in","calendar"]]:
+    date_id = get_date_id()
+    datasets_names = '_'.join(dataset_names)
+    model_names = '_'.join([args.model_name,args.args_vision.model_name]) if hasattr(args.args_vision,'model_name')  else args.model_name
+    trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
+
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds)
+
+    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)

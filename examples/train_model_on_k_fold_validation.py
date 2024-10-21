@@ -16,14 +16,7 @@ from trainer import Trainer
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
 import numpy as np 
 
-
-def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None,folder = 'save/HyperparameterTuning'):
-    '''
-    1. Load the best config according to our HP-Tuning
-    2. Apply the K-fold validation to split inputs
-    3. For each fold, load a new model and train it with the associated fold of inputs
-    4. Keep track on train/valid losses and the best results. Save them.
-    '''
+def load_configuration(trial_id,load_config,epochs):
     # If Load config: 
     if load_config:
         from examples.load_best_config import load_best_config
@@ -38,15 +31,19 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
             args.epochs = epochs
         dataset_names = args.dataset_names 
         vision_model_name = args.args_vision.model_name if len(vars(args.args_vision))>0 else None
+        folds = list(np.arange(args.K_fold))
 
     # If new config : 
     else:
-        from examples.load_random_config import args,coverage,trial_id,dataset_names,vision_model_name
+        from examples.load_random_config import args,coverage,dataset_names,vision_model_name,folds
 
+    return args,coverage,dataset_names,vision_model_name,folds
 
+def train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds):
+        
     # Sliding Window Cross Validation 
     ## Define fixed Dataset K_fold split for each trial: 
-    folds = list(np.arange(args.K_fold))
+
     K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
@@ -106,27 +103,50 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
             for metric in metric_list:          
                 l = trainer.performance[f'{training_mode}_metrics'][metric]   
                 globals()[f'{training_mode}_{metric}'].append(l)
+    
+    return trainer,args,valid_losses,training_mode_list,metric_list,df_loss
 
 
-    ## Save Model: 
+def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     row = {f"fold{k}": [loss] for k,loss in enumerate(valid_losses)}
     row.update({'mean' : [np.mean(valid_losses)]})
     if (args.evaluate_complete_ds):
         row.update({'complete_dataset': trainer.performance['valid_loss']})  # The associated validation is from the last trained model
     df_results = pd.DataFrame.from_dict(row)
-    df_results.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
 
-
-    df_loss.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
-    
-    
     dict_data_metric = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
     if (args.evaluate_complete_ds):
         dict_data_metric.update({f'{metric}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list ] for metric in metric_list})
     df_metrics = pd.DataFrame(index = training_mode_list, 
                             data = dict_data_metric
-                            )
+                            )   
+    
+    return df_results,df_metrics
+    
+def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
+    df_results,df_metrics =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
+
+    df_results.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
+    df_loss.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
     df_metrics.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+
+
+def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None):
+    '''
+    1. Load the best config according to our HP-Tuning
+    2. Apply the K-fold validation to split inputs
+    3. For each fold, load a new model and train it with the associated fold of inputs
+    4. Keep track on train/valid losses and the best results. 
+    5. Save them.
+    '''
+    # 1. Load the best config according to our HP-Tuning / Or Load random config :
+    args,coverage,dataset_names,vision_model_name,folds = load_configuration(trial_id,load_config,epochs)
+
+    # 2. 3. 4. 
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds)
+
+    # 5.
+    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
 
 
 # ========================================================
@@ -141,10 +161,29 @@ if __name__ == '__main__':
     #'netmob_subway_in_calendar_STGCN_FeatureExtractor_ResNetInspired_MSELoss_2024_08_28_06_04_41108'
     #'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810'
 
-    load_config = True
-    save_folder = 'K_fold_validation'
-    trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
-    epochs = 500
 
 
-    train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,folder = 'save/HyperparameterTuning')
+
+    # Case 1. HP tuning have been computed on the first fold. We are training on the K-1 other folds
+    # ----------
+    if False:
+        save_folder = 'K_fold_validation'
+        load_config = True
+        trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
+        epochs = 500
+        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs)
+
+
+    # Case 2. We just need to test some configuration, where we set the configuration from 'load_random_config.py:
+    # ----------
+    if True: 
+        save_folder = 'K_fold_validation/traing_without_HP_tuning'
+        if not os.path.exists(f"{SAVE_DIRECTORY}/{save_folder}"):
+            os.mkdir(f"{SAVE_DIRECTORY}/{save_folder}")
+
+        load_config = False
+        trial_id = 'train_random_config'
+        epochs = 200
+        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs)
+
+

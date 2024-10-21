@@ -17,12 +17,12 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 
 
-def HP_and_valid_one_config(args,coverage,dataset_names,epochs_validation,vision_model_name,num_samples,):
+def HP_and_valid_one_config(args,coverage,dataset_names,epochs_validation,vision_model_name,num_samples):
     # HP Tuning
     analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name,num_samples)
 
     # K-fold validation with best config: 
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs_validation,folder = 'save/HyperparameterTuning')
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation',epochs=epochs_validation)
 
 
 
