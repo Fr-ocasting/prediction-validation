@@ -2,6 +2,7 @@
 import sys 
 import os 
 import numpy as np 
+import pandas as pd
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -88,9 +89,8 @@ class KFoldSplitter(object):
 
         # Remove test-dates:
         first_test_date = subway_ds.tensor_limits_keeper.first_test_date
-        coverage_without_test =  self.coverage[self.coverage<first_test_date]
-        n = len(coverage_without_test)
-        # ... 
+        
+        
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
         train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)   
         valid_prop_tmps = args.valid_prop/(args.train_prop+args.valid_prop)
@@ -101,24 +101,50 @@ class KFoldSplitter(object):
         args.test_prop = 0
         # ...
 
+
+        if args.train_valid_test_split_method == 'similar_length_method':
+            df_verif = subway_ds.tensor_limits_keeper.df_verif 
+            coverage_without_test = df_verif['t+0']
+            coverage_without_test = coverage_without_test[coverage_without_test<first_test_date]  # Remove samples associated to test dataset
+            fold_length = int(len(coverage_without_test)/(valid_prop_tmps*args.K_fold+(1-valid_prop_tmps)))
+        
+        else: 
+            coverage_without_test =  self.coverage[self.coverage<first_test_date]
+            n = len(coverage_without_test)
+        # ... 
+
+
+
+
         # Découpe la dataframe en K_fold 
         for k in self.folds:
             # Slicing 
             print(f'\nFold n°{k}')
             if args.validation == 'sliding_window':
-                width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
-                l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
-                if k == args.K_fold - 1:
-                    u_lim_pos = n
+                if args.train_valid_test_split_method == 'similar_length_method':
+                    start_coverage = int(k*fold_length*valid_prop_tmps)
+
+                    if k == args.K_fold -1:
+                        coverage_tmps = coverage_without_test[coverage_without_test>coverage_without_test.iloc[start_coverage]]           
+                    else:
+                        coverage_tmps = coverage_without_test[(coverage_without_test>coverage_without_test.iloc[start_coverage]) &
+                                                          (coverage_without_test<coverage_without_test.iloc[start_coverage+fold_length])
+                                                          ]
+
                 else:
-                    u_lim_pos = l_lim_pos + width_dataset
-                
-                # Get df_tmps and coverage_tmps:
-                coverage_tmps = coverage_without_test[l_lim_pos:u_lim_pos] 
-                time_slot_limits = np.arange(l_lim_pos,u_lim_pos)
+                    width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
+                    l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
+                    if k == args.K_fold - 1:
+                        u_lim_pos = n
+                    else:
+                        u_lim_pos = l_lim_pos + width_dataset
+                    
+                    # Get df_tmps and coverage_tmps:
+                    coverage_tmps = coverage_without_test[l_lim_pos:u_lim_pos] 
+                    #time_slot_limits = np.arange(l_lim_pos,u_lim_pos)
 
 
-            subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True,time_slot_limits=time_slot_limits)  # Normalize
+            subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True)  # Normalize
 
             # Tackle U_test and Utarget_test (normalize U_test with normalizer from subway_ds_TMPS):
             subway_ds_tmps = self.add_U_test_and_Utarget_test(subway_ds_tmps,subway_ds)

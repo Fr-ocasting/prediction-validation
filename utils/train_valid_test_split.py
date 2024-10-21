@@ -53,7 +53,7 @@ def find_limits_for_a_df(dataset,df_verif,predicted_serie,last_date1,prop,iterat
         return(first_date2,last_date2)
 
 
-def train_valid_test_split_iterative_method(dataset,df_verif,train_prop,valid_prop,test_prop):
+def iterative_method(dataset,df_verif,train_prop,valid_prop,test_prop):
     # Init:
     # Case No Validation, No testing: 
     if train_prop == 1:
@@ -106,4 +106,38 @@ def train_valid_test_split_iterative_method(dataset,df_verif,train_prop,valid_pr
                     'last_predicted_test_date': last_test_date
                     }
 
+    return(split_limits)
+
+
+def similar_length_method(dataset,df_verif,train_prop,valid_prop,test_prop):
+    # Init:
+    predicted_serie = df_verif[f't+{dataset.step_ahead-1}']
+    split_train_valid = int(len(predicted_serie)*train_prop)
+    split_valid_test =  int(len(predicted_serie)*(train_prop+valid_prop))
+
+    # Train Limits
+    first_train_date = predicted_serie.iat[0]
+    last_train_date = predicted_serie.iat[split_train_valid]
+
+    # Valid Limits
+    first_valid_date = predicted_serie.iat[split_train_valid]
+    last_valid_date = predicted_serie.iat[split_valid_test]
+
+    # Test Limits
+    first_test_date = predicted_serie.iat[split_valid_test]
+    last_test_date = predicted_serie.iat[-1] 
+
+
+    # End Algorithm depending on wether test_set exists or not: 
+    if abs(test_prop)<1e-3: 
+        first_test_date,last_test_date = None,None
+    # ==== ....
+
+    split_limits = {'first_predicted_train_date':first_train_date,
+                    'last_predicted_train_date': last_train_date,
+                    'first_predicted_valid_date':first_valid_date,
+                    'last_predicted_valid_date': last_valid_date,
+                    'first_predicted_test_date': first_test_date,
+                    'last_predicted_test_date': last_test_date
+                    }
     return(split_limits)

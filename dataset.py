@@ -7,7 +7,7 @@ from datetime import timedelta
 
 # Personnal Import 
 from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeeper
-from utils.train_valid_test_split import train_valid_test_split_iterative_method
+from utils import train_valid_test_split
 from loader import DictDataLoader
 from utils.save_results import save_object,read_object
 # ...
@@ -371,29 +371,39 @@ class DataSet(object):
         self.mask_tensor()
 
 
-    def get_dic_split_limits(self,train_prop,valid_prop,test_prop):
+    def get_dic_split_limits(self,train_prop,valid_prop,test_prop,
+                             train_valid_test_split_method):
         # Split with iterative method 
         if hasattr(self,'Dataset_save_folder'):
             split_path = f"{self.Dataset_save_folder}split_limits.pkl" 
         else:
             split_path = ''
-        if split_path and (os.path.exists(split_path)):   #not empty & path exist
-            try:
-                split_limits = read_object(split_path)
-            except:
-                split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-                save_object(split_limits, split_path)
-                print(f"split_limits.pkl has never been saved or issue with last .pkl save")
-        else : 
-            split_limits= train_valid_test_split_iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-            if split_path: save_object(split_limits, split_path)  #if not empty, save it 
+
+        if train_valid_test_split_method == 'iterative_method':
+            if split_path and (os.path.exists(split_path)):   #not empty & path exist
+                try:
+                    split_limits = read_object(split_path)
+                except:
+                    split_limits= train_valid_test_split.iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+                    save_object(split_limits, split_path)
+                    print(f"split_limits.pkl has never been saved or issue with last .pkl save")
+            else : 
+                split_limits= train_valid_test_split.iterative_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+                if split_path: save_object(split_limits, split_path)  #if not empty, save it 
+
+        elif train_valid_test_split_method == 'similar_length_method':
+            split_limits= train_valid_test_split.similar_length_method(self,self.df_verif,train_prop,valid_prop,test_prop)
+            print(f'>>> Train/Valid/Test split method : {train_valid_test_split_method}')
+
+        else:
+            raise NotImplementedError(f'Train/Valid/Test split method {train_valid_test_split_method} has not been implemented')
 
         return(split_limits)
 
 
-    def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop):
+    def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop,train_valid_test_split_method):
 
-        split_limits = self.get_dic_split_limits(train_prop,valid_prop,test_prop)
+        split_limits = self.get_dic_split_limits(train_prop,valid_prop,test_prop,train_valid_test_split_method)
 
         tensor_limits_keeper = TensorLimitsKeeper(split_limits,self.df_dates,self.df_verif,train_prop,valid_prop, test_prop,self.step_ahead)
         for training_mode in ['train','valid','test']:
@@ -423,14 +433,14 @@ class DataSet(object):
         self.dataloader = dict_dataloader
 
 
-    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,normalize = True
+    def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize = True
                                           #,calib_prop,batch_size,calendar_class
                                           ):
         self.get_shift_from_first_elmt()   # get shift indice and shift date from the first element / between each dataset 
         self.get_feature_vect(invalid_dates)  # Removed the forbidden dates, Build 'df_verif' and the Feature Vector Tensor masked by the forbidden indices.
 
         # Get Index to Split df, U, Utarget, time_slots_labels
-        self.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
+        self.train_valid_test_split_indices(train_prop,valid_prop,test_prop,train_valid_test_split_method)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
 
         # Get all the splitted train/valid/test input tensors. Normalize Them 
         self.split_tensors(normalize = normalize)
@@ -520,5 +530,5 @@ class PersonnalInput(DataSet):
         self.invalid_dates = invalid_dates
         self.args = arg_parser
         
-    def preprocess(self,train_prop,valid_prop,test_prop,normalize = True):
-        self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop,normalize)
+    def preprocess(self,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize = True):
+        self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize)

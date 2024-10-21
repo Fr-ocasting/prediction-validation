@@ -28,11 +28,11 @@ def preprocess_subway_in(dataset,args,invalid_dates,normalize = True):
 
     # Set TRI-GRAM station
     subway_ds.columns = df_correspondance.COD_TRG
-    subway_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,normalize)
+    subway_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     
     return(subway_ds)
 
-def load_subway_in(file_name,args,coverage,normalize=True,time_slot_limits = None):
+def load_subway_in(file_name,args,coverage,normalize=True):
     '''Tackling Subway_in data
     
     outputs:
@@ -44,7 +44,6 @@ def load_subway_in(file_name,args,coverage,normalize=True,time_slot_limits = Non
     dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path, 'data/',file_name,
                                                         args.W,args.D,args.H,args.step_ahead,args.dataset_names,
                                                         single_station = False,coverage_period = coverage)
-    dataset.time_slot_limits = time_slot_limits
     
     subway_ds = preprocess_subway_in(dataset,args,invalid_dates,normalize)
 
