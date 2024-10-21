@@ -102,18 +102,18 @@ class KFoldSplitter(object):
         # ...
 
 
-        if args.train_valid_test_split_method == 'similar_length_method':
-            df_verif = subway_ds.tensor_limits_keeper.df_verif 
-            coverage_without_test = df_verif['t+0']
-            coverage_without_test = coverage_without_test[coverage_without_test<first_test_date]  # Remove samples associated to test dataset
-            fold_length = int(len(coverage_without_test)/(valid_prop_tmps*args.K_fold+(1-valid_prop_tmps)))
-        
-        else: 
+        #if (args.train_valid_test_split_method == 'similar_length_method') #or (args.train_valid_test_split_method == 'iterative_method') :
+        df_verif = subway_ds.tensor_limits_keeper.df_verif 
+        coverage_without_test = df_verif['t+0']
+        coverage_without_test = coverage_without_test[coverage_without_test<first_test_date]  # Remove samples associated to test dataset
+        fold_length = int(len(coverage_without_test)/(valid_prop_tmps*args.K_fold+(1-valid_prop_tmps)))
+
+        '''
+        elif: 
             coverage_without_test =  self.coverage[self.coverage<first_test_date]
             n = len(coverage_without_test)
+        '''
         # ... 
-
-
 
 
         # Découpe la dataframe en K_fold 
@@ -121,16 +121,16 @@ class KFoldSplitter(object):
             # Slicing 
             print(f'\nFold n°{k}')
             if args.validation == 'sliding_window':
-                if args.train_valid_test_split_method == 'similar_length_method':
-                    start_coverage = int(k*fold_length*valid_prop_tmps)
+                #if (args.train_valid_test_split_method == 'similar_length_method'):
+                start_coverage = int(k*fold_length*valid_prop_tmps)
 
-                    if k == args.K_fold -1:
-                        coverage_tmps = coverage_without_test[coverage_without_test>coverage_without_test.iloc[start_coverage]]           
-                    else:
-                        coverage_tmps = coverage_without_test[(coverage_without_test>coverage_without_test.iloc[start_coverage]) &
-                                                          (coverage_without_test<coverage_without_test.iloc[start_coverage+fold_length])
-                                                          ]
-
+                if k == args.K_fold -1:
+                    coverage_tmps = coverage_without_test[coverage_without_test>coverage_without_test.iloc[start_coverage]]           
+                else:
+                    coverage_tmps = coverage_without_test[(coverage_without_test>coverage_without_test.iloc[start_coverage]) &
+                                                        (coverage_without_test<coverage_without_test.iloc[start_coverage+fold_length])
+                                                        ]   
+                '''
                 else:
                     width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
                     l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
@@ -142,6 +142,7 @@ class KFoldSplitter(object):
                     # Get df_tmps and coverage_tmps:
                     coverage_tmps = coverage_without_test[l_lim_pos:u_lim_pos] 
                     #time_slot_limits = np.arange(l_lim_pos,u_lim_pos)
+                '''
 
 
             subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True)  # Normalize
