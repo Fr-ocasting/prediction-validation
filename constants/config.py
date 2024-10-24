@@ -35,13 +35,13 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
                         calib_prop = [0.5],
                         enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
                         
-                        Kt = 3, stblock_num=2,
+                        Kt = 2, stblock_num=4,
                         act_fun=['glu'],#['glu','gtu'],
                         Ks =[2], #[3,2],
                         graph_conv_type = ['graph_conv'], # ['cheb_graph_conv', 'graph_conv'],
                         gso_type = ['sym_norm_lap'], # ['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj'],
                         enable_bias = 'True',
-                        adj_type = 'dist',
+                        adj_type = 'corr',
                         enable_padding = True,
 
                         threeshold = 0.3,gamma = 0.95,patience = 30
@@ -94,11 +94,11 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['weight_decay'] = 0.0005
-    config['momentum'] = 0.99
+    config['momentum'] = 0.95
     config['loss_function_type'] = 'quantile' # MSE
     config['single_station']= False
     config['batch_size'] = 32
-    config['lr'] = 1e-3
+    config['lr'] = 5e-3
     config['dropout'] = 0.2
     config['epochs'] = 100 if torch.cuda.is_available() else 2
     config['contextual_positions'] = {}
