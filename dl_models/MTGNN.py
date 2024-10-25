@@ -51,7 +51,7 @@ class gtnet(nn.Module):
 
 
         self.seq_length = seq_length
-        if args_embedding is not None:
+        if (args_embedding is not None) and (len(vars(args_embedding))>0):
             self.seq_length = self.seq_length + args_embedding.embedding_dim
             
         kernel_size = 7
@@ -119,6 +119,14 @@ class gtnet(nn.Module):
 
 
     def forward(self, x,idx=None):
+        '''
+        Inputs: 
+        --------
+        x:  [B,C,N,L]
+
+        Outputs:
+
+        '''
 
         # Vérifie que x:  [B,C,N,L], et met le 'padding' necessaire pour pouvoir faire les temporal conv avec dilation
         if len(x.size())<4:
@@ -181,15 +189,15 @@ class gtnet(nn.Module):
         skip = self.skipE(x) + skip
 
 
-        # Sortie embedding et Relu en Série 
+        # Sortie embedding et Relu en Série. Après les end_conv : [B,1, N, 1] (car out_dim =1 ???)
         x = F.relu(skip)
         x = F.relu(self.end_conv_1(x))
         x = self.end_conv_2(x)
 
-        # Après les end_conv: x.shape : [B,1, N, 1]
+        # [B,1, N, 1] -> [B,N]
         x = x.squeeze()
         if self.out_dim >1:
             x= x.permute(0,2,1)
         else: 
-            x.unsqueeze(-1)
+            x = x.unsqueeze(-1)
         return x

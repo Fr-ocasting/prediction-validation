@@ -30,6 +30,9 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
     if 'calendar' in dataset_names:
         pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calendar_class}')
         positions['calendar'] = pos_calendar
+        args.time_embedding = True
+    else:
+        args.time_embedding = False
         
 
     if 'netmob' in dataset_names:
@@ -47,7 +50,7 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
     subway_ds.get_dataloader()
     subway_ds.contextual_positions = positions
 
-    return(subway_ds)
+    return(subway_ds,args)
 
 
 
@@ -66,7 +69,7 @@ def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_mo
     args,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
-    subway_ds = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
+    subway_ds,args = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
     # Update/Set arguments: 
     args = update_args(args,subway_ds,dataset_names)

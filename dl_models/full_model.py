@@ -191,15 +191,17 @@ class full_model(nn.Module):
 
 
 def load_model(args,dic_class2rpz):
+    args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
+
     if args.model_name == 'CNN': 
-        model = CNN(args, kernel_size = (2,1),args_embedding = args.args_embedding,dic_class2rpz = dic_class2rpz)
+        model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
     if args.model_name == 'MTGNN': 
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
                     dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
                     skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
-                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args.args_embedding)
+                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
         
     if args.model_name == 'DCRNN':
         model_kwargs = vars(args)
@@ -217,10 +219,10 @@ def load_model(args,dic_class2rpz):
         # With padding, the output channel dimension will stay constant and equal to L
         # Sometimes, with no Trafic Data, L = 0, then we have to set Ko = 1, independant of L
 
-        if len(vars(args.args_embedding)):
+        if hasattr(vars(args),'args_embedding') and (len(vars(args.args_embedding))):
             Ko = Ko + args.args_embedding.embedding_dim
 
-        if  len(vars(args.args_vision))>0:   #if not empty 
+        if  hasattr(vars(args),'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
             # Depend wether out_dim is implicit or defined by other parameters:
             if hasattr(args.args_vision,'out_dim'):
                 Ko = Ko + args.args_vision.out_dim

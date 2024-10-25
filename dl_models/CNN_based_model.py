@@ -74,9 +74,6 @@ class CNN(nn.Module):
                 time_elt = time_elt.repeat(N*C,1).reshape(B*N,C,-1)   # [B,embedding_dim] -> [B*N,C,embedding_dim]
                 x = torch.cat([x,time_elt],dim = -1)
 
-        if self.memory_format_last:
-            x = x.to(memory_format = torch.channels_last)
-
         # Conv Layers :        
         for conv in self.Convs:
             x = self.dropout(self.relu(conv(x)))
