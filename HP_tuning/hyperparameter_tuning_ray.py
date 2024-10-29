@@ -133,7 +133,7 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
 
 if __name__ == '__main__': 
     from constants.config import get_args,update_modif
-    from constants.paths import folder_path,file_name
+    from constants.paths import FOLDER_PATH,FILE_NAME
     from utils.utilities_DL import match_period_coverage_with_netmob,get_small_ds
     from K_fold_validation.K_fold_validation import KFoldSplitter
 
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
     # Coverage Period : 
     small_ds = False
-    coverage = match_period_coverage_with_netmob(file_name)
+    coverage = match_period_coverage_with_netmob(FILE_NAME)
     (coverage,args) = get_small_ds(small_ds,coverage,args)
 
     # Choose DataSet and VisionModel if needed: 
@@ -171,7 +171,7 @@ if __name__ == '__main__':
     # In case we need to compute the Sliding K-fold validation:
     # folds = np.arange(1,args.K_fold)
 
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
 
     num_samples = 8

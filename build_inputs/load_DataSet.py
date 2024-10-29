@@ -50,10 +50,10 @@ def load_normalized_dataset(df,time_step_per_hour,train_prop,valid_prop,step_ahe
 if __name__ == '__main__':
 
     # Init
-    folder_path = 'data/'
-    file_name = 'preprocessed_subway_15_min.csv'
+    FOLDER_PATH = 'data/'
+    FILE_NAME = 'preprocessed_subway_15_min.csv'
 
-    subway_in = pd.read_csv(folder_path+file_name,index_col = 0)
+    subway_in = pd.read_csv(FOLDER_PATH+FILE_NAME,index_col = 0)
     subway_in.columns.name = 'Station'
     subway_in.index = pd.to_datetime(subway_in.index)
 

@@ -14,7 +14,7 @@ if working_dir not in sys.path:
 # Personnal import 
 from utils.utilities_DL import match_period_coverage_with_netmob
 from constants.config import get_args,update_modif
-from constants.paths import folder_path,file_name
+from constants.paths import FOLDER_PATH,FILE_NAME
 from K_fold_validation.K_fold_validation import KFoldSplitter
 
 # Hp Tuning
@@ -28,7 +28,7 @@ def hyperparameter_tuning(args,coverage,dataset_names,vision_model_name,num_samp
     folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
 
     # Split in K-fold : 
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     # Train on the first fold: 
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     args.loss_function_type = 'MSE' # 'quantile'
 
     args = update_modif(args)
-    coverage = match_period_coverage_with_netmob(file_name)
+    coverage = match_period_coverage_with_netmob(FILE_NAME)
     # Use Small ds for fast training: 
     #small_ds = False
     #(coverage,args) = get_small_ds(small_ds,coverage,args)

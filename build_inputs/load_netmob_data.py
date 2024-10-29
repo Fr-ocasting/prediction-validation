@@ -13,14 +13,15 @@ if parent_dir not in sys.path:
 
 # Personnal inputs:
 from dataset import PersonnalInput
+from constants.paths import FOLDER_PATH
 
 
 def find_positions(applications, file_list):
     positions = []
     for app in applications:
         for idx, file_path in enumerate(file_list):
-            file_name = file_path.split('/')[-1].split('.')[0]
-            if app == file_name:
+            FILE_NAME = file_path.split('/')[-1].split('.')[0]
+            if app == FILE_NAME:
                 positions.append(idx)
     return positions
 
@@ -40,7 +41,7 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
         raise NotImplementedError(f'dim {tensor.dim} has not been implemented')
     return tensor
 
-def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
+def load_netmob_data(dataset,invalid_dates,args,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
@@ -62,7 +63,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
             netmob_T = torch.randn(dataset.length,40,4,22,22)
             print('Small NetMob_T ',netmob_T.size())
         else:
-            apps=  glob.glob(f'{folder_path}NetMob_tensor/[!station]*.pt')
+            apps=  glob.glob(f'{FOLDER_PATH}NetMob_tensor/[!station]*.pt')
             print(apps[0])
             trafic_pos = find_positions(selected_apps,apps)
             print('Trafic pos: ',trafic_pos)
@@ -80,7 +81,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
             assert len(apps) == 136//2 # Tensor.size(1) =nb_mode_transfer x nb_apps =2*68  = 136
             
             # Select specific apps 
-            netmob_T = torch.stack([torch.load(f"{folder_path}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
+            netmob_T = torch.stack([torch.load(f"{FOLDER_PATH}NetMob_tensor/station_{station}.pt")[:,trafic_pos,:,:] for station in columns])
             netmob_T = netmob_T.permute(1,0,*range(2, netmob_T.dim()))
 
             # Replace problematic time-slots:
@@ -98,7 +99,7 @@ def load_netmob_data(dataset,invalid_dates,args,folder_path,columns,
     return(NetMob_ds)
 
 
-def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
+def load_netmob_lyon_map(dataset,invalid_dates,args,FOLDER_PATH,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
@@ -122,12 +123,12 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns,
             print('Small NetMob_T ',netmob_T.size())
             
         else:
-            apps =  pickle.load(open(f"{folder_path}NetMob_DL_video_Lyon_APP.pkl","rb"))
+            apps =  pickle.load(open(f"{FOLDER_PATH}NetMob_DL_video_Lyon_APP.pkl","rb"))
             trafic_pos = find_positions(selected_apps,apps)
             if restricted:
-                netmob_T = torch.load(f"{folder_path}NetMob_DL_video_Lyon.pt")[trafic_pos,:,110:-40,85:-55]
+                netmob_T = torch.load(f"{FOLDER_PATH}NetMob_DL_video_Lyon.pt")[trafic_pos,:,110:-40,85:-55]
             else:
-                netmob_T = torch.load(f"{folder_path}NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]                
+                netmob_T = torch.load(f"{FOLDER_PATH}NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]                
             netmob_T = netmob_T.permute(1,0,2,3)
 
             # Replace problematic time-slots:
@@ -158,15 +159,15 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
 
 
-def tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,columns,vision_model_name,normalize = True):
+def tackle_netmob(dataset,dataset_names,invalid_dates,args,columns,vision_model_name,normalize = True):
 
     if 'netmob' in dataset_names:
         vision_input_type = args.vision_input_type
         
         if vision_input_type == 'image_per_stations':
-            NetMob_ds = load_netmob_data(dataset,invalid_dates,args,folder_path,columns = columns, normalize = normalize)
+            NetMob_ds = load_netmob_data(dataset,invalid_dates,args,columns = columns, normalize = normalize)
         elif vision_input_type == 'unique_image_through_lyon':
-            NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,folder_path,columns = columns,normalize = normalize)
+            NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
         else:
             raise NotImplementedError(f'{vision_input_type} has not been implemented')
 

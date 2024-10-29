@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 # ...
 
 
-from constants.paths import folder_path,file_name
+from constants.paths import FOLDER_PATH,FILE_NAME
 from constants.config import get_args,update_modif
 from high_level_DL_method import evaluate_config 
 from utils.utilities_DL import match_period_coverage_with_netmob,get_small_ds
@@ -35,6 +35,6 @@ def get_args_coverage(model_name = 'STGCN'): #'CNN'
     args.torch_compile = False
     args = update_modif(args)
 
-    coverage = match_period_coverage_with_netmob(file_name)
+    coverage = match_period_coverage_with_netmob(FILE_NAME)
     (coverage,args) = get_small_ds(False,coverage,args)  #small_ds = False
     return args,coverage

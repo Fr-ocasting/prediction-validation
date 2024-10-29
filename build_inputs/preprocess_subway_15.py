@@ -71,11 +71,11 @@ def get_trigram_correspondance():
     return(df)
 
 
-def load_subway_shp(folder_path,station_location_name):
+def load_subway_shp(FOLDER_PATH,station_location_name):
     try:
-        ref_subway = pd.read_csv(f'{folder_path}{station_location_name}')[['MEAN_X','MEAN_Y','COD_TRG','LIB_STA_SIFO']]
+        ref_subway = pd.read_csv(f'{FOLDER_PATH}{station_location_name}')[['MEAN_X','MEAN_Y','COD_TRG','LIB_STA_SIFO']]
     except:
-        ref_subway = pd.read_csv(f'{folder_path}{station_location_name}')[['lon','lat','COD_TRG','LIB_STA_SIFO']].rename(columns={'lon':'MEAN_X','lat':'MEAN_Y'})
+        ref_subway = pd.read_csv(f'{FOLDER_PATH}{station_location_name}')[['lon','lat','COD_TRG','LIB_STA_SIFO']].rename(columns={'lon':'MEAN_X','lat':'MEAN_Y'})
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ShapelyDeprecationWarning)
         ref_subway['geometry'] = ref_subway.apply(lambda row : Point(row.MEAN_X,row.MEAN_Y),axis = 1)
@@ -126,23 +126,23 @@ def load_adjacency_matrix(dataset, type = 'adjacent', df_locations = None, tresh
                 
 
 
-def load_data_and_pivot(folder_path, file_name, reindex,start=None, end = None):
+def load_data_and_pivot(FOLDER_PATH, FILE_NAME, reindex,start=None, end = None):
     ''' Load 'subway_in' and 'subway_out' data. Re-organize them by Stations. 
     Values that doesn't exist for certain time-slot are set to 0
 
     ** Args :
-        folder_path = 'data/'
-        file_name = 'Metro_15min_mar2019_mai2019.csv
+        FOLDER_PATH = 'data/'
+        FILE_NAME = 'Metro_15min_mar2019_mai2019.csv
         reindex: list of timestamp date coverage
     '''
     try :
-        df_metro = pd.read_csv(f'{folder_path}{file_name}',index_col = 0)
+        df_metro = pd.read_csv(f'{FOLDER_PATH}{FILE_NAME}',index_col = 0)
         df_metro.datetime = pd.to_datetime(df_metro.datetime)
 
     except:
-        folder_path = '../../../Data/keolis_data_2019-2020/'
+        FOLDER_PATH = '../../../Data/keolis_data_2019-2020/'
         txt_path = "Métro 15 minutes 2019 2020.txt"
-        df_metro_funi_2019_2020 = load_subway_15_min(folder_path+txt_path)
+        df_metro_funi_2019_2020 = load_subway_15_min(FOLDER_PATH+txt_path)
         if start is not None:
             df_metro_funi_2019_2020 = df_metro_funi_2019_2020[(df_metro_funi_2019_2020.datetime >= start)&(df_metro_funi_2019_2020.datetime < end)]
         
@@ -169,8 +169,8 @@ def replace_negative(df,method = 'linear'):
 if __name__ == '__main__':
 
     # Init
-    folder_path = 'data/'
-    file_name = 'Metro_15min_mar2019_mai2019.csv'
+    FOLDER_PATH = 'data/'
+    FILE_NAME = 'Metro_15min_mar2019_mai2019.csv'
     time_step_per_hour=4
     H,W,D = 6,1,1
     step_ahead = 1
@@ -180,7 +180,7 @@ if __name__ == '__main__':
     print(f'Number of time-slot: {4*24*(end-start).days}')
 
     # Load data
-    subway_in,subway_out = load_data_and_pivot(folder_path, file_name, reindex)
+    subway_in,subway_out = load_data_and_pivot(FOLDER_PATH, FILE_NAME, reindex)
 
     # Pre-processing 
     subway_out = replace_negative(subway_out,method = 'linear')
@@ -194,9 +194,9 @@ if __name__ == '__main__':
 
     # Load Adj, Dist or Corr matrix : 
 
-    folder_path = 'data/'
+    FOLDER_PATH = 'data/'
     station_location_name = 'ref_subway.csv'
-    df_locations = load_subway_shp(folder_path,station_location_name)
+    df_locations = load_subway_shp(FOLDER_PATH,station_location_name)
 
     adj = load_adjacency_matrix(dataset, type = 'adjacent')
     corr =  load_adjacency_matrix(dataset, type = 'correlation')

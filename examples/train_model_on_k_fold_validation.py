@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np 
 from trainer import Trainer
 from K_fold_validation.K_fold_validation import KFoldSplitter
-from constants.paths import folder_path,file_name,SAVE_DIRECTORY
+from constants.paths import FOLDER_PATH,FILE_NAME,SAVE_DIRECTORY
 from trainer import Trainer
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
 import numpy as np 
@@ -44,7 +44,7 @@ def train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds,hp_
     # Sliding Window Cross Validation 
     ## Define fixed Dataset K_fold split for each trial: 
 
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     ''' Plotting if necessary: '''

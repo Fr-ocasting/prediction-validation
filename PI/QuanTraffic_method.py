@@ -7,7 +7,7 @@ from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_train
 from trainer import MultiModelTrainer
 
 from constants.config import get_parameters
-from constants.paths import folder_path,file_name,save_folder
+from constants.paths import FOLDER_PATH,FILE_NAME,save_folder
 import torch
 
 
@@ -162,7 +162,7 @@ if __name__ == '__main__':
     config['K_fold'] = 1
     args = get_parameters(config)
 
-    Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(folder_path,file_name,args)
+    Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(FOLDER_PATH,FILE_NAME,args)
     (loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = len(Datasets[0].columns))
     multimodeltrainer = MultiModelTrainer(Datasets,Model_list,DataLoader_list,args,Optimizer_list,loss_function,Scheduler_list,args_embedding=args_embedding,dic_class2rpz=dic_class2rpz,show_figure=False)
     saved_checkpoint = torch.load(best_model)

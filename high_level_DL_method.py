@@ -1,4 +1,3 @@
-from build_inputs.load_preprocessed_dataset import load_complete_ds
 from dl_models.full_model import full_model
 from plotting.plotting_bokeh import plot_bokeh
 from trainer import Trainer
@@ -21,17 +20,14 @@ def load_optimizer_and_scheduler(model,args):
     return(optimizer,scheduler,loss_function)
 
 
-def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name):
+def load_everything(dataset_names,args,coverage,vision_model_name):
 
     # Load DataSet, DataLoader, Args :
     folds = [0]
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,args = K_fold_splitter.split_k_fold()
     subway_ds = K_subway_ds[0]
     # ...
-    '''
-    (subway_ds,_,args,dic_class2rpz) = load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name)
-    '''
 
     # Load Model:
     model = load_model(args,dic_class2rpz)
@@ -42,10 +38,10 @@ def load_everything(dataset_names,folder_path,file_name,args,coverage,vision_mod
     return(model,subway_ds,loss_function,optimizer,scheduler,args,dic_class2rpz)
 
 
-def evaluate_config(dataset_names,folder_path,file_name,args,coverage,vision_model_name,mod_plot):
+def evaluate_config(dataset_names,FOLDER_PATH,FILE_NAME,args,coverage,vision_model_name,mod_plot):
     # Load Model, Optimizer, Scheduler:
 
-    model,subway_ds,loss_function,optimizer,scheduler,args,dic_class2rpz = load_everything(dataset_names,folder_path,file_name,args,coverage,vision_model_name)
+    model,subway_ds,loss_function,optimizer,scheduler,args,dic_class2rpz = load_everything(dataset_names,FOLDER_PATH,FILE_NAME,args,coverage,vision_model_name)
     normalizer = subway_ds.normalizer
     df_verif_test = subway_ds.tensor_limits_keeper.df_verif_test
     # Load trainer: 

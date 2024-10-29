@@ -54,10 +54,10 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
 
 
 
-def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_model_name,normalize = True):
+def load_complete_ds(dataset_names,args,coverage,vision_model_name,normalize = True):
     args.dataset_names = dataset_names
     # Load subway-in DataSet:
-    subway_ds,dataset,invalid_dates = load_subway_in(file_name,args,coverage,normalize)
+    subway_ds,dataset,invalid_dates = load_subway_in(args,coverage,normalize)
 
     # Calendar data for Calibration : 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
@@ -66,7 +66,7 @@ def load_complete_ds(dataset_names,args,coverage,folder_path,file_name,vision_mo
     args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(dataset_names,args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # Netmob: 
-    args,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,folder_path,subway_ds.columns,vision_model_name,normalize = normalize)
+    args,NetMob_ds = tackle_netmob(dataset,dataset_names,invalid_dates,args,subway_ds.columns,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

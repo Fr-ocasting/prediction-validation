@@ -12,12 +12,9 @@ if parent_dir not in sys.path:
 from utils.utilities_DL import get_DataSet_and_invalid_dates
 from build_inputs.preprocess_subway_15 import get_trigram_correspondance
 from dataset import PersonnalInput
+from constants.paths import FILE_NAME
 
-def preprocess_subway_in(dataset,args,invalid_dates,normalize = True):
-    # Change complete name to TRI-GRAM ( Ampère Victor Hugo -> AMP)
-    df_correspondance = get_trigram_correspondance()
-    df_correspondance.set_index('Station').reindex(dataset.columns)
-    
+def preprocess_subway_in(dataset,args,invalid_dates,normalize = True): 
     print('\nInit Subway-In Dataset: ', dataset.raw_values.size())
     print('Number of Nan Value: ',torch.isnan(dataset.raw_values).sum())
     print('Total Number of Elements: ', dataset.raw_values.numel(),'\n')
@@ -26,13 +23,17 @@ def preprocess_subway_in(dataset,args,invalid_dates,normalize = True):
                             time_step_per_hour = dataset.time_step_per_hour,Weeks = args.W, Days = args.D, historical_len = args.H,step_ahead = args.step_ahead,minmaxnorm = True ,dims=[0])
 
 
-    # Set TRI-GRAM station
-    subway_ds.columns = df_correspondance.COD_TRG
+    # For specifc csv files, change complete name to TRI-GRAM name ( Ampère Victor Hugo -> AMP)
+    if (FILE_NAME == 'preprocessed_subway_15_min.csv') or (FILE_NAME == 'subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv') or (FILE_NAME == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
+        df_correspondance = get_trigram_correspondance()
+        df_correspondance.set_index('Station').reindex(dataset.columns)
+        subway_ds.columns = df_correspondance.COD_TRG
+
     subway_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     
     return(subway_ds)
 
-def load_subway_in(file_name,args,coverage,normalize=True):
+def load_subway_in(args,coverage,normalize=True):
     '''Tackling Subway_in data
     
     outputs:
@@ -41,10 +42,11 @@ def load_subway_in(file_name,args,coverage,normalize=True):
     invalid_dates : All the dates which have been removed 
 
     '''
-    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path, 'data/',file_name,
-                                                        args.W,args.D,args.H,args.step_ahead,args.dataset_names,
+    #dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path, 'data/',FILE_NAME,
+    #                                                    args.W,args.D,args.H,args.step_ahead,args.dataset_names,
+    #                                                    single_station = False,coverage_period = coverage)
+    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.W,args.D,args.H,args.step_ahead,args.dataset_names,
                                                         single_station = False,coverage_period = coverage)
-    
     subway_ds = preprocess_subway_in(dataset,args,invalid_dates,normalize)
 
     

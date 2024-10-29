@@ -11,7 +11,7 @@ if parent_dir not in sys.path:
 from utils.utilities_DL import match_period_coverage_with_netmob
 
 from constants.config import get_args,update_modif
-from constants.paths import file_name
+from constants.paths import FILE_NAME
 
 
 # ==== GET PARAMETERS ====
@@ -30,7 +30,7 @@ args.evaluate_complete_ds = False
 folds =  [0] #  list(np.arange(args.K_fold))  # [0]
 
 update_modif(args)
-coverage = match_period_coverage_with_netmob(file_name)
+coverage = match_period_coverage_with_netmob(FILE_NAME)
 
 # Choose DataSet and VisionModel if needed: 
 dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']

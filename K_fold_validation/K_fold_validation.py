@@ -13,17 +13,17 @@ if parent_dir not in sys.path:
 
 from build_inputs.load_preprocessed_dataset import load_complete_ds
 from dataset import TensorDataset
-
+from constants.paths import FOLDER_PATH, FILE_NAME
 
 
 class KFoldSplitter(object):
-    def __init__(self,dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds):
+    def __init__(self,dataset_names,args,coverage,vision_model_name,folds):
         super(KFoldSplitter,self).__init__()
         self.dataset_names = dataset_names
         self.args = args
         self.coverage = coverage
-        self.folder_path = folder_path
-        self.file_name = file_name
+        self.FOLDER_PATH = FOLDER_PATH
+        self.FILE_NAME = FILE_NAME
         self.vision_model_name = vision_model_name
         self.folds = folds
 
@@ -65,7 +65,7 @@ class KFoldSplitter(object):
         return(subway_ds_tmps)
     
     def load_init_ds(self,normalize = False):
-        subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.dataset_names,self.args,self.coverage,self.folder_path,self.file_name,self.vision_model_name,normalize = normalize)
+        subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.dataset_names,self.args,self.coverage,self.vision_model_name,normalize = normalize)
         return(subway_ds,NetMob_ds,args,dic_class2rpz)
 
     def split_k_fold(self):
@@ -145,7 +145,7 @@ class KFoldSplitter(object):
                 '''
 
 
-            subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.folder_path,self.file_name,self.vision_model_name, normalize = True)  # Normalize
+            subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(self.dataset_names,args,coverage_tmps,self.vision_model_name, normalize = True)  # Normalize
 
             # Tackle U_test and Utarget_test (normalize U_test with normalizer from subway_ds_TMPS):
             subway_ds_tmps = self.add_U_test_and_Utarget_test(subway_ds_tmps,subway_ds)

@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 # ...
 
 
-from constants.paths import folder_path,file_name
+from constants.paths import FOLDER_PATH,FILE_NAME
 from constants.config import get_args,update_modif
 from high_level_DL_method import evaluate_config 
 from utils.utilities_DL import match_period_coverage_with_netmob,get_small_ds
@@ -34,7 +34,7 @@ args = update_modif(args)
 
 # Coverage Period : 
 small_ds = False
-coverage = match_period_coverage_with_netmob(file_name)
+coverage = match_period_coverage_with_netmob(FILE_NAME)
 (coverage,args) = get_small_ds(small_ds,coverage,args)
 
 # Choose DataSet and VisionModel if needed: 
@@ -43,4 +43,4 @@ vision_model_name = 'ImageAvgPooling'  # 'ImageAvgPooling'  #'FeatureExtractor_R
 
 # Train and Evaluate Model: 
 mod_plot = 1 # bokeh plotting every epoch 
-trainer,model,args,pi,pi_cqr = evaluate_config(dataset_names,folder_path,file_name,args,coverage,vision_model_name,mod_plot)
+trainer,model,args,pi,pi_cqr = evaluate_config(dataset_names,FOLDER_PATH,FILE_NAME,args,coverage,vision_model_name,mod_plot)

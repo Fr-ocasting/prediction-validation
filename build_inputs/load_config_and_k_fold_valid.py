@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer
 from trainer import MultiModelTrainer
 from constants.config import get_args
-from constants.paths import folder_path,file_name
+from constants.paths import FOLDER_PATH,FILE_NAME
 import torch
 
 
@@ -56,7 +56,7 @@ def update_args_according_TE(args,TE,loss):
 def load_multimodeltrainer_and_train_it(args):
     results_df = pd.DataFrame()
     #save_dir = get_save_directory(args)
-    Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(folder_path,file_name,args)
+    Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(FOLDER_PATH,FILE_NAME,args)
     (loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = len(Datasets[0].columns))
     # Remove the first Fold 
     Model_list,Optimizer_list,DataLoader_list,Datasets,Scheduler_list = Model_list[1:],Optimizer_list[1:],DataLoader_list[1:],Datasets[1:],Scheduler_list[1:]

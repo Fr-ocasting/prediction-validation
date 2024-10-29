@@ -12,15 +12,15 @@ if working_dir not in sys.path:
 from build_netmob_data import load_subway_shp,load_netmob_gdf,find_ids_within_epsilon
 
 if torch.cuda.is_available():
-    data_folder_path = '../../../../data/'
-    netmob_data_folder_path = f"{data_folder_path}NetMob/"
-    PATH_iris = f'{data_folder_path}lyon_iris_shapefile/'
+    data_FOLDER_PATH = '../../../../data/'
+    netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
+    PATH_iris = f'{data_FOLDER_PATH}lyon_iris_shapefile/'
 else:
-    data_folder_path = '../../../data/'
-    netmob_data_folder_path = f"{data_folder_path}NetMob/"
+    data_FOLDER_PATH = '../../../data/'
+    netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
     PATH_iris = '../../../Data/lyon_iris_shapefile/'
 
-def buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_folder_path,PATH_iris):
+def buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_FOLDER_PATH,PATH_iris):
     ''' 
     args
     ------
@@ -28,10 +28,10 @@ def buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_folder_path,P
     
     '''
     # Load Ref Subway: 
-    ref_subway = load_subway_shp(folder_path = data_folder_path)
+    ref_subway = load_subway_shp(FOLDER_PATH = data_FOLDER_PATH)
 
     # Load subway gdf adn NetMob gdf
-    Netmob_gdf,_ = load_netmob_gdf(folder_path = netmob_data_folder_path,
+    Netmob_gdf,_ = load_netmob_gdf(FOLDER_PATH = netmob_data_FOLDER_PATH,
                                 data_folder = PATH_iris, 
                                 geojson_path = 'Lyon.geojson',
                                 zones_path = 'lyon.shp')
@@ -51,7 +51,7 @@ def buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_folder_path,P
 
 if __name__ == '__main__':
 
-    # from tile_ids_around_stations import buffer_between_tile_ids_and_subway_station,netmob_data_folder_path,PATH_iris
+    # from tile_ids_around_stations import buffer_between_tile_ids_and_subway_station,netmob_data_FOLDER_PATH,PATH_iris
 
     epsilon = 300
-    (gdf_stations,joined,result,maxi_nb_tile) = buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_folder_path,PATH_iris)
+    (gdf_stations,joined,result,maxi_nb_tile) = buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_FOLDER_PATH,PATH_iris)

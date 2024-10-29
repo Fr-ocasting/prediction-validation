@@ -21,6 +21,7 @@ if parent_dir not in sys.path:
 
 # Personnal import: 
 from constants.config import optimizer_specific_lr, get_config_embed, get_parameters
+from constants.paths import FILE_NAME, FOLDER_PATH
 from DL_class import QuantileLoss
 from dataset import  DataSet
 from TE_transfer_learning import TE_transfer
@@ -56,6 +57,8 @@ def forward_and_display_info(model,inputs):
 def match_period_coverage_with_netmob(filename):
     if (filename == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
         coverage_dataset = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
+    elif (filename == 'data_bidon.csv'):
+        coverage_dataset =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
     else:
         raise ValueError("The coverage period of this filename has not been defined")
 
@@ -118,8 +121,8 @@ def find_nearest_date(date_series, date, inferior=True):
     
     return nearest_index,nearest_indice
 
-def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahead,dataset_names,single_station = False,coverage_period = None):
-    df,invalid_dates,time_step_per_hour = load_raw_data(abs_path,folder_path,file_name,dataset_names,single_station = single_station)
+def get_DataSet_and_invalid_dates(W,D,H,step_ahead,dataset_names,single_station = False,coverage_period = None):
+    df,invalid_dates,time_step_per_hour = load_raw_data(dataset_names,single_station = single_station)
     if coverage_period is not None:
         df = df.loc[coverage_period]
         invalid_dates = list(set(invalid_dates) & set(coverage_period))
@@ -127,18 +130,22 @@ def get_DataSet_and_invalid_dates(abs_path,folder_path,file_name,W,D,H,step_ahea
     print(f"coverage period: {df.index.min()} - {df.index.max()}")
     return(dataset,invalid_dates)
 
-def load_raw_data(abs_path,folder_path,file_name,dataset_names,single_station = False,):
-    if (file_name == 'preprocessed_subway_15_min.csv') | (file_name == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (file_name=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):
-        subway_in = pd.read_csv(abs_path + folder_path+file_name,index_col = 0)
+def load_raw_data(dataset_names,single_station = False,):
+    # Init Invalid dates :
+    list_of_invalid_period = []
+    if (FILE_NAME == 'preprocessed_subway_15_min.csv') | (FILE_NAME == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (FILE_NAME=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):
+        
+        print(os.getcwd())
+        print(f"{FOLDER_PATH}/{FILE_NAME}")
+        print(sys.path)
+        
+        subway_in = pd.read_csv(f"{FOLDER_PATH}/{FILE_NAME}",index_col = 0)
         subway_in.columns.name = 'Station'
         subway_in.index = pd.to_datetime(subway_in.index)
 
         subway_in = subway_in[['Ampère Victor Hugo']] if single_station else subway_in
 
-        # Define Invalid Dates : 
-
-        # __ Subway-In invalid-dates:
-        list_of_invalid_period = []
+        # Subway-In invalid-dates:
         list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
         list_of_invalid_period.append([datetime(2019,1,30,8,15),datetime(2019,1,30,10,30)])
         list_of_invalid_period.append([datetime(2019,2,18,11),datetime(2019,2,18,13)])
@@ -147,28 +154,33 @@ def load_raw_data(abs_path,folder_path,file_name,dataset_names,single_station = 
         list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
         list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
 
-        # __ NetMob invalid-dates:
-        if 'netmob' in dataset_names:
-            list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
-            list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
-            list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
-
-
-        invalid_dates = []
-        time_step_per_hour = (60*60)/(subway_in.iloc[1].name - subway_in.iloc[0].name).seconds
-        for start,end in list_of_invalid_period:
-            invalid_dates = invalid_dates + list(pd.date_range(start,end,freq = f'{60/time_step_per_hour}min'))
-
-        # Restrain invalid_dates to the df: 
-        invalid_dates = list(set(invalid_dates) & set(subway_in.index))
-
-        print(f"Time-step per hour: {time_step_per_hour}")
-
-    elif file_name == 'Netmob.csv':
-        netmob = ...
+    
+    elif FILE_NAME == 'data_bidon.csv':
+        subway_in = pd.read_csv(f"{FOLDER_PATH}/{FILE_NAME}",index_col = 0)
+        subway_in.columns.name = 'Station'
+        subway_in.index = pd.to_datetime(subway_in.index)
 
     else:
-        raise NotImplementedError(f"file name option '{file_name}' has not been defined in 'load_row_data' ")
+        raise NotImplementedError(f"file name option '{FILE_NAME}' has not been defined in 'load_row_data' ")
+
+    # Tackle Invalid Dates from contextual data: 
+    # ___NetMob invalid-dates:
+    if 'netmob' in dataset_names:
+        list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
+        list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
+        list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
+
+
+    invalid_dates = []
+    time_step_per_hour = (60*60)/(subway_in.iloc[1].name - subway_in.iloc[0].name).seconds
+    for start,end in list_of_invalid_period:
+        invalid_dates = invalid_dates + list(pd.date_range(start,end,freq = f'{60/time_step_per_hour}min'))
+
+    # Restrain invalid_dates to the df: 
+    invalid_dates = list(set(invalid_dates) & set(subway_in.index))
+
+    print(f"Time-step per hour: {time_step_per_hour}")
+
         
     return(subway_in,invalid_dates,time_step_per_hour)
 
@@ -262,9 +274,9 @@ def load_scheduler(optimizer,args):
         scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[args.torch_scheduler_milestone])
     return(scheduler)
 
-def load_init_trainer(folder_path,file_name,args):
+def load_init_trainer(args):
     # Load dataset and invalid_dates 
-    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path,folder_path,file_name,args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
+    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
     (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
     return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
 

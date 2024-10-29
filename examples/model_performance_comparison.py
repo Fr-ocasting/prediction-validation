@@ -12,7 +12,7 @@ import numpy as np
 from train_model_on_k_fold_validation import train_valid_K_models,save_model_metrics
 from utils.utilities_DL import match_period_coverage_with_netmob
 from constants.config import get_args,update_modif
-from constants.paths import file_name,SAVE_DIRECTORY
+from constants.paths import FILE_NAME,SAVE_DIRECTORY
 from utils.save_results import get_date_id
 
 # ==== GET PARAMETERS ====
@@ -34,7 +34,7 @@ folds =  list(np.arange(args.K_fold)) #  list(np.arange(args.K_fold))  # [0]
 # ...
 
 update_modif(args)
-coverage = match_period_coverage_with_netmob(file_name)
+coverage = match_period_coverage_with_netmob(FILE_NAME)
 
 
 # Choose DataSet and VisionModel if needed: 

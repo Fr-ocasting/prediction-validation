@@ -87,7 +87,7 @@ def resize_tensor(T_i, H,W, positions):
     return(new_T_i)
 
 
-def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days,assert_transfer_mode= None ):
+def tackle_all_days(result,metadata,netmob_data_FOLDER_PATH,app,maxi_nb_tile,folder_days,assert_transfer_mode= None ):
     '''
     For a specific app, but for each day, read Two CSV: UL/DL 
     
@@ -102,11 +102,11 @@ def tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,fol
     # for each days  
     Tensors_days = []
     for day in folder_days:
-        Tensors_days,metadata = tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile,assert_transfer_mode)
+        Tensors_days,metadata = tackl_one_day(result,metadata,netmob_data_FOLDER_PATH,app,day,Tensors_days,maxi_nb_tile,assert_transfer_mode)
     Tensors_days = torch.stack(Tensors_days,dim=0)
     return(Tensors_days,metadata)
 
-def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,maxi_nb_tile, assert_transfer_mode= None ):
+def tackl_one_day(result,metadata,netmob_data_FOLDER_PATH,app,day,Tensors_days,maxi_nb_tile, assert_transfer_mode= None ):
     '''
     For a specific day and a specific app, read Two CSV: UL/DL 
     
@@ -118,7 +118,7 @@ def tackl_one_day(result,metadata,netmob_data_folder_path,app,day,Tensors_days,m
     nb_tiles:  number of cellules 100x100m
     24H: 96 time steps through each days
     '''
-    txt_paths = sorted(glob.glob(os.path.join(f'{netmob_data_folder_path}/{app}/{day}', "*.txt")))
+    txt_paths = sorted(glob.glob(os.path.join(f'{netmob_data_FOLDER_PATH}/{app}/{day}', "*.txt")))
     # For each transfert mode:
     Tensors_transfer,transfer_modes = [],[]
     for path in txt_paths:
@@ -204,8 +204,8 @@ def find_ids_within_epsilon(gdf1,gdf2,epsilon):
 
     return result,joined
 
-def load_subway_shp(folder_path = '../../Data/keolis_data_2019-2020/'):
-    zones_shp_path = folder_path+'ref_subway.csv'
+def load_subway_shp(FOLDER_PATH = '../../Data/keolis_data_2019-2020/'):
+    zones_shp_path = FOLDER_PATH+'ref_subway.csv'
 
     ref_subway = pd.read_csv(zones_shp_path)[['MEAN_X','MEAN_Y','COD_TRG','LIB_STA_SIFO']]
     with warnings.catch_warnings():
@@ -229,9 +229,9 @@ def load_netmob_json(data_folder, geojson_path = 'Lyon.geojson'):
     
     return(Netmob_gdf,n_rows,n_cols)
 
-def restrain_netmob_to_Lyon(Netmob_gdf,folder_path,zones_path):
+def restrain_netmob_to_Lyon(Netmob_gdf,FOLDER_PATH,zones_path):
     ''' Restraint "Netmob_gdf" to the working area '''
-    working_zones = gpd.read_file(f'{folder_path}{zones_path}')
+    working_zones = gpd.read_file(f'{FOLDER_PATH}{zones_path}')
     Netmob_gdf = gpd.GeoDataFrame(Netmob_gdf)
     Netmob_gdf.crs = 'epsg:4326'
     
@@ -239,20 +239,20 @@ def restrain_netmob_to_Lyon(Netmob_gdf,folder_path,zones_path):
     return(restrained_Lyon_gdf,working_zones)
 
 
-def load_netmob_restrained_to_lyon(folder_path,data_folder,
+def load_netmob_restrained_to_lyon(FOLDER_PATH,data_folder,
                     geojson_path = 'Lyon.geojson',
                     zones_path = 'lyon_iris_shapefile/lyon.shp',
                     ):
 
-    Netmob_gdf,n_rows,n_cols = load_netmob_json(folder_path, geojson_path)
+    Netmob_gdf,n_rows,n_cols = load_netmob_json(FOLDER_PATH, geojson_path)
     Netmob_gdf['centroid_lonlat'] = Netmob_gdf.geometry.apply(lambda x : x.centroid)
     Netmob_gdf = Netmob_gdf.set_geometry('centroid_lonlat')
     Netmob_gdf_joined,working_zones = restrain_netmob_to_Lyon(Netmob_gdf,data_folder,zones_path) #Associate an square to an IRIS when the centroid is inside it
     
     return(Netmob_gdf_joined,working_zones)
 
-def load_netmob_gdf(folder_path = '../../Data/NetMob/',data_folder = '../../Data/lyon_iris_shapefile/', geojson_path = 'Lyon.geojson',zones_path = 'lyon.shp'):
-    Netmob_gdf_joined,working_zones = load_netmob_restrained_to_lyon(folder_path,data_folder,geojson_path,zones_path)
+def load_netmob_gdf(FOLDER_PATH = '../../Data/NetMob/',data_folder = '../../Data/lyon_iris_shapefile/', geojson_path = 'Lyon.geojson',zones_path = 'lyon.shp'):
+    Netmob_gdf_joined,working_zones = load_netmob_restrained_to_lyon(FOLDER_PATH,data_folder,geojson_path,zones_path)
     Netmob_gdf_joined = Netmob_gdf_joined[['tile_id','INSEE_COM','NOM_COM','NOM_IRIS','geometry']] # 
     Netmob_gdf_joined = gpd.GeoDataFrame(Netmob_gdf_joined,crs='EPSG:4326') #Don't know why, but the geodataframe seem corrupted as we can't convert it into GeoJson, that's why we need to use "gpd.GeoDataFrame()"
 
@@ -265,19 +265,19 @@ if __name__ == '__main__':
 
     # Init: 
     if torch.cuda.is_available():
-        data_folder_path = '../../../../data/'
-        save_folder = f"{data_folder_path}NetMob_tensor/"
-        netmob_data_folder_path = f"{data_folder_path}NetMob/"
-        PATH_iris = f'{data_folder_path}lyon_iris_shapefile/'
+        data_FOLDER_PATH = '../../../../data/'
+        save_folder = f"{data_FOLDER_PATH}NetMob_tensor/"
+        netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
+        PATH_iris = f'{data_FOLDER_PATH}lyon_iris_shapefile/'
     else:
-        data_folder_path = '../../../data/'
-        save_folder = f"{data_folder_path}NetMob_tensor/"
-        netmob_data_folder_path = f"{data_folder_path}NetMob/"
+        data_FOLDER_PATH = '../../../data/'
+        save_folder = f"{data_FOLDER_PATH}NetMob_tensor/"
+        netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
         PATH_iris = '../Data/lyon_iris_shapefile/'
 
 
     # Load Ref Subway: 
-    ref_subway = load_subway_shp(folder_path = data_folder_path)
+    ref_subway = load_subway_shp(FOLDER_PATH = data_FOLDER_PATH)
 
     # Parameters: size of netmob image 
     step_south_north = 287  # Incremente by 287-ids when passing from south to north. 
@@ -292,7 +292,7 @@ if __name__ == '__main__':
         os.makedirs(save_folder)
 
     # Load subway gdf adn NetMob gdf
-    Netmob_gdf,working_zones = load_netmob_gdf(folder_path = netmob_data_folder_path,
+    Netmob_gdf,working_zones = load_netmob_gdf(FOLDER_PATH = netmob_data_FOLDER_PATH,
                                 data_folder = PATH_iris, 
                                 geojson_path = 'Lyon.geojson',
                                 zones_path = 'lyon.shp')
@@ -314,14 +314,14 @@ if __name__ == '__main__':
         24H: 96 time steps through each days
 
     ''' 
-    apps = [app for app in listdir(netmob_data_folder_path) if ((app != 'Lyon.geojson') and (not app.startswith('.'))) ]   # Avoid hidden folder and Lyon.geojson
+    apps = [app for app in listdir(netmob_data_FOLDER_PATH) if ((app != 'Lyon.geojson') and (not app.startswith('.'))) ]   # Avoid hidden folder and Lyon.geojson
     Tensors = []
     # For each app
     for app in apps: 
         print('App: ',app)
         metadata = {result['COD_TRG'][station_ind] : {} for station_ind in range(len(result))}
-        folder_days = [day for day in listdir(f'{netmob_data_folder_path}/{app}') if (not day.startswith('.')) ]
-        Tensors_days,metadata = tackle_all_days(result,metadata,netmob_data_folder_path,app,maxi_nb_tile,folder_days)
+        folder_days = [day for day in listdir(f'{netmob_data_FOLDER_PATH}/{app}') if (not day.startswith('.')) ]
+        Tensors_days,metadata = tackle_all_days(result,metadata,netmob_data_FOLDER_PATH,app,maxi_nb_tile,folder_days)
         torch.save(Tensors_days,f"{save_folder}{app}.pt")
         pickle.dump(metadata,open(f"{save_folder}{app}_metadata.pkl",'wb'))
 

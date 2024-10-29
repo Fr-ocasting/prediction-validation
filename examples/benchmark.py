@@ -12,7 +12,7 @@ import numpy as np
 from train_model_on_k_fold_validation import train_valid_K_models,save_model_metrics
 from utils.utilities_DL import match_period_coverage_with_netmob
 from constants.config import get_args,update_modif,update_args
-from constants.paths import file_name,folder_path,SAVE_DIRECTORY
+from constants.paths import FILE_NAME,FOLDER_PATH,SAVE_DIRECTORY
 from utils.save_results import get_date_id
 from K_fold_validation.K_fold_validation import KFoldSplitter
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
@@ -24,7 +24,7 @@ def local_get_args(model_name):
     args = get_args(model_name)
 
     # Modification :
-    args.epochs = 1 
+    args.epochs = 100 
     args.W = 0
     args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
     args.ray = False
@@ -42,7 +42,7 @@ def local_get_args(model_name):
     folds =  [0]
 
     # set total coverage period 
-    coverage = match_period_coverage_with_netmob(file_name)
+    coverage = match_period_coverage_with_netmob(FILE_NAME)
 
     return(args,folds,coverage,hp_tuning_on_first_fold)
 
@@ -53,8 +53,8 @@ def get_trial_id(args,dataset_names,vision_model_name=None):
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
     return trial_id
 
-def get_inputs(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds):
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+def get_inputs(dataset_names,args,coverage,vision_model_name,folds):
+    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
     return(K_fold_splitter,K_subway_ds,dic_class2rpz)
 
@@ -78,20 +78,27 @@ if __name__ == '__main__':
     save_folder = 'benchmark/fold0/'
     df_loss = pd.DataFrame()
 
-    model_name ='STGCN' #'MTGNN' # 'STGCN'  #'CNN' # 'DCRNN'
+    model_name ='STGCN' # start with STGCN
     (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name)
+    # ================================
+    args.epochs = 1  # MODIFICATION 
+    # ================================
+
     print(f"\nModel perf on {dataset_names} with {model_name}")
 
     trial_id = get_trial_id(args,dataset_names,vision_model_name=None)
-    K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(dataset_names,args,coverage,folder_path,file_name,vision_model_name,folds)
+    K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(dataset_names,args,coverage,vision_model_name,folds)
     ds = K_subway_ds[0]
 
     trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
 
-    for model_name in ['MTGNN','CNN','DCRNN']:
+    for model_name in ['MTGNN','CNN','DCRNN']:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
         (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name)
         args = update_args(args,ds,dataset_names)
         print(f"\nModel perf on {dataset_names} with {model_name}")
         trial_id = get_trial_id(args,dataset_names,vision_model_name=None)
 
         trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
+        print('trainer metrics: ', trainer.performane)
+        break
+

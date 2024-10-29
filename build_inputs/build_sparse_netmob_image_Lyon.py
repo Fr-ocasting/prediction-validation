@@ -16,9 +16,9 @@ if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
 
-def tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_folder_path,app,day,transfer_mode,columns):
+def tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_FOLDER_PATH,app,day,transfer_mode,columns):
     #Read CSV
-    txt_path = glob.glob(os.path.join(f'{netmob_data_folder_path}/{app}/{day}',f"*_{transfer_mode}.txt"))[0]
+    txt_path = glob.glob(os.path.join(f'{netmob_data_FOLDER_PATH}/{app}/{day}',f"*_{transfer_mode}.txt"))[0]
     transfer_mode,columns = get_information_from_path(txt_path)
     df = pd.read_csv(txt_path, sep = ' ', names = columns).set_index(['tile_id'])
     df = df.loc[Lyon_ids]
@@ -108,12 +108,12 @@ if __name__ == '__main__':
 
 
     # Init: ========================================
-    data_folder_path = '../../../../data/'
-    save_folder = f"{data_folder_path}NetMob_tensor/"
-    netmob_data_folder_path = f"{data_folder_path}NetMob/"
-    PATH_iris = f'{data_folder_path}lyon_iris_shapefile/'
+    data_FOLDER_PATH = '../../../../data/'
+    save_folder = f"{data_FOLDER_PATH}NetMob_tensor/"
+    netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
+    PATH_iris = f'{data_FOLDER_PATH}lyon_iris_shapefile/'
     # Load Ref Subway: 
-    ref_subway = load_subway_shp(folder_path = data_folder_path)
+    ref_subway = load_subway_shp(FOLDER_PATH = data_FOLDER_PATH)
 
     # Parameters: size of netmob image 
     step_south_north = 287  # Incremente by 287-ids when passing from south to north. 
@@ -127,7 +127,7 @@ if __name__ == '__main__':
         os.makedirs(save_folder)
 
     # Load subway gdf adn NetMob gdf
-    Netmob_gdf,working_zones = load_netmob_gdf(folder_path = netmob_data_folder_path,
+    Netmob_gdf,working_zones = load_netmob_gdf(FOLDER_PATH = netmob_data_FOLDER_PATH,
                                 data_folder = PATH_iris, 
                                 geojson_path = 'Lyon.geojson',
                                 zones_path = 'lyon.shp')
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     
     transfer_mode = 'DL'
     Lyon_ids = Netmob_gdf_dropped.tile_id
-    apps = [app for app in os.listdir(netmob_data_folder_path) if ((app != 'Lyon.geojson') and (not app.startswith('.'))) ]   # Avoid hidden folder and Lyon.geojson
+    apps = [app for app in os.listdir(netmob_data_FOLDER_PATH) if ((app != 'Lyon.geojson') and (not app.startswith('.'))) ]   # Avoid hidden folder and Lyon.geojson
 
 
     # For each app
@@ -149,9 +149,9 @@ if __name__ == '__main__':
     t0 = time.time()
     for app in apps: 
         T_days = []
-        folder_days = [day for day in os.listdir(f'{netmob_data_folder_path}/{app}') if (not day.startswith('.'))] 
+        folder_days = [day for day in os.listdir(f'{netmob_data_FOLDER_PATH}/{app}') if (not day.startswith('.'))] 
         for day in folder_days:
-            T = tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_folder_path,app,day,transfer_mode,columns)
+            T = tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_FOLDER_PATH,app,day,transfer_mode,columns)
             T_days.append(T)
         T_days = torch.cat(T_days)
         T_apps.append(T_days)
