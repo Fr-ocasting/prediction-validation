@@ -105,7 +105,7 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {}):
     config['quick_ds'] = False #if True then load small tensor with torch.randn(), instead of big one with pickle.load() and torch concat
     config['netmob_transfer_mode'] = 'DL' # 'UL' # None # -> Use as NetMob input only 'DL' or 'UL' transfer mode, or both
     config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
-    config['train_valid_test_split_method'] =  'iterative_method' # 'iterative_method' #'similar_length_method'
+    config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'
 
 
     # Optimization 
@@ -308,7 +308,6 @@ def update_args(args,subway_ds,dataset_names):
         raise NotImplementedError("Feature vector like 'subway_ds.U_train' doesn't have the expected shape")
     # ...
     args.num_nodes = subway_ds.raw_values.size(1)
-
     return(args)
 
 

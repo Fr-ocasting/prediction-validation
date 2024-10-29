@@ -54,21 +54,22 @@ def forward_and_display_info(model,inputs):
     return(output)
 
 
-def match_period_coverage_with_netmob(filename):
+def match_period_coverage_with_netmob(filename,dataset_names):
     if (filename == 'subway_IN_interpol_neg_15_min_2019_2020.csv'):
-        coverage_dataset = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
+        coverage = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
     elif (filename == 'data_bidon.csv'):
-        coverage_dataset =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
+        coverage =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1][:1000]
     else:
         raise ValueError("The coverage period of this filename has not been defined")
-
-    coverage_netmob =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
-    coverage = list(set(coverage_dataset)& set(coverage_netmob))
     
-    if len(coverage) != len(coverage_netmob):
+    if 'netmob' in dataset_names: 
+        coverage_netmob =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
+        coverage = sorted(list(set(coverage)& set(coverage_netmob)))
+        
+    if len(coverage) == 0:
         raise ValueError("Coverage period from dataset doesn't match the NetMob coverage period")
     else:
-        return(coverage_netmob)
+        return(coverage)
 
 
 def get_args_embedding(args,nb_words_embedding):

@@ -247,6 +247,7 @@ def load_model(args,dic_class2rpz):
 
         # Compute Weighted Adjacency Matrix: 
         adj,num_nodes = load_adj(adj_type = args.adj_type)
+
         adj[adj < args.threeshold] = 0
         
         adj = adj.to_numpy()
@@ -260,8 +261,6 @@ def load_model(args,dic_class2rpz):
             num_nodes = 1
         gso = torch.from_numpy(gso).to(args.device)
         # ...
-
-        
         model = STGCN(args,gso, blocks,Ko, num_nodes).to(args.device)
         
         number_of_st_conv_blocks = len(blocks) - 3

@@ -44,7 +44,7 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     args.ray = False  # !!!
 
     # Load covergae : 
-    coverage = match_period_coverage_with_netmob(FILE_NAME)
+    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['calendar','netmob'])
     return(args,coverage)
 
 if __name__ == '__main__':

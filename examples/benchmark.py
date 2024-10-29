@@ -19,7 +19,7 @@ from high_level_DL_method import load_model,load_optimizer_and_scheduler
 from trainer import Trainer
 
 
-def local_get_args(model_name):
+def local_get_args(model_name,dataset_names):
     # Load base args
     args = get_args(model_name)
 
@@ -42,7 +42,7 @@ def local_get_args(model_name):
     folds =  [0]
 
     # set total coverage period 
-    coverage = match_period_coverage_with_netmob(FILE_NAME)
+    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names)
 
     return(args,folds,coverage,hp_tuning_on_first_fold)
 
@@ -78,8 +78,9 @@ if __name__ == '__main__':
     save_folder = 'benchmark/fold0/'
     df_loss = pd.DataFrame()
 
-    model_name ='STGCN' # start with STGCN
-    (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name)
+    model_name ='STGCN' # start with # STGCN #CNN
+    # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
+    (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,dataset_names=['subway_in','netmob'])
     # ================================
     args.epochs = 1  # MODIFICATION 
     # ================================
@@ -92,8 +93,8 @@ if __name__ == '__main__':
 
     trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
 
-    for model_name in ['MTGNN','CNN','DCRNN']:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
-        (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name)
+    for model_name in ['CNN','MTGNN','DCRNN']:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
+        (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,dataset_names=['subway_in','netmob'])
         args = update_args(args,ds,dataset_names)
         print(f"\nModel perf on {dataset_names} with {model_name}")
         trial_id = get_trial_id(args,dataset_names,vision_model_name=None)

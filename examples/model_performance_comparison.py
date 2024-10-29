@@ -34,7 +34,7 @@ folds =  list(np.arange(args.K_fold)) #  list(np.arange(args.K_fold))  # [0]
 # ...
 
 update_modif(args)
-coverage = match_period_coverage_with_netmob(FILE_NAME)
+coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['subway_in','netmob'] )
 
 
 # Choose DataSet and VisionModel if needed: 

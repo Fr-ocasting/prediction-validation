@@ -25,7 +25,13 @@ except:
     print('HP tuning impossible')
 
 # Load config
-def get_args_coverage(model_name = 'STGCN'): #'CNN'
+def get_args_coverage(model_name = 'STGCN',dataset_names = ['subway_in','netmob']): #'CNN'
+    ''' 
+    
+    Args:
+    -----
+    dataset_names with netmob allow to set coverage period as the intersection with the coverage period from netmob.
+    '''
     args = get_args(model_name)
 
     # Modification : 
@@ -35,6 +41,6 @@ def get_args_coverage(model_name = 'STGCN'): #'CNN'
     args.torch_compile = False
     args = update_modif(args)
 
-    coverage = match_period_coverage_with_netmob(FILE_NAME)
+    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names)
     (coverage,args) = get_small_ds(False,coverage,args)  #small_ds = False
     return args,coverage

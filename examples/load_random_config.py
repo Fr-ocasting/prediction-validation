@@ -30,7 +30,7 @@ args.evaluate_complete_ds = False
 folds =  [0] #  list(np.arange(args.K_fold))  # [0]
 
 update_modif(args)
-coverage = match_period_coverage_with_netmob(FILE_NAME)
+coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['calendar','netmob'])
 
 # Choose DataSet and VisionModel if needed: 
 dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']

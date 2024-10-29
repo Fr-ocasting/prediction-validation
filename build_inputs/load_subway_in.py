@@ -30,7 +30,7 @@ def preprocess_subway_in(dataset,args,invalid_dates,normalize = True):
         subway_ds.columns = df_correspondance.COD_TRG
 
     elif (FILE_NAME == 'data_bidon.csv'):
-        subway_ds.columns = [f"unit_{k}" for k in range(40)]
+        subway_ds.columns = [f"unit_{k}" for k in range(len(dataset.raw_values[0,:]))]
 
     subway_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     
@@ -45,9 +45,6 @@ def load_subway_in(args,coverage,normalize=True):
     invalid_dates : All the dates which have been removed 
 
     '''
-    #dataset,invalid_dates = get_DataSet_and_invalid_dates(args.abs_path, 'data/',FILE_NAME,
-    #                                                    args.W,args.D,args.H,args.step_ahead,args.dataset_names,
-    #                                                    single_station = False,coverage_period = coverage)
     dataset,invalid_dates = get_DataSet_and_invalid_dates(args.W,args.D,args.H,args.step_ahead,args.dataset_names,
                                                         single_station = False,coverage_period = coverage)
     subway_ds = preprocess_subway_in(dataset,args,invalid_dates,normalize)
