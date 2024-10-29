@@ -1,5 +1,6 @@
 import os 
 import torch 
+
 # Usual paths: 
 if torch.cuda.is_available():
     FOLDER_PATH = '../../../../data' 
@@ -13,7 +14,6 @@ else:
     #FOLDER_PATH = '../../../../Data/'
     FOLDER_PATH = '../data'
     FILE_NAME = 'data_bidon.csv'
-
 
 SAVE_DIRECTORY = '../save/'
 

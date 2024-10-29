@@ -14,9 +14,9 @@ except:
 import sys 
 import os 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
-if parent_dir not in sys.path:
-    sys.path.insert(0,parent_dir)
+ROOT = os.path.abspath(os.path.join(current_file_path,'..'))
+if ROOT not in sys.path:
+    sys.path.insert(0,ROOT)
 # ...
 
 # Personnal import: 
@@ -134,12 +134,7 @@ def load_raw_data(dataset_names,single_station = False,):
     # Init Invalid dates :
     list_of_invalid_period = []
     if (FILE_NAME == 'preprocessed_subway_15_min.csv') | (FILE_NAME == 'subway_IN_interpol_neg_15_min_2019_2020.csv') | (FILE_NAME=='subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020.csv'):
-        
-        print(os.getcwd())
-        print(f"{FOLDER_PATH}/{FILE_NAME}")
-        print(sys.path)
-        
-        subway_in = pd.read_csv(f"{FOLDER_PATH}/{FILE_NAME}",index_col = 0)
+        subway_in = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}",index_col = 0)
         subway_in.columns.name = 'Station'
         subway_in.index = pd.to_datetime(subway_in.index)
 
@@ -156,7 +151,7 @@ def load_raw_data(dataset_names,single_station = False,):
 
     
     elif FILE_NAME == 'data_bidon.csv':
-        subway_in = pd.read_csv(f"{FOLDER_PATH}/{FILE_NAME}",index_col = 0)
+        subway_in = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}",index_col = 0)
         subway_in.columns.name = 'Station'
         subway_in.index = pd.to_datetime(subway_in.index)
 

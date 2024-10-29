@@ -29,6 +29,9 @@ def preprocess_subway_in(dataset,args,invalid_dates,normalize = True):
         df_correspondance.set_index('Station').reindex(dataset.columns)
         subway_ds.columns = df_correspondance.COD_TRG
 
+    elif (FILE_NAME == 'data_bidon.csv'):
+        subway_ds.columns = [f"unit_{k}" for k in range(40)]
+
     subway_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     
     return(subway_ds)

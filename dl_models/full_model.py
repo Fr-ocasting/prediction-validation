@@ -205,7 +205,7 @@ def load_model(args,dic_class2rpz):
         
     if args.model_name == 'DCRNN':
         model_kwargs = vars(args)
-        adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
+        adj,num_nodes = load_adj(adj_type = args.adj_type)
         model = DCRNNModel(adj, **model_kwargs)
         
     if args.model_name == 'STGCN':
@@ -246,7 +246,7 @@ def load_model(args,dic_class2rpz):
 
 
         # Compute Weighted Adjacency Matrix: 
-        adj,num_nodes = load_adj(args.abs_path,adj_type = args.adj_type)
+        adj,num_nodes = load_adj(adj_type = args.adj_type)
         adj[adj < args.threeshold] = 0
         
         adj = adj.to_numpy()
