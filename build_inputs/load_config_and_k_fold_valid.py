@@ -98,7 +98,7 @@ if __name__ == '__main__':
     # Load config
     model_name = 'STGCN'  #'CNN'
     args = get_args(model_name)
-    #args = get_args(model_name = model_name,learn_graph_structure = True)  # MTGNN
+    #args = get_args(model_name = model_name)  # MTGNN
 
     # Modification :
     args.epochs = 500

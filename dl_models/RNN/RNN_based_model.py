@@ -36,19 +36,33 @@ class RNN(nn.Module):
     
 
     def forward(self,x):
-        ''' x.shape : [B,C,N,L]'''
+        ''' x.shape : [B,C,N,L]
+        
+        has to be transformed in [B',L,C] to return [B',L,D*C']  
+        Where D = 2 if bidirectional else 1
+        '''
+        
         if len(x.shape) == 2:
             B,L = x.shape
             C,N = 1,1
         if len(x.shape) == 3:
             B,N,L = x.shape
             C = 1
+            permute_back = False
         elif len(x.shape)== 4:
             B,C,N,L = x.shape
+            x = x.permute(0,2,3,1)
+            x = x.reshape(-1,x.size(2),x.size(3))
+            permute_back = True
+
         # Init hidden state
         h0 = self.init_hidden(x.size(0) if self.batch_first else x.size(1))
 
         # Rnn
+        print(x.size())
+        print(h0[0].size())
+        print(self.rnn)
+
         x, hn = self.rnn(x,h0)  #[B,L,D*H_dim]
 
         # Output Module : 
@@ -57,7 +71,10 @@ class RNN(nn.Module):
         x = self.Dense_outs[-1](x)    # No activation
         
         # Reshape 
-        x = x.reshape(B,C,N,self.C_outs[-1])
+        if permute_back:
+            x = x.reshape(B,C,N,self.C_outs[-1])
+        else:
+            raise NotImplementedError('A completer')
         out = x.squeeze()
 
         return(out)

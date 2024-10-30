@@ -98,7 +98,7 @@ class TE_module(nn.Module):
         self.Tembedding_position = args_embedding.position
         self.N_repeat = 1 if self.multi_embedding else args.num_nodes
         self.C = args.C
-        self.N = args.N
+        self.N = args.num_nodes
 
 
 

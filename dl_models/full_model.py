@@ -16,7 +16,7 @@ if parent_dir not in sys.path:
 from dl_models.TimeEmbedding.time_embedding import TE_module
 from dl_models.CNN.CNN_based_model import CNN
 from dl_models.MTGNN.MTGNN import gtnet
-from dl_models.RNN_based_model import RNN
+from dl_models.RNN.RNN_based_model import RNN
 from dl_models.STGCN.STGCN import STGCN
 from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
 from dl_models.DCRNN.dcrnn_model import DCRNNModel
@@ -76,7 +76,7 @@ class full_model(nn.Module):
 
         # === Vision NetMob ===
         if 'netmob' in args.contextual_positions.keys():
-            args.args_vision.N = args.N
+            args.args_vision.N = args.num_nodes
             args.args_vision.H = args.H
             args.args_vision.W = args.W
             self.netmob_vision = load_vision_model(args.args_vision)
@@ -91,7 +91,7 @@ class full_model(nn.Module):
         # === Trafic Model ===
         self.core_model = load_model(args,dic_class2rpz)
 
-        self.N = args.N
+        self.N = args.num_nodes
 
 
         # Add positions for each contextual data:
@@ -202,7 +202,7 @@ def load_model(args,dic_class2rpz):
     if args.model_name == 'MTGNN': 
         from dl_models.MTGNN.load_config import args as MTGNN_args
         args = Namespace(**vars(args), **vars(MTGNN_args))
-        
+
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
@@ -211,12 +211,15 @@ def load_model(args,dic_class2rpz):
                     layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
         
     if args.model_name == 'DCRNN':
-        model_kwargs = vars(args)
+        from dl_models.DCRNN.load_config import args as DCRNN_args
+
+        args = Namespace(**vars(args), **vars(DCRNN_args))
         adj,num_nodes = load_adj(adj_type = args.adj_type)
-        model = DCRNNModel(adj, **model_kwargs)
+        model = DCRNNModel(adj, **vars(args))
         
     if args.model_name == 'STGCN':
         from dl_models.STGCN.load_config import args as STGCN_args
+
         args = Namespace(**vars(args), **vars(STGCN_args))
 
 
@@ -277,11 +280,19 @@ def load_model(args,dic_class2rpz):
         assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
 
     if args.model_name == 'LSTM':
-        model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional,lstm = True)
+        from dl_models.RNN.lstm_load_config import args as LSTM_args
+        args = Namespace(**vars(args), **vars(LSTM_args))
+        model = RNN(args.input_dim,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional,lstm = True)
+    
     if args.model_name == 'GRU':
-        model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional, gru = True)
+        from dl_models.RNN.gru_load_config import args as GRU_args
+        args = Namespace(**vars(args), **vars(GRU_args))
+        model = RNN(args.input_dim,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional, gru = True)
+   
     if args.model_name == 'RNN':
-        model = RNN(args.L,args.h_dim,args.C_outs, args.num_layers, nonlinearity = 'tanh',bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional) 
+        from dl_models.RNN.rnn_load_config import args as RNN_args
+        args = Namespace(**vars(args), **vars(RNN_args))
+        model = RNN(args.input_dim,args.h_dim,args.C_outs, args.num_layers, nonlinearity = 'tanh',bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional) 
 
 
     model_memory_cost(model)

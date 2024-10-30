@@ -1,55 +1,10 @@
 import torch 
 import argparse
 import random
-import torch.nn as nn
 import os 
 
-def get_config(model_name,learn_graph_structure = None,other_params =  {},config = {}):
+def get_config(model_name,config = {}):
     config['model_name'] = model_name
-    if False:
-        if model_name == 'DCRNN':
-            config  = dict(model_name= model_name,
-                        adj_type = 'dist',
-                        cl_decay_steps = 1000,  # Tant que use_curriculum_learning = False, ne sera jamais utilisé
-                        use_curriculum_learning = False, #Methode d'apprentissage. Pas besoin ici
-                        input_dim = 1 ,  # Number of featuree :  Flow, Velocity ...
-                        max_diffusion_step = 2, #1,2,3 ...
-                        filter_type ='random_walk' , #'laplacian' # 'random_walk' , # 'dual_random_walk'
-                        num_nodes = 1 , #1
-                        num_rnn_layers = 1, #1
-                        rnn_units = 1,
-            )
-
-
-
-        if model_name== 'LSTM':
-            config = dict(model_name= model_name,#epochs = [30],
-                            calib_prop = [0.5], 
-                            enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
-
-                            h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
-                            bidirectional = [True,False]
-            )
-            
-        if model_name == 'GRU':
-            config = dict(model_name= model_name,#epochs = [30],
-                            calib_prop = [0.5],
-                            enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
-
-                            h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
-                            bidirectional = [True,False]
-            )
-
-        if model_name == 'RNN':
-            config = dict(model_name= model_name,#epochs = [30], 
-                        calib_prop = [0.5],
-                            enable_cuda = torch.cuda.is_available(), seed = 42, dataset = 'subway_15_min',
-
-                            h_dim =[16,32,64],C_outs = [[16,2],[32,2],[16,16,2]],num_layers = 2,bias = True,
-                            bidirectional = [True,False]
-            )
-            
-
     # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
@@ -142,16 +97,12 @@ def get_config(model_name,learn_graph_structure = None,other_params =  {},config
     # ===   ===
     config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
 
-    # Add other parameters:
-    for key in other_params.keys():
-        config[key] = other_params[key]
-    # ...
 
     # Define Output dimension: 
-        if config['loss_function_type'] == 'MSE': out_dim = 1
-        elif config['loss_function_type'] == 'quantile': out_dim = 2
-        else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
-        config['out_dim'] = out_dim
+    if config['loss_function_type'] == 'MSE': out_dim = 1
+    elif config['loss_function_type'] == 'quantile': out_dim = 2
+    else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
+    config['out_dim'] = out_dim
     # ...
 
     # Vision Model:
@@ -193,8 +144,8 @@ def get_config_embed(nb_words_embedding,embedding_dim,position):
     config_Tembed = dict(nb_words_embedding= nb_words_embedding,embedding_dim = embedding_dim, position=position)
     return(config_Tembed)
 
-def get_args(model_name,learn_graph_structure = None,other_params =  {}):
-    config = get_config(model_name,learn_graph_structure,other_params)
+def get_args(model_name):
+    config = get_config(model_name)
     args = get_parameters(config)
     return(args)
 
@@ -258,10 +209,8 @@ def update_args(args,subway_ds,dataset_names):
 
     if subway_ds.U_train.dim() == 3:
         args.C = 1
-        args.N = subway_ds.U_train.size(1) 
     elif subway_ds.U_train.dim() == 4:
-        args.C = subway_ds.U_train.size(1)
-        args.N = subway_ds.U_train.size(2) 
+        args.C = subway_ds.U_train.size(1) 
     else:
         raise NotImplementedError("Feature vector like 'subway_ds.U_train' doesn't have the expected shape")
     # ...
