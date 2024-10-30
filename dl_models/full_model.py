@@ -13,13 +13,13 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-from dl_models.time_embedding import TE_module
-from dl_models.CNN_based_model import CNN
-from dl_models.MTGNN import gtnet
+from dl_models.TimeEmbedding.time_embedding import TE_module
+from dl_models.CNN.CNN_based_model import CNN
+from dl_models.MTGNN.MTGNN import gtnet
 from dl_models.RNN_based_model import RNN
-from dl_models.STGCN import STGCN
-from dl_models.STGCN_utilities import calc_chebynet_gso,calc_gso
-from dl_models.dcrnn_model import DCRNNModel
+from dl_models.STGCN.STGCN import STGCN
+from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
+from dl_models.DCRNN.dcrnn_model import DCRNNModel
 from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling,FeatureExtractor_ResNetInspired_bis
 from dl_models.vision_models.AttentionFeatureExtractor import AttentionFeatureExtractor
 from dl_models.vision_models.FeatureExtractorEncoderDecoder import FeatureExtractorEncoderDecoder
@@ -27,6 +27,7 @@ from dl_models.vision_models.VideoFeatureExtractorWithSpatialTemporalAttention i
 
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
+from argparse import Namespace
 
 def filter_args(func, args):
     sig = inspect.signature(func)
@@ -194,8 +195,14 @@ def load_model(args,dic_class2rpz):
     args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
 
     if args.model_name == 'CNN': 
-        model = CNN(args, kernel_size = (2,1),args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
+        from dl_models.CNN.load_config import args as CNN_args
+        args = Namespace(**vars(args), **vars(CNN_args))
+        model = CNN(args,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
+
     if args.model_name == 'MTGNN': 
+        from dl_models.MTGNN.load_config import args as MTGNN_args
+        args = Namespace(**vars(args), **vars(MTGNN_args))
+        
         model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
                     predefined_A=args.predefined_A, static_feat=args.static_feat, 
                     dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
@@ -209,6 +216,9 @@ def load_model(args,dic_class2rpz):
         model = DCRNNModel(adj, **model_kwargs)
         
     if args.model_name == 'STGCN':
+        from dl_models.STGCN.load_config import args as STGCN_args
+        args = Namespace(**vars(args), **vars(STGCN_args))
+
 
         # Set Ko : Last Temporal Channel dimension before passing through output module :
         if args.enable_padding: 
@@ -219,10 +229,10 @@ def load_model(args,dic_class2rpz):
         # With padding, the output channel dimension will stay constant and equal to L
         # Sometimes, with no Trafic Data, L = 0, then we have to set Ko = 1, independant of L
 
-        if hasattr(vars(args),'args_embedding') and (len(vars(args.args_embedding))):
+        if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0):
             Ko = Ko + args.args_embedding.embedding_dim
 
-        if  hasattr(vars(args),'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
+        if  hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
             # Depend wether out_dim is implicit or defined by other parameters:
             if hasattr(args.args_vision,'out_dim'):
                 Ko = Ko + args.args_vision.out_dim

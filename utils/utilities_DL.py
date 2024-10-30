@@ -75,7 +75,7 @@ def match_period_coverage_with_netmob(filename,dataset_names):
 def get_args_embedding(args,nb_words_embedding):
     if args.time_embedding:
         config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
-        args_embedding = get_parameters(config_Tembed,description = 'TimeEmbedding')
+        args_embedding = get_parameters(config_Tembed)
     else:
         args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
     return(args_embedding)

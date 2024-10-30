@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-from dl_models.dcrnn_cell import DCGRUCell
+from dl_models.DCRNN.dcrnn_cell import DCGRUCell
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

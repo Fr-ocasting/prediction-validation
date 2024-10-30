@@ -19,12 +19,12 @@ from high_level_DL_method import load_model,load_optimizer_and_scheduler
 from trainer import Trainer
 
 
-def local_get_args(model_name,dataset_names):
+def local_get_args(model_name,dataset_names,epochs):
     # Load base args
     args = get_args(model_name)
 
     # Modification :
-    args.epochs = 100 
+    args.epochs = epochs 
     args.W = 0
     args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
     args.ray = False
@@ -64,11 +64,19 @@ def train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss):
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
     trainer.train_and_valid(mod = 1000,mod_plot = None) 
-
     df_loss[f"{model_name}_train_loss"] = trainer.train_loss
     df_loss[f"{model_name}_valid_loss"] = trainer.valid_loss
 
     return(trainer,df_loss)
+
+def keep_track_on_model_metrics(df_results,model_name,performance):
+    row = pd.DataFrame({'Model':[model_name],
+                        'Valid_loss':[performance['valid_loss']],
+                        'Valid_metrics':[performance['valid_metrics']['mse']],
+                        'Test_metrics':[performance['test_metrics']['mse']],
+                        })
+    df_results = pd.concat([df_results,row])
+    return df_results
 
 if __name__ == '__main__':
 
@@ -76,14 +84,15 @@ if __name__ == '__main__':
     dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"]
     vision_model_name = None
     save_folder = 'benchmark/fold0/'
-    df_loss = pd.DataFrame()
+    df_loss,df_results = pd.DataFrame(),pd.DataFrame()
+    epochs = 1
 
     model_name ='STGCN' # start with # STGCN #CNN
+    print(f'\n>>>>Training {model_name}')
     # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
-    (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,dataset_names=['subway_in','netmob'])
-    # ================================
-    args.epochs = 1  # MODIFICATION 
-    # ================================
+    (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,
+                                                                   dataset_names=['subway_in','netmob'],
+                                                                   epochs = epochs)
 
     print(f"\nModel perf on {dataset_names} with {model_name}")
 
@@ -92,14 +101,18 @@ if __name__ == '__main__':
     ds = K_subway_ds[0]
 
     trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
-
+    df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)
     for model_name in ['CNN','MTGNN','DCRNN']:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
-        (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,dataset_names=['subway_in','netmob'])
+        print(f'\n>>>>Training {model_name}')
+        (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,
+                                                                    dataset_names=['subway_in','netmob'],
+                                                                    epochs = epochs)
         args = update_args(args,ds,dataset_names)
         print(f"\nModel perf on {dataset_names} with {model_name}")
         trial_id = get_trial_id(args,dataset_names,vision_model_name=None)
 
         trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
-        print('trainer metrics: ', trainer.performane)
-        break
+        df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)
+
+    print(df_results)
 

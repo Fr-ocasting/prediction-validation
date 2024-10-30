@@ -11,7 +11,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-import dl_models.STGCN_layer as layers
+import dl_models.STGCN.STGCN_layer as layers
 
 # ============================================================
 # Inspired by  https://github.com/hazdzz/STGCN/tree/main
@@ -50,14 +50,14 @@ class STGCN(nn.Module):
         self.out_dim = blocks[-1][-1]
         modules = []
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_fun, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
 
         self.Ko = Ko
 
 
         if self.Ko > 0:
-            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_fun, args.enable_bias, args.dropout)
+            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_func, args.enable_bias, args.dropout)
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=blocks[-3][-1], out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)
@@ -93,8 +93,8 @@ class STGCN(nn.Module):
             # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
             x = self.st_blocks(x)
 
-            B,C,L,N = x.size() 
             if self.Ko > 1:
+                # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
                 x = self.output(x)
             elif self.Ko == 0:
                 # [B,C,L',N] ->  [B,1,L',N]
@@ -103,11 +103,13 @@ class STGCN(nn.Module):
                 x = self.fc2(x).permute(0, 3, 1, 2)
 
             x = x.squeeze()
+
             if B ==1:
                 x = x.unsqueeze(0)
             if N == 1:
                 x = x.unsqueeze(-1)
             if self.out_dim == 1:
                 x = x.unsqueeze(-2)
+            
             x = x.permute(0,2,1)
             return x

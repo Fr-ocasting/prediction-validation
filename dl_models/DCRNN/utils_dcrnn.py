@@ -12,7 +12,7 @@ def calculate_normalized_laplacian(adj):
     :return:
     """
     adj = sp.coo_matrix(adj)
-    d = np.array(adj.sum(1))
+    d = np.array(adj.sum(1)).astype(float)
     d_inv_sqrt = np.power(d, -0.5).flatten()
     d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
     d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
@@ -22,7 +22,7 @@ def calculate_normalized_laplacian(adj):
 
 def calculate_random_walk_matrix(adj_mx):
     adj_mx = sp.coo_matrix(adj_mx)
-    d = np.array(adj_mx.sum(1))
+    d = np.array(adj_mx.sum(1)).astype(float)
     d_inv = np.power(d, -1).flatten()
     d_inv[np.isinf(d_inv)] = 0.
     d_mat_inv = sp.diags(d_inv)
@@ -45,6 +45,7 @@ def calculate_scaled_laplacian(adj_mx, lambda_max=2, undirected=True):
     M, _ = L.shape
     I = sp.identity(M, format='csr', dtype=L.dtype)
     L = (2 / lambda_max * L) - I
+
     return L.astype(np.float32)
 
 

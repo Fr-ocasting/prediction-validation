@@ -45,7 +45,7 @@ def get_point_to_evaluate(args):
             'gso_type': 'rw_renorm_lap',
             'adj_type':'corr',
             'stblock_num':3,
-            'act_fun':'gtu'}
+            'act_func':'gtu'}
             ]
     elif args.model_name == 'CNN':
         point_to_evaluate = [{

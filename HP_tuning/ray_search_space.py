@@ -24,7 +24,7 @@ def get_search_space_ray(args):
 
     config_stgcn = {"Kt" : tune.choice([2,3,4]),
                     "stblock_num" : tune.choice([2,3,4]),
-                    "act_fun" : tune.choice(['glu','gtu']),
+                    "act_func" : tune.choice(['glu','gtu']),
                     "Ks" :  tune.choice([2,3]),
                     "graph_conv_type" : tune.choice(['cheb_graph_conv','graph_conv']),
                     "gso_type" : tune.choice(['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj']),

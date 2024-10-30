@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-from dl_models.MTGNN_layer import graph_constructor, LayerNorm,dilated_inception,mixprop
+from dl_models.MTGNN.MTGNN_layer import graph_constructor, LayerNorm,dilated_inception,mixprop
 
 # Input : 
 #   - Semble travailler avec un X [B,C,N,L]

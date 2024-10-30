@@ -153,7 +153,7 @@ class ChebGraphConv(nn.Module):
         x = x.permute(0, 2, 3, 1)
 
         if self.Ks - 1 < 0:
-            raise ValueError(f'ERROR: the graph convolution kernel size Ks has to be a positive integer, but received {self.Ks}.')  
+            raise ValueError(f'ERROR: the graph convolution kernel size Ks has to be a strict positive integer, but received {self.Ks}.')  
         elif self.Ks - 1 == 0:
             x_0 = x
             x_list = [x_0]

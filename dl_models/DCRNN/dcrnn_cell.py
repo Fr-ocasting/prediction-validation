@@ -11,7 +11,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-from dl_models.utils_dcrnn import calculate_scaled_laplacian,calculate_random_walk_matrix
+from dl_models.DCRNN.utils_dcrnn import calculate_scaled_laplacian,calculate_random_walk_matrix
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -149,12 +149,12 @@ class DCGRUCell(torch.nn.Module):
         if self._max_diffusion_step == 0:
             pass
         else:
+            # Support is a Weighted Adjacency Matrix
             for support in self._supports:
-                x1 = torch.sparse.mm(support, x0)
+                x1 = torch.sparse.mm(support.float(), x0)
                 x = self._concat(x, x1)
-
                 for k in range(2, self._max_diffusion_step + 1):
-                    x2 = 2 * torch.sparse.mm(support, x1) - x0
+                    x2 = 2 * torch.sparse.mm(support.float(), x1) - x0
                     x = self._concat(x, x2)
                     x1, x0 = x2, x1
 
