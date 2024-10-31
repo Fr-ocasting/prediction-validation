@@ -29,11 +29,11 @@ from dl_models.MTGNN.MTGNN_layer import graph_constructor, LayerNorm,dilated_inc
 #   - La gate passe par une sigmoid
 #   - Les deux sont multiplié, puis passe dans un dropout
 class gtnet(nn.Module):
-    def __init__(self, gcn_true, buildA_true, gcn_depth, num_nodes, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, in_dim=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True,args_embedding=None):
+    def __init__(self, gcn_true, buildA_true, gcn_depth, n_vertex, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, c_in=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True,args_embedding=None):
         super(gtnet, self).__init__()
         self.gcn_true = gcn_true
         self.buildA_true = buildA_true
-        self.num_nodes = num_nodes
+        self.n_vertex = n_vertex
         self.dropout = dropout
         self.predefined_A = predefined_A
         self.out_dim = out_dim
@@ -44,10 +44,10 @@ class gtnet(nn.Module):
         self.gconv1 = nn.ModuleList()
         self.gconv2 = nn.ModuleList()
         self.norm = nn.ModuleList()
-        self.start_conv = nn.Conv2d(in_channels=in_dim,
+        self.start_conv = nn.Conv2d(in_channels=c_in,
                                     out_channels=residual_channels,
                                     kernel_size=(1, 1))
-        self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
+        self.gc = graph_constructor(n_vertex, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
 
 
         self.seq_length = seq_length
@@ -91,9 +91,9 @@ class gtnet(nn.Module):
                     self.gconv2.append(mixprop(conv_channels, residual_channels, gcn_depth, dropout, propalpha))
 
                 if self.seq_length>self.receptive_field:
-                    self.norm.append(LayerNorm((residual_channels, num_nodes, self.seq_length - rf_size_j + 1),elementwise_affine=layer_norm_affline))
+                    self.norm.append(LayerNorm((residual_channels, n_vertex, self.seq_length - rf_size_j + 1),elementwise_affine=layer_norm_affline))
                 else:
-                    self.norm.append(LayerNorm((residual_channels, num_nodes, self.receptive_field - rf_size_j + 1),elementwise_affine=layer_norm_affline))
+                    self.norm.append(LayerNorm((residual_channels, n_vertex, self.receptive_field - rf_size_j + 1),elementwise_affine=layer_norm_affline))
 
                 new_dilation *= dilation_exponential
 
@@ -107,15 +107,15 @@ class gtnet(nn.Module):
                                              kernel_size=(1,1),
                                              bias=True)
         if self.seq_length > self.receptive_field:
-            self.skip0 = nn.Conv2d(in_channels=in_dim, out_channels=skip_channels, kernel_size=(1, self.seq_length), bias=True)
+            self.skip0 = nn.Conv2d(in_channels=c_in, out_channels=skip_channels, kernel_size=(1, self.seq_length), bias=True)
             self.skipE = nn.Conv2d(in_channels=residual_channels, out_channels=skip_channels, kernel_size=(1, self.seq_length-self.receptive_field+1), bias=True)
 
         else:
-            self.skip0 = nn.Conv2d(in_channels=in_dim, out_channels=skip_channels, kernel_size=(1, self.receptive_field), bias=True)
+            self.skip0 = nn.Conv2d(in_channels=c_in, out_channels=skip_channels, kernel_size=(1, self.receptive_field), bias=True)
             self.skipE = nn.Conv2d(in_channels=residual_channels, out_channels=skip_channels, kernel_size=(1, 1), bias=True)
 
 
-        self.idx = torch.arange(self.num_nodes).to(device)
+        self.idx = torch.arange(self.n_vertex).to(device)
 
 
     def forward(self, x,idx=None):

@@ -2,10 +2,10 @@ import torch
 import torch.nn as nn
 
 class AttentionFeatureExtractor(nn.Module):
-    def __init__(self, c_in=3, out_dim=64, N=40):
+    def __init__(self, c_in=3, out_dim=64, n_vertex=40):
         super(AttentionFeatureExtractor, self).__init__()
         self.z_dim = out_dim
-        self.N = N
+        self.n_vertex = n_vertex
 
         # Encodeur convolutionnel
         self.encoder = nn.Sequential(

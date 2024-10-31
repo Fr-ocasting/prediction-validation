@@ -38,3 +38,6 @@ parser.add_argument('--act_func', type=str, default='glu',
                     help="Type of activation function on the output module (FC layers at the output of STGCN)")
 
 args = parser.parse_args(args=[])
+
+
+

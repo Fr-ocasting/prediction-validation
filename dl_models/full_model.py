@@ -76,7 +76,7 @@ class full_model(nn.Module):
 
         # === Vision NetMob ===
         if 'netmob' in args.contextual_positions.keys():
-            args.args_vision.N = args.num_nodes
+            args.args_vision.n_vertex = args.n_vertex
             args.args_vision.H = args.H
             args.args_vision.W = args.W
             self.netmob_vision = load_vision_model(args.args_vision)
@@ -91,7 +91,7 @@ class full_model(nn.Module):
         # === Trafic Model ===
         self.core_model = load_model(args,dic_class2rpz)
 
-        self.N = args.num_nodes
+        self.n_vertex = args.n_vertex
 
 
         # Add positions for each contextual data:
@@ -118,7 +118,7 @@ class full_model(nn.Module):
         extracted_feature = self.netmob_vision(netmob_video_batch)
 
         # Reshape  [B*N,Z] -> [B,C,N,Z]
-        extracted_feature = extracted_feature.reshape(B,self.N,-1)
+        extracted_feature = extracted_feature.reshape(B,self.n_vertex,-1)
         extracted_feature = extracted_feature.unsqueeze(1)
 
         return extracted_feature
@@ -132,8 +132,8 @@ class full_model(nn.Module):
 
         # [B,N*Z] ->  [B,N,Z]
         B,NZ = extracted_feature.size()
-        Z = NZ//self.N
-        extracted_feature = extracted_feature.view(B,self.N,Z) 
+        Z = NZ//self.n_vertex
+        extracted_feature = extracted_feature.view(B,self.n_vertex,Z) 
         # ...
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
@@ -201,98 +201,43 @@ def load_model(args,dic_class2rpz):
 
     if args.model_name == 'MTGNN': 
         from dl_models.MTGNN.load_config import args as MTGNN_args
-        args = Namespace(**vars(args), **vars(MTGNN_args))
-
-        model = gtnet(args.gcn_true, args.buildA_true, args.gcn_depth, args.num_nodes, args.device, 
-                    predefined_A=args.predefined_A, static_feat=args.static_feat, 
-                    dropout=args.dropout, subgraph_size=args.subgraph_size, node_dim=args.node_dim, 
-                    dilation_exponential=args.dilation_exponential, conv_channels=args.conv_channels, residual_channels=args.residual_channels, 
-                    skip_channels=args.skip_channels, end_channels=args.end_channels, seq_length=args.L, in_dim=args.c_in, out_dim=args.out_dim, 
-                    layers=args.layers, propalpha=args.propalpha, tanhalpha=args.tanhalpha, layer_norm_affline=args.layer_norm_affline,args_embedding=args_embedding)
+        model = gtnet(**vars(MTGNN_args),
+                    out_dim=args.out_dim, 
+                    args_embedding=args_embedding,
+                    seq_length=args.L,
+                    device = args.device,
+                    n_vertex =  args.n_vertex,
+                    dropout=args.dropout).to(args.device)
         
     if args.model_name == 'DCRNN':
         from dl_models.DCRNN.load_config import args as DCRNN_args
-
         args = Namespace(**vars(args), **vars(DCRNN_args))
-        adj,num_nodes = load_adj(adj_type = args.adj_type)
-        model = DCRNNModel(adj, **vars(args))
+        adj,n_vertex = load_adj(adj_type = args.adj_type)
+        model = DCRNNModel(adj, **vars(args)).to(args.device)
         
     if args.model_name == 'STGCN':
         from dl_models.STGCN.load_config import args as STGCN_args
-
+        from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
         args = Namespace(**vars(args), **vars(STGCN_args))
-
-
-        # Set Ko : Last Temporal Channel dimension before passing through output module :
-        if args.enable_padding: 
-            Ko = args.L  # if args.L > 0 else 1
-        else :
-            Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num    
-
-        # With padding, the output channel dimension will stay constant and equal to L
-        # Sometimes, with no Trafic Data, L = 0, then we have to set Ko = 1, independant of L
-
-        if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0):
-            Ko = Ko + args.args_embedding.embedding_dim
-
-        if  hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
-            # Depend wether out_dim is implicit or defined by other parameters:
-            if hasattr(args.args_vision,'out_dim'):
-                Ko = Ko + args.args_vision.out_dim
-            else:
-                vision_out_dim = args.args_vision.L*args.args_vision.h_dim//2
-                Ko = Ko + vision_out_dim
-
-        #  ...
-
-        # Define Blocks  (should be in a STGCN config file...)
-        blocks = []
-        blocks.append([1])
-        for l in range(args.stblock_num):
-            blocks.append([64, 16, 64])
-        if Ko == 0:
-            blocks.append([128])
-        elif Ko > 0:
-            blocks.append([128, 128])
-        blocks.append([args.out_dim])
-        # ...
-
-
-        # Compute Weighted Adjacency Matrix: 
-        adj,num_nodes = load_adj(adj_type = args.adj_type)
-
-        adj[adj < args.threeshold] = 0
-        
-        adj = adj.to_numpy()
-        gso = calc_gso(adj, args.gso_type)
-        if args.graph_conv_type == 'cheb_graph_conv':   
-            gso = calc_chebynet_gso(gso)     # Calcul la valeur propre max du gso. Si lambda > 2 : gso = gso - I , sinon : gso = 2gso/lambda - I 
-        gso = gso.toarray()
-        gso = gso.astype(dtype=np.float32)
-        if args.single_station:
-            gso = np.array([[1]]).astype(dtype=np.float32)
-            num_nodes = 1
-        gso = torch.from_numpy(gso).to(args.device)
-        # ...
-        model = STGCN(args,gso, blocks,Ko, num_nodes).to(args.device)
-        
-        number_of_st_conv_blocks = len(blocks) - 3
-        assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
+        Ko = get_output_kernel_size(args)
+        blocks = get_block_dims(args,Ko)
+        gso,n_vertex = get_gso_from_adj(args)
+        model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
 
     if args.model_name == 'LSTM':
         from dl_models.RNN.lstm_load_config import args as LSTM_args
         #args = Namespace(**vars(args), **vars(LSTM_args))
-        model = RNN(**vars(LSTM_args),L=args.L,dropout=args.dropout)
+        model = RNN(**vars(LSTM_args),L=args.L,dropout=args.dropout).to(args.device)
                           
     if args.model_name == 'GRU':
         from dl_models.RNN.gru_load_config import args as GRU_args
         #args = Namespace(**vars(args), **vars(GRU_args))
-        model = RNN(**vars(GRU_args),L=args.L, dropout=args.dropout)
+        model = RNN(**vars(GRU_args),L=args.L, dropout=args.dropout).to(args.device)
    
     if args.model_name == 'RNN':
         from dl_models.RNN.rnn_load_config import args as RNN_args
         #args = Namespace(**vars(args), **vars(RNN_args))
-        model = RNN(**vars(RNN_args),L=args.L,dropout=args.dropout) 
+        model = RNN(**vars(RNN_args),L=args.L,dropout=args.dropout).to(args.device)
 
 
     model_memory_cost(model)

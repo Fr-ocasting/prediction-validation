@@ -44,20 +44,20 @@ class STGCN(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, args, gso, blocks,Ko, n_vertex):
+    def __init__(self, args, gso, blocks,Ko):
         super(STGCN, self).__init__()
 
         self.out_dim = blocks[-1][-1]
         modules = []
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, args.n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
 
         self.Ko = Ko
 
 
         if self.Ko > 0:
-            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], n_vertex, args.act_func, args.enable_bias, args.dropout)
+            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout)
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=blocks[-3][-1], out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)

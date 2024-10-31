@@ -214,7 +214,7 @@ def update_args(args,subway_ds,dataset_names):
     else:
         raise NotImplementedError("Feature vector like 'subway_ds.U_train' doesn't have the expected shape")
     # ...
-    args.num_nodes = subway_ds.raw_values.size(1)
+    args.n_vertex = subway_ds.raw_values.size(1)
     return(args)
 
 

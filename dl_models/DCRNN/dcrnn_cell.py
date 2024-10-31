@@ -44,14 +44,14 @@ class LayerParams:
 
 
 class DCGRUCell(torch.nn.Module):
-    def __init__(self, num_units, adj_mx, max_diffusion_step, num_nodes, nonlinearity='tanh',
+    def __init__(self, num_units, adj_mx, max_diffusion_step, n_vertex, nonlinearity='tanh',
                  filter_type="laplacian", use_gc_for_ru=True):
         """
 
         :param num_units:
         :param adj_mx:
         :param max_diffusion_step:
-        :param num_nodes:
+        :param n_vertex:
         :param nonlinearity:
         :param filter_type: "laplacian", "random_walk", "dual_random_walk".
         :param use_gc_for_ru: whether to use Graph convolution to calculate the reset and update gates.
@@ -60,7 +60,7 @@ class DCGRUCell(torch.nn.Module):
         super().__init__()
         self._activation = torch.tanh if nonlinearity == 'tanh' else torch.relu
         # support other nonlinearities up here?
-        self._num_nodes = num_nodes
+        self._n_vertex = n_vertex
         self._num_units = num_units
         self._max_diffusion_step = max_diffusion_step
         self._supports = []
@@ -92,11 +92,11 @@ class DCGRUCell(torch.nn.Module):
 
     def forward(self, inputs, hx):
         """Gated recurrent unit (GRU) with Graph Convolution.
-        :param inputs: (B, num_nodes * input_dim)
-        :param hx: (B, num_nodes * rnn_units)
+        :param inputs: (B, n_vertex * input_dim)
+        :param hx: (B, n_vertex * rnn_units)
 
         :return
-        - Output: A `2-D` tensor with shape `(B, num_nodes * rnn_units)`.
+        - Output: A `2-D` tensor with shape `(B, n_vertex * rnn_units)`.
         """
         output_size = 2 * self._num_units
         if self._use_gc_for_ru:
@@ -104,10 +104,10 @@ class DCGRUCell(torch.nn.Module):
         else:
             fn = self._fc
         value = torch.sigmoid(fn(inputs, hx, output_size, bias_start=1.0))
-        value = torch.reshape(value, (-1, self._num_nodes, output_size))
+        value = torch.reshape(value, (-1, self._n_vertex, output_size))
         r, u = torch.split(tensor=value, split_size_or_sections=self._num_units, dim=-1)
-        r = torch.reshape(r, (-1, self._num_nodes * self._num_units))
-        u = torch.reshape(u, (-1, self._num_nodes * self._num_units))
+        r = torch.reshape(r, (-1, self._n_vertex * self._num_units))
+        u = torch.reshape(u, (-1, self._n_vertex * self._num_units))
 
         c = self._gconv(inputs, r * hx, self._num_units)
         if self._activation is not None:
@@ -123,8 +123,8 @@ class DCGRUCell(torch.nn.Module):
 
     def _fc(self, inputs, state, output_size, bias_start=0.0):
         batch_size = inputs.shape[0]
-        inputs = torch.reshape(inputs, (batch_size * self._num_nodes, -1))
-        state = torch.reshape(state, (batch_size * self._num_nodes, -1))
+        inputs = torch.reshape(inputs, (batch_size * self._n_vertex, -1))
+        state = torch.reshape(state, (batch_size * self._n_vertex, -1))
         inputs_and_state = torch.cat([inputs, state], dim=-1)
         input_size = inputs_and_state.shape[-1]
         weights = self._fc_params.get_weights((input_size, output_size))
@@ -134,16 +134,16 @@ class DCGRUCell(torch.nn.Module):
         return value
 
     def _gconv(self, inputs, state, output_size, bias_start=0.0):
-        # Reshape input and state to (batch_size, num_nodes, input_dim/state_dim)
+        # Reshape input and state to (batch_size, n_vertex, input_dim/state_dim)
         batch_size = inputs.shape[0]
-        inputs = torch.reshape(inputs, (batch_size, self._num_nodes, -1))
-        state = torch.reshape(state, (batch_size, self._num_nodes, -1))
+        inputs = torch.reshape(inputs, (batch_size, self._n_vertex, -1))
+        state = torch.reshape(state, (batch_size, self._n_vertex, -1))
         inputs_and_state = torch.cat([inputs, state], dim=2)
         input_size = inputs_and_state.size(2)
 
         x = inputs_and_state
-        x0 = x.permute(1, 2, 0)  # (num_nodes, total_arg_size, batch_size)
-        x0 = torch.reshape(x0, shape=[self._num_nodes, input_size * batch_size])
+        x0 = x.permute(1, 2, 0)  # (n_vertex, total_arg_size, batch_size)
+        x0 = torch.reshape(x0, shape=[self._n_vertex, input_size * batch_size])
         x = torch.unsqueeze(x0, 0)
 
         if self._max_diffusion_step == 0:
@@ -159,14 +159,14 @@ class DCGRUCell(torch.nn.Module):
                     x1, x0 = x2, x1
 
         num_matrices = len(self._supports) * self._max_diffusion_step + 1  # Adds for x itself.
-        x = torch.reshape(x, shape=[num_matrices, self._num_nodes, input_size, batch_size])
-        x = x.permute(3, 1, 2, 0)  # (batch_size, num_nodes, input_size, order)
-        x = torch.reshape(x, shape=[batch_size * self._num_nodes, input_size * num_matrices])
+        x = torch.reshape(x, shape=[num_matrices, self._n_vertex, input_size, batch_size])
+        x = x.permute(3, 1, 2, 0)  # (batch_size, n_vertex, input_size, order)
+        x = torch.reshape(x, shape=[batch_size * self._n_vertex, input_size * num_matrices])
 
         weights = self._gconv_params.get_weights((input_size * num_matrices, output_size))
-        x = torch.matmul(x, weights)  # (batch_size * self._num_nodes, output_size)
+        x = torch.matmul(x, weights)  # (batch_size * self._n_vertex, output_size)
 
         biases = self._gconv_params.get_biases(output_size, bias_start)
         x += biases
         # Reshape res back to 2D: (batch_size, num_node, state_dim) -> (batch_size, num_node * state_dim)
-        return torch.reshape(x, [batch_size, self._num_nodes * output_size])
+        return torch.reshape(x, [batch_size, self._n_vertex * output_size])

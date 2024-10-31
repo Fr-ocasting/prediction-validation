@@ -10,7 +10,7 @@ parser.add_argument('--tanhalpha',type = int, default=3,
                     help='Set an precomputed Weighted Adjacency Matrix if needed (but then there is no graph construction)')
 
 parser.add_argument('--node_dim', type = int, default=30, 
-                    help="Dimension d'embedding. A priori <= num_nodes qui est définie dans utilities_DL.get_MultiModel_loss_args_emb_opts qui est la dimension d'embedding des noeuds")
+                    help="Embedding dim of each node. node_dim <= n_vertex (Cause we want to reduce dimensionality ?)")
 parser.add_argument('--subgraph_size', type=int, default=5, 
                     help="Dimension du sous-graph. A priori <= node_dim car issue de matrice générée depuis l'embedding des noeuds")
 parser.add_argument('--predefined_A', default=None, 
@@ -37,7 +37,7 @@ parser.add_argument('--residual_channels', type=int, default=32,
 parser.add_argument('--conv_channels', type=int, default=32, 
                     help='????')
 parser.add_argument('--c_in', type=int, default=1, 
-                    help='????')
+                    help='In-Dimension of the first layer (Point-Wise Convolution)')
 parser.add_argument('--dilation_exponential', type=int, default=1, 
                     help='????')
 

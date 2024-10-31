@@ -38,7 +38,7 @@ class ResBlock_2Plus1D(nn.Module):
 class FeatureExtractor_ResNetInspired_bis(nn.Module):
     def __init__(self, c_in=4, out_dim=64, N=40):
         super(FeatureExtractor_ResNetInspired_bis, self).__init__()
-        self.N = N
+        self.n_vertex = n_vertex
         self.z_dim = out_dim
 
         # Calcul dynamique de N_h et N_w
@@ -65,7 +65,7 @@ class FeatureExtractor_ResNetInspired_bis(nn.Module):
         x = self.layer3(x)      # [B, z_dim, H, W, L]
         x = self.avgpool(x)     # [B, z_dim, N_h, N_w, 1]
         x = x.view(x.size(0), self.N_actual, self.z_dim)  # [B, N_actual, Z]
-        x = x[:, :self.N, :]    # Sélection des N premiers nœuds si N_actual > N
+        x = x[:, :self.n_vertex, :]    # Sélection des N premiers nœuds si N_actual > N
         x = x.view(x.size(0), -1)  # [B, z_dim* N]
         return x 
 

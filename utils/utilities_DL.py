@@ -291,7 +291,7 @@ def load_model_and_optimizer(args,dic_class2rpz):
 # ===============================             =====================================
 
 def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
-    args.num_nodes = n_vertex
+    args.n_vertex = n_vertex
     loss_function = get_loss(args)
     args_embedding = get_args_embedding(args,nb_words_embedding)
 
@@ -307,7 +307,7 @@ def get_model_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex 
     
 
 def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
-    args.num_nodes = n_vertex
+    args.n_vertex = n_vertex
     loss_function = get_loss(args)
     args_embedding = get_args_embedding(args,nb_words_embedding)
 

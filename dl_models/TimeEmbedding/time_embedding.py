@@ -94,11 +94,11 @@ class TE_module(nn.Module):
         mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz[args.calendar_class].items())]).to(args.device)
 
         self.multi_embedding = args.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,calendar_class = args.calendar_class, n_embedding= args.num_nodes if self.multi_embedding else 1)
+        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,calendar_class = args.calendar_class, n_embedding= args.n_vertex if self.multi_embedding else 1)
         self.Tembedding_position = args_embedding.position
-        self.N_repeat = 1 if self.multi_embedding else args.num_nodes
+        self.N_repeat = 1 if self.multi_embedding else args.n_vertex
         self.C = args.C
-        self.N = args.num_nodes
+        self.n_vertex = args.n_vertex
 
 
 
@@ -108,7 +108,7 @@ class TE_module(nn.Module):
             time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
             if not(self.multi_embedding):
                 time_elt = time_elt.repeat(1,self.N_repeat*self.C,1)
-            time_elt = time_elt.reshape(mini_batch_size,self.C,self.N,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
+            time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
 
         else:
             raise NotImplementedError(f'Position {self.Tembedding_position} has not been implemented')
