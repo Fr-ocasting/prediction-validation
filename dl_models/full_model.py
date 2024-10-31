@@ -281,18 +281,18 @@ def load_model(args,dic_class2rpz):
 
     if args.model_name == 'LSTM':
         from dl_models.RNN.lstm_load_config import args as LSTM_args
-        args = Namespace(**vars(args), **vars(LSTM_args))
-        model = RNN(args.input_dim,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional,lstm = True)
-    
+        #args = Namespace(**vars(args), **vars(LSTM_args))
+        model = RNN(**vars(LSTM_args),L=args.L,dropout=args.dropout)
+                          
     if args.model_name == 'GRU':
         from dl_models.RNN.gru_load_config import args as GRU_args
-        args = Namespace(**vars(args), **vars(GRU_args))
-        model = RNN(args.input_dim,args.h_dim,args.C_outs, args.num_layers,bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional, gru = True)
+        #args = Namespace(**vars(args), **vars(GRU_args))
+        model = RNN(**vars(GRU_args),L=args.L, dropout=args.dropout)
    
     if args.model_name == 'RNN':
         from dl_models.RNN.rnn_load_config import args as RNN_args
-        args = Namespace(**vars(args), **vars(RNN_args))
-        model = RNN(args.input_dim,args.h_dim,args.C_outs, args.num_layers, nonlinearity = 'tanh',bias = args.bias,dropout = args.dropout,bidirectional = args.bidirectional) 
+        #args = Namespace(**vars(args), **vars(RNN_args))
+        model = RNN(**vars(RNN_args),L=args.L,dropout=args.dropout) 
 
 
     model_memory_cost(model)

@@ -291,6 +291,7 @@ class Trainer(object):
 
                 # Keep Track on Test Metrics
                 Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False)
+
                 test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = ['mse','mae','mape'])
                 self.performance.update({'test_metrics': test_metrics})
                 # ...

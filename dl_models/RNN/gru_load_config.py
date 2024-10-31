@@ -7,7 +7,8 @@ parser.add_argument('--h_dim', type=int, nargs='+', default = 16, choices=[8,16,
 parser.add_argument('--C_outs', type=int, nargs='+', default=[16,1], choices=[[16,1],[32,1], [16, 8,1]], help="Output dimensions for convolution layers")
 parser.add_argument('--num_layers', type=int, default=2, help="Number of layers")
 parser.add_argument('--bias', type=bool, default=True, choices = [True, False], help="Use bias in layers")
-parser.add_argument('--bidirectional', type=bool, nargs='+', default=[True, False], help="Enable bidirectional mode")
+parser.add_argument('--bidirectional', type=bool, nargs='+', default=True, choices = [True, False], help="Enable bidirectional mode")
+parser.add_argument('--gru', type=bool, default=True, help="Enable lstm mode for rnn")
 args = parser.parse_args(args=[])
 
 
