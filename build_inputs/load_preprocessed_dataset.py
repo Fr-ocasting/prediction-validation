@@ -11,7 +11,6 @@ if parent_dir not in sys.path:
 from build_inputs.load_netmob_data import tackle_netmob
 from build_inputs.load_subway_in import load_subway_in
 from build_inputs.load_calendar import load_calendar,tackle_calendar
-from constants.config import update_args
 
 
 def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
@@ -48,7 +47,10 @@ def add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_t
 
     subway_ds.contextual_tensors = contextual_tensors
     subway_ds.get_dataloader()
+
+    # Maybe useless to send it to the both 
     subway_ds.contextual_positions = positions
+    args.contextual_positions = positions
 
     return(subway_ds,args)
 
@@ -72,5 +74,8 @@ def load_complete_ds(dataset_names,args,coverage,vision_model_name,normalize = T
     subway_ds,args = add_contextual_data(dataset_names,args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
     # Update/Set arguments: 
-    args = update_args(args,subway_ds,dataset_names)
+    args.n_vertex = subway_ds.raw_values.size(1)
+    print(subway_ds.raw_values.size(),subway_ds.U_train.size())
+    assert subway_ds.U_train.dim() == 3, f'Feature Vector does not have the good dimension. Expected shape dimension [B,N,L], got {subway_ds.U_train.dim()} dim: {subway_ds.U_train.size()}'
+    args.C = 1
     return(subway_ds,NetMob_ds,args,dic_class2rpz)

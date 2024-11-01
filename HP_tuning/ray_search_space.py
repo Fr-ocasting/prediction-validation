@@ -1,7 +1,16 @@
 from ray import tune
+import importlib
+import sys
+import os
+
+# Get Parent folder : 
+current_path = os.getcwd()
+parent_dir = os.path.abspath(os.path.join(current_path, '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
 def get_search_space_ray(args):
-    
+    # Common search space
     config = {"lr": tune.qloguniform(1e-4, 1e-1, 5e-5),
               "weight_decay" : tune.uniform(0.0005, 0.1),
               "momentum" : tune.uniform(0.80, 0.99),
@@ -15,28 +24,25 @@ def get_search_space_ray(args):
                                         }]
                                         )
               }
-
-    config_embedding = {#'calendar_class' : tune.choice([1,2,3]),
-                    'embedding_dim' : tune.choice([3,4,8]),
-                    'multi_embedding' : tune.choice([True,False]),
-                    #'TE_transfer' : tune.choice([True,False]),
-                    }
-
-    config_stgcn = {"Kt" : tune.choice([2,3,4]),
-                    "stblock_num" : tune.choice([2,3,4]),
-                    "act_func" : tune.choice(['glu','gtu']),
-                    "Ks" :  tune.choice([2,3]),
-                    "graph_conv_type" : tune.choice(['cheb_graph_conv','graph_conv']),
-                    "gso_type" : tune.choice(['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj']),
-                    "adj_type" : tune.choice(['adj','corr','dist'])
-                    }
     
-    # Tackle Core Model:
-    if args.model_name == 'STGCN':
-         config.update(config_stgcn)
+    # Load Search Space associated to the Model: 
+    module_path = f"dl_models.{args.model_name}.search_space"
+    search_space_module = importlib.import_module(module_path)
+    globals()[f"config_{args.model_name}"] = search_space_module.config
 
-    # Tackle Embedding
+    # Update Config : 
+    config.update(globals()[f"config_{args.model_name}"])
+
+
+
+
+   # Tackle Embedding
     if args.time_embedding:
+        config_embedding = {#'calendar_class' : tune.choice([1,2,3]),
+                        'embedding_dim' : tune.choice([3,4,8]),
+                        'multi_embedding' : tune.choice([True,False]),
+                        #'TE_transfer' : tune.choice([True,False]),
+                        }
         config.update(config_embedding)
 
     # Tackle Vision Models

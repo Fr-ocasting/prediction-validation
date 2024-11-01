@@ -5,10 +5,8 @@ parser = argparse.ArgumentParser(description='MTGNN')
 
 parser.add_argument('--static_feat', default=None, 
                     help="Si = None, alors nodevec1 et nodevec2 sont  issues d'embedding different dans le graph constructor. Sinon Issue de static_feat qui est une matrice (statique pre-définie ?)")
-
 parser.add_argument('--tanhalpha',type = int, default=3, 
-                    help='Set an precomputed Weighted Adjacency Matrix if needed (but then there is no graph construction)')
-
+                    help='Multiplicator coefficient used it GraphConstruction')
 parser.add_argument('--node_dim', type = int, default=30, 
                     help="Embedding dim of each node. node_dim <= n_vertex (Cause we want to reduce dimensionality ?)")
 parser.add_argument('--subgraph_size', type=int, default=5, 
@@ -39,6 +37,6 @@ parser.add_argument('--conv_channels', type=int, default=32,
 parser.add_argument('--c_in', type=int, default=1, 
                     help='In-Dimension of the first layer (Point-Wise Convolution)')
 parser.add_argument('--dilation_exponential', type=int, default=1, 
-                    help='????')
+                    help='As an impact on Kernel-Size of Skip convolutions')
 
 args = parser.parse_args(args=[])

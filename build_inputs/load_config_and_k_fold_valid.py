@@ -12,28 +12,9 @@ if parent_dir not in sys.path:
 # Personnal inputs:
 from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer
 from trainer import MultiModelTrainer
-from constants.config import get_args
+from constants.config import get_args,update_modif
 from constants.paths import FOLDER_PATH,FILE_NAME
 import torch
-
-
-def update_args_according_loss_function(args):
-    if args.loss_function_type == 'MSE':
-        args.out_dim = 1
-        args.alpha = None
-        args.type_calendar = 'tuple'
-        args.track_pi = False
-
-    else:
-        args.embedding_dim = 3
-        args.calendar_class = 3
-        args.position = 'input'
-        args.specific_lr = False
-        args.type_calendar = 'tuple'
-        args.out_dim = 2
-        args.alpha = 0.1
-        args.track_pi = True
-    return(args)
 
 
 def update_args(row,args,config_columns):
@@ -83,7 +64,7 @@ def load_p_best_model_and_k_fold_valid_them(args, TE_list,loss_list, folder_conf
             for idx,row in df_config.iterrows():  # Pour chacune des 3meilleurs config : 
                 args = update_args(row,args,config_columns)
                 args = update_args_according_TE(args,TE,loss)
-                args = update_args_according_loss_function(args)
+                args = update_modif(args)
                 load_multimodeltrainer_and_train_it(args)
             
 
@@ -97,8 +78,8 @@ if __name__ == '__main__':
     # ==== GET PARAMETERS ====
     # Load config
     model_name = 'STGCN'  #'CNN'
-    args = get_args(model_name)
-    #args = get_args(model_name = model_name)  # MTGNN
+    dataset_names = ['subway_in','netmob']
+    args = get_args(model_name,dataset_names)
 
     # Modification :
     args.epochs = 500

@@ -144,7 +144,8 @@ if __name__ == '__main__':
 
     # Load config
     model_name = 'STGCN' #'CNN'
-    args = get_args(model_name)
+    dataset_names = ['subway_in','netmob']
+    args = get_args(model_name,dataset_names)
 
     # Modification : 
     args.K_fold = 5
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 
     # Coverage Period : 
     small_ds = False
-    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names=['subway_in','netmob'])
+    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names=dataset_names)
     (coverage,args) = get_small_ds(small_ds,coverage,args)
 
     # Choose DataSet and VisionModel if needed: 

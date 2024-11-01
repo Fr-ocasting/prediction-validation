@@ -16,7 +16,8 @@ from constants.paths import FILE_NAME
 
 # ==== GET PARAMETERS ====
 model_name ='STGCN' #'MTGNN' # 'STGCN'  #'CNN' # 'DCRNN'
-args = get_args(model_name)
+dataset_names = ['subway_in','netmob']
+args = get_args(model_name,dataset_names)
 
 # Modification :
 args.epochs = 10
@@ -33,6 +34,5 @@ update_modif(args)
 coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['calendar','netmob'])
 
 # Choose DataSet and VisionModel if needed: 
-dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
 vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
 

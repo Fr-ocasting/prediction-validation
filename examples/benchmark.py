@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np 
 from train_model_on_k_fold_validation import train_valid_K_models,save_model_metrics
 from utils.utilities_DL import match_period_coverage_with_netmob
-from constants.config import get_args,update_modif,update_args
+from constants.config import get_args,update_modif
 from constants.paths import FILE_NAME,FOLDER_PATH,SAVE_DIRECTORY
 from utils.save_results import get_date_id
 from K_fold_validation.K_fold_validation import KFoldSplitter
@@ -21,7 +21,7 @@ from trainer import Trainer
 
 def local_get_args(model_name,dataset_names,epochs):
     # Load base args
-    args = get_args(model_name)
+    args = get_args(model_name,dataset_names)
 
     # Modification :
     args.epochs = epochs 
@@ -88,13 +88,11 @@ if __name__ == '__main__':
     epochs = 1
 
     model_name ='STGCN' # start with # STGCN #CNN
-    print(f'\n>>>>Training {model_name}')
+    print(f'\n>>>>Training {model_name} on {dataset_names}')
     # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
     (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,
                                                                    dataset_names=['subway_in','netmob'],
                                                                    epochs = epochs)
-
-    print(f"\nModel perf on {dataset_names} with {model_name}")
 
     trial_id = get_trial_id(args,dataset_names,vision_model_name=None)
     K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(dataset_names,args,coverage,vision_model_name,folds)
@@ -103,12 +101,11 @@ if __name__ == '__main__':
     trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
     df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)
     for model_name in ['CNN','MTGNN','DCRNN','LSTM','GRU','RNN']:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
-        print(f'\n>>>>Training {model_name}')
+        print(f'\n>>>>Training {model_name} on {dataset_names}')
         (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,
-                                                                    dataset_names=['subway_in','netmob'],
+                                                                    dataset_names=dataset_names,
                                                                     epochs = epochs)
-        args = update_args(args,ds,dataset_names)
-        print(f"\nModel perf on {dataset_names} with {model_name}")
+        
         trial_id = get_trial_id(args,dataset_names,vision_model_name=None)
 
         trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)

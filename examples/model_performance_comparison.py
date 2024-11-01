@@ -17,7 +17,8 @@ from utils.save_results import get_date_id
 
 # ==== GET PARAMETERS ====
 model_name ='STGCN' #'MTGNN' # 'STGCN'  #'CNN' # 'DCRNN'
-args = get_args(model_name)
+dataset_names = ['subway_in','netmob']
+args = get_args(model_name,dataset_names)
 
 # Modification :
 args.epochs = 500
@@ -34,7 +35,7 @@ folds =  list(np.arange(args.K_fold)) #  list(np.arange(args.K_fold))  # [0]
 # ...
 
 update_modif(args)
-coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['subway_in','netmob'] )
+coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = dataset_names)
 
 
 # Choose DataSet and VisionModel if needed: 

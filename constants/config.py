@@ -2,9 +2,12 @@ import torch
 import argparse
 import random
 import os 
+import importlib
+from argparse import Namespace
 
-def get_config(model_name,config = {}):
+def get_config(model_name,dataset_names,config = {}):
     config['model_name'] = model_name
+    config['dataset_names'] = dataset_names
     # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
@@ -78,6 +81,9 @@ def get_config(model_name,config = {}):
     config['W'] = 0
     config['D'] = 1
     config['step_ahead'] = 1
+
+    if not 'subway_in' in dataset_names:
+        config['L'] = 0
     config['L'] = config['H']+config['W']+config['D']
 
     # Split proportion
@@ -135,18 +141,17 @@ def optimizer_specific_lr(model,args):
     return(specific_lr)
 
 
-def get_config_embed(nb_words_embedding,embedding_dim,position):
-    '''
-    args
-    -----
-    nb_words_embedding : represent the number of expected class from tuple (weekday,hour,minute) 
-    '''
-    config_Tembed = dict(nb_words_embedding= nb_words_embedding,embedding_dim = embedding_dim, position=position)
-    return(config_Tembed)
-
-def get_args(model_name):
-    config = get_config(model_name)
+def get_args(model_name,dataset_names):
+    config = get_config(model_name,dataset_names)
     args = get_parameters(config)
+
+    # Load Config associated to the Model: 
+    module_path = f"dl_models.{args.model_name}.load_config"
+    search_space_module = importlib.import_module(module_path)
+    globals()[f"args_{args.model_name}"] = search_space_module.args
+
+    # Merge Args: 
+    args = Namespace(**{**vars(args),**vars(globals()[f"args_{args.model_name}"])})
     return(args)
 
 def get_parameters(config):
@@ -171,7 +176,6 @@ def update_modif(args,name_gpu='cuda'):
         args.alpha = None
     elif args.loss_function_type == 'quantile': 
         args.out_dim = 2
-        args.alpha = 0.1
     else: 
         raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
     #...
@@ -184,50 +188,25 @@ def update_modif(args,name_gpu='cuda'):
         args.device = 'cpu'
         args.batch_size = 16
     # ...
-
-    args.L = args.W + args.D + args.H
     
     # Ray tuning function can't hundle with PyTorch multiprocessing : 
     if args.ray:
         args.num_workers = 0
         args.persistent_workers = False
+        args.track_pi = False
+    # ...
+
     
     print(f"Model: {args.model_name}, K_fold = {args.K_fold}") 
     print(f"!!! Loss function: {args.loss_function_type} ")
     print("!!! Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     return(args)
 
-
-def update_args(args,subway_ds,dataset_names):
-
-    # Update args according datasets choice: 
-    args.dataset_names = dataset_names
-    args.contextual_positions = subway_ds.contextual_positions
-
-    if not 'subway_in' in dataset_names:
-        args.L = 0
-
-    if subway_ds.U_train.dim() == 3:
-        args.C = 1
-    elif subway_ds.U_train.dim() == 4:
-        args.C = subway_ds.U_train.size(1) 
-    else:
-        raise NotImplementedError("Feature vector like 'subway_ds.U_train' doesn't have the expected shape")
-    # ...
-    args.n_vertex = subway_ds.raw_values.size(1)
-    return(args)
-
-
-
-def display_config(args,args_embedding):
-    # Args 
-    optimizer = f"Optimizer: {args.optimizer}"
-    lr = 'A specific LR by layer is used' if args.specific_lr else 'The same LR is used for each layer'
-    calendar_class = f"Calendar class: {args.calendar_class}"
-    quantile_method = f"Quantile Method: {args.quantile_method}"
-
-    # Args Embedding 
-    encoding = f"Encoding dimension: {args_embedding.nb_words_embedding}. Is related to Dictionnary size of the Temporal Embedding Layer \n " if args.time_embedding else '' 
-    embedding_dim = f"Embedding dimension: {args_embedding.embedding_dim} \n " if args.time_embedding else '' 
-    position = f"Position of the Embedding layer: {args_embedding.position}" if args.time_embedding else '' 
-    print(f"Model : {args.model_name} \n {optimizer} \n {lr} \n {calendar_class} \n {quantile_method} \n {encoding} {embedding_dim} {position} ")
+def get_config_embed(nb_words_embedding,embedding_dim,position):
+    '''
+    args
+    -----
+    nb_words_embedding : represent the number of expected class from tuple (weekday,hour,minute) 
+    '''
+    config_Tembed = dict(nb_words_embedding= nb_words_embedding,embedding_dim = embedding_dim, position=position)
+    return(config_Tembed)

@@ -15,11 +15,12 @@ if parent_dir not in sys.path:
 # Personnal import:
 from dl_models.TimeEmbedding.time_embedding import TE_module
 from dl_models.CNN.CNN_based_model import CNN
-from dl_models.MTGNN.MTGNN import gtnet
-from dl_models.RNN.RNN_based_model import RNN
+from dl_models.MTGNN.MTGNN import MTGNN
+from dl_models.RNN.RNN import RNN
 from dl_models.STGCN.STGCN import STGCN
+from dl_models.DCRNN.DCRNN import DCRNN
 from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
-from dl_models.DCRNN.dcrnn_model import DCRNNModel
+
 from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling,FeatureExtractor_ResNetInspired_bis
 from dl_models.vision_models.AttentionFeatureExtractor import AttentionFeatureExtractor
 from dl_models.vision_models.FeatureExtractorEncoderDecoder import FeatureExtractorEncoderDecoder
@@ -137,9 +138,8 @@ class full_model(nn.Module):
         # ...
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
-
         return extracted_feature
-
+    
 
     def forward(self,x,contextual = None):
         ''' 
@@ -195,13 +195,13 @@ def load_model(args,dic_class2rpz):
     args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
 
     if args.model_name == 'CNN': 
-        from dl_models.CNN.load_config import args as CNN_args
-        args = Namespace(**vars(args), **vars(CNN_args))
+        #from dl_models.CNN.load_config import args as CNN_args
+        #args = Namespace(**vars(args), **vars(CNN_args))
         model = CNN(args,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
 
     if args.model_name == 'MTGNN': 
         from dl_models.MTGNN.load_config import args as MTGNN_args
-        model = gtnet(**vars(MTGNN_args),
+        model = MTGNN(**vars(MTGNN_args),
                     out_dim=args.out_dim, 
                     args_embedding=args_embedding,
                     seq_length=args.L,
@@ -213,30 +213,27 @@ def load_model(args,dic_class2rpz):
         from dl_models.DCRNN.load_config import args as DCRNN_args
         args = Namespace(**vars(args), **vars(DCRNN_args))
         adj,n_vertex = load_adj(adj_type = args.adj_type)
-        model = DCRNNModel(adj, **vars(args)).to(args.device)
+        model = DCRNN(adj, **vars(args)).to(args.device)
         
     if args.model_name == 'STGCN':
-        from dl_models.STGCN.load_config import args as STGCN_args
+        #from dl_models.STGCN.load_config import args as STGCN_args
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
-        args = Namespace(**vars(args), **vars(STGCN_args))
+        #args = Namespace(**vars(args), **vars(STGCN_args))
         Ko = get_output_kernel_size(args)
         blocks = get_block_dims(args,Ko)
         gso,n_vertex = get_gso_from_adj(args)
         model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
 
     if args.model_name == 'LSTM':
-        from dl_models.RNN.lstm_load_config import args as LSTM_args
-        #args = Namespace(**vars(args), **vars(LSTM_args))
+        from dl_models.LSTM.load_config import args as LSTM_args
         model = RNN(**vars(LSTM_args),L=args.L,dropout=args.dropout).to(args.device)
                           
     if args.model_name == 'GRU':
-        from dl_models.RNN.gru_load_config import args as GRU_args
-        #args = Namespace(**vars(args), **vars(GRU_args))
+        from dl_models.GRU.load_config import args as GRU_args
         model = RNN(**vars(GRU_args),L=args.L, dropout=args.dropout).to(args.device)
    
     if args.model_name == 'RNN':
-        from dl_models.RNN.rnn_load_config import args as RNN_args
-        #args = Namespace(**vars(args), **vars(RNN_args))
+        from dl_models.RNN.load_config import args as RNN_args
         model = RNN(**vars(RNN_args),L=args.L,dropout=args.dropout).to(args.device)
 
 

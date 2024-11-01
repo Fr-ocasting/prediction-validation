@@ -41,8 +41,8 @@ if __name__ == '__main__':
 
     # Load config
     model_name = 'STGCN' #'CNN'
-    args = get_args(model_name)
-
+    dataset_names = ['subway_in']
+    args = get_args(model_name,dataset_names)
     # Modification : 
     args.K_fold = 5
     args.ray = True
@@ -52,7 +52,6 @@ if __name__ == '__main__':
 
     args = update_modif(args)
 
-    dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
     coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['calendar','netmob'])
     # Use Small ds for fast training: 
     #small_ds = False
