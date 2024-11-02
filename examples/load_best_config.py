@@ -11,7 +11,7 @@ import pickle
 from argparse import Namespace
 
 from utils.utilities_DL import get_loss,load_model_and_optimizer,match_period_coverage_with_netmob
-from build_inputs.load_subway_in import load_subway_in
+from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from calendar_class import get_time_slots_labels
 from constants.paths import FILE_NAME
 
@@ -48,9 +48,9 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     return(args,coverage)
 
 if __name__ == '__main__':
-    args,coverage = load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model')
+    args,coverage_period = load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model')
     # Load model with the best config:
-    dataset,_,_ = load_subway_in(args,coverage)
+    dataset,_,_ = load_datasets_to_predict(args,coverage_period)
     _,dic_class2rpz,_,_ = get_time_slots_labels(dataset,nb_class = [0,1,2,3])
     loss_function = get_loss(args)
     model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)

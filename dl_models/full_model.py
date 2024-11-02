@@ -195,33 +195,24 @@ def load_model(args,dic_class2rpz):
     args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
 
     if args.model_name == 'CNN': 
-        #from dl_models.CNN.load_config import args as CNN_args
-        #args = Namespace(**vars(args), **vars(CNN_args))
         model = CNN(args,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)
 
     if args.model_name == 'MTGNN': 
-        from dl_models.MTGNN.load_config import args as MTGNN_args
-        model = MTGNN(**vars(MTGNN_args),
-                    out_dim=args.out_dim, 
+        filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(MTGNN.__init__).parameters.keys()}
+        model = MTGNN(**filtered_args,
                     args_embedding=args_embedding,
                     seq_length=args.L,
-                    device = args.device,
-                    n_vertex =  args.n_vertex,
-                    dropout=args.dropout).to(args.device)
+                    ).to(args.device)
         
     if args.model_name == 'DCRNN':
-        from dl_models.DCRNN.load_config import args as DCRNN_args
-        args = Namespace(**vars(args), **vars(DCRNN_args))
-        adj,n_vertex = load_adj(adj_type = args.adj_type)
+        adj,_ = load_adj(adj_type = args.adj_type)
         model = DCRNN(adj, **vars(args)).to(args.device)
         
     if args.model_name == 'STGCN':
-        #from dl_models.STGCN.load_config import args as STGCN_args
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
-        #args = Namespace(**vars(args), **vars(STGCN_args))
         Ko = get_output_kernel_size(args)
         blocks = get_block_dims(args,Ko)
-        gso,n_vertex = get_gso_from_adj(args)
+        gso,_ = get_gso_from_adj(args)
         model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
 
     if args.model_name == 'LSTM':

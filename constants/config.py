@@ -4,10 +4,17 @@ import random
 import os 
 import importlib
 from argparse import Namespace
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
 
-def get_config(model_name,dataset_names,config = {}):
+def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['model_name'] = model_name
     config['dataset_names'] = dataset_names
+    config['dataset_for_coverage'] = dataset_for_coverage
     # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
@@ -119,7 +126,7 @@ def get_config(model_name,dataset_names,config = {}):
     config['vision_input_type'] = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'  
 
     return(config)
-    
+
 
 def optimizer_specific_lr(model,args):
     if args.model_name == 'CNN':
@@ -141,8 +148,8 @@ def optimizer_specific_lr(model,args):
     return(specific_lr)
 
 
-def get_args(model_name,dataset_names):
-    config = get_config(model_name,dataset_names)
+def get_args(model_name,dataset_names,dataset_for_coverage):
+    config = get_config(model_name,dataset_names,dataset_for_coverage)
     args = get_parameters(config)
 
     # Load Config associated to the Model: 
@@ -158,11 +165,7 @@ def get_parameters(config):
     parser = argparse.ArgumentParser()
 
     for key in config.keys():
-        if type(config[key]) != list:
-            default = config[key]
-        else:
-            ind = random.randint(0,len(config[key])-1)
-            default = config[key][ind]
+        default = config[key]
         parser.add_argument(f'--{key}', type=type(default), default=default)
 
     args = parser.parse_args(args=[])

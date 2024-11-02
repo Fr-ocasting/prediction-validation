@@ -256,13 +256,17 @@ class DataSet(object):
     df : contain the current df you are working on. It's the full df, normalized or not
     init_df : contain the initial df, no normalized. It's the full initial dataset.
     '''
-    def __init__(self,df=None,tensor = None, dates = None, init_df = None, normalized = False,time_step_per_hour = None,
-                 train_df = None,cleaned_df = None,Weeks = None, Days = None, historical_len = None,step_ahead = None,standardize = None, minmaxnorm = None,dims = None):
+    def __init__(self,df=None,tensor = None, dates = None, init_df = None, 
+                 normalized = False,time_step_per_hour = None,
+                 train_df = None,cleaned_df = None,Weeks = None, Days = None, 
+                 historical_len = None,step_ahead = None,
+                 standardize = None, minmaxnorm = None,dims = None,
+                 spatial_unit = None):
         
         if df is not None:
             self.length = len(df)
             self.df = df
-            self.columns = df.columns
+            self.spatial_unit = df.columns
             self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
             self.raw_values = torch.tensor(self.df.values)
         if tensor is not None:
@@ -272,6 +276,7 @@ class DataSet(object):
             self.length = tensor.size(0)
             self.raw_values = tensor.to(torch.float32)
             self.df_dates = pd.DataFrame(dates,index = np.arange(self.length),columns = ['date'])
+            self.spatial_unit = spatial_unit
 
         self.dims = dims
         self.minmaxnorm = minmaxnorm
@@ -308,8 +313,8 @@ class DataSet(object):
 
         
     def bijection_name_indx(self):
-        colname2indx = {c:k for k,c in enumerate(self.columns)}
-        indx2colname = {k:c for k,c in enumerate(self.columns)}
+        colname2indx = {c:k for k,c in enumerate(self.spatial_unit)}
+        indx2colname = {k:c for k,c in enumerate(self.spatial_unit)}
         return(colname2indx,indx2colname)
     
     def get_shift_from_first_elmt(self):

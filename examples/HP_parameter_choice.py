@@ -23,12 +23,12 @@ from HP_tuning.hyperparameter_tuning_ray import HP_tuning
 
 
 # === Train and Evaluate Model: 
-def hyperparameter_tuning(args,coverage,dataset_names,vision_model_name,num_samples = 100):
+def hyperparameter_tuning(args,vision_model_name,num_samples = 100):
     # Load K-fold subway-ds 
     folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
 
     # Split in K-fold : 
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     # Train on the first fold: 
@@ -42,7 +42,8 @@ if __name__ == '__main__':
     # Load config
     model_name = 'STGCN' #'CNN'
     dataset_names = ['subway_in']
-    args = get_args(model_name,dataset_names)
+    dataset_for_covergae = ['subway_in','netmob']
+    args = get_args(model_name,dataset_names,dataset_for_coverage)
     # Modification : 
     args.K_fold = 5
     args.ray = True
@@ -52,13 +53,8 @@ if __name__ == '__main__':
 
     args = update_modif(args)
 
-    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['calendar','netmob'])
-    # Use Small ds for fast training: 
-    #small_ds = False
-    #(coverage,args) = get_small_ds(small_ds,coverage,args)
-
     # Choose DataSet and VisionModel if needed: 
 
     vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
 
-    analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name)
+    analysis,trial_id = hyperparameter_tuning(args,vision_model_name)

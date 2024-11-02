@@ -91,7 +91,7 @@ def load_subway_shp(FOLDER_PATH,station_location_name):
 
 def load_adjacency_matrix(dataset, type = 'adjacent', df_locations = None, treshold = 0):
 
-    stations = dataset.columns
+    stations = dataset.spatial_unit
 
     subway_A = ['Perrache','Ampère Victor Hugo','Bellecour','Cordeliers', 
                 'Hôtel de ville - Louis Pradel','Foch','Masséna','Charpennes', 

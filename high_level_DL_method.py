@@ -20,11 +20,10 @@ def load_optimizer_and_scheduler(model,args):
     return(optimizer,scheduler,loss_function)
 
 
-def load_everything(dataset_names,args,coverage,vision_model_name):
-
+def load_everything(args,coverage,vision_model_name):
     # Load DataSet, DataLoader, Args :
     folds = [0]
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,args = K_fold_splitter.split_k_fold()
     subway_ds = K_subway_ds[0]
     # ...

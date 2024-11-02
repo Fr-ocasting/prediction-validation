@@ -172,7 +172,7 @@ if __name__ == '__main__':
     # In case we need to compute the Sliding K-fold validation:
     # folds = np.arange(1,args.K_fold)
 
-    K_fold_splitter = KFoldSplitter(dataset_names,args,coverage,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,coverage,vision_model_name,folds)
     K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
 
     num_samples = 8
