@@ -53,6 +53,12 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df = restrain_df_to_specific_period(df,coverage_period)
     time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
 
+    print("\n>>>>> iloc de 0: ",df.iloc[1].name)
+    print(">>>>> iloc de 1: ",df.iloc[0].name)
+    print(">>>>> différence des deux: ",df.iloc[1].name - df.iloc[0].name)
+    print(">>>>> Time step per hour: ",time_step_per_hour)
+    raise ValueError('VERIFIER ICI QU ON A BIEN TIME STEP PER HOUR = 4 ')
+
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 
                       Weeks = args.W, 
@@ -70,4 +76,6 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
 def restrain_df_to_specific_period(df,coverage_period):
     if coverage_period is not None:
         df = df.loc[coverage_period]
+
+    df = df.sort_index()
     return df

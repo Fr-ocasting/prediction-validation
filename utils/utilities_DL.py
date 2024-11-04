@@ -22,7 +22,7 @@ if ROOT not in sys.path:
 # ...
 
 # Personnal import: 
-from constants.config import optimizer_specific_lr, get_config_embed, get_parameters
+from constants.config import optimizer_specific_lr, get_config_embed, convert_into_parameters
 from DL_class import QuantileLoss
 from dataset import  DataSet
 from TE_transfer_learning import TE_transfer
@@ -32,7 +32,7 @@ from dl_models.full_model import full_model
 def get_args_embedding(args,nb_words_embedding):
     if args.time_embedding:
         config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
-        args_embedding = get_parameters(config_Tembed)
+        args_embedding = convert_into_parameters(config_Tembed)
     else:
         args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
     return(args_embedding)

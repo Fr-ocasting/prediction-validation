@@ -19,6 +19,7 @@ from trainer import Trainer
 def local_get_args(model_name,dataset_names,dataset_for_coverage,epochs):
     # Load base args
     args = get_args(model_name,dataset_names,dataset_for_coverage)
+    print(args.n_vertex)
 
     # Modification :
     args.epochs = epochs 
@@ -85,7 +86,7 @@ if __name__ == '__main__':
     model_name ='STGCN' # start with # STGCN #CNN
     print(f'\n>>>>Training {model_name} on {dataset_names}')
     # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
-    (args,folds,hp_tuning_on_first_fold) = local_get_args(model_name,
+    args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
                                                            dataset_names=dataset_names,
                                                            dataset_for_coverage=dataset_for_coverage,
                                                            epochs = epochs)
@@ -97,12 +98,12 @@ if __name__ == '__main__':
     df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)
     for model_name in ['CNN','MTGNN','DCRNN','LSTM','GRU','RNN']:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
         print(f'\n>>>>Training {model_name} on {dataset_names}')
-        (args,folds,coverage,hp_tuning_on_first_fold) = local_get_args(model_name,
-                                                                    dataset_names=dataset_names,
-                                                                    dataset_for_coverage=dataset_for_coverage,
-                                                                    epochs = epochs)
+        args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
+                                                            dataset_names=dataset_names,
+                                                            dataset_for_coverage=dataset_for_coverage,
+                                                            epochs = epochs)
         
-        trial_id = get_trial_id(args,dataset_names,vision_model_name=None)
+        trial_id = get_trial_id(args,vision_model_name=None)
 
         trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
         df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)

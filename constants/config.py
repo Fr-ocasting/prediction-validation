@@ -11,10 +11,14 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
+from constants.paths import DATA_TO_PREDICT
+
 def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['model_name'] = model_name
     config['dataset_names'] = dataset_names
     config['dataset_for_coverage'] = dataset_for_coverage
+    config['n_vertex'] =  importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}").n_vertex
+    config['C'] =  importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}").C
     # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
@@ -150,18 +154,18 @@ def optimizer_specific_lr(model,args):
 
 def get_args(model_name,dataset_names,dataset_for_coverage):
     config = get_config(model_name,dataset_names,dataset_for_coverage)
-    args = get_parameters(config)
+    args = convert_into_parameters(config)
 
     # Load Config associated to the Model: 
     module_path = f"dl_models.{args.model_name}.load_config"
-    search_space_module = importlib.import_module(module_path)
-    globals()[f"args_{args.model_name}"] = search_space_module.args
+    module = importlib.import_module(module_path)
+    globals()[f"args_{args.model_name}"] = module.args
 
     # Merge Args: 
     args = Namespace(**{**vars(args),**vars(globals()[f"args_{args.model_name}"])})
     return(args)
 
-def get_parameters(config):
+def convert_into_parameters(config):
     parser = argparse.ArgumentParser()
 
     for key in config.keys():

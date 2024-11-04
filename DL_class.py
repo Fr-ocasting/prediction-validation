@@ -50,6 +50,7 @@ class TensorLimitsKeeper(object):
 
     def keep_track_on_df_limits(self,training_mode):
         '''Set attribute to keep track on Train/Valid/Test df limits : first_{training_mode}_date and last_{training_mode}_date  '''
+
         if getattr(self,f"{training_mode}_prop") > 1e-3:
             setattr(self,f"first_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[0,0])
             setattr(self,f"last_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[-1,-1])
@@ -175,9 +176,7 @@ class FeatureVectorBuilder(object):
 class DatesVerifFeatureVect(object):
     ''' From dataframe with TimeStamp Index, and historical elements, return df_verif'''
     def __init__(self,df_dates, Weeks = 0, Days = 0, historical_len = 0, step_ahead = 1, time_step_per_hour = 4):
-
-        self.df_dates = df_dates
-
+        self.df_dates = df_dates.sort_values('date')
         self.Weeks = Weeks
         self.Days = Days
         self.historical_len = historical_len
@@ -216,7 +215,17 @@ class DatesVerifFeatureVect(object):
         self.df_shifted = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:] 
 
     def identify_forbidden_index(self,invalid_dates):
-        '''Get forbidden index of the df_dates and associated forbidden indices of the Torch Tensor'''
+        '''
+        args:
+        -------
+        invalid_dates : list of TimeStamps
+
+        outputs:
+        ---------
+        forbidden_index : list of index within 'df_shifted' which are related to invalid dates
+        forbidden_indice_U: list of indices withing the feature vector 'U' which contains at least one value related to a forbidden dates
+        '''
+        
         # Mask for dataframe df_verif
         df_shifted_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])  # Concat forbidden indexes within each columns
         # Identify forbidden df indexes
@@ -227,5 +236,9 @@ class DatesVerifFeatureVect(object):
     def get_df_verif(self,invalid_dates):
         # Identify forbidden_index from the df_shifted 
         self.identify_forbidden_index(invalid_dates)
+
         # Mask shifted from all the forbidden index
         self.df_verif = self.df_shifted.drop(self.forbidden_index)
+        #print("\n>>>>> df_verfi DONE")
+        #print('df_verif columns: ',self.df_verif.columns)
+        #print(self.df_verif)

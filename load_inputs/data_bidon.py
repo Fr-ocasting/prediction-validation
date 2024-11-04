@@ -10,10 +10,11 @@ from dataset import DataSet
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - 'time_step_per_hour' which has to be perfectly set
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-FILE_NAME = 'data_bidon'
+FILE_NAME = 'data_bidon' #.csv
 INVALID_DATES = []
 C = 1
 n_vertex = 10
@@ -36,7 +37,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
 
     
     df = restrain_df_to_specific_period(df,coverage_period)
-    time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
+    time_step_per_hour = (60*60)/(df.index[1] - df.index[0]).seconds
 
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 
@@ -53,4 +54,6 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
 def restrain_df_to_specific_period(df,coverage_period):
     if coverage_period is not None:
         df = df.loc[coverage_period]
+
+    df = df.sort_index()
     return df

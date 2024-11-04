@@ -6,7 +6,7 @@ import os
 from utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer
 from trainer import MultiModelTrainer
 
-from constants.config import get_parameters
+from constants.config import convert_into_parameters
 from constants.paths import FOLDER_PATH,FILE_NAME,save_folder
 import torch
 
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     config['abs_path'] = f"{os.path.abspath(os.getcwd())}/"
     config['device'] = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     config['K_fold'] = 1
-    args = get_parameters(config)
+    args = convert_into_parameters(config)
 
     Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class = load_init_trainer(FOLDER_PATH,FILE_NAME,args)
     (loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding) = get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = len(Datasets[0].spatial_unit))

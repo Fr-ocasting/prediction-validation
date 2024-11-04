@@ -71,15 +71,11 @@ class TrainValidTest_Split_Normalize(object):
             test_dataset = None
 
         if normalizer is not None:
-            #print('\n','Tackling Training Set')
             train_dataset.normalize(feature_vect = True)
-
             if hasattr(self,'first_valid'): 
-                #print('\n','Tackling Validation Set')
                 valid_dataset.normalize(feature_vect = True)
 
             if hasattr(self,'first_test'): 
-                #print('\n','Tackling Testing Set')
                 test_dataset.normalize(feature_vect = True)
 
         
@@ -398,7 +394,7 @@ class DataSet(object):
 
         elif train_valid_test_split_method == 'similar_length_method':
             split_limits= train_valid_test_split.similar_length_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-            print(f'>>> Train/Valid/Test split method : {train_valid_test_split_method}')
+            print(f'>>>> Train/Valid/Test split method : {train_valid_test_split_method}')
 
         else:
             raise NotImplementedError(f'Train/Valid/Test split method {train_valid_test_split_method} has not been implemented')
@@ -409,10 +405,10 @@ class DataSet(object):
     def train_valid_test_split_indices(self,train_prop,valid_prop,test_prop,train_valid_test_split_method):
 
         split_limits = self.get_dic_split_limits(train_prop,valid_prop,test_prop,train_valid_test_split_method)
-
         tensor_limits_keeper = TensorLimitsKeeper(split_limits,self.df_dates,self.df_verif,train_prop,valid_prop, test_prop,self.step_ahead)
         for training_mode in ['train','valid','test']:
             tensor_limits_keeper.get_local_df_verif(training_mode)   # Build DataFrame Verif associated to each training mode
+
             tensor_limits_keeper.keep_track_on_df_limits(training_mode)   # Keep track on DataFrame Limits (dates)
             tensor_limits_keeper.get_raw_values_indices(training_mode)
             tensor_limits_keeper.get_raw_tensor_input_by_training_mode(self,training_mode)

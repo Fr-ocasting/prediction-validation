@@ -53,8 +53,8 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
 
     # Load the dataset and its associated caracteristics
     module_data = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
-    args.n_vertex = module_data.n_vertex
-    args.C = module_data.C
+    #args.n_vertex = module_data.n_vertex
+    #args.C = module_data.C
     dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intesect_coverage_period)
     # ...
 

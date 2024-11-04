@@ -29,6 +29,7 @@ from dl_models.vision_models.VideoFeatureExtractorWithSpatialTemporalAttention i
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
 from argparse import Namespace
+from constants.paths import DATA_TO_PREDICT
 
 def filter_args(func, args):
     sig = inspect.signature(func)
@@ -100,7 +101,7 @@ class full_model(nn.Module):
             self.pos_calendar = args.contextual_positions['calendar']
         if 'netmob' in args.contextual_positions.keys(): 
             self.pos_netmob = args.contextual_positions['netmob']
-        if 'subway_in' in args.dataset_names :
+        if DATA_TO_PREDICT in args.dataset_names :
             self.remove_trafic_inputs = False
         else:
             self.remove_trafic_inputs = True
