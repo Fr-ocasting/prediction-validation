@@ -12,10 +12,11 @@ except:
 from profiler.chrono import Chronometer
 
 import pkg_resources
+
 try: 
     from ray import tune,train
     ray_version = pkg_resources.get_distribution("ray").version
-    if ray_version.startswith('2.7'):
+    if ray_version.startswith('2.7') or ray_version.startswith('3'):
         report = train.report
     else:
         report = tune.report

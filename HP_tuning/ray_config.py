@@ -2,6 +2,7 @@ import pkg_resources
 from ray.tune.schedulers import ASHAScheduler
 from ray.tune.search.hyperopt import HyperOptSearch
 import torch
+import importlib
 
 def get_scheduler(HP_max_epochs,name='ASHA', metric= 'Loss_model', mode = 'min',grace_period=2):
     if HP_max_epochs<=grace_period:
@@ -37,39 +38,11 @@ def get_search_alg(name,metric,mode,points_to_evaluate = None):
     return(search_alg)
 
 def get_point_to_evaluate(args):
-    if args.model_name == 'STGCN':
-        point_to_evaluate = [
-            {'Kt': 4,
-            'Ks': 2,
-            'graph_conv_type': 'cheb_graph_conv',
-            'gso_type': 'rw_renorm_lap',
-            'adj_type':'corr',
-            'stblock_num':3,
-            'act_func':'gtu'}
-            ]
-    elif args.model_name == 'CNN':
-        point_to_evaluate = [{
-            'c_in': 1,
-            'C_outs': [16,2] ,
-            'H_dims': [16,16]
-        }]
-
-    elif args.model_name == 'DCRNN':
-        point_to_evaluate = [{}]
-
-    else:
-        raise NotImplementedError(f'Point to Evaluate of Ray Search Algorithm for {args.model_name} has not been implemented' ) 
-
-    for point in point_to_evaluate:
-        point.update({'dropout': 0.1,
-                                    'lr': 5e-3,
-                                    'momentum':0.99,
-                                    'weight_decay':0.005,
-                                    'scheduler' : True,
-                                    'torch_scheduler_milestone' : 5,
-                                    'torch_scheduler_gamma' :0.99,
-                                    'torch_scheduler_lr_start_factor':0.2
-                                    })
+    confif_path = f"dl_models.{args.model_name}.load_config"
+    default_config_model = importlib.import_module(confif_path)
+    dic_args_model = vars(default_config_model.args)
+    dic_args__HP_model = vars(default_config_model.args_HP)
+    point_to_evaluate = [dic_args_model.update(dic_args__HP_model)]
 
     return(point_to_evaluate)
 

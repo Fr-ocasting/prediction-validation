@@ -77,7 +77,11 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
                                     '/home/rrochas/prediction_validation/.git/objects/6a/2f986b4cfd0d5c1b5370539c60cbc60376ee7c',
                                     '/home/rrochas/prediction_validation/.git/objects/62/340d41856c322da363f152c93b2cc7ca7e1b52',
                                     '/home/rrochas/prediction_validation/.git/objects/3f/2332cfa867063c2cfbf14628f0745c1d23aa85',
-                                    '/home/rrochas/prediction_validation/.git/objects/b8/b89fb56b6e4740dc2d54abe53a4e1c9d85b47d'
+                                    '/home/rrochas/prediction_validation/.git/objects/b8/b89fb56b6e4740dc2d54abe53a4e1c9d85b47d',
+                                    '/Users/rrochas/Desktop/Code/prediction-validation/.git/objects/pack/pack-6112864b7bc92c13bff3f5af628b48e32aa57c81.pack',
+                                    '/Users/rrochas/Desktop/Code/prediction-validation/.git/objects/17/7c963bb5460b1c4fe3e371c08a3e20a2e66187',
+                                    '/Users/rrochas/Desktop/Code/prediction-validation/.git/objects/de/81efeffea5008f55ccc6971ffc22e6a5695db5',
+                                    '/Users/rrochas/Desktop/Code/prediction-validation/.git/objects/e1/f22e6987f81997543f42241e4f50b0ce913846'
                                     ]
                             },
              num_gpus=num_gpus,

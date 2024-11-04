@@ -12,9 +12,7 @@ if working_dir not in sys.path:
 # ...
 
 # Personnal import 
-from utils.utilities_DL import match_period_coverage_with_netmob
 from constants.config import get_args,update_modif
-from constants.paths import FOLDER_PATH,FILE_NAME
 from K_fold_validation.K_fold_validation import KFoldSplitter
 
 # Hp Tuning
@@ -23,7 +21,7 @@ from HP_tuning.hyperparameter_tuning_ray import HP_tuning
 
 
 # === Train and Evaluate Model: 
-def hyperparameter_tuning(args,vision_model_name,num_samples = 100):
+def hyperparameter_tuning(args,vision_model_name,num_samples):
     # Load K-fold subway-ds 
     folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
 
@@ -40,21 +38,20 @@ def hyperparameter_tuning(args,vision_model_name,num_samples = 100):
 if __name__ == '__main__':
 
     # Load config
-    model_name = 'STGCN' #'CNN'
-    dataset_names = ['subway_in']
-    dataset_for_covergae = ['subway_in','netmob']
+    model_name = 'CNN' #'CNN' # 'STGCN' # 'RNN' # 'LSTM' # 'GRU' # 'MTGNN' # 'DCRNN'
+    
+    dataset_names = ["data_bidon"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
+    dataset_for_coverage = ['data_bidon','netmob']
     args = get_args(model_name,dataset_names,dataset_for_coverage)
     # Modification : 
-    args.K_fold = 5
+    args.K_fold = 6
     args.ray = True
     args.W = 0  # IMPORTANT AVEC NETMOB
-    args.epochs = 100
     args.loss_function_type = 'MSE' # 'quantile'
-
+    args.epoch = 2
     args = update_modif(args)
 
     # Choose DataSet and VisionModel if needed: 
-
-    vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
-
-    analysis,trial_id = hyperparameter_tuning(args,vision_model_name)
+    num_samples = 10
+    vision_model_name = None #'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
+    analysis,trial_id = hyperparameter_tuning(args,vision_model_name,num_samples)

@@ -8,7 +8,6 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime 
-from build_inputs.preprocess_subway_15 import get_trigram_correspondance
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -32,7 +31,7 @@ for start,end in list_of_invalid_period:
     INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
 C = 1
 n_vertex = 40
-coverage = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
+COVERAGE = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
 
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
@@ -79,3 +78,33 @@ def restrain_df_to_specific_period(df,coverage_period):
 
     df = df.sort_index()
     return df
+
+
+def get_trigram_correspondance():
+    ''' Some surprise : 
+        Vieux Lyon : Jea
+        Gare d'oulins : OGA
+    '''
+    df = pd.DataFrame(columns = ['Station','COD_TRG'])
+    df['COD_TRG'] = ['AMP','BEL','BRO','COR',
+                     'CUI','CUS','FLA','GOR',
+                     'BLA','GRA','GUI','GIL',
+                     'HEN','HOT','LAE','MAS',
+                     'MER','LUM','PRY','PER',
+                     'SAN','SAX','VMY','JEA',
+                     'BON','CHA','VAI','VEN',
+                     'MAC','GAR','FOC','REP',
+                     'GER','DEB','JAU','CPA',
+                     'CRO','PAR','SOI','OGA']
+    
+    df['Station'] =['Ampère Victor Hugo','Bellecour','Brotteaux','Cordeliers',
+                    'Cuire','Cusset','Flachet','Gorge de Loup',
+                    'Grange Blanche','Gratte Ciel','Place Guichard','Guillotière',
+                    'Hénon','Hôtel de ville - Louis Pradel','Laënnec','Masséna',
+                    'Mermoz - Pinel','Monplaisir Lumière','Parilly','Perrache',
+                    'Sans Souci','Saxe - Gambetta','Valmy','Vieux Lyon',
+                    'Laurent Bonnevay','Charpennes','Gare de Vaise','Gare de Vénissieux',
+                    'Jean Macé','Garibaldi','Foch','République Villeurbanne',
+                    'Stade de Gerland','Debourg','Place Jean Jaurès','Croix Paquet',
+                    'Croix-Rousse','Part-Dieu','La soie',"Gare d'Oullins"]
+    return(df)

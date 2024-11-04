@@ -1,6 +1,7 @@
 import pandas as pd
 from datetime import datetime
 import numpy as np 
+import fiona
 import geopandas as gpd
 from shapely.geometry import Point 
 from shapely.errors import ShapelyDeprecationWarning
@@ -19,6 +20,7 @@ if parent_dir not in sys.path:
 from utils.utilities_DL import DataSet
 from utils.utilities import get_distance_matrix
 from build_inputs.load_raw_data import load_subway_15_min 
+from load_inputs.subway_in import get_trigram_correspondance
 
 # ======================================================
 # Function 
@@ -39,36 +41,6 @@ def get_subway_lanes():
             'B':subway_B,
             'C':subway_C,
             'D':subway_D})
-
-
-def get_trigram_correspondance():
-    ''' Some surprise : 
-        Vieux Lyon : Jea
-        Gare d'oulins : OGA
-    '''
-    df = pd.DataFrame(columns = ['Station','COD_TRG'])
-    df['COD_TRG'] = ['AMP','BEL','BRO','COR',
-                     'CUI','CUS','FLA','GOR',
-                     'BLA','GRA','GUI','GIL',
-                     'HEN','HOT','LAE','MAS',
-                     'MER','LUM','PRY','PER',
-                     'SAN','SAX','VMY','JEA',
-                     'BON','CHA','VAI','VEN',
-                     'MAC','GAR','FOC','REP',
-                     'GER','DEB','JAU','CPA',
-                     'CRO','PAR','SOI','OGA']
-    
-    df['Station'] =['Ampère Victor Hugo','Bellecour','Brotteaux','Cordeliers',
-                    'Cuire','Cusset','Flachet','Gorge de Loup',
-                    'Grange Blanche','Gratte Ciel','Place Guichard','Guillotière',
-                    'Hénon','Hôtel de ville - Louis Pradel','Laënnec','Masséna',
-                    'Mermoz - Pinel','Monplaisir Lumière','Parilly','Perrache',
-                    'Sans Souci','Saxe - Gambetta','Valmy','Vieux Lyon',
-                    'Laurent Bonnevay','Charpennes','Gare de Vaise','Gare de Vénissieux',
-                    'Jean Macé','Garibaldi','Foch','République Villeurbanne',
-                    'Stade de Gerland','Debourg','Place Jean Jaurès','Croix Paquet',
-                    'Croix-Rousse','Part-Dieu','La soie',"Gare d'Oullins"]
-    return(df)
 
 
 def load_subway_shp(FOLDER_PATH,station_location_name):

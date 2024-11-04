@@ -22,20 +22,14 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
-    config['weight_decay'] = 0.0005
-    config['momentum'] = 0.95
     config['loss_function_type'] = 'quantile' # MSE
     config['single_station']= False
-    config['batch_size'] = 32
-    config['lr'] = 5e-3
-    config['dropout'] = 0.2
-    config['epochs'] = 100 if torch.cuda.is_available() else 2
+
     config['contextual_positions'] = {}
     config['quick_ds'] = False #if True then load small tensor with torch.randn(), instead of big one with pickle.load() and torch concat
     config['netmob_transfer_mode'] = 'DL' # 'UL' # None # -> Use as NetMob input only 'DL' or 'UL' transfer mode, or both
     config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
     config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'
-
 
     # Optimization 
     if torch.cuda.is_available():
@@ -57,12 +51,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['backend'] = 'inductor' #'cudagraphs'
     config['prefetch_all'] = False
     # ...
-
-    # Scheduler 
-    config['scheduler'] = True # None
-    config['torch_scheduler_milestone'] = 40 # if scheduler == True 
-    config['torch_scheduler_gamma'] = 0.99 # if scheduler == True 
-    config['torch_scheduler_lr_start_factor'] = 0.1 # if scheduler == True 
 
     # === Ray config ===
     config['ray'] = False # True
@@ -160,9 +148,10 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
     module_path = f"dl_models.{args.model_name}.load_config"
     module = importlib.import_module(module_path)
     globals()[f"args_{args.model_name}"] = module.args
+    globals()[f"args_HP_{args.model_name}"] = module.args_HP 
 
     # Merge Args: 
-    args = Namespace(**{**vars(args),**vars(globals()[f"args_{args.model_name}"])})
+    args = Namespace(**{**vars(args),**vars(globals()[f"args_{args.model_name}"]),**vars(globals()[f"args_HP_{args.model_name}"])})
     return(args)
 
 def convert_into_parameters(config):
