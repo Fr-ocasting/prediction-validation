@@ -65,6 +65,7 @@ class KFoldSplitter(object):
         subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.args,
                                                                   vision_model_name = self.vision_model_name,
                                                                   normalize = normalize)
+        
         return(subway_ds,NetMob_ds,args,dic_class2rpz)
 
     def split_k_fold(self):

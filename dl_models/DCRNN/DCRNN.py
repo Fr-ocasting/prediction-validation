@@ -39,6 +39,7 @@ class EncoderModel(nn.Module, Seq2SeqAttrs):
         Seq2SeqAttrs.__init__(self, adj_mx, **model_kwargs)
         self.input_dim = int(model_kwargs.get('L'))
         self.seq_len = int(model_kwargs.get('L'))  # for the encoder
+
         self.dcgru_layers = nn.ModuleList(
             [DCGRUCell(self.rnn_units, adj_mx, self.max_diffusion_step, self.n_vertex,
                        filter_type=self.filter_type) for _ in range(self.num_rnn_layers)])
@@ -54,6 +55,7 @@ class EncoderModel(nn.Module, Seq2SeqAttrs):
                  hidden_state # shape (num_layers, batch_size, self.hidden_state_size)
                  (lower indices mean lower layers)
         """
+
         batch_size, _ = inputs.size()
         if hidden_state is None:
             hidden_state = torch.zeros((self.num_rnn_layers, batch_size, self.hidden_state_size),
@@ -126,6 +128,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         :param inputs: shape (seq_len, batch_size, num_sensor * input_dim)
         :return: encoder_hidden_state: (num_layers, batch_size, self.hidden_state_size)
         """
+        
         encoder_hidden_state = None
         for t in range(self.encoder_model.seq_len):
             _, encoder_hidden_state = self.encoder_model(inputs[t], encoder_hidden_state)
@@ -175,7 +178,6 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         inputs = inputs.permute(3,0,1,2)  # [B,C,N,L] -> [L,B,C,N]
         inputs = inputs.reshape(inputs.size(0),inputs.size(1),-1)  # [L,B,C,N] -> [L,B,C*N]
         # ...
-
         encoder_hidden_state = self.encoder(inputs)
         #self._logger.debug("Encoder complete, starting decoder")
         outputs = self.decoder(encoder_hidden_state, labels, batches_seen=batches_seen)  # outputs -> [horizon, B, N*out_dim] 

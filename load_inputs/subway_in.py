@@ -15,7 +15,7 @@ from datetime import datetime
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-FILE_NAME = 'subway_IN_interpol_neg_15_min_2019_2020' #.csv
+FILE_NAME = 'subway_in/subway_in'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
 
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
@@ -51,12 +51,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
 
     df = restrain_df_to_specific_period(df,coverage_period)
     time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
-
-    print("\n>>>>> iloc de 0: ",df.iloc[1].name)
-    print(">>>>> iloc de 1: ",df.iloc[0].name)
-    print(">>>>> différence des deux: ",df.iloc[1].name - df.iloc[0].name)
-    print(">>>>> Time step per hour: ",time_step_per_hour)
-    raise ValueError('VERIFIER ICI QU ON A BIEN TIME STEP PER HOUR = 4 ')
+    assert time_step_per_hour == 4, 'TIME STEP PER HOUR = {time_step_per_hour} ALORS QU ON VEUT =4 '
 
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 
@@ -64,8 +59,9 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       Days = args.D, 
                       historical_len= args.H,
                       step_ahead=args.step_ahead,
+                      spatial_unit = df.columns
                       )
-    
+
     df_correspondance = get_trigram_correspondance()
     df_correspondance.set_index('Station').reindex(dataset.spatial_unit)
     dataset.spatial_unit = df_correspondance.COD_TRG

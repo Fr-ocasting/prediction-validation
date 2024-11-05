@@ -26,7 +26,7 @@ class CNN(nn.Module):
         # Calculate the last dim of the sequence : 
         l_out_add = (2*args.padding - dilation*(args.kernel_size[0]-1) -1)/stride + 1
 
-        if args_embedding is not None:
+        if (args_embedding is not None) and len(vars(args_embedding))>0:
                 if args_embedding.position == 'input':
                     L = args.L+args_embedding.embedding_dim
                     l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))

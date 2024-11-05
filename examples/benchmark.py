@@ -75,19 +75,18 @@ def keep_track_on_model_metrics(df_results,model_name,performance):
 if __name__ == '__main__':
 
     # GET PARAMETERS
-    dataset_names = ["data_bidon"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
-    dataset_for_coverage = ['data_bidon','netmob']
+    dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
+    dataset_for_coverage = ['subway_in','netmob'] #  ['data_bidon','netmob'] #  ['subway_in','netmob'] 
     vision_model_name = None
     save_folder = 'benchmark/fold0/'
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-    modification = {'epochs' :20,
+    modification = {'epochs' :5,
                     }
-
-    init_model_name ='STGCN' # start with # STGCN #CNN
-    model_names = ['CNN','MTGNN','DCRNN','LSTM','GRU','RNN']
-    print(f'\n>>>>Training {init_model_name} on {dataset_names}')
+    
+    model_names = ['DCRNN','CNN','MTGNN','STGCN','LSTM','GRU','RNN']
+    print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
     # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
-    args,folds,hp_tuning_on_first_fold = local_get_args(init_model_name,
+    args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],
                                                            dataset_names=dataset_names,
                                                            dataset_for_coverage=dataset_for_coverage,
                                                            modification = modification)
@@ -95,9 +94,9 @@ if __name__ == '__main__':
     K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,vision_model_name,folds)
     ds = K_subway_ds[0]
 
-    trainer,df_loss = train_on_ds(init_model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
-    df_results = keep_track_on_model_metrics(df_results,init_model_name,trainer.performance)
-    for model_name in model_names:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
+    trainer,df_loss = train_on_ds(model_names[0],ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
+    df_results = keep_track_on_model_metrics(df_results,model_names[0],trainer.performance)
+    for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
         print(f'\n>>>>Training {model_name} on {dataset_names}')
         args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
                                                             dataset_names=dataset_names,
@@ -108,8 +107,8 @@ if __name__ == '__main__':
 
         trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
         df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)
-        
+
     print(df_results)
-    df_loss[[f"{model}_valid_loss" for model in [init_model_name]+model_names]].plot()
+    df_loss[[f"{model}_valid_loss" for model in model_names]].plot()
     plt.show()
 

@@ -19,8 +19,16 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
     print('Number of Nan Value: ',torch.isnan(dataset.raw_values).sum())
     print('Total Number of Elements: ', dataset.raw_values.numel(),'\n')
 
-    preprocesed_ds = PersonnalInput(invalid_dates,args, tensor = dataset.raw_values, dates = dataset.df_dates,
-                            time_step_per_hour = dataset.time_step_per_hour,Weeks = args.W, Days = args.D, historical_len = args.H,step_ahead = args.step_ahead,minmaxnorm = True ,dims=[0])
+    preprocesed_ds = PersonnalInput(invalid_dates,args,
+                                     tensor = dataset.raw_values, 
+                                     dates = dataset.df_dates, 
+                                     spatial_unit = dataset.spatial_unit,
+                                     time_step_per_hour = dataset.time_step_per_hour,
+                                     Weeks = args.W, 
+                                     Days = args.D, 
+                                     historical_len = args.H,
+                                     step_ahead = args.step_ahead,
+                                     minmaxnorm = True ,dims=[0])
 
     preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     
@@ -57,7 +65,5 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     #args.C = module_data.C
     dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intesect_coverage_period)
     # ...
-
     preprocesed_ds = preprocess_dataset(dataset,args,union_invalid_dates,normalize)
-
     return(preprocesed_ds,dataset,union_invalid_dates)

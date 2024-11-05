@@ -40,6 +40,7 @@ parser.add_argument('--act_func', type=str, default='glu',
 args = parser.parse_args(args=[])
 
 parser_HP = argparse.ArgumentParser(description='HP')
+parser_HP.add_argument('--HP_max_epochs', type=int, default=50, help="Number maximum of epochs per trial with ASHA Scheduler on Ray Tune")
 parser_HP.add_argument('--weight_decay', type=float, default=0.0005, help="weight decay for AdamW")
 parser_HP.add_argument('--batch_size', type=int, default=32, help="Batch size")
 parser_HP.add_argument('--lr', type=float, default=5e-2, help="Lr")

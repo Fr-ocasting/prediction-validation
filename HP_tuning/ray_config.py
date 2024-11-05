@@ -50,7 +50,7 @@ def get_point_to_evaluate(args):
 
 def choose_ray_metric():
     ray_version = pkg_resources.get_distribution("ray").version
-    if ray_version.startswith('2.7'):
+    if ray_version.startswith('2.7') or ray_version.startswith('3') :
         metric = 'Loss_model'
     else:
         metric = '_metric/Loss_model'

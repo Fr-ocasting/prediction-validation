@@ -13,7 +13,7 @@ def get_search_space_ray(args):
     # Common search space
     config = {"lr": tune.qloguniform(1e-4, 1e-1, 5e-5),
               "weight_decay" : tune.uniform(0.0005, 0.1),
-              "momentum" : tune.uniform(0.80, 0.99),
+              #"momentum" : tune.uniform(0.80, 0.99),
               "dropout" : tune.uniform(0,0.9),
               "scheduler" : tune.choice([{'scheduler':True,
                                             "torch_scheduler_milestone": tune.quniform(1, 100, 1),
@@ -32,7 +32,6 @@ def get_search_space_ray(args):
 
     # Update Config : 
     config.update(globals()[f"config_{args.model_name}"])
-
 
 
 

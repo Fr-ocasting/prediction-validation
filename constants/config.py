@@ -96,7 +96,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     # Validation, K-fold
     config['validation'] = 'sliding_window'  # classic / sliding_window / 
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
-    config['K_fold'] = 1  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
+    config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0
 
     # ===   ===
@@ -175,15 +175,6 @@ def update_modif(args,name_gpu='cuda'):
     else: 
         raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
     #...
-    
-    # Modification according GPU availability: 
-    if torch.cuda.is_available():
-            args.device = name_gpu
-            args.batch_size = 128
-    else :
-        args.device = 'cpu'
-        args.batch_size = 16
-    # ...
     
     # Ray tuning function can't hundle with PyTorch multiprocessing : 
     if args.ray:

@@ -14,7 +14,7 @@ from dataset import DataSet
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-FILE_NAME = 'data_bidon' #.csv
+FILE_NAME = 'data_bidon/data_bidon' #.csv
 INVALID_DATES = []
 C = 1
 n_vertex = 10

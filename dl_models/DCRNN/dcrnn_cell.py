@@ -77,7 +77,7 @@ class DCGRUCell(torch.nn.Module):
             supports.append(calculate_scaled_laplacian(adj_mx))
         for support in supports:
             self._supports.append(self._build_sparse_matrix(support))
-
+        
         self._fc_params = LayerParams(self, 'fc')
         self._gconv_params = LayerParams(self, 'gconv')
 
@@ -98,18 +98,20 @@ class DCGRUCell(torch.nn.Module):
         :return
         - Output: A `2-D` tensor with shape `(B, n_vertex * rnn_units)`.
         """
+        
         output_size = 2 * self._num_units
         if self._use_gc_for_ru:
             fn = self._gconv
         else:
             fn = self._fc
+
         value = torch.sigmoid(fn(inputs, hx, output_size, bias_start=1.0))
         value = torch.reshape(value, (-1, self._n_vertex, output_size))
         r, u = torch.split(tensor=value, split_size_or_sections=self._num_units, dim=-1)
         r = torch.reshape(r, (-1, self._n_vertex * self._num_units))
         u = torch.reshape(u, (-1, self._n_vertex * self._num_units))
-
         c = self._gconv(inputs, r * hx, self._num_units)
+
         if self._activation is not None:
             c = self._activation(c)
 

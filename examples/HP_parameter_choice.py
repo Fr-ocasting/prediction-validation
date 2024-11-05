@@ -31,7 +31,7 @@ def hyperparameter_tuning(args,vision_model_name,num_samples):
 
     # Train on the first fold: 
     subway_ds = K_subway_ds[0]
-    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir)
+    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir=working_dir)
     return(analysis,trial_id)
 
 
@@ -40,8 +40,8 @@ if __name__ == '__main__':
     # Load config
     model_name = 'CNN' #'CNN' # 'STGCN' # 'RNN' # 'LSTM' # 'GRU' # 'MTGNN' # 'DCRNN'
     
-    dataset_names = ["data_bidon"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
-    dataset_for_coverage = ['data_bidon','netmob']
+    dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
+    dataset_for_coverage = ['subway_in','netmob'] # ["subway_in"] , ["netmob"], # ['subway_in','netmob']
     args = get_args(model_name,dataset_names,dataset_for_coverage)
     # Modification : 
     args.K_fold = 6

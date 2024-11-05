@@ -383,11 +383,10 @@ class Trainer(object):
             with autocast():
                 pred = self.model(x_b,contextual_b)
                 loss = self.loss_function(pred,y_b)
-
         else:
             pred = self.model(x_b,contextual_b)
             loss = self.loss_function(pred,y_b)
-
+                
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
             self.chrono.backward()

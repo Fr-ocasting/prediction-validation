@@ -12,8 +12,8 @@ else:
     #current_path = os.path.abspath(os.path.dirname(__file__))
     #package_path = os.path.abspath(os.path.join(current_path, '..'))
     #FOLDER_PATH = '../../../../Data/'
-    FOLDER_PATH = '../data'
-    DATA_TO_PREDICT = 'data_bidon'  # 'subway_in' 
+    FOLDER_PATH =  '../data'
+    DATA_TO_PREDICT = 'subway_in' # 'data_bidon'  # 'subway_in' 
     #FILE_NAME = 'data_bidon' #.csv
 
 SAVE_DIRECTORY = '../save/'
