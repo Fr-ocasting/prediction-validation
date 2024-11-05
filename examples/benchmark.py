@@ -80,7 +80,7 @@ if __name__ == '__main__':
     vision_model_name = None
     save_folder = 'benchmark/fold0/'
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-    modification = {'epochs' :5,
+    modification = {'epochs' :100,
                     }
     
     model_names = ['DCRNN','CNN','MTGNN','STGCN','LSTM','GRU','RNN']

@@ -19,6 +19,7 @@ from dl_models.MTGNN.MTGNN import MTGNN
 from dl_models.RNN.RNN import RNN
 from dl_models.STGCN.STGCN import STGCN
 from dl_models.DCRNN.DCRNN import DCRNN
+from dl_models.TFT.TFT import TFT
 from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling,FeatureExtractor_ResNetInspired_bis
@@ -194,6 +195,8 @@ class full_model(nn.Module):
 
 def load_model(args,dic_class2rpz):
     args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
+    if args.model_name == 'TFT':
+        model = TFT(args)
 
     if args.model_name == 'CNN': 
         model = CNN(args,args_embedding = args_embedding,dic_class2rpz = dic_class2rpz)

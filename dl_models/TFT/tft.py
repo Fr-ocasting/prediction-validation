@@ -164,78 +164,76 @@ class VariableSelectionNetwork(nn.Module):
 
 
 class TFT(nn.Module):
-    def __init__(self, config):
+    def __init__(self, args):
         super(TFT, self).__init__()
-        self.device = config['device']
-        self.batch_size=config['batch_size']
-        self.static_variables = config['static_variables']
-        self.encode_length = config['encode_length']
-        self.time_varying_categoical_variables =  config['time_varying_categoical_variables']
-        self.time_varying_real_variables_encoder =  config['time_varying_real_variables_encoder']
-        self.time_varying_real_variables_decoder =  config['time_varying_real_variables_decoder']
-        self.num_input_series_to_mask = config['num_masked_series']
-        self.hidden_size = config['lstm_hidden_dimension']
-        self.lstm_layers = config['lstm_layers']
-        self.dropout = config['dropout']
-        self.embedding_dim = config['embedding_dim']
-        self.attn_heads = config['attn_heads']
-        self.num_quantiles = config['num_quantiles']
-        self.valid_quantiles = config['vailid_quantiles']
-        self.seq_length = config['seq_length']
+        self.device = args.device
+        self.batch_size=args.batch_size
+        self.static_variables = args.static_variables
+        self.encode_length = args.encode_length
+        self.time_varying_categoical_variables =  args.time_varying_categoical_variables
+        self.time_varying_real_variables_encoder =  args.time_varying_real_variables_encoder
+        self.time_varying_real_variables_decoder =  args.time_varying_real_variables_decoder
+        self.num_input_series_to_mask = args.num_masked_series
+        self.hidden_size = args.lstm_hidden_dimension
+        self.lstm_layers = args.lstm_layers
+        self.dropout = args.dropout
+        self.embedding_dim = args.embedding_dim
+        self.attn_heads = args.attn_heads
+        self.num_quantiles = args.num_quantiles
+        self.valid_quantiles = args.vailid_quantiles
+        self.seq_length = args.seq_length
         
         self.static_embedding_layers = nn.ModuleList()
         for i in range(self.static_variables):
-            emb = nn.Embedding(config['static_embedding_vocab_sizes'][i], config['embedding_dim']).to(self.device)
+            emb = nn.Embedding(args.static_embedding_vocab_sizes[i], args.embedding_dim).to(self.device)
             self.static_embedding_layers.append(emb)
-        
-        
         
         self.time_varying_embedding_layers = nn.ModuleList()
         for i in range(self.time_varying_categoical_variables):
-            emb = TimeDistributed(nn.Embedding(config['time_varying_embedding_vocab_sizes'][i], config['embedding_dim']), batch_first=True).to(self.device)
+            emb = TimeDistributed(nn.Embedding(args.time_varying_embedding_vocab_sizes[i], args.embedding_dim), batch_first=True).to(self.device)
             self.time_varying_embedding_layers.append(emb)
             
         self.time_varying_linear_layers = nn.ModuleList()
         for i in range(self.time_varying_real_variables_encoder):
-            emb = TimeDistributed(nn.Linear(1, config['embedding_dim']), batch_first=True).to(self.device)
+            emb = TimeDistributed(nn.Linear(1, args.embedding_dim), batch_first=True).to(self.device)
             self.time_varying_linear_layers.append(emb)
 
-        self.encoder_variable_selection = VariableSelectionNetwork(config['embedding_dim'],
-                                (config['time_varying_real_variables_encoder'] +  config['time_varying_categoical_variables']),
+        self.encoder_variable_selection = VariableSelectionNetwork(args.embedding_dim,
+                                (args.time_varying_real_variables_encoder +  args.time_varying_categoical_variables),
                                 self.hidden_size,
                                 self.dropout,
-                                config['embedding_dim']*config['static_variables'])
+                                args.embedding_dim*args.static_variables)
 
-        self.decoder_variable_selection = VariableSelectionNetwork(config['embedding_dim'],
-                                (config['time_varying_real_variables_decoder'] +  config['time_varying_categoical_variables']),
+        self.decoder_variable_selection = VariableSelectionNetwork(args.embedding_dim,
+                                (args.time_varying_real_variables_decoder +  args.time_varying_categoical_variables),
                                 self.hidden_size,
                                 self.dropout,
-                                config['embedding_dim']*config['static_variables'])
+                                args.embedding_dim*args.static_variables)
 
         
-        self.lstm_encoder_input_size = config['embedding_dim']*(config['time_varying_real_variables_encoder'] +  
-                                                        config['time_varying_categoical_variables'] +
-                                                        config['static_variables'])
+        self.lstm_encoder_input_size = args.embedding_dim*(args.time_varying_real_variables_encoder +  
+                                                        args.time_varying_categoical_variables +
+                                                        args.static_variables)
         
-        self.lstm_decoder_input_size = config['embedding_dim']*(config['time_varying_real_variables_decoder'] +  
-                                                        config['time_varying_categoical_variables'] +
-                                                        config['static_variables'])
+        self.lstm_decoder_input_size = args.embedding_dim*(args.time_varying_real_variables_decoder +  
+                                                        args.time_varying_categoical_variables +
+                                                        args.static_variables)
                                       
 
         self.lstm_encoder = nn.LSTM(input_size=self.hidden_size, 
                             hidden_size=self.hidden_size,
                            num_layers=self.lstm_layers,
-                           dropout=config['dropout'])
+                           dropout=args.dropout)
         
         self.lstm_decoder = nn.LSTM(input_size=self.hidden_size,
                                    hidden_size=self.hidden_size,
                                    num_layers=self.lstm_layers,
-                                   dropout=config['dropout'])
+                                   dropout=args.dropout)
 
         self.post_lstm_gate = TimeDistributed(GLU(self.hidden_size))
         self.post_lstm_norm = TimeDistributed(nn.BatchNorm1d(self.hidden_size))
 
-        self.static_enrichment = GatedResidualNetwork(self.hidden_size,self.hidden_size, self.hidden_size, self.dropout, config['embedding_dim']*self.static_variables)
+        self.static_enrichment = GatedResidualNetwork(self.hidden_size,self.hidden_size, self.hidden_size, self.dropout, args.embedding_dim*self.static_variables)
         
         self.position_encoding = PositionalEncoder(self.hidden_size, self.seq_length)
 
@@ -254,6 +252,7 @@ class TFT(nn.Module):
         return torch.zeros(self.lstm_layers, self.batch_size, self.hidden_size, device=self.device)
         
     def apply_embedding(self, x, static_embedding, apply_masking):
+        ''' x shape: [B,L,C]'''
         ###x should have dimensions (batch_size, timesteps, input_size)
         ## Apply masking is used to mask variables that should not be accessed after the encoding steps
         #Time-varying real embeddings 
@@ -322,6 +321,7 @@ class TFT(nn.Module):
 
         ##Embedding and variable selection
         static_embedding = torch.cat(embedding_vectors, dim=1)
+        
         embeddings_encoder = self.apply_embedding(x['inputs'][:,:self.encode_length,:].float().to(self.device), static_embedding, apply_masking=False)
         embeddings_decoder = self.apply_embedding(x['inputs'][:,self.encode_length:,:].float().to(self.device), static_embedding, apply_masking=True)
         embeddings_encoder, encoder_sparse_weights = self.encoder_variable_selection(embeddings_encoder[:,:,:-(self.embedding_dim*self.static_variables)],embeddings_encoder[:,:,-(self.embedding_dim*self.static_variables):])

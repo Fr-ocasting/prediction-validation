@@ -38,7 +38,7 @@ def hyperparameter_tuning(args,vision_model_name,num_samples):
 if __name__ == '__main__':
 
     # Load config
-    model_name = 'CNN' #'CNN' # 'STGCN' # 'RNN' # 'LSTM' # 'GRU' # 'MTGNN' # 'DCRNN'
+    model_name = 'STGCN' #'CNN' # 'STGCN' # 'RNN' # 'LSTM' # 'GRU' # 'MTGNN' # 'DCRNN'
     
     dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
     dataset_for_coverage = ['subway_in','netmob'] # ["subway_in"] , ["netmob"], # ['subway_in','netmob']
@@ -48,10 +48,10 @@ if __name__ == '__main__':
     args.ray = True
     args.W = 0  # IMPORTANT AVEC NETMOB
     args.loss_function_type = 'MSE' # 'quantile'
-    args.epoch = 2
+    args.epoch = 50
     args = update_modif(args)
 
     # Choose DataSet and VisionModel if needed: 
-    num_samples = 10
+    num_samples = 1000
     vision_model_name = None #'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
     analysis,trial_id = hyperparameter_tuning(args,vision_model_name,num_samples)

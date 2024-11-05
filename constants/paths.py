@@ -17,7 +17,7 @@ else:
     #FILE_NAME = 'data_bidon' #.csv
 
 SAVE_DIRECTORY = '../save/'
-
+ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
 
 # Load CRITER data : 
 #FILE_NAME = 'preprocessed_CRITER_6min.csv'
