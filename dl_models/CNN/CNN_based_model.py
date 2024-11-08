@@ -14,10 +14,11 @@ if parent_dir not in sys.path:
 from dl_models.TimeEmbedding.time_embedding import TimeEmbedding
 
 class CNN(nn.Module):
-    def __init__(self,args,dilation = 1, stride = 1,args_embedding = None,dic_class2rpz=None):
+    def __init__(self,args,dilation = 1, stride = 1,args_embedding = None):
         super().__init__()
     
-        self.c_out = args.C_outs[-1]
+        #self.c_out = args.C_outs[-1]
+        self.c_out = args.out_dim
         self.dropout = nn.Dropout(args.dropout)
 
         # List of Conv
@@ -48,7 +49,7 @@ class CNN(nn.Module):
         self.flatten = nn.Flatten()
 
         # Output Module (traditionnaly 1 or 2 linear layers)
-        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*args.H_dims[-1]]+args.C_outs[:-1], args.C_outs)])
+        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*args.H_dims[-1]]+args.C_outs, args.C_outs+[self.c_out])])
             
     def forward(self,x):
         '''

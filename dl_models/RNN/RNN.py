@@ -2,11 +2,11 @@ from torch import nn
 import torch
 
 class RNN(nn.Module):
-    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,bias = True,dropout = 0.0, nonlinearity = 'tanh',batch_first = True,bidirectional = False,lstm = False, gru = False,):
+    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,dropout = 0.0, nonlinearity = 'tanh',batch_first = True,bidirectional = False,lstm = False, gru = False,):
         super().__init__()
 
         # Parameters
-        self.C_outs = C_outs
+        self.C_outs = C_outs + [out_dim]
         self.num_layers = num_layers
         self.batch_first = batch_first
         self.lstm = lstm
@@ -21,7 +21,7 @@ class RNN(nn.Module):
             self.rnn = nn.RNN(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)  # tanh or ReLU as non linear activation
           
         self.D =  2 if bidirectional else 1
-        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([self.D*h_dim*L]+C_outs[:-1], C_outs)])
+        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([self.D*h_dim*L]+self.C_outs[:-1], self.C_outs)])
         self.relu = nn.ReLU()
         self.flatten = nn.Flatten()
 
@@ -72,7 +72,6 @@ class RNN(nn.Module):
         for dense_out in self.Dense_outs[:-1]:
             x = self.relu(dense_out(x))
         out = self.Dense_outs[-1](x)    # No activation
-        
         # Reshape 
         if permute_back:
             out = out.reshape(B,N,self.C_outs[-1])

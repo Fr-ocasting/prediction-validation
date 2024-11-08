@@ -26,7 +26,6 @@ def local_get_args(model_name,dataset_names,dataset_for_coverage,modification):
     args.W = 0
     args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
     args.ray = False
-    args.loss_function_type = 'MSE'  #'MSE' # 'quantile'
 
     #  evaluation on the first fold only :
     hp_tuning_on_first_fold = True # True # False // if True, then we remove the first fold as we consid we used it for HP-tuning
@@ -37,7 +36,6 @@ def local_get_args(model_name,dataset_names,dataset_for_coverage,modification):
     
     # set number of folds to evaluate
     folds =  [0]
-    # set total coverage period 
     return(args,folds,hp_tuning_on_first_fold)
 
 def get_trial_id(args,vision_model_name=None):
@@ -63,12 +61,21 @@ def train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss):
 
     return(trainer,df_loss)
 
-def keep_track_on_model_metrics(df_results,model_name,performance):
-    row = pd.DataFrame({'Model':[model_name],
-                        'Valid_loss':[performance['valid_loss']],
-                        'Valid_MSE':[performance['valid_metrics']['mse']],
-                        'Test_MSE':[performance['test_metrics']['mse']],
+def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
+    performance = trainer.performance
+    dict_row = {'Model':[model_name],
+                'Valid_loss':[performance['valid_loss']]
+                }
+    for metric in metrics:
+        if (metric == 'PICP') or (metric == 'MPIW'):
+            add_name = f'calib_{trainer.type_calib}_'
+        else:
+            add_name = ''
+        dict_row.update({f'Valid_{add_name}{metric}':[performance['valid_metrics'][metric]],
+                        f'Test_{add_name}{metric}':[performance['test_metrics'][metric]]
                         })
+
+    row = pd.DataFrame(dict_row)
     df_results = pd.concat([df_results,row])
     return df_results
 
@@ -78,9 +85,12 @@ if __name__ == '__main__':
     dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
     dataset_for_coverage = ['subway_in','netmob'] #  ['data_bidon','netmob'] #  ['subway_in','netmob'] 
     vision_model_name = None
+
+    from constants.paths import DATA_TO_PREDICT
+    assert DATA_TO_PREDICT in dataset_names, f'You are trying to predict {DATA_TO_PREDICT} with only these data: {dataset_names}'
     save_folder = 'benchmark/fold0/'
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-    modification = {'epochs' :100,
+    modification = {'epochs' : 5, #100,
                     }
     
     model_names = ['DCRNN','CNN','MTGNN','STGCN','LSTM','GRU','RNN']
@@ -95,7 +105,8 @@ if __name__ == '__main__':
     ds = K_subway_ds[0]
 
     trainer,df_loss = train_on_ds(model_names[0],ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
-    df_results = keep_track_on_model_metrics(df_results,model_names[0],trainer.performance)
+    metrics = trainer.metrics
+    df_results = keep_track_on_model_metrics(df_results,model_names[0],trainer,metrics)
     for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
         print(f'\n>>>>Training {model_name} on {dataset_names}')
         args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
@@ -104,9 +115,9 @@ if __name__ == '__main__':
                                                             modification = modification)
         
         trial_id = get_trial_id(args,vision_model_name=None)
-
         trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
-        df_results = keep_track_on_model_metrics(df_results,model_name,trainer.performance)
+        metrics = trainer.metrics
+        df_results = keep_track_on_model_metrics(df_results,model_name,trainer,metrics)
 
     print(df_results)
     df_loss[[f"{model}_valid_loss" for model in model_names]].plot()

@@ -1,7 +1,7 @@
 import torch 
 
 class PI_object(object):
-    def __init__(self,preds,Y_true,alpha, type_calib = 'CQR',Q = None,T_labels = None):
+    def __init__(self,preds,Y_true,alpha = None, type_calib = 'CQR',Q = None,T_labels = None):
         super(PI_object,self).__init__()
         self.alpha = alpha
         self.Y_true = Y_true

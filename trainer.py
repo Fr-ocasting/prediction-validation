@@ -112,6 +112,17 @@ class Trainer(object):
         self.training_mode = 'train'
         self.optimizer = optimizer
         self.loss_function = loss_function
+        if args.loss_function_type == 'MSE':
+            self.metrics = ['mse','mae','mape'] 
+            self.type_calib = None
+            self.alpha = None
+            self.args.track_pi = False
+        elif args.loss_function_type == 'quantile':
+            self.metrics = ['PICP','MPIW'] 
+            self.type_calib = args.type_calib
+            self.alpha = args.alpha
+        else:
+            raise NotImplementedError(f"metrics associated to {args.loss_function_type} has not been implemented")
         
         if args.torch_compile:
             self.model = torch.compile(model,
@@ -127,17 +138,15 @@ class Trainer(object):
             self.scaler = GradScaler()
         self.train_loss = []
         self.valid_loss = []
-        self.calib_loss =[]
-        self.args = args
-        if self.args.loss_function_type != 'quantile':
-            self.args.track_pi = False
 
-        self.alpha = args.alpha
+        self.args = args
+        
         self.fold = fold
         self.best_valid = np.inf
         self.dic_class2rpz = dic_class2rpz
         self.picp_list = []
         self.mpiw_list = []
+        self.calib_loss =[]
         self.show_figure = show_figure
 
         if trial_id is None:
@@ -223,25 +232,27 @@ class Trainer(object):
                 print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
     
     def get_pi_from_prediction(self,Preds,Y_true,T_labels):
+        if self.type_calib == 'CQR':
+            # Get Quantile tensor from Calibration with 'cal' datalaoder:
+            Q = self.conformal_calibration(self.alpha,
+                                        conformity_scores_type = self.args.conformity_scores_type,
+                                        quantile_method = self.args.quantile_method,print_info = False)  
+            # get PI from Prediction and apply the Calibration :
+            pi = self.CQR_PI(Preds,Y_true,self.args.alpha,Q,T_labels)
+            # ....
+        elif self.type_calib == 'classic':
+            pi = PI_object(Preds,Y_true,type_calib = 'classic')   
+        else:
+            raise NotImplementedError(f'Type of calibration {self.type_calib} for the quantile regression has not been implemented')
 
-        # Get Quantile tensor from Calibration with 'cal' datalaoder:
-        Q = self.conformal_calibration(self.args.alpha,
-                                    conformity_scores_type = self.args.conformity_scores_type,
-                                    quantile_method = self.args.quantile_method,print_info = False)  
-        # ...
-
-        # get PI from Prediction and apply the Calibration :
-        cqr_pi = self.CQR_PI(Preds,Y_true,self.args.alpha,Q,T_labels)
-        # ....
-
-        return(cqr_pi)
+        return(pi)
     
     def track_pi(self,Preds,Y_true,T_labels):
         if self.args.track_pi:
-            cqr_pi = self.get_pi_from_prediction(Preds,Y_true,T_labels)
-            self.picp_list.append(cqr_pi.picp)
-            self.mpiw_list.append(cqr_pi.mpiw)
-            return(cqr_pi)
+            pi = self.get_pi_from_prediction(Preds,Y_true,T_labels)
+            self.picp_list.append(pi.picp)
+            self.mpiw_list.append(pi.mpiw)
+            return(pi)
         else:
             return(None)
 
@@ -292,17 +303,17 @@ class Trainer(object):
 
                 # Keep Track on Test Metrics
                 Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False)
-
-                test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = ['mse','mae','mape'])
+                test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = self.metrics,
+                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {})
                 self.performance.update({'test_metrics': test_metrics})
-                # ...
 
                 # Keep Track on Valid Metrics:
                 Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid',track_loss=False)
-                valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = ['mse','mae','mape'])
+                valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = self.metrics,
+                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {})
                 self.performance.update({'valid_metrics': valid_metrics})    
                 # ...
-                
+
                 self.save_best_model(checkpoint,epoch,self.performance)
                 self.chrono.save_model()
 
@@ -485,15 +496,11 @@ class Trainer(object):
 
         # Get Quatile Tensor
         calibrator.get_quantile_tensor(quantile_method)
-
-        
         return(calibrator.Q)
     
     def CQR_PI(self,preds,Y_true,alpha,Q,T_labels = None):
         pi = PI_object(preds,Y_true,alpha,type_calib = 'CQR',Q=Q,T_labels = T_labels)
-        self.pi = pi
         return(pi)
-
 
     def backpropagation(self,loss):
         self.optimizer.zero_grad()

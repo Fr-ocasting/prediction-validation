@@ -22,8 +22,8 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     # === Common config for everyone: ===
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
-    config['loss_function_type'] = 'quantile' # MSE
     config['single_station']= False
+    config['loss_function_type'] = 'quantile' # MSE
 
     config['contextual_positions'] = {}
     config['quick_ds'] = False #if True then load small tensor with torch.randn(), instead of big one with pickle.load() and torch concat
@@ -64,6 +64,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['conformity_scores_type'] = 'max_residual'   # Define the function to compute the non-conformity scores
     config['quantile_method'] =  'compute_quantile_by_class' # 'classic' Define type of method used to calcul quantile.  'classic':  Quantile through the entiere dataset  / 'weekday_hour': 
     config['calibration_calendar_class'] = 0  # Calibrates data by defined calendar-class 
+    config['type_calib'] = 'classic'  # Calibration after quantile regression. If 'classic' then no calibration. If 'CQR' then CQR calibration
 
     # Config Time Embedding: 
     config['position'] = 'input'  # Position of time_embedding module : before or after the core model
@@ -164,9 +165,7 @@ def convert_into_parameters(config):
     args = parser.parse_args(args=[])
     return(args)
 
-
-def update_modif(args,name_gpu='cuda'):
-    #Update modification:
+def update_out_dim(args):
     if args.loss_function_type == 'MSE': 
         args.out_dim = 1
         args.alpha = None
@@ -174,6 +173,11 @@ def update_modif(args,name_gpu='cuda'):
         args.out_dim = 2
     else: 
         raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    return args 
+
+def update_modif(args,name_gpu='cuda'):
+    #Update modification:
+    args = update_out_dim(args)
     #...
     
     # Ray tuning function can't hundle with PyTorch multiprocessing : 
