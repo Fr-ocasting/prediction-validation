@@ -92,7 +92,7 @@ class full_model(nn.Module):
         self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
 
         # === Trafic Model ===
-        self.core_model = load_model(dataset, args,dic_class2rpz)
+        self.core_model = load_model(dataset, args)
 
         self.n_vertex = args.n_vertex
 
@@ -209,7 +209,7 @@ def load_model(dataset, args):
                     ).to(args.device)
         
     if args.model_name == 'DCRNN':
-        adj,_ = load_adj(adj_type = args.adj_type, threshold= args.threshold)
+        adj,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
         model = DCRNN(adj, **vars(args)).to(args.device)
         
     if args.model_name == 'STGCN':

@@ -82,15 +82,15 @@ def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
 if __name__ == '__main__':
 
     # GET PARAMETERS
-    dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
-    dataset_for_coverage = ['subway_in','netmob'] #  ['data_bidon','netmob'] #  ['subway_in','netmob'] 
+    dataset_names = ["PEMS_BAY"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+    dataset_for_coverage = ['PEMS_BAY'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
     vision_model_name = None
 
     from constants.paths import DATA_TO_PREDICT
     assert DATA_TO_PREDICT in dataset_names, f'You are trying to predict {DATA_TO_PREDICT} with only these data: {dataset_names}'
     save_folder = 'benchmark/fold0/'
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-    modification = {'epochs' : 5, #100,
+    modification = {'epochs' : 1, #100,
                     }
     
     model_names = ['DCRNN','CNN','MTGNN','STGCN','LSTM','GRU','RNN']

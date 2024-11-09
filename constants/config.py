@@ -188,9 +188,8 @@ def update_modif(args,name_gpu='cuda'):
     # ...
 
     
-    print(f"Model: {args.model_name}, K_fold = {args.K_fold}") 
-    print(f"!!! Loss function: {args.loss_function_type} ")
-    print("!!! Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
+    print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
+    print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     return(args)
 
 def get_config_embed(nb_words_embedding,embedding_dim,position):

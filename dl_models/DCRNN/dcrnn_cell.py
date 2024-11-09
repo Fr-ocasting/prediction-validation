@@ -133,9 +133,13 @@ class DCGRUCell(torch.nn.Module):
         value = torch.sigmoid(torch.matmul(inputs_and_state, weights))
         biases = self._fc_params.get_biases(output_size, bias_start)
         value += biases
+        print('\nfc layer: ')
+        print('bias: ', biases.size(),biases, 'weights : ',weights.size(),weights)
+        blabla
         return value
 
     def _gconv(self, inputs, state, output_size, bias_start=0.0):
+        print('\nStart Gconv with inputs: ',inputs.size(), 'and state : ',state.size())
         # Reshape input and state to (batch_size, n_vertex, input_dim/state_dim)
         batch_size = inputs.shape[0]
         inputs = torch.reshape(inputs, (batch_size, self._n_vertex, -1))
@@ -151,6 +155,7 @@ class DCGRUCell(torch.nn.Module):
         if self._max_diffusion_step == 0:
             pass
         else:
+            print('Start Graph Conv in DCRNN')
             # Support is a Weighted Adjacency Matrix
             for support in self._supports:
                 x1 = torch.sparse.mm(support.float(), x0)
@@ -166,9 +171,12 @@ class DCGRUCell(torch.nn.Module):
         x = torch.reshape(x, shape=[batch_size * self._n_vertex, input_size * num_matrices])
 
         weights = self._gconv_params.get_weights((input_size * num_matrices, output_size))
+        print('lernable weights : ',weights.size())
         x = torch.matmul(x, weights)  # (batch_size * self._n_vertex, output_size)
 
+        
         biases = self._gconv_params.get_biases(output_size, bias_start)
+        print('bias : ',biases.size())
         x += biases
         # Reshape res back to 2D: (batch_size, num_node, state_dim) -> (batch_size, num_node * state_dim)
         return torch.reshape(x, [batch_size, self._n_vertex * output_size])

@@ -49,7 +49,7 @@ def get_block_dims(args,Ko):
 def get_gso_from_adj(dataset, args):
     # Compute Weighted Adjacency Matrix: 
     adj,n_vertex = load_adj(dataset, adj_type = args.adj_type, threshold=args.threshold)
-    adj[adj < args.threeshold] = 0
+    adj[adj < args.threshold] = 0
     adj = adj.to_numpy()
     gso = calc_gso(adj, args.gso_type)
     if args.graph_conv_type == 'cheb_graph_conv':   
