@@ -31,7 +31,7 @@ parser.add_argument('--enable_padding', type=bool, default=True,
                     help="Enable padding on the Temporal convolution. Suitable for short sequence cause (L' = L-2*(Kt-1)*stblock_num)")
 
 parser.add_argument('--threeshold', type=float, default=0.3,  # between 0.0 and 1.
-                    help="Threeshold to mask the Weighted Adjacency Matrix. < threeshold become 0")
+                    help="Threeshold to mask the Weighted Adjacency Matrix based on Gaussian Kernel Distance. < threeshold become 0")
 
 parser.add_argument('--act_func', type=str, default='glu', 
                     choices = ['glu','gtu','silu'],

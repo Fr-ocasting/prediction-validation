@@ -46,9 +46,9 @@ def get_block_dims(args,Ko):
 
     return(blocks)
 
-def get_gso_from_adj(args):
+def get_gso_from_adj(dataset, args):
     # Compute Weighted Adjacency Matrix: 
-    adj,n_vertex = load_adj(adj_type = args.adj_type)
+    adj,n_vertex = load_adj(dataset, adj_type = args.adj_type, threshold=args.threshold)
     adj[adj < args.threeshold] = 0
     adj = adj.to_numpy()
     gso = calc_gso(adj, args.gso_type)

@@ -6,8 +6,8 @@ from K_fold_validation.K_fold_validation import KFoldSplitter
 
 # =======================================================================================================================
 # =======================================================================================================================
-def load_model(args,dic_class2rpz):
-    model = full_model(args,dic_class2rpz).to(args.device)
+def load_model(dataset, args,dic_class2rpz):
+    model = full_model(dataset, args,dic_class2rpz).to(args.device)
     print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
     print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
     return(model)
@@ -29,7 +29,7 @@ def load_everything(args,coverage,vision_model_name):
     # ...
 
     # Load Model:
-    model = load_model(args,dic_class2rpz)
+    model = load_model(subway_ds,args,dic_class2rpz)
 
     # Load Optimizer, Scheduler, Loss function: 
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)

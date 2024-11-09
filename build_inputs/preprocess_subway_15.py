@@ -204,8 +204,8 @@ if __name__ == '__main__':
     if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}'):
         raise 'Folder not find'
     else:
-        if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/subway_adj/'):
-            os.mkdir(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/subway_adj/')
-        adj.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/subway_adj/adj.csv')
-        corr.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/subway_adj/corr.csv')
-        dist.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/subway_adj/dist.csv')
+        if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/'):
+            os.mkdir(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/')
+        adj.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/adj.csv')
+        corr.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/corr.csv')
+        dist.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/dist.csv')

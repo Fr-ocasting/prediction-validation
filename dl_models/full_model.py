@@ -74,7 +74,7 @@ def load_vision_model(args_vision):
 
 
 class full_model(nn.Module):
-    def __init__(self,args,dic_class2rpz):
+    def __init__(self,dataset, args,dic_class2rpz):
         super(full_model,self).__init__()
 
         # === Vision NetMob ===
@@ -92,7 +92,7 @@ class full_model(nn.Module):
         self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
 
         # === Trafic Model ===
-        self.core_model = load_model(args,dic_class2rpz)
+        self.core_model = load_model(dataset, args,dic_class2rpz)
 
         self.n_vertex = args.n_vertex
 
@@ -193,7 +193,7 @@ class full_model(nn.Module):
         return(x)
 
 
-def load_model(args,dic_class2rpz):
+def load_model(dataset, args):
     args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
     if args.model_name == 'TFT':
         model = TFT(args)
@@ -209,14 +209,14 @@ def load_model(args,dic_class2rpz):
                     ).to(args.device)
         
     if args.model_name == 'DCRNN':
-        adj,_ = load_adj(adj_type = args.adj_type)
+        adj,_ = load_adj(adj_type = args.adj_type, threshold= args.threshold)
         model = DCRNN(adj, **vars(args)).to(args.device)
         
     if args.model_name == 'STGCN':
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
         Ko = get_output_kernel_size(args)
         blocks = get_block_dims(args,Ko)
-        gso,_ = get_gso_from_adj(args)
+        gso,_ = get_gso_from_adj(dataset, args)
         model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
 
     if args.model_name == 'LSTM':

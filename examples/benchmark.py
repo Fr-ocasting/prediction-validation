@@ -52,7 +52,7 @@ def get_inputs(args,vision_model_name,folds):
 
 
 def train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss):
-    model = load_model(args,dic_class2rpz)
+    model = load_model(ds, args,dic_class2rpz)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
     trainer.train_and_valid(mod = 1000,mod_plot = None) 
