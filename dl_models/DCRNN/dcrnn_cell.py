@@ -171,12 +171,10 @@ class DCGRUCell(torch.nn.Module):
         x = torch.reshape(x, shape=[batch_size * self._n_vertex, input_size * num_matrices])
 
         weights = self._gconv_params.get_weights((input_size * num_matrices, output_size))
-        print('lernable weights : ',weights.size())
         x = torch.matmul(x, weights)  # (batch_size * self._n_vertex, output_size)
 
         
         biases = self._gconv_params.get_biases(output_size, bias_start)
-        print('bias : ',biases.size())
         x += biases
         # Reshape res back to 2D: (batch_size, num_node, state_dim) -> (batch_size, num_node * state_dim)
         return torch.reshape(x, [batch_size, self._n_vertex * output_size])

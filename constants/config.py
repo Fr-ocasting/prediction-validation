@@ -23,10 +23,10 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
-    config['loss_function_type'] = 'quantile' # MSE
+    config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
 
     config['contextual_positions'] = {}
-    config['quick_ds'] = False #if True then load small tensor with torch.randn(), instead of big one with pickle.load() and torch concat
+    config['quick_vision'] = False #if True then load small NetMob tensor with torch.randn(), instead of big one with pickle.load() and torch concat
     config['netmob_transfer_mode'] = 'DL' # 'UL' # None # -> Use as NetMob input only 'DL' or 'UL' transfer mode, or both
     config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
     config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'

@@ -116,7 +116,7 @@ class Trainer(object):
             self.metrics = ['mse','mae','mape'] 
             self.type_calib = None
             self.alpha = None
-            self.args.track_pi = False
+            args.track_pi = False
         elif args.loss_function_type == 'quantile':
             self.metrics = ['PICP','MPIW'] 
             self.type_calib = args.type_calib

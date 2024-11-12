@@ -59,7 +59,7 @@ def load_netmob_data(dataset,invalid_dates,args,columns,
     dims = [0,3,4] 
      
     if torch.cuda.is_available():
-        if args.quick_ds :
+        if args.quick_vision :
             netmob_T = torch.randn(dataset.length,40,4,22,22)
             print('Small NetMob_T ',netmob_T.size())
         else:
@@ -118,7 +118,7 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,FOLDER_PATH,columns,
     dims = [0,2,3]
 
     if torch.cuda.is_available():
-        if args.quick_ds :
+        if args.quick_vision :
             netmob_T = torch.randn(dataset.length,4,80,80)
             print('Small NetMob_T ',netmob_T.size())
             
