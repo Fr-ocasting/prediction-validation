@@ -40,9 +40,9 @@ def local_get_args(model_name,dataset_names,dataset_for_coverage,modification):
 
 def get_trial_id(args,vision_model_name=None):
     date_id = get_date_id()
-    datasets_names = '_'.join(args.dataset_names)
+    dataset_names = '_'.join(args.dataset_names)
     model_names = '_'.join([args.model_name,vision_model_name]) if 'netmob' in dataset_names  else args.model_name
-    trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
+    trial_id =  f"{dataset_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
     return trial_id
 
 def get_inputs(args,vision_model_name,folds):
