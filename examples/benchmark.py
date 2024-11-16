@@ -41,7 +41,7 @@ def local_get_args(model_name,dataset_names,dataset_for_coverage,modification):
 def get_trial_id(args,vision_model_name=None):
     date_id = get_date_id()
     dataset_names = '_'.join(args.dataset_names)
-    model_names = '_'.join([args.model_name,vision_model_name]) if 'netmob' in dataset_names  else args.model_name
+    model_names = '_'.join([args.model_name,vision_model_name]) if vision_model_name is not None  else args.model_name
     trial_id =  f"{dataset_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
     return trial_id
 
@@ -82,8 +82,8 @@ def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
 if __name__ == '__main__':
 
     # GET PARAMETERS
-    dataset_names = ["METR_LA"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-    dataset_for_coverage = ['METR_LA'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+    dataset_names = ['data_bidon','netmob_bidon'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon']
+    dataset_for_coverage = ['data_bidon','netmob_bidon'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon']
     vision_model_name = None
 
     from constants.paths import DATA_TO_PREDICT

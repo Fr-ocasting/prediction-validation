@@ -11,6 +11,7 @@ if parent_dir not in sys.path:
 from build_inputs.load_netmob_data import tackle_netmob
 from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from build_inputs.load_calendar import load_calendar,tackle_calendar
+from constants.paths import DATA_TO_PREDICT
 
 
 def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
@@ -23,27 +24,36 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
                                 'test': dict_calendar_U_test[calendar_class]} for calendar_class in dict_calendar_U_train.keys()
                                 } 
     # ...
+
     pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
     positions['calibration_calendar'] = pos_calibration_calendar
 
-    if 'calendar' in args.dataset_names:
-        pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calendar_class}')
-        positions['calendar'] = pos_calendar
-        args.time_embedding = True
-    else:
+    if not('calednar' in args.dataset_names):
         args.time_embedding = False
-        
 
-    if 'netmob' in args.dataset_names:
-        if not (args.vision_input_type == 'NetMob_TS'):
-            contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
-                                            'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
-                                            'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
-                                            }
-                                            )
+    contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != DATA_TO_PREDICT]
+
+    for dataset_name in contextual_dataset_names:
+        if dataset_name == 'calendar':
+            pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calendar_class}')
+            positions['calendar'] = pos_calendar
+            args.time_embedding = True
             
-            pos_netmob = list(contextual_tensors.keys()).index('netmob')
-            positions['netmob'] = pos_netmob
+        elif (dataset_name == 'netmob') or (dataset_name == 'netmob_bidon'):
+            if not (args.vision_input_type == 'NetMob_TS'):
+                contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
+                                                'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
+                                                'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
+                                                }
+                                                )
+                
+                pos_netmob = list(contextual_tensors.keys()).index('netmob')
+                positions['netmob'] = pos_netmob
+            else:
+                raise NotImplementedError(f'netmob dataset with vision model {args.vision_input_type} has not been implemented')
+        else:
+            raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')
+
 
     subway_ds.contextual_tensors = contextual_tensors
     subway_ds.get_dataloader()
