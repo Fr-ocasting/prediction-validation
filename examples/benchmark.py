@@ -82,8 +82,8 @@ def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
 if __name__ == '__main__':
 
     # GET PARAMETERS
-    dataset_names = ['data_bidon','netmob_bidon'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon']
-    dataset_for_coverage = ['data_bidon','netmob_bidon'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon']
+    dataset_names = ['data_bidon'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon']
+    dataset_for_coverage = ['data_bidon'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon']
     vision_model_name = None
 
     from constants.paths import DATA_TO_PREDICT

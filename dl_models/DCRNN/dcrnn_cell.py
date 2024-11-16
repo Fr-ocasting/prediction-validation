@@ -158,6 +158,7 @@ class DCGRUCell(torch.nn.Module):
             print('Start Graph Conv in DCRNN')
             # Support is a Weighted Adjacency Matrix
             for support in self._supports:
+                print(support.float().dtype,x0.dtype,support.dtype)
                 x1 = torch.sparse.mm(support.float(), x0)
                 x = self._concat(x, x1)
                 for k in range(2, self._max_diffusion_step + 1):

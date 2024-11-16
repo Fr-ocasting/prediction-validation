@@ -3,8 +3,10 @@ import torch
 
 # Usual paths: 
 if torch.cuda.is_available():
-    FOLDER_PATH = '../../../../data' 
-    # Load subway in data:
+    FOLDER_PATH = '../../../../data/rrochas/prediction_validation' 
+    # Load the target data to predict: 
+    DATA_TO_PREDICT = 'data_bidon' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
+    ABS_PATH_PACKAGE = '/home/rrochas/prediction-validation'
     #FILE_NAME = 'preprocessed_subway_15_min' #.csv
     #FILE_NAME = 'subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020' #.csv
     #FILE_NAME = 'subway_IN_interpol_neg_15_min_2019_2020' #.csv
@@ -14,10 +16,11 @@ else:
     #FOLDER_PATH = '../../../../Data/'
     FOLDER_PATH =  '../data'
     DATA_TO_PREDICT = 'data_bidon' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
+    ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
 
 SAVE_DIRECTORY = '../save/'
-ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
+
 
 # Load CRITER data : 
 #FILE_NAME = 'preprocessed_CRITER_6min.csv'
