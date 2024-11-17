@@ -50,7 +50,7 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
 if __name__ == '__main__':
     args,coverage_period = load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model')
     # Load model with the best config:
-    dataset,_,_ = load_datasets_to_predict(args,coverage_period)
+    dataset,_,_,_ = load_datasets_to_predict(args,coverage_period)
     _,dic_class2rpz,_,_ = get_time_slots_labels(dataset,nb_class = [0,1,2,3])
     loss_function = get_loss(args)
     model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)

@@ -39,18 +39,15 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
             positions['calendar'] = pos_calendar
             args.time_embedding = True
             
-        elif (dataset_name == 'netmob') or (dataset_name == 'netmob_bidon'):
-            if not (args.vision_input_type == 'NetMob_TS'):
-                contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
-                                                'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
-                                                'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
-                                                }
-                                                )
-                
-                pos_netmob = list(contextual_tensors.keys()).index('netmob')
-                positions['netmob'] = pos_netmob
-            else:
-                raise NotImplementedError(f'netmob dataset with vision model {args.vision_input_type} has not been implemented')
+        elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
+            contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
+                                            'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
+                                            'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
+                                            }
+                                            )
+            
+            pos_netmob = list(contextual_tensors.keys()).index('netmob')
+            positions[dataset_name] = pos_netmob
         else:
             raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')
 
@@ -68,7 +65,7 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
 
 def load_complete_ds(args,coverage_period = None,vision_model_name = None,normalize = True):
     # Load subway-in DataSet:
-    subway_ds,dataset,invalid_dates = load_datasets_to_predict(args,coverage_period,normalize)
+    subway_ds,dataset,invalid_dates,intesect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
 
     # Calendar data for Calibration : 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
@@ -77,7 +74,7 @@ def load_complete_ds(args,coverage_period = None,vision_model_name = None,normal
     args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # Netmob: 
-    args,NetMob_ds = tackle_netmob(dataset,invalid_dates,args,subway_ds.spatial_unit,vision_model_name,normalize = normalize)
+    args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,subway_ds.spatial_unit,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

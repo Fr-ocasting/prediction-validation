@@ -66,4 +66,4 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intesect_coverage_period)
     # ...
     preprocesed_ds = preprocess_dataset(dataset,args,union_invalid_dates,normalize)
-    return(preprocesed_ds,dataset,union_invalid_dates)
+    return(preprocesed_ds,dataset,union_invalid_dates,intesect_coverage_period)

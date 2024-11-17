@@ -113,11 +113,12 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     # ...
 
     # Vision Model:
-    '''
-    if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
-    if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
-    '''
-    config['vision_input_type'] = 'unique_image_through_lyon' # 'image_per_stations' # 'unique_image_through_lyon'  
+    '''None cause need to be set. Might be defined after if we use NetMob Data as input'''
+    #'''
+    #if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
+    #if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
+    #'''
+    config['vision_input_type'] =  None  # 'image_per_stations' # 'unique_image_through_lyon'  
 
     return(config)
 

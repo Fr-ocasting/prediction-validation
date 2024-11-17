@@ -40,7 +40,7 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
     else:
         raise NotImplementedError(f'dim {tensor.dim} has not been implemented')
     return tensor
-
+"""
 def load_netmob_data(dataset,invalid_dates,args,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
@@ -97,9 +97,10 @@ def load_netmob_data(dataset,invalid_dates,args,columns,
     NetMob_ds = load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset)
 
     return(NetMob_ds)
+"""
 
-
-def load_netmob_lyon_map(dataset,invalid_dates,args,FOLDER_PATH,columns,
+"""
+def load_netmob_lyon_map(dataset,invalid_dates,args,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
@@ -123,12 +124,12 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,FOLDER_PATH,columns,
             print('Small NetMob_T ',netmob_T.size())
             
         else:
-            apps =  pickle.load(open(f"{FOLDER_PATH}NetMob_DL_video_Lyon_APP.pkl","rb"))
+            apps =  pickle.load(open(f"{FOLDER_PATH}/NetMob_DL_video_Lyon_APP.pkl","rb"))
             trafic_pos = find_positions(selected_apps,apps)
             if restricted:
-                netmob_T = torch.load(f"{FOLDER_PATH}NetMob_DL_video_Lyon.pt")[trafic_pos,:,110:-40,85:-55]
+                netmob_T = torch.load(f"{FOLDER_PATH}/NetMob_DL_video_Lyon.pt")[trafic_pos,:,110:-40,85:-55]
             else:
-                netmob_T = torch.load(f"{FOLDER_PATH}NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]                
+                netmob_T = torch.load(f"{FOLDER_PATH}/NetMob_DL_video_Lyon.pt")[trafic_pos,:,:,:]                
             netmob_T = netmob_T.permute(1,0,2,3)
 
             # Replace problematic time-slots:
@@ -144,7 +145,7 @@ def load_netmob_lyon_map(dataset,invalid_dates,args,FOLDER_PATH,columns,
     NetMob_ds = load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset)
 
     return(NetMob_ds)
-
+"""
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
 
     print('\nInit NetMob Dataset: ', netmob_T.size())
@@ -157,54 +158,84 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
     return NetMob_ds
 
+def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,columns,normalize):
+    ''' Load the NetMob input data
+
+    args : 
+    -----
+    args.dataset_names
+    >>>> if == 'netmob_video_lyon' : return a 4-th order torch tensor [T,C,H,W] with a unique image (~260x280) for the entire city Lyon
+    >>>> if == 'netmob_image_per_station' : return a 5-th order torch tensor [T,C,N,H,W]  with an image around each subway station 
+    
+    '''
+
+    if 'netmob_video_lyon' in args.dataset_names:
+    # if vision_input_type == 'unique_image_through_lyon':
+        #NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
+        from load_inputs.netmob_video_lyon import load_data
+        NetMob_ds = load_data(dataset,parent_dir,invalid_dates,intesect_coverage_period,args,restricted,normalize= True)
+        args.vision_input_type = 'unique_image_through_lyon'
 
 
-def tackle_netmob(dataset,invalid_dates,args,columns,vision_model_name,normalize = True):
+    elif 'netmob_image_per_station' in args.dataset_names:
+        from load_inputs.netmob_image_per_station import load_data
+        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,columns = columns, normalize = normalize) 
+        args.vision_input_type = 'image_per_stations'
 
-    if 'netmob' in args.dataset_names:
-        vision_input_type = args.vision_input_type
-        
-        if vision_input_type == 'image_per_stations':
-            NetMob_ds = load_netmob_data(dataset,invalid_dates,args,columns = columns, normalize = normalize)
-        elif vision_input_type == 'unique_image_through_lyon':
-            NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
-        else:
-            raise NotImplementedError(f'{vision_input_type} has not been implemented')
+    else :
+        raise NotImplementedError(f'load data has not been implemented for the netmob file here {args.dataset_names}')
+    
+    return(NetMob_ds,args)
 
-        C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
-        H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
+def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
 
-        # Define Namespace 'args_vision': 
-        args_vision = {'model_name':vision_model_name,'input_type':vision_input_type}
+    C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
+    H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
 
-        # FeatureExtractor_ResNetInspired
-        if vision_model_name == 'FeatureExtractor_ResNetInspired':
-            args_vision.update({'c_in' : C_netmob, 'h_dim': 128, 'L':L}) # out_dim = L*h_dim//2
-        
-        elif vision_model_name == 'FeatureExtractor_ResNetInspired_bis':
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
+    # Define Namespace 'args_vision': 
+    
 
-        # MinimalFeatureExtractor  
-        elif vision_model_name == 'MinimalFeatureExtractor':
-            h_dim = 16
-            args_vision.update({'c_in' : C_netmob,'h_dim': h_dim, 'L' : L}) # out_dim = L*h_dim//2
+    # FeatureExtractor_ResNetInspired
+    if args_vision['model_name'] == 'FeatureExtractor_ResNetInspired':
+        args_vision.update({'c_in' : C_netmob, 'h_dim': 128, 'L':L}) # out_dim = L*h_dim//2
+    
+    elif args_vision['model_name'] == 'FeatureExtractor_ResNetInspired_bis':
+        args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
 
-        # ImageAvgPooling
-        elif vision_model_name == 'ImageAvgPooling':
-            args_vision.update({'out_dim' : L}) # out_dim = L
+    # MinimalFeatureExtractor  
+    elif args_vision['model_name'] == 'MinimalFeatureExtractor':
+        h_dim = 16
+        args_vision.update({'c_in' : C_netmob,'h_dim': h_dim, 'L' : L}) # out_dim = L*h_dim//2
 
-        elif vision_model_name == 'FeatureExtractorEncoderDecoder':  # (c_in=3, z_dim=64, N=40)
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'H':H,'W':W,L:'L'}) 
+    # ImageAvgPooling
+    elif args_vision['model_name'] == 'ImageAvgPooling':
+        args_vision.update({'out_dim' : L}) # out_dim = L
 
-        elif vision_model_name == 'AttentionFeatureExtractor': # (c_in=3, z_dim=64, N=40)
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
+    elif args_vision['model_name'] == 'FeatureExtractorEncoderDecoder':  # (c_in=3, z_dim=64, N=40)
+        args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'H':H,'W':W,L:'L'}) 
 
-        elif vision_model_name == 'VideoFeatureExtractorWithSpatialTemporalAttention': # (c_in=3, out_dim=64, N=40, d_model=128))
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'd_model':128}) 
+    elif args_vision['model_name'] == 'AttentionFeatureExtractor': # (c_in=3, z_dim=64, N=40)
+        args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
 
-        else:
-            raise NotImplementedError(f"Model vision {vision_model_name} has not been implemented")
-        # ...
+    elif args_vision['model_name'] == 'VideoFeatureExtractorWithSpatialTemporalAttention': # (c_in=3, out_dim=64, N=40, d_model=128))
+        args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'd_model':128}) 
+
+    else:
+        raise NotImplementedError(f"Model vision {args_vision['model_name']} has not been implemented")
+    
+    return args_vision
+
+
+def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,columns,vision_model_name,normalize = True):
+    if True: 
+        # TACKLE THE INPUT DATA 
+        NetMob_ds,args = tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,columns,normalize)
+
+        # TACKLE THE FEATURE EXTRACTOR MODULE 
+        print('vision_input_type', args.vision_input_type)
+        print('vision_model_name', vision_model_name)
+        args_vision = {'model_name':vision_model_name,'input_type':args.vision_input_type}
+        args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
 
         # Get args_vision:
         parser = argparse.ArgumentParser(description='netmob')
@@ -213,7 +244,6 @@ def tackle_netmob(dataset,invalid_dates,args,columns,vision_model_name,normalize
         args_vision = parser.parse_args(args=[])
         args.args_vision = args_vision
         # ...
-
     else:
         NetMob_ds = None
         args.args_vision = argparse.ArgumentParser(description='netmob').parse_args(args=[])
