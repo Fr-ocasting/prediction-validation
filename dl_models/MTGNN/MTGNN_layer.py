@@ -44,7 +44,7 @@ class graph_constructor(nn.Module):
         mask.fill_(float('0'))
 
         s1,t1 = (adj + torch.rand_like(adj)*0.01).topk(self.k,1)    # torch.rand_like génère une random matrice de même taille que A mais avec des valeurs entre 0 et 0.01  // .topk  extrait les 'k' plus grand éléments le long de la dimension 1 (N2) 
-        mask.scatter_(1,t1,s1.fill_(1))
+        mask.scatter_(1,t1,s1.fill_(1).to(dtype = mask.dtype))
         adj = adj*mask
         return adj
 

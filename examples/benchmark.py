@@ -82,8 +82,8 @@ def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
 if __name__ == '__main__':
 
     # GET PARAMETERS
-    dataset_names = ['data_bidon'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon']
-    dataset_for_coverage = ['data_bidon'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon']
+    dataset_names = ['subway_in'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon']
+    dataset_for_coverage = ['subway_in'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon']
     vision_model_name = None
 
     from constants.paths import DATA_TO_PREDICT
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     modification = {'epochs' : 1, #100,
                     }
     
-    model_names = ['DCRNN','CNN','MTGNN','STGCN','LSTM','GRU','RNN']
+    model_names = ['CNN','MTGNN','STGCN','LSTM','GRU','RNN'] #'DCRNN',
     print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
     # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
     args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],

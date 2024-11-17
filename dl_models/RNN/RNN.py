@@ -2,7 +2,7 @@ from torch import nn
 import torch
 
 class RNN(nn.Module):
-    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,dropout = 0.0, nonlinearity = 'tanh',batch_first = True,bidirectional = False,lstm = False, gru = False,):
+    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,dropout = 0.0, nonlinearity = 'tanh',batch_first = True,bidirectional = False,lstm = False, gru = False, device = None):
         super().__init__()
 
         # Parameters
@@ -11,6 +11,7 @@ class RNN(nn.Module):
         self.batch_first = batch_first
         self.lstm = lstm
         self.h_dim = h_dim
+        self.device = device
 
         # Architecture
         if lstm: 
@@ -28,11 +29,11 @@ class RNN(nn.Module):
     def init_hidden(self,batch_size):
         # Does not care about "batch_first"
         if self.lstm:
-            h0 = torch.zeros(self.D*self.num_layers, batch_size, self.h_dim)
-            c0 = torch.zeros(self.D*self.num_layers, batch_size, self.h_dim)
+            h0 = torch.zeros(self.D*self.num_layers, batch_size, self.h_dim).to(self.device)
+            c0 = torch.zeros(self.D*self.num_layers, batch_size, self.h_dim).to(self.device)
             return(h0,c0)
         else:
-            h0 = torch.zeros(self.D*self.num_layers, batch_size, self.h_dim)
+            h0 = torch.zeros(self.D*self.num_layers, batch_size, self.h_dim).to(self.device)
             return(h0)
     
 

@@ -393,7 +393,10 @@ class Trainer(object):
         if self.args.mixed_precision:
             with autocast():
                 pred = self.model(x_b,contextual_b)
-                loss = self.loss_function(pred,y_b)
+                loss = self.loss_function(pred.float(),y_b)
+                #print('pred: ', pred.dtype, pred.size())
+                #print('y_b: ', y_b.dtype, y_b.size())
+                #print(self.loss_function)
         else:
             pred = self.model(x_b,contextual_b)
             loss = self.loss_function(pred,y_b)
@@ -402,6 +405,9 @@ class Trainer(object):
         if self.training_mode == 'train': 
             self.chrono.backward()
             loss = self.backpropagation(loss)
+            #print('pred: ', pred.dtype, pred.size())
+            #print('y_b: ', y_b.dtype, y_b.size())
+            #print(self.loss_function)
 
         # Keep track on metrics 
         nb_samples += x_b.shape[0]

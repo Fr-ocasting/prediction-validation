@@ -20,7 +20,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['n_vertex'] =  importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}").n_vertex
     config['C'] =  importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}").C
     # === Common config for everyone: ===
-    config['device'] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
     config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
@@ -38,15 +38,16 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
         config['pin_memory'] = True # False 
         config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
         config['drop_last'] = False  # True
+        config['mixed_precision'] = False # True # False
     else:
         config['num_workers'] = 0 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
         config['persistent_workers'] = False # False 
         config['pin_memory'] = True # False 
         config['prefetch_factor'] = None # None, 2,3,4,5 ... 
         config['drop_last'] = False  # True      
+        config['mixed_precision'] = False # True # False
     
     config['non_blocking'] = True
-    config['mixed_precision'] = True # True # False
     config['torch_compile'] = False #True
     config['backend'] = 'inductor' #'cudagraphs'
     config['prefetch_all'] = False

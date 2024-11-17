@@ -13,19 +13,18 @@ if parent_dir not in sys.path:
 # Personnal import:
 from dl_models.DCRNN.utils_dcrnn import calculate_scaled_laplacian,calculate_random_walk_matrix
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
 
 class LayerParams:
-    def __init__(self, rnn_network: torch.nn.Module, layer_type: str):
+    def __init__(self, rnn_network: torch.nn.Module, layer_type: str,device: str):
         self._rnn_network = rnn_network
         self._params_dict = {}
         self._biases_dict = {}
         self._type = layer_type
+        self.device = device
 
     def get_weights(self, shape):
         if shape not in self._params_dict:
-            nn_param = torch.nn.Parameter(torch.empty(*shape, device=device))
+            nn_param = torch.nn.Parameter(torch.empty(*shape, device=self.device))
             torch.nn.init.xavier_normal_(nn_param)
             self._params_dict[shape] = nn_param
             self._rnn_network.register_parameter('{}_weight_{}'.format(self._type, str(shape)),
@@ -34,7 +33,7 @@ class LayerParams:
 
     def get_biases(self, length, bias_start=0.0):
         if length not in self._biases_dict:
-            biases = torch.nn.Parameter(torch.empty(length, device=device))
+            biases = torch.nn.Parameter(torch.empty(length, device=self.device))
             torch.nn.init.constant_(biases, bias_start)
             self._biases_dict[length] = biases
             self._rnn_network.register_parameter('{}_biases_{}'.format(self._type, str(length)),
@@ -45,7 +44,7 @@ class LayerParams:
 
 class DCGRUCell(torch.nn.Module):
     def __init__(self, num_units, adj_mx, max_diffusion_step, n_vertex, nonlinearity='tanh',
-                 filter_type="laplacian", use_gc_for_ru=True):
+                 filter_type="laplacian", use_gc_for_ru=True,device = None):
         """
 
         :param num_units:
@@ -65,6 +64,7 @@ class DCGRUCell(torch.nn.Module):
         self._max_diffusion_step = max_diffusion_step
         self._supports = []
         self._use_gc_for_ru = use_gc_for_ru
+        self.device = device
         supports = []
         if filter_type == "laplacian":
             supports.append(calculate_scaled_laplacian(adj_mx, lambda_max=None))
@@ -76,18 +76,18 @@ class DCGRUCell(torch.nn.Module):
         else:
             supports.append(calculate_scaled_laplacian(adj_mx))
         for support in supports:
-            self._supports.append(self._build_sparse_matrix(support))
+            self._supports.append(self._build_sparse_matrix(support,device))
         
-        self._fc_params = LayerParams(self, 'fc')
-        self._gconv_params = LayerParams(self, 'gconv')
+        self._fc_params = LayerParams(self, 'fc',device)
+        self._gconv_params = LayerParams(self, 'gconv',device)
 
     @staticmethod
-    def _build_sparse_matrix(L):
+    def _build_sparse_matrix(L,device):
         L = L.tocoo()
         indices = np.column_stack((L.row, L.col))
         # this is to ensure row-major ordering to equal torch.sparse.sparse_reorder(L)
         indices = indices[np.lexsort((indices[:, 0], indices[:, 1]))]
-        L = torch.sparse_coo_tensor(indices.T, L.data, L.shape, device=device)
+        L = torch.sparse_coo_tensor(indices.T, L.data, L.shape, device=device, dtype = torch.float32)
         return L
 
     def forward(self, inputs, hx):
@@ -133,13 +133,9 @@ class DCGRUCell(torch.nn.Module):
         value = torch.sigmoid(torch.matmul(inputs_and_state, weights))
         biases = self._fc_params.get_biases(output_size, bias_start)
         value += biases
-        print('\nfc layer: ')
-        print('bias: ', biases.size(),biases, 'weights : ',weights.size(),weights)
-        blabla
         return value
 
     def _gconv(self, inputs, state, output_size, bias_start=0.0):
-        print('\nStart Gconv with inputs: ',inputs.size(), 'and state : ',state.size())
         # Reshape input and state to (batch_size, n_vertex, input_dim/state_dim)
         batch_size = inputs.shape[0]
         inputs = torch.reshape(inputs, (batch_size, self._n_vertex, -1))
@@ -155,14 +151,15 @@ class DCGRUCell(torch.nn.Module):
         if self._max_diffusion_step == 0:
             pass
         else:
-            print('Start Graph Conv in DCRNN')
             # Support is a Weighted Adjacency Matrix
             for support in self._supports:
-                print(support.float().dtype,x0.dtype,support.dtype)
-                x1 = torch.sparse.mm(support.float(), x0)
+                print('support:  dtype: ',support.dtype, ' is sparse: ', support.is_sparse, 'device: ',support.device)
+                print('x0: ',x0.size(),' dtype:', x0.dtype, ' is sparse: ', x0.is_sparse, 'device: ',x0.device)
+
+                x1 = torch.sparse.mm(support, x0)
                 x = self._concat(x, x1)
                 for k in range(2, self._max_diffusion_step + 1):
-                    x2 = 2 * torch.sparse.mm(support.float(), x1) - x0
+                    x2 = 2 * torch.sparse.mm(support, x1) - x0
                     x = self._concat(x, x2)
                     x1, x0 = x2, x1
 

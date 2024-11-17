@@ -7,9 +7,9 @@ parser.add_argument('--static_feat', default=None,
                     help="Si = None, alors nodevec1 et nodevec2 sont  issues d'embedding different dans le graph constructor. Sinon Issue de static_feat qui est une matrice (statique pre-définie ?)")
 parser.add_argument('--tanhalpha',type = int, default=3, 
                     help='Multiplicator coefficient used it GraphConstruction')
-parser.add_argument('--node_dim', type = int, default=30, 
+parser.add_argument('--node_dim', type = int, default=30,   #30
                     help="Embedding dim of each node. node_dim <= n_vertex (Cause we want to reduce dimensionality ?)")
-parser.add_argument('--subgraph_size', type=int, default=5, 
+parser.add_argument('--subgraph_size', type=int, default=5, #5 
                     help="Dimension du sous-graph. A priori <= node_dim car issue de matrice générée depuis l'embedding des noeuds")
 parser.add_argument('--predefined_A', default=None, 
                     help='Set an precomputed Weighted Adjacency Matrix if needed (but then there is no graph construction)')

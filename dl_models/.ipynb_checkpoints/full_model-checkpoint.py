@@ -222,15 +222,15 @@ def load_model(dataset, args):
 
     if args.model_name == 'LSTM':
         from dl_models.LSTM.load_config import args as LSTM_args
-        model = RNN(**vars(LSTM_args),out_dim =args.out_dim,L=args.L,dropout=args.dropout,device = args.device).to(args.device)
+        model = RNN(**vars(LSTM_args),out_dim =args.out_dim,L=args.L,dropout=args.dropout).to(args.device)
                           
     if args.model_name == 'GRU':
         from dl_models.GRU.load_config import args as GRU_args
-        model = RNN(**vars(GRU_args),out_dim =args.out_dim,L=args.L, dropout=args.dropout,device = args.device).to(args.device)
+        model = RNN(**vars(GRU_args),out_dim =args.out_dim,L=args.L, dropout=args.dropout).to(args.device)
    
     if args.model_name == 'RNN':
         from dl_models.RNN.load_config import args as RNN_args
-        model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L,dropout=args.dropout,device = args.device).to(args.device)
+        model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L,dropout=args.dropout).to(args.device)
 
     model_memory_cost(model)
     return(model)

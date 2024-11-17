@@ -14,9 +14,6 @@ if parent_dir not in sys.path:
 # Personnal import:
 from dl_models.DCRNN.dcrnn_cell import DCGRUCell
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
 def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
@@ -39,10 +36,11 @@ class EncoderModel(nn.Module, Seq2SeqAttrs):
         Seq2SeqAttrs.__init__(self, adj_mx, **model_kwargs)
         self.input_dim = int(model_kwargs.get('L'))
         self.seq_len = int(model_kwargs.get('L'))  # for the encoder
+        self.device = model_kwargs.get('device')
 
         self.dcgru_layers = nn.ModuleList(
             [DCGRUCell(self.rnn_units, adj_mx, self.max_diffusion_step, self.n_vertex,
-                       filter_type=self.filter_type) for _ in range(self.num_rnn_layers)])
+                       filter_type=self.filter_type,device = self.device) for _ in range(self.num_rnn_layers)])
 
     def forward(self, inputs, hidden_state=None):
         """
@@ -59,7 +57,7 @@ class EncoderModel(nn.Module, Seq2SeqAttrs):
         batch_size, _ = inputs.size()
         if hidden_state is None:
             hidden_state = torch.zeros((self.num_rnn_layers, batch_size, self.hidden_state_size),
-                                       device=device)
+                                       device=self.device)
         hidden_states = []
         output = inputs
         for layer_num, dcgru_layer in enumerate(self.dcgru_layers):
@@ -75,12 +73,13 @@ class DecoderModel(nn.Module, Seq2SeqAttrs):
         # super().__init__(is_training, adj_mx, **model_kwargs)
         nn.Module.__init__(self)
         Seq2SeqAttrs.__init__(self, adj_mx, **model_kwargs)
+        self.device = model_kwargs.get('device')
         self.output_dim = int(model_kwargs.get('out_dim'))
         self.horizon = int(model_kwargs.get('step_ahead'))  # for the decoder
         self.projection_layer = nn.Linear(self.rnn_units, self.output_dim)
         self.dcgru_layers = nn.ModuleList(
             [DCGRUCell(self.rnn_units, adj_mx, self.max_diffusion_step, self.n_vertex,
-                       filter_type=self.filter_type) for _ in range(self.num_rnn_layers)])
+                       filter_type=self.filter_type,device = self.device) for _ in range(self.num_rnn_layers)])
 
     def forward(self, inputs, hidden_state=None):
         """
@@ -112,6 +111,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
                  **model_kwargs):
         super().__init__()
         Seq2SeqAttrs.__init__(self, adj_mx, **model_kwargs)
+        self.device = model_kwargs.get('device')
         self.encoder_model = EncoderModel(adj_mx, **model_kwargs)
         self.decoder_model = DecoderModel(adj_mx, **model_kwargs)
         self.cl_decay_steps = int(model_kwargs.get('cl_decay_steps', 1000))
@@ -145,7 +145,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         """
         batch_size = encoder_hidden_state.size(1)
         go_symbol = torch.zeros((batch_size, self.n_vertex * self.decoder_model.output_dim),
-                                device=device)
+                                device=self.device)
         decoder_hidden_state = encoder_hidden_state
         decoder_input = go_symbol
 
