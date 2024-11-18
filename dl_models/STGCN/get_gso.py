@@ -11,13 +11,18 @@ import numpy as np
 
 from build_inputs.load_adj import load_adj
 from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
+from constants.paths import DATA_TO_PREDICT
 
 def get_output_kernel_size(args):
      # Set Ko : Last Temporal Channel dimension before passing through output module :
     if args.enable_padding: 
-        Ko = args.L  # if args.L > 0 else 1
+        Ko = args.L  if args.L > 0 else 1
     else :
-        Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num    
+        Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num   
+
+    # Tackle the case where prediction is based only from contextual data:
+    if  not (DATA_TO_PREDICT in args.dataset_names):
+        Ko = 0
 
     if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0): #if not empty 
         Ko = Ko + args.args_embedding.embedding_dim

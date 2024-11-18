@@ -20,7 +20,13 @@ else:
     #FILE_NAME = 'data_bidon' #.csv
 
 SAVE_DIRECTORY = '../save/'
-
+SELECTED_APPS = ['Instagram']
+#
+# trafic_apps = ['Uber', 'Google_Maps','Waze'],
+# music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
+# direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
+# social_networks_apps = ['Twitter', 'Pinterest','Facebook','Instagram'],
+#
 
 # Load CRITER data : 
 #FILE_NAME = 'preprocessed_CRITER_6min.csv'

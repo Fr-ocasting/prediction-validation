@@ -21,17 +21,18 @@ from dl_models.RNN.RNN import RNN
 from dl_models.STGCN.STGCN import STGCN
 from dl_models.DCRNN.DCRNN import DCRNN
 from dl_models.TFT.TFT import TFT
-from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
 
-from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,ImageAvgPooling,FeatureExtractor_ResNetInspired_bis
+'''
+from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
+from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,FeatureExtractor_ResNetInspired_bis
 from dl_models.vision_models.AttentionFeatureExtractor import AttentionFeatureExtractor
 from dl_models.vision_models.FeatureExtractorEncoderDecoder import FeatureExtractorEncoderDecoder
 from dl_models.vision_models.VideoFeatureExtractorWithSpatialTemporalAttention import VideoFeatureExtractorWithSpatialTemporalAttention
-
+'''
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
-from argparse import Namespace
 from constants.paths import DATA_TO_PREDICT
+import importlib
 
 def filter_args(func, args):
     sig = inspect.signature(func)
@@ -39,12 +40,13 @@ def filter_args(func, args):
     filered_args = {k: v for k, v in vars(args).items() if k in sig.parameters}
     return filered_args
 
-
 def load_vision_model(args_vision):
     if args_vision.model_name == 'ImageAvgPooling':
-        filered_args = filter_args(ImageAvgPooling, args_vision)
-        return ImageAvgPooling(**filered_args) 
-    
+        func = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}").model
+        filered_args = filter_args(func, args_vision)
+        return func(**filered_args) 
+
+    '''
     elif args_vision.model_name == 'MinimalFeatureExtractor':
         filered_args = filter_args(MinimalFeatureExtractor, args_vision)
         return MinimalFeatureExtractor(**filered_args)
@@ -71,23 +73,26 @@ def load_vision_model(args_vision):
                                    
     else:
         NotImplementedError(f"Model {args_vision.model_name} has not been implemented")
-
+    '''
 
 
 class full_model(nn.Module):
     def __init__(self,dataset, args,dic_class2rpz):
         super(full_model,self).__init__()
 
-        # === Vision NetMob ===
-        if 'netmob' in args.contextual_positions.keys():
-            args.args_vision.n_vertex = args.n_vertex
-            args.args_vision.H = args.H
-            args.args_vision.W = args.W
-            self.netmob_vision = load_vision_model(args.args_vision)
-            self.vision_input_type = args.vision_input_type
+        # Add positions for each contextual data:
+        if 'calendar' in args.contextual_positions.keys(): 
+            self.pos_calendar = args.contextual_positions['calendar']
+        if DATA_TO_PREDICT in args.dataset_names :
+            self.remove_trafic_inputs = False
+
         else:
-            self.netmob_vision =  None
-            self.vision_input_type = None
+            self.remove_trafic_inputs = True
+            print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
+        # ...
+        
+        # === Vision NetMob ===
+        self.tackle_netmob(args)
 
         # === TE ===
         self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
@@ -98,18 +103,21 @@ class full_model(nn.Module):
         self.n_vertex = args.n_vertex
 
 
-        # Add positions for each contextual data:
-        if 'calendar' in args.contextual_positions.keys(): 
-            self.pos_calendar = args.contextual_positions['calendar']
-        if 'netmob' in args.contextual_positions.keys(): 
-            self.pos_netmob = args.contextual_positions['netmob']
-        if DATA_TO_PREDICT in args.dataset_names :
-            self.remove_trafic_inputs = False
-        else:
-            self.remove_trafic_inputs = True
-            print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
-        # ...
 
+
+    def tackle_netmob(self,args):
+        # If 'netmob' is used as contextual data:
+        if len(vars(args.args_vision))>0:
+            args.args_vision.n_vertex = args.n_vertex
+            args.args_vision.H = args.H
+            args.args_vision.W = args.W
+            self.netmob_vision = load_vision_model(args.args_vision)
+            self.vision_input_type = args.vision_input_type
+
+            self.pos_netmob = args.contextual_positions[args.args_vision.dataset_name]
+        else:
+            self.netmob_vision =  None
+            self.vision_input_type = None
 
     def foward_image_per_stations(self,netmob_video_batch):
         ''' Foward for input shape [B,C,N,H,W,L]'''
@@ -153,6 +161,7 @@ class full_model(nn.Module):
             >>>> contextual[netmob_position]: [B,N,C,H,W,L]
             >>>> contextual[calendar]: [B]
         '''
+        #print('x size before forward: ',x.size())
         if self.remove_trafic_inputs:
             x = torch.Tensor().to(x)
         else:
@@ -172,9 +181,13 @@ class full_model(nn.Module):
             else:
                 raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
 
+            #print('extracted feature: ',extracted_feature.size())
+
             # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
             x = torch.cat([x,extracted_feature],dim = -1)
         # ...
+        #print('self.netmob_vision: ',self.netmob_vision)
+        #print('x size after Netmob: ',x.size())
 
         # if calendar data is on : 
         if self.te is not None:
@@ -185,8 +198,7 @@ class full_model(nn.Module):
             # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
             x = torch.cat([x,time_elt],dim = -1)
         # ...
-
-
+        
         # Core model 
         x = self.core_model(x)
         # ...

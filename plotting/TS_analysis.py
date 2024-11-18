@@ -1,13 +1,12 @@
 from bokeh.plotting import figure
-from bokeh.models import Legend,RangeTool
-from bokeh.plotting import figure
-from bokeh.models import Legend
-from bokeh.models import BoxAnnotation
+from bokeh.models import Legend,BoxAnnotation,DatetimeTickFormatter,RangeTool
 import torch 
 from datetime import timedelta
 import pandas as pd 
 from bokeh.palettes import Set3_12 as palette
-from bokeh.plotting import output_notebook
+from bokeh.plotting import output_notebook,show
+import numpy as np 
+
 
 def plot_subway_patterns(df,Metro_A_stations,palette,width=1500, height=600,title=f'Trafic Volume by stations'):
 
@@ -56,10 +55,11 @@ def drag_selection_box(df,p1,p2=None,width=1500, height=150):
 
 
 
-def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,show=False):
+
+def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False):
        legend_it = []
        p = figure(x_axis_type="datetime", title= title,
-                     width=1500,height=400)
+                     width=width,height=height)
 
        c = p.line(x=df_true.index, line_width = 2.5, y=df_true[station], alpha=0.8,  legend_label = f'{station}',color = 'blue')
        legend_it.append(('True', [c]))
@@ -78,21 +78,28 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
                                    fill_alpha=0.3, fill_color='lightgray')
               p.add_layout(box)
 
-
+     
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
+       p.xaxis.formatter=DatetimeTickFormatter(
+            months="%b",
+            days="%a %d %b",
+            hours="%a %d %b %H:%M",
+            minutes="%a %d  %H:%M"
+                )
        legend = Legend(items=legend_it)
+
        p.add_layout(legend, 'right')
 
-       if show:
+       if bool_show:
               output_notebook()
               show(p)
 
        return p
 
-def plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','mape'], title = '',width=1500,height=400,show=False, min_flow = 20):
+def plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','mape'], title = '',width=1500,height=400,bool_show=False, min_flow = 20):
        legend_it = []
        p = figure(x_axis_type="datetime", title= title,
-                     width=1500,height=400)
+                     width=width,height=height)
        
        def f_error(predict,real,metric):
               real = torch.tensor(real).reshape(-1)
@@ -126,7 +133,42 @@ def plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','m
        legend.click_policy="hide"
        p.add_layout(legend, 'right')
 
-       if show:
+       if bool_show:
+              output_notebook()
+              show(p)
+
+       return p
+
+def str_valeur(valeur):
+    ''' 
+    Return an adapted str format for visualisation. 
+    '''
+    if valeur < 1:
+        return("{:.0e}".format(valeur))  
+    else:
+        return("{:.2f}".format(valeur).rstrip('0').rstrip('.'))
+
+
+def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
+       p = figure(title='Training and Validation loss',
+                     width=width,height=height)
+       legend_it = []
+       colors = ['blue','red']
+       for k,training_mode in enumerate(['train','valid']):
+             name= f"{training_mode}_loss"
+             loss_list = getattr(trainer,name)
+             c = p.line(x=np.arange(len(loss_list)), y=loss_list, alpha=0.8,color = colors[k])
+
+             last_loss = str_valeur(loss_list[-1])
+             best_loss = str_valeur(np.min(np.array(loss_list)))
+             displayed_legend = f"{name} \n   Last loss: {last_loss} \n   Best loss: {best_loss}"
+             legend_it.append((displayed_legend, [c]))
+
+       p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
+       legend = Legend(items=legend_it)
+       p.add_layout(legend, 'right')
+
+       if bool_show:
               output_notebook()
               show(p)
 

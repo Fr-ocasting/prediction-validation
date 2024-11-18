@@ -12,7 +12,7 @@ from dataset import DataSet
 from dataset import PersonnalInput
 import pickle 
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-
+from constants.paths import SELECTED_APPS
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -67,10 +67,10 @@ def load_netmob_lyon_map(ROOT,FOLDER_PATH,
     # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
     '''
 
-    selected_apps = ['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
+    #selected_apps = ['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
 
     apps =  pickle.load(open(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}_APP.pkl","rb"))
-    trafic_pos = find_positions(selected_apps,apps)
+    trafic_pos = find_positions(SELECTED_APPS,apps)
     if restricted:
         netmob_T = torch.load(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}.pt")[trafic_pos,:,110:-40,85:-55]
     else:

@@ -9,13 +9,12 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
     
-from examples.benchmark import local_get_args,get_inputs,train_on_ds,keep_track_on_model_metrics,get_trial_id
-
+from examples.benchmark import local_get_args,get_inputs,train_on_ds,get_trial_id
 
 def get_ds(model_name,dataset_names,dataset_for_coverage,vision_model_name = None):
     save_folder = None
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-    modification = {'epochs' : 50, #100,
+    modification = {'epochs' : 10, #100,
                     }
 
     # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
@@ -28,8 +27,8 @@ def get_ds(model_name,dataset_names,dataset_for_coverage,vision_model_name = Non
     ds = K_subway_ds[0]
     return(ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
 
-dataset_names = ["subway_in","netmob_image_per_station"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-dataset_for_coverage = ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+dataset_names = ["netmob_image_per_station"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_for_coverage = ['netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
 model_name = 'STGCN'
 vision_model_name =  'ImageAvgPooling'
 

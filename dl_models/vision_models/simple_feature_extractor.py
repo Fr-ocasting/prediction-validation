@@ -142,7 +142,7 @@ class MinimalFeatureExtractor(nn.Module):
 
         return(x)    
 
-
+"""
 class ImageAvgPooling(nn.Module):
     def __init__(self):
         super(ImageAvgPooling,self).__init__()
@@ -156,7 +156,7 @@ class ImageAvgPooling(nn.Module):
         x = self.avgpool(x)   # [B,L,C,H,W] -> [B,L,1,1,1]
         x = x.squeeze()   #  [B,L,1,1,1] -> [B,L]
         return(x)  
-
+"""
 
 if __name__ == '__main__':
     from utils.utilities_DL import forward_and_display_info
