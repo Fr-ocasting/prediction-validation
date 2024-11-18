@@ -125,7 +125,7 @@ class DictDataLoader(object):
             return(train_loader,calib_loader)
 
         else:
-            train_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = True) 
+            train_loader = CustomDataLoder(U,U_target,contextual_tensors,self.args, shuffle = self.args.shuffle) 
             train_loader.call_dataloader('train')
             return(train_loader,None)
         # ...

@@ -88,12 +88,14 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['L'] = config['H']+config['W']+config['D']
 
     # Split proportion
+    config['shuffle'] = True # True # False    # --> Can be set 'False' if we need to Visualise prediction of Training set without Shuffle 
     config['train_prop'] = 0.6
     config['calib_prop'] = None #0.5 # None     # -->  Don't set 'calib_prop = 0' otherwise bug
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     config['track_pi'] = False #True
+
 
     # Validation, K-fold
     config['validation'] = 'sliding_window'  # classic / sliding_window / 
