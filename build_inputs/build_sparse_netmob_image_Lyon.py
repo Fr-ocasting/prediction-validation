@@ -1,5 +1,4 @@
 import pickle
-from build_netmob_data import load_subway_shp,load_netmob_gdf,get_information_from_path
 import torch
 import pandas as pd
 import os 
@@ -15,6 +14,7 @@ working_dir = os.path.abspath(os.path.join(current_path, '..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
+from build_inputs.build_netmob_data import load_subway_shp,load_netmob_gdf,get_information_from_path
 
 def tackle_one_days_entire_map(txt_path,Lyon_ids,P,netmob_data_FOLDER_PATH,app,day,transfer_mode,columns):
     #Read CSV

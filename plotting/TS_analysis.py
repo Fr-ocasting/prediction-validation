@@ -30,7 +30,7 @@ def plot_subway_patterns(df,Metro_A_stations,palette,width=1500, height=600,titl
     
     return(p)
 
-def drag_selection_box(df,p1,p2=None,width=1500, height=150):
+def drag_selection_box(df,p1,p2=None,p3=None, width=1500, height=150):
 
     select = figure(title="Drag the middle and edges of the selection box to change the range above",
                     width=width,
@@ -50,6 +50,8 @@ def drag_selection_box(df,p1,p2=None,width=1500, height=150):
     # Sync x_range for both plots:
     if p2 is not None:
         p2.x_range = p1.x_range
+    if p3 is not None:
+        p3.x_range = p1.x_range
     return(select)
 
 
@@ -167,6 +169,31 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
        legend = Legend(items=legend_it)
        p.add_layout(legend, 'right')
+
+       if bool_show:
+              output_notebook()
+              show(p)
+
+       return p
+
+
+def plot_TS(serie,name = '',width=400,height=1500,bool_show=False):
+       p = figure(x_axis_type="datetime",title=f"Time Serie Intensity of {name}",
+                     width=width,height=height)
+       legend_it = []
+       c = p.line(x=serie.index, y=serie, alpha=0.8,color = 'red')
+       displayed_legend = f"{name}"
+       legend_it.append((displayed_legend, [c]))
+
+       p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
+       legend = Legend(items=legend_it)
+       p.add_layout(legend, 'right')
+       p.xaxis.formatter=DatetimeTickFormatter(
+            months="%b",
+            days="%a %d %b",
+            hours="%a %d %b %H:%M",
+            minutes="%a %d  %H:%M"
+                )
 
        if bool_show:
               output_notebook()

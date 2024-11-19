@@ -204,8 +204,8 @@ def find_ids_within_epsilon(gdf1,gdf2,epsilon):
 
     return result,joined
 
-def load_subway_shp(FOLDER_PATH = '../../Data/keolis_data_2019-2020/'):
-    zones_shp_path = FOLDER_PATH+'ref_subway.csv'
+def load_subway_shp(FOLDER_PATH = '../../Data/keolis_data_2019-2020'):
+    zones_shp_path = f"{FOLDER_PATH}/ref_subway.csv"
 
     ref_subway = pd.read_csv(zones_shp_path)[['MEAN_X','MEAN_Y','COD_TRG','LIB_STA_SIFO']]
     with warnings.catch_warnings():
@@ -219,7 +219,7 @@ def load_subway_shp(FOLDER_PATH = '../../Data/keolis_data_2019-2020/'):
 
 def load_netmob_json(data_folder, geojson_path = 'Lyon.geojson'):
     ''' Load GeoJson, and then the spatial correspondence '''
-    Lyon = json.load(open(data_folder+geojson_path,'r'))
+    Lyon = json.load(open(f"{data_folder}/{geojson_path}",'r'))
     Netmob_gdf = pd.json_normalize(Lyon, record_path =['features']).rename(columns = {'properties.tile_id' : 'tile_id', 'geometry.coordinates':'geometry'})[['tile_id','geometry']]
     Netmob_gdf.geometry = Netmob_gdf.geometry.transform(lambda x : Polygon(x[0]))
     
@@ -231,7 +231,7 @@ def load_netmob_json(data_folder, geojson_path = 'Lyon.geojson'):
 
 def restrain_netmob_to_Lyon(Netmob_gdf,FOLDER_PATH,zones_path):
     ''' Restraint "Netmob_gdf" to the working area '''
-    working_zones = gpd.read_file(f'{FOLDER_PATH}{zones_path}')
+    working_zones = gpd.read_file(f'{FOLDER_PATH}/{zones_path}')
     Netmob_gdf = gpd.GeoDataFrame(Netmob_gdf)
     Netmob_gdf.crs = 'epsg:4326'
     
