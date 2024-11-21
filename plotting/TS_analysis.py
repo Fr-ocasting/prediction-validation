@@ -3,7 +3,8 @@ from bokeh.models import Legend,BoxAnnotation,DatetimeTickFormatter,RangeTool
 import torch 
 from datetime import timedelta
 import pandas as pd 
-from bokeh.palettes import Set3_12 as palette
+from bokeh.palettes import Set3_12 
+from bokeh.palettes import Turbo256 as palette
 from bokeh.plotting import output_notebook,show
 import numpy as np 
 
@@ -127,7 +128,7 @@ def plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','m
               error = f_error(predict= df_prediction[station],real= df_true[station],metric = metric)
               df_error = pd.DataFrame(error.numpy(), index = df_true.index, columns = [station])
               
-              c = p.line(x=df_error.index, line_width = 2.5, y=df_error[station], alpha=0.8,color = palette[k+2])
+              c = p.line(x=df_error.index, line_width = 2.5, y=df_error[station], alpha=0.8,color = Set3_12[k+2])
               legend_it.append((metric, [c]))
 
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
@@ -177,16 +178,19 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return p
 
 
-def plot_TS(serie,name = '',width=400,height=1500,bool_show=False):
-       p = figure(x_axis_type="datetime",title=f"Time Serie Intensity of {name}",
+def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False):
+       p = figure(x_axis_type="datetime",title=f"Time Serie Intensity of NetMob apps consumption",
                      width=width,height=height)
        legend_it = []
-       c = p.line(x=serie.index, y=serie, alpha=0.8,color = 'red')
-       displayed_legend = f"{name}"
-       legend_it.append((displayed_legend, [c]))
+       colors = palette
+       for k,column in enumerate(netmob_consumption.columns):
+              c = p.line(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[k])
+              displayed_legend = column
+              legend_it.append((displayed_legend, [c]))
 
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
        legend = Legend(items=legend_it)
+       legend.click_policy="hide"
        p.add_layout(legend, 'right')
        p.xaxis.formatter=DatetimeTickFormatter(
             months="%b",
