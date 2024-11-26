@@ -28,7 +28,7 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
     pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
     positions['calibration_calendar'] = pos_calibration_calendar
 
-    if not('calednar' in args.dataset_names):
+    if not('calendar' in args.dataset_names):
         args.time_embedding = False
 
     contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != DATA_TO_PREDICT]
@@ -40,14 +40,26 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
             args.time_embedding = True
             
         elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
-            contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
+             contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
                                             'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
                                             'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
                                             }
                                             )
             
-            pos_netmob = list(contextual_tensors.keys()).index('netmob')
-            positions[dataset_name] = pos_netmob
+             pos_netmob = list(contextual_tensors.keys()).index('netmob')
+             positions[dataset_name] = pos_netmob
+
+        elif dataset_name == 'netmob_POIs':
+             contextual_tensors.update({f'netmob_{NetMob_POI.station_name}': {'train': NetMob_POI.U_train,
+                                            'valid': NetMob_POI.U_valid if hasattr(NetMob_POI,'U_valid') else None,
+                                            'test': NetMob_POI.U_test  if hasattr(NetMob_POI,'U_test') else None}
+                                            for NetMob_POI in NetMob_ds
+                                            }
+                                         )
+             pos_netmob = [list(contextual_tensors.keys()).index(f'netmob_{NetMob_POI.station_name}') for NetMob_POI in NetMob_ds]
+
+             positions[dataset_name] = pos_netmob
+
         else:
             raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')
 
@@ -74,7 +86,7 @@ def load_complete_ds(args,coverage_period = None,vision_model_name = None,normal
     args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
 
     # Netmob: 
-    args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,subway_ds.spatial_unit,vision_model_name,normalize = normalize)
+    args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,vision_model_name,normalize = normalize)
     
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

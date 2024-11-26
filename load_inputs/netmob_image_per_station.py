@@ -35,7 +35,7 @@ for start,end in list_of_invalid_period:
 ## n_vertex = 
 COVERAGE = pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
 
-def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,columns,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -44,7 +44,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     '''
 
     if torch.cuda.is_available():
-        netmob_T = load_netmob_per_subway_station(ROOT,FOLDER_PATH,args,intesect_coverage_period,columns)
+        netmob_T = load_netmob_per_subway_station(ROOT,FOLDER_PATH,args,intesect_coverage_period,dataset.spatial_unit)
 
     else:
         raise NotImplementedError

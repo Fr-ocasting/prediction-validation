@@ -31,15 +31,19 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
     values_after = tensor[end:end+1]
 
     mean_values = (values_before + values_after) / 2
-
+    print('mean_values: ',mean_values.size())
+    print('tensor size: ',tensor[start:end,:].size())
+    print('mean_values repeated: ', mean_values.repeat(4,1).size())
     if tensor.dim() == 5:
         mean_values = mean_values.repeat(4,1,1,1,1)
         tensor[start:end,:,:,:,:] = mean_values
     elif tensor.dim() == 4:
         mean_values = mean_values.repeat(4,1,1,1)
         tensor[start:end,:,:,:] = mean_values
+    elif tensor.dim() == 2:
+        tensor[start:end,:] = mean_values.repeat(4,1)
     else:
-        raise NotImplementedError(f'dim {tensor.dim} has not been implemented')
+        raise NotImplementedError(f'dim {tensor.dim()} has not been implemented')
     return tensor
 
 
@@ -55,7 +59,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
     return NetMob_ds
 
-def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,columns,normalize):
+def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize):
     ''' Load the NetMob input data
 
     args : 
@@ -77,9 +81,15 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,column
 
     elif 'netmob_image_per_station' in args.dataset_names:
         from load_inputs.netmob_image_per_station import load_data
-        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,columns = columns, normalize = normalize) 
+        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize = normalize) 
         args.vision_input_type = 'image_per_stations'
         netmob_dataset_name = 'netmob_image_per_station'
+        
+    elif "netmob_POIs" in args.dataset_names:
+        from load_inputs.netmob_POIs import load_data
+        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize= normalize)
+        args.vision_input_type = 'POIs'
+        netmob_dataset_name = 'netmob_POIs'
 
     else :
         raise NotImplementedError(f'load data has not been implemented for the netmob file here {args.dataset_names}')
@@ -87,12 +97,17 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,column
     return(NetMob_ds,args,netmob_dataset_name)
 
 def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
-
-    C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
-    H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
-    script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
-    config_vision = script.get_config(H,W,L)
-    args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+    if args_vision.dataset_name == 'netmob_POIs':
+        C_netmob = NetMob_ds[0].U_train.size(1) # [B,R]
+        script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+        config_vision =script.get_config(10,10,7)# script.get_config(C_netmob)
+        args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+    else: 
+        C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
+        H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
+        script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+        config_vision = script.get_config(H,W,L)
+        args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
 
 
     # ===== Define Namespace 'args_vision': 
@@ -131,14 +146,14 @@ def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
     return args_vision
 
 
-def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,columns,vision_model_name,normalize = True):
+def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,vision_model_name,normalize = True):
 
     # BOOLEAN VALUE : True IF NETMOB IS USED
     bool_netmob = (sum([True for d in args.dataset_names if 'netmob' in d])) > 0
     
     if bool_netmob: 
         # TACKLE THE INPUT DATA 
-        NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,columns,normalize)
+        NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize)
 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         print('vision_input_type', args.vision_input_type)
