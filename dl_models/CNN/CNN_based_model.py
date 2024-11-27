@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 from dl_models.TimeEmbedding.time_embedding import TimeEmbedding
 
 class CNN(nn.Module):
-    def __init__(self,args,dilation = 1, stride = 1,args_embedding = None):
+    def __init__(self,args,dilation = 1, stride = 1,L_add = 0):
         super().__init__()
     
         #self.c_out = args.C_outs[-1]
@@ -26,19 +26,16 @@ class CNN(nn.Module):
 
         # Calculate the last dim of the sequence : 
         l_out_add = (2*args.padding - dilation*(args.kernel_size[0]-1) -1)/stride + 1
-
-        if (args_embedding is not None) and len(vars(args_embedding))>0:
-                if args_embedding.position == 'input':
-                    L = args.L+args_embedding.embedding_dim
-                    l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
-
-                if args_embedding.position == 'output':
-                    l_out = int( args.L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
-                    l_out = l_out+args_embedding.embedding_dim
-
-        else:
+        if False : 
+            if args_embedding.position == 'output':
+                l_out = int( args.L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
+                l_out = l_out+args_embedding.embedding_dim
+                raise NotImplementedError
+        if L_add != 0:
+            L = args.L + L_add
+        else : 
             L = args.L
-            l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))])) 
+        l_out = int(L/stride**len(args.H_dims) + sum([l_out_add/stride**k for k in range(len(args.H_dims))]))
             
         self.l_out = l_out
 

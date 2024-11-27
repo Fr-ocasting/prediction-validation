@@ -29,7 +29,7 @@ from dl_models.MTGNN.MTGNN_layer import graph_constructor, LayerNorm,dilated_inc
 #   - La gate passe par une sigmoid
 #   - Les deux sont multiplié, puis passe dans un dropout
 class MTGNN(nn.Module):
-    def __init__(self, gcn_true, buildA_true, gcn_depth, n_vertex, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, c_in=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True,args_embedding=None):
+    def __init__(self, gcn_true, buildA_true, gcn_depth, n_vertex, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, c_in=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True,L_add=0):
         super(MTGNN, self).__init__()
         self.gcn_true = gcn_true
         self.buildA_true = buildA_true
@@ -49,10 +49,11 @@ class MTGNN(nn.Module):
                                     kernel_size=(1, 1))
         self.gc = graph_constructor(n_vertex, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
 
-
         self.seq_length = seq_length
-        if (args_embedding is not None) and (len(vars(args_embedding))>0):
-            self.seq_length = self.seq_length + args_embedding.embedding_dim
+        if L_add != 0:
+            self.seq_length = seq_length + L_add
+        else:
+            self.seq_length = seq_length
             
         kernel_size = 7
         if dilation_exponential>1:

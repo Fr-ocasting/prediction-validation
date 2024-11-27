@@ -41,10 +41,9 @@ def filter_args(func, args):
     return filered_args
 
 def load_vision_model(args_vision):
-    if args_vision.model_name == 'ImageAvgPooling':
-        func = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}").model
-        filered_args = filter_args(func, args_vision)
-        return func(**filered_args) 
+    func = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}").model
+    filered_args = filter_args(func, args_vision)
+    return func(**filered_args) 
 
     '''
     elif args_vision.model_name == 'MinimalFeatureExtractor':
@@ -111,6 +110,7 @@ class full_model(nn.Module):
             args.args_vision.n_vertex = args.n_vertex
             args.args_vision.H = args.H
             args.args_vision.W = args.W
+            args.args_vision.dropout = args.dropout
             self.netmob_vision = load_vision_model(args.args_vision)
             self.vision_input_type = args.vision_input_type
 
@@ -150,6 +150,27 @@ class full_model(nn.Module):
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
         return extracted_feature
+  
+
+    def forward_netmob_model(self,contextual):
+        if self.vision_input_type == 'image_per_stations':
+            netmob_video_batch = contextual[self.pos_netmob]
+            extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
+    
+        elif self.vision_input_type == 'unique_image_through_lyon':
+            netmob_video_batch = contextual[self.pos_netmob]
+            extracted_feature =  self.forward_unique_image_through_lyon(netmob_video_batch)
+
+        elif self.vision_input_type == 'POIs':
+            # contextual[pos]: [B,nb_POIs,L']  // after forward : List of [B,Z] // After unsqueeze : [B,C,Z] with C = 1
+            extracted_feature = self.netmob_vision([contextual[pos]for pos in self.pos_netmob])
+            # list of N tensor [B,Z] -> [B,N,Z]  And then unsqueeze :  [B,N,Z] -> [B,C,N,Z]
+            extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1)  
+
+
+        else:
+            raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
+        return extracted_feature
     
 
     def forward(self,x,contextual = None):
@@ -170,19 +191,7 @@ class full_model(nn.Module):
 
         # if NetMob data is on :
         if self.netmob_vision is not None: 
-            netmob_video_batch = contextual[self.pos_netmob]
-
-            if self.vision_input_type == 'image_per_stations':
-                extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
-        
-            elif self.vision_input_type == 'unique_image_through_lyon':
-                extracted_feature =  self.forward_unique_image_through_lyon(netmob_video_batch)
- 
-            else:
-                raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
-
-            #print('extracted feature: ',extracted_feature.size())
-
+            extracted_feature = self.forward_netmob_model(contextual)
             # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
             x = torch.cat([x,extracted_feature],dim = -1)
         # ...
@@ -207,17 +216,31 @@ class full_model(nn.Module):
 
 
 def load_model(dataset, args):
-    args_embedding =  args.args_embedding if hasattr(args,'args_embedding') else None
+
+    # Init L_add 
+    if hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
+        # Depend wether out_dim is implicit or defined by other parameters:
+        if hasattr(args.args_vision,'out_dim'):
+            L_add = args.args_vision.out_dim
+        else:
+            L_add = args.args_vision.L*args.args_vision.h_dim//2
+    else:
+        L_add = 0
+
+    if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0): #if not empty 
+        L_add = L_add + args.args_embedding.embedding_dim
+
+
     if args.model_name == 'TFT':
         model = TFT(args)
 
     if args.model_name == 'CNN': 
-        model = CNN(args,args_embedding = args_embedding)
+        model = CNN(args,L_add = L_add)
 
     if args.model_name == 'MTGNN': 
         filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(MTGNN.__init__).parameters.keys()}
         model = MTGNN(**filtered_args,
-                    args_embedding=args_embedding,
+                    L_add=L_add,
                     seq_length=args.L,
                     ).to(args.device)
         
@@ -234,15 +257,15 @@ def load_model(dataset, args):
 
     if args.model_name == 'LSTM':
         from dl_models.LSTM.load_config import args as LSTM_args
-        model = RNN(**vars(LSTM_args),out_dim =args.out_dim,L=args.L,dropout=args.dropout,device = args.device).to(args.device)
+        model = RNN(**vars(LSTM_args),out_dim =args.out_dim,L=args.L+L_add,dropout=args.dropout,device = args.device).to(args.device)
                           
     if args.model_name == 'GRU':
         from dl_models.GRU.load_config import args as GRU_args
-        model = RNN(**vars(GRU_args),out_dim =args.out_dim,L=args.L, dropout=args.dropout,device = args.device).to(args.device)
+        model = RNN(**vars(GRU_args),out_dim =args.out_dim,L=args.L+L_add, dropout=args.dropout,device = args.device).to(args.device)
    
     if args.model_name == 'RNN':
         from dl_models.RNN.load_config import args as RNN_args
-        model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L,dropout=args.dropout,device = args.device).to(args.device)
+        model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L+L_add,dropout=args.dropout,device = args.device).to(args.device)
 
     model_memory_cost(model)
     return(model)

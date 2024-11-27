@@ -99,8 +99,10 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normal
 def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
     if args_vision.dataset_name == 'netmob_POIs':
         C_netmob = NetMob_ds[0].U_train.size(1) # [B,R]
+        List_input_sizes = [NetMob_ds[k].U_train.size(2) for k in range(len(NetMob_ds)) ]
+        List_nb_channels = [NetMob_ds[k].U_train.size(1) for k in range(len(NetMob_ds)) ]
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
-        config_vision =script.get_config(10,10,7)# script.get_config(C_netmob)
+        config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
     else: 
         C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
