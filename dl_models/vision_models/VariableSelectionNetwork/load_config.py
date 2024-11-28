@@ -8,10 +8,10 @@ parser = argparse.ArgumentParser(description='VariableSelectionNetwork')
 #parser.add_argument('--nb_channels', type=int, default=1+C,
 #                    help='Number of contextual Time-Series (nb of POIs) + 1 Predicted Time Serie ')
 
-parser.add_argument('--grn_h_dim', type=int, default=64, choices=[8,16,32,64,128,256],
+parser.add_argument('--grn_h_dim', type=int, default=16, choices=[8,16,32,64,128,256],
                     help='Number of hidden dimension wihtin the GRU')
 
-parser.add_argument('--grn_out_dim', type=int, default=64, choices=[16,32,64,128,256],
+parser.add_argument('--grn_out_dim', type=int, default=16, choices=[16,32,64,128,256],
                     help='Output dimension of the enhanced vectors')
 
 parser.add_argument('--contextual_static_dim', type=int, default=None, 

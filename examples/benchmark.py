@@ -68,7 +68,7 @@ def train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss):
 
     return(trainer,df_loss)
 
-def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
+def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metrics):
     performance = trainer.performance
     dict_row = {'Model':[model_name],
                 'Valid_loss':[performance['valid_loss']]
@@ -98,10 +98,10 @@ if __name__ == '__main__':
         assert DATA_TO_PREDICT in dataset_names, f'You are trying to predict {DATA_TO_PREDICT} with only these data: {dataset_names}'
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-        modification = {'epochs' : 200, #100,
+        modification = {'epochs' : 3, #100,
                         }
         
-        model_names = ['MTGNN','CNN','STGCN','LSTM','GRU','RNN'] #'DCRNN',
+        model_names = ['STGCN'] #  ['MTGNN','CNN','STGCN','LSTM','GRU','RNN'] #'DCRNN',
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
         args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],
@@ -115,7 +115,7 @@ if __name__ == '__main__':
 
         trainer,df_loss = train_on_ds(model_names[0],ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
         metrics = trainer.metrics
-        df_results = keep_track_on_model_metrics(df_results,model_names[0],trainer,metrics)
+        df_results = keep_track_on_model_metrics(trainer,df_results,model_names[0],trainer,metrics)
         for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
             print(f'\n>>>>Training {model_name} on {dataset_names}')
             args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
@@ -126,10 +126,11 @@ if __name__ == '__main__':
             trial_id = get_trial_id(args,vision_model_name=vision_model_name)
             trainer,df_loss = train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
             metrics = trainer.metrics
-            df_results = keep_track_on_model_metrics(df_results,model_name,trainer,metrics)
+            df_results = keep_track_on_model_metrics(trainer,df_results,model_name,trainer,metrics)
 
         print(df_results)
         df_loss[[f"{model}_valid_loss" for model in model_names]].plot()
         df_results.to_csv(f'{parent_dir}/save/results/{trial_id}.csv')
         plt.show()
+        break
 

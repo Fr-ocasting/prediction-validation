@@ -189,11 +189,15 @@ class full_model(nn.Module):
             if x.dim() == 3:
                 x = x.unsqueeze(1)
 
+        #print('x size: ',x.size())
+
         # if NetMob data is on :
         if self.netmob_vision is not None: 
             extracted_feature = self.forward_netmob_model(contextual)
+            #print('extracted_feature size: ',extracted_feature.size())
             # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
             x = torch.cat([x,extracted_feature],dim = -1)
+            #print('concatenated x size: ',x.size())
         # ...
         #print('self.netmob_vision: ',self.netmob_vision)
         #print('x size after Netmob: ',x.size())

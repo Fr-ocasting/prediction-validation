@@ -147,7 +147,7 @@ def str_valeur(valeur):
     Return an adapted str format for visualisation. 
     '''
     if valeur < 1:
-        return("{:.0e}".format(valeur))  
+        return("{:.2e}".format(valeur))  
     else:
         return("{:.2f}".format(valeur).rstrip('0').rstrip('.'))
 
