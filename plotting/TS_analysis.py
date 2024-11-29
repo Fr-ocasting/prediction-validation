@@ -184,7 +184,7 @@ def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False):
        legend_it = []
        colors = palette
        for k,column in enumerate(netmob_consumption.columns):
-              c = p.line(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[k])
+              c = p.line(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[int(k*(255/len(netmob_consumption.columns)))])
               displayed_legend = column
               legend_it.append((displayed_legend, [c]))
 
