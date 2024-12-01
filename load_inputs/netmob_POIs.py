@@ -74,6 +74,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     return(NetMob_ds)
 
 
+
 def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
     save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{EXPANDED}/Inputs/{id_station}"
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
