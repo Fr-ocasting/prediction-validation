@@ -20,9 +20,6 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
     args = get_args(model_name,dataset_names,dataset_for_coverage)
     print(args.n_vertex)
 
-    # Modification :
-    for key,value in modification.items():
-        setattr(args,key,value)
     args.W = 0
     args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
     args.ray = False
@@ -30,6 +27,10 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
     #  evaluation on the first fold only :
     hp_tuning_on_first_fold = True # True # False // if True, then we remove the first fold as we consid we used it for HP-tuning
     args.evaluate_complete_ds = True  # True # False // if True, then evaluation also on the entiere ds 
+
+    # Modification :
+    for key,value in modification.items():
+        setattr(args,key,value)
 
     # update each modif
     args = update_modif(args)
@@ -42,6 +43,8 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
         args.contextual_positions = args_init.contextual_positions
         args.time_embedding = args_init.time_embedding
         args.vision_input_type = args_init.vision_input_type
+    
+
 
     return(args,folds,hp_tuning_on_first_fold)
 
@@ -56,7 +59,6 @@ def get_inputs(args,vision_model_name,folds):
     K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
     return(K_fold_splitter,K_subway_ds,dic_class2rpz)
-
 
 def train_on_ds(model_name,ds,args,trial_id,save_folder,dic_class2rpz,df_loss):
     model = load_model(ds, args,dic_class2rpz)

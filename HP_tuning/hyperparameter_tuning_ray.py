@@ -16,7 +16,8 @@ if parent_dir not in sys.path:
 from trainer import Trainer, report
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
-from utils.utilities_DL import get_loss,load_model_and_optimizer
+from high_level_DL_method import load_model,load_optimizer_and_scheduler
+#from utils.utilities_DL import get_loss,load_model_and_optimizer
 from utils.save_results import get_date_id,load_json_file,update_json
 
 
@@ -52,13 +53,21 @@ def load_trainer(config, dataset, args, dic_class2rpz):
     '''
     args = HP_modification(config,args)
 
-    loss_function = get_loss(args)
-    model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
+    #loss_function = get_loss(args)
+    #model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
+
+    model = load_model(dataset, args,dic_class2rpz)
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+
     #model_ref = ray.put(model)
-    
     trainer = Trainer(dataset,model,
-                    args,optimizer,loss_function,scheduler = scheduler,
-                    dic_class2rpz=dic_class2rpz)
+                      args,optimizer,loss_function,scheduler = scheduler,
+                      dic_class2rpz = dic_class2rpz,
+                      #show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder
+                      )
+
+
+
     return(trainer)
 
 def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
@@ -169,7 +178,7 @@ if __name__ == '__main__':
     # In case we need to compute the Sliding K-fold validation:
     # folds = np.arange(1,args.K_fold)
 
-    K_fold_splitter = KFoldSplitter(args,coverage,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
     K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
 
     num_samples = 8

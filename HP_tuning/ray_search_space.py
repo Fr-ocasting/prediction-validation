@@ -46,6 +46,17 @@ def get_search_space_ray(args):
 
     # Tackle Vision Models
     if len(vars(args.args_vision)) > 0:
+        module_path = f"dl_models.vision_models.{args.args_vision.model_name}.search_space"
+        search_space_module = importlib.import_module(module_path)
+        config_vision = search_space_module.config  
+
+        keys = list(config_vision.keys())
+        for key in keys:
+            config_vision[f"vision_{key}"] = config_vision[key]
+            config_vision.pop(key) 
+
+        config.update(config_vision)
+        '''
         # ImageAvgPooling
         if args.args_vision.model_name == 'ImageAvgPooling':
             config_vision = {}  # No possible HP Tuning
@@ -74,12 +85,11 @@ def get_search_space_ray(args):
         elif args.args_vision.model_name == 'MinimalFeatureExtractor':
             config_vision = {'vision_h_dim': tune.choice([8,16,32,64]) #,64,128,256
                              } 
-
-
         else:
             raise NotImplementedError(f"Model {args.args_vision.model_name} has not been implemented for HP Tuning")
+        '''
         
-        config.update(config_vision)
+        
 
 
 

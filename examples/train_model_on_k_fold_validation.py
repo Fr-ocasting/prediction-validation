@@ -20,7 +20,7 @@ def load_configuration(trial_id,load_config,epochs):
     # If Load config: 
     if load_config:
         from examples.load_best_config import load_best_config
-        args,coverage = load_best_config(trial_id)
+        args = load_best_config(trial_id)
         #Update modif validation
         args.train_prop = 0.6
         args.valid_prop = 0.2
@@ -35,16 +35,16 @@ def load_configuration(trial_id,load_config,epochs):
 
     # If new config : 
     else:
-        from examples.load_random_config import args,coverage,dataset_names,vision_model_name,folds
+        from examples.load_random_config import args,dataset_names,vision_model_name,folds
 
-    return args,coverage,dataset_names,vision_model_name,folds
+    return args,dataset_names,vision_model_name,folds
 
-def train_valid_K_models(args,coverage,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
+def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
         
     # Sliding Window Cross Validation 
     ## Define fixed Dataset K_fold split for each trial: 
 
-    K_fold_splitter = KFoldSplitter(args,coverage,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     ''' Plotting if necessary: '''
@@ -143,11 +143,10 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     5. Save them.
     '''
     # 1. Load the best config according to our HP-Tuning / Or Load random config :
-    args,coverage,dataset_names,vision_model_name,folds = load_configuration(trial_id,load_config,epochs)
+    args,dataset_names,vision_model_name,folds = load_configuration(trial_id,load_config,epochs)
 
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(dataset_names,args,coverage,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder)
-
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder)
     # 5.
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
 

@@ -15,7 +15,6 @@ if parent_dir not in sys.path:
 
 from constants.paths import FOLDER_PATH,FILE_NAME
 from constants.config import get_args,update_modif
-from high_level_DL_method import evaluate_config 
 from utils.utilities_DL import match_period_coverage_with_netmob,get_small_ds
 
 

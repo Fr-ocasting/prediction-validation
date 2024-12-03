@@ -17,9 +17,9 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 
 
-def HP_and_valid_one_config(args,coverage,dataset_names,epochs_validation,vision_model_name,num_samples):
-    # HP Tuning
-    analysis,trial_id = hyperparameter_tuning(args,coverage,dataset_names,vision_model_name,num_samples)
+def HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples):
+    # HP Tuning on the first fold
+    analysis,trial_id = hyperparameter_tuning(args,vision_model_name,num_samples)
 
     # K-fold validation with best config: 
     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation,hp_tuning_on_first_fold = True)
@@ -28,27 +28,45 @@ def HP_and_valid_one_config(args,coverage,dataset_names,epochs_validation,vision
 
 if __name__ == '__main__':
 
-    from file00 import *
+    #from file00 import *
+    #vision_model_name = 'FeatureExtractorEncoderDecoder'  # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
+    # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
+    from examples.benchmark import local_get_args
 
     model_name = 'STGCN' #'CNN'
-    args,coverage = get_args_coverage(model_name)
+    dataset_for_coverage = ['subway_in','netmob_POIs'] 
+    if True:
+        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']],['VariableSelectionNetwork']):
+            args,_,_ = local_get_args(model_name,
+                                    args_init = None,
+                                    dataset_names=dataset_names,
+                                    dataset_for_coverage=dataset_for_coverage,
+                                    modification = {'ray':True,
+                                                    'grace_period':1,
+                                                    'HP_max_epochs':1,
+                                                    'evaluate_complete_ds' : True
+                                                    })
 
-    # Modification :
-    args.K_fold = 6
-    args.ray = True
-    #args.device = 'cuda:0'
-    
-    # Init 
-    epochs_validation = 500
-    num_samples = 1000
-    args.grace_period = 2
-    args.HP_max_epochs = 100
+            # Init 
+            epochs_validation = 1
+            num_samples = 1
 
-    args.vision_input_type = 'NetMob_TS' # 'image_per_stations' # 'unique_image_through_lyon' # NetMob_TS
-    dataset_names = ['subway_in','netmob'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
-    vision_model_name = 'FeatureExtractorEncoderDecoder'  # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
-    # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
+            # HP and evaluate K-fold best config
+            HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)
+    if False:
+        for dataset_names,vision_model_name in zip([['netmob_POIs'],['subway_in','netmob_POIs'],['subway_in']],['VariableSelectionNetwork','VariableSelectionNetwork',None]):
+            args,_,_ = local_get_args(model_name,
+                                    args_init = None,
+                                    dataset_names=dataset_names,
+                                    dataset_for_coverage=dataset_for_coverage,
+                                    modification = {'ray':True,
+                                                    'grace_period':2,
+                                                    'HP_max_epochs':30,
+                                                     'evaluate_complete_ds' : True,})
 
+            # Init 
+            epochs_validation = 30
+            num_samples = 1000
 
-    # HP and evaluate K-fold best config
-    HP_and_valid_one_config(args,coverage,dataset_names,epochs_validation,vision_model_name,num_samples)
+            # HP and evaluate K-fold best config
+            HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)
