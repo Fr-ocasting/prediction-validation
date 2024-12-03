@@ -13,14 +13,14 @@ from dataset import PersonnalInput
 import numpy as np 
 import pickle
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS
+from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS,EXPANDED
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-EXPANDED =  '_expanded' # '' # '_expanded'
+
 FILE_NAME = 'netmob_image_per_station'
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
