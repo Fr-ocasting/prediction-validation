@@ -13,7 +13,7 @@ from dataset import PersonnalInput
 import numpy as np 
 import pickle
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-from constants.paths import SELECTED_APPS
+from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -80,33 +80,20 @@ def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
     metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
 
-    transfer_modes = metadata['transfer_modes']
-    # If we select a specific transfer_modes: 
-    if args.netmob_transfer_mode == ['DL']:
-        if 'DL' == transfer_modes[0]:
-            data_app = data_app[:,:,:1,:]  
-        else:
-            data_app = data_app[:,:,1:,:] 
-    if args.netmob_transfer_mode == ['UL']:
-        if 'UL' == transfer_modes[1]:
-            data_app = data_app[:,:,1:,:]
-        else :
-            data_app = data_app[:,:,:1,:]       
+    pos_selected_apps = [k for k,app in enumerate(metadata['apps']) if app in SELECTED_APPS]
+    pos_selected_modes = [k for k,mode in enumerate(metadata['transfer_modes']) if mode in TRANSFER_MODE]
+    pos_selected_tags = [k for k,tag in enumerate(metadata['tags']) if tag in SELECTED_TAGS]
 
-    # If we select specific apps:
-    apps = metadata['apps']
-    data_app = reorganise_npy(data_app,apps,SELECTED_APPS)
+    # Extract sub-dataset thanks to np.ix_ (kind of n-dimensional meshgrid)
+    n1 = np.array(pos_selected_apps)
+    n2 = np.array(pos_selected_tags)
+    n3 = np.array(pos_selected_modes)
+    n4 = np.arange(data_app.shape[-1])
+    idxs = [n1,n2,n3,n4]
+    sub_indices = np.ix_(*idxs)
+    data_app = data_app[sub_indices]  # data_app[pos_selected_apps,pos_selected_tags,pos_selected_modes,:]
+
     return(data_app)
-
-def reorganise_npy(data_app,apps,SELECTED_APPS):
-    ''' Allow to select the npy dataset with the corresponding to selected apps.'''
-    def find_pos(app_i,apps):
-        for k,app in enumerate(apps):
-            if app == app_i:
-                return k 
-    list_pos = [find_pos(app_i,apps) for app_i in SELECTED_APPS]    
-    return data_app[list_pos,:,:,:]
-
 
 
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):

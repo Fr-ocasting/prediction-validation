@@ -20,7 +20,9 @@ else:
     #FILE_NAME = 'data_bidon' #.csv
 
 SAVE_DIRECTORY = '../save/'
-SELECTED_APPS = ['Instagram']
+SELECTED_APPS = ['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+TRANSFER_MODE = ['DL'] # ['DL'] # ['UL'] #['DL','UL']
+SELECTED_TAGS = ['iris','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
 #
 # trafic_apps = ['Uber', 'Google_Maps','Waze'],
 # music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
