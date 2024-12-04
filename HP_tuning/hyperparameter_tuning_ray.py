@@ -41,6 +41,10 @@ def HP_modification(config,args):
             elif 'vision_' in key:
                 key = key.replace('vision_', '')
                 setattr(args.args_vision,key,value)
+                
+                # Cas Particulier, devrait être gérer mieux, avec une implémentation générale
+                if key == 'grn_out_dim':
+                    setattr(args.args_vision,'out_dim',value)
             else: 
                 raise ValueError(f"Key {key} issue")
     return(args)
@@ -74,7 +78,7 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
     # Load ray parameters:
     config = get_search_space_ray(args)
     ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
-    
+
     # Init Ray
     if ray.is_initialized:
         ray.shutdown()

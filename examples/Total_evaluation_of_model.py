@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
-    if True:
+    if False:
         for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']],['VariableSelectionNetwork']):
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
@@ -53,8 +53,8 @@ if __name__ == '__main__':
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)
-    if False:
-        for dataset_names,vision_model_name in zip([['netmob_POIs'],['subway_in','netmob_POIs'],['subway_in']],['VariableSelectionNetwork','VariableSelectionNetwork',None]):
+    if True:
+        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs'],['netmob_POIs'],['subway_in']],['VariableSelectionNetwork','VariableSelectionNetwork',None]):
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,
@@ -62,11 +62,11 @@ if __name__ == '__main__':
                                     modification = {'ray':True,
                                                     'grace_period':2,
                                                     'HP_max_epochs':30,
-                                                     'evaluate_complete_ds' : True,})
+                                                     'evaluate_complete_ds' : True})
 
             # Init 
             epochs_validation = 30
-            num_samples = 1000
+            num_samples = 200
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)
