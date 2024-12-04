@@ -331,8 +331,13 @@ class Trainer(object):
 
         if (not(self.args.ray)):
             self.chrono.save_model()
-            self.performance = {'valid_loss': self.best_valid,'valid_metrics':self.performance['valid_metrics'], 'test_metrics':self.performance['test_metrics'],
-                                 'epoch':self.performance['epoch'], 'training_over' : True, 'fold': self.args.current_fold}
+            self.performance = {'valid_loss': self.best_valid,
+                                'valid_metrics':self.performance['valid_metrics'], 
+                                'test_metrics':self.performance['test_metrics'],
+                                'epoch':self.performance['epoch'], 
+                                'training_over' : True, 
+                                'fold': self.args.current_fold
+                                }
             self.save_best_model(checkpoint,epoch,self.performance)
             print(f"\nTraining Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
             self.chrono.save_model()
@@ -391,15 +396,19 @@ class Trainer(object):
 
         # Plus clean : with autocast(enabled = self.args.mixed_precision):
         if self.args.mixed_precision:
+            #print('\nMixed Precision')
             with autocast():
                 pred = self.model(x_b,contextual_b)
                 loss = self.loss_function(pred.float(),y_b)
+                #print('loss: ',loss)
                 #print('pred: ', pred.dtype, pred.size())
                 #print('y_b: ', y_b.dtype, y_b.size())
                 #print(self.loss_function)
         else:
+            #print('\nNo Mixed Precision')  
             pred = self.model(x_b,contextual_b)
-            loss = self.loss_function(pred,y_b)
+            loss = self.loss_function(pred.float(),y_b)
+            #print('\nloss: ',loss) 
                 
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
