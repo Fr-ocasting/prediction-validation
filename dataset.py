@@ -257,7 +257,7 @@ class DataSet(object):
                  train_df = None,cleaned_df = None,Weeks = None, Days = None, 
                  historical_len = None,step_ahead = None,
                  standardize = None, minmaxnorm = None,dims = None,
-                 spatial_unit = None):
+                 spatial_unit = None,indices_spatial_unit = None):
         
         if df is not None:
             self.length = len(df)
@@ -280,6 +280,7 @@ class DataSet(object):
         self.normalized = normalized
         self.time_step_per_hour = time_step_per_hour
         self.train_df = train_df
+        self.indices_spatial_unit = indices_spatial_unit
         if time_step_per_hour is not None :
             self.Week_nb_steps = int(7*24*self.time_step_per_hour)
             self.Day_nb_steps = int(24*self.time_step_per_hour)

@@ -30,7 +30,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['netmob_transfer_mode'] = 'DL' # 'UL' # None # -> Use as NetMob input only 'DL' or 'UL' transfer mode, or both
     config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
     config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'
-
+    config['set_spatial_units'] =  None # ['BON','SOI','GER','CHA']  # None -> Select a sub-set of desired spatial-units to work on.
     # Optimization 
     if torch.cuda.is_available():
         config['num_workers'] = 2 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
@@ -157,6 +157,7 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
 
     # Merge Args: 
     args = Namespace(**{**vars(args),**vars(globals()[f"args_{args.model_name}"]),**vars(globals()[f"args_HP_{args.model_name}"])})
+
     return(args)
 
 def convert_into_parameters(config):
@@ -191,6 +192,9 @@ def update_modif(args,name_gpu='cuda'):
         args.track_pi = False
     # ...
 
+    # Modif about n_vertex: 
+    if args.set_spatial_units is not None:
+        args.n_vertex = len(args.set_spatial_units)
     
     print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
     print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None

@@ -1,6 +1,7 @@
 import sys 
 import os 
 import pandas as pd
+import numpy as np
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -53,18 +54,32 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
     assert time_step_per_hour == 4, 'TIME STEP PER HOUR = {time_step_per_hour} ALORS QU ON VEUT =4 '
 
+    df_correspondance = get_trigram_correspondance()
+    df_correspondance.set_index('Station').reindex(df.columns)
+    df.columns = df_correspondance.COD_TRG
+
+
+    if args.set_spatial_units is not None:
+        print('Considered Spatial-Unit: ',args.set_spatial_units)
+        spatial_unit = args.set_spatial_units
+        indices_spatial_unit = [list(df.columns).index(station_i) for station_i in  spatial_unit]
+        df = df[spatial_unit]
+    else:
+        spatial_unit = df.columns
+        indices_spatial_unit = np.arange(len(df.columns))
+
+
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 
                       Weeks = args.W, 
                       Days = args.D, 
                       historical_len= args.H,
                       step_ahead=args.step_ahead,
-                      spatial_unit = df.columns
+                      spatial_unit = spatial_unit,
+                      indices_spatial_unit = indices_spatial_unit
                       )
+    
 
-    df_correspondance = get_trigram_correspondance()
-    df_correspondance.set_index('Station').reindex(dataset.spatial_unit)
-    dataset.spatial_unit = df_correspondance.COD_TRG
     
     return(dataset)
     

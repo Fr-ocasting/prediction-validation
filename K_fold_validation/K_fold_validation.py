@@ -15,7 +15,7 @@ from build_inputs.load_preprocessed_dataset import load_complete_ds
 from dataset import TensorDataset
 from constants.paths import FOLDER_PATH
 from load_inputs.subway_in import get_trigram_correspondance
-LIST_COD_TRG = list(get_trigram_correspondance().COD_TRG)
+#LIST_COD_TRG = list(get_trigram_correspondance().COD_TRG)
 
 class KFoldSplitter(object):
     def __init__(self,args,vision_model_name,folds):
@@ -52,7 +52,8 @@ class KFoldSplitter(object):
         for name in subway_ds.contextual_tensors.keys():
             if 'netmob' in name :  # name == 'netmob'
                 if type(NetMob_ds_tmps) == list:
-                    k = [k for k,cod_trg in enumerate(LIST_COD_TRG) if cod_trg == name.split('_')[-1]][0]
+                    #k = [k for k,cod_trg in enumerate(LIST_COD_TRG) if cod_trg == name.split('_')[-1]][0]
+                    k = [k for k,cod_trg in enumerate(subway_ds_tmps.spatial_unit) if cod_trg == name.split('_')[-1]][0]
                     normalizer = NetMob_ds_tmps[k].normalizer
                 else:
                     normalizer = NetMob_ds_tmps.normalizer

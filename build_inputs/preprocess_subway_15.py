@@ -62,7 +62,7 @@ def load_subway_shp(FOLDER_PATH,station_location_name):
 
 
 def load_adjacency_matrix(dataset, type = 'adjacent', df_locations = None, treshold = 0):
-    df_correspondance = get_trigram_correspondance()
+
     stations = dataset.spatial_unit
 
     subway_A = ['Perrache','Ampère Victor Hugo','Bellecour','Cordeliers', 
@@ -74,8 +74,17 @@ def load_adjacency_matrix(dataset, type = 'adjacent', df_locations = None, tresh
     subway_C = ['Hôtel de ville - Louis Pradel','Croix Paquet', 'Croix-Rousse', 'Hénon', 'Cuire']
 
     subway_D = ['Gare de Vaise','Valmy','Gorge de Loup', 'Vieux Lyon','Bellecour','Guillotière','Saxe - Gambetta','Garibaldi','Sans Souci', 'Monplaisir Lumière',  'Grange Blanche','Laënnec','Mermoz - Pinel','Parilly', 'Gare de Vénissieux']
-      
+
     if type == 'adjacent':
+        A = pd.DataFrame(0,index= stations,columns = stations)
+        for i,station_i in enumerate(stations):
+            for j, station_j in enumerate(stations[i:]):
+                if ((i in subway_A) and (j in subway_A)) or ((i in subway_B) and (j in subway_B)) or ((i in subway_C) and (j in subway_C)) or ((i in subway_D) and (j in subway_D)):
+                    A.loc[station_i,station_j] = 1
+                    A.loc[station_j,station_i] = 1
+
+        '''
+        df_correspondance = get_trigram_correspondance()
         A = pd.DataFrame(0,index= stations,columns = stations)
         for lane in [subway_A,subway_B,subway_C,subway_D]:
             for i in range(len(lane)-1): 
@@ -89,11 +98,11 @@ def load_adjacency_matrix(dataset, type = 'adjacent', df_locations = None, tresh
 
                 A.loc[pos_i, pos_j] = 1
                 A.loc[pos_j, pos_i] = 1  # Symmetry
+        '''
         return(A)
     
     if type == 'correlation': 
         A_corr = pd.DataFrame(dataset.train_input).corr()  # Correlation only on the prior information, which mean only on the train dataset
-        assert len(A_corr) == 40, f"shape de Acorr: {A_corr.shape} "
         return(A_corr)
     
     if type == 'distance':

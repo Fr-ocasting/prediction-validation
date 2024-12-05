@@ -40,20 +40,18 @@ def load_configuration(trial_id,load_config,epochs):
     return args,dataset_names,vision_model_name,folds
 
 def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
+    '''
+    args:
+    ------
+    folds: list of folds (within [0,args.K-fold]) we would like to evaluate
+    hp_tuning_on_first_fold : if True, then we remove the fold 0, which has been used for HP-tuning
+    '''
         
-    # Sliding Window Cross Validation 
-    ## Define fixed Dataset K_fold split for each trial: 
-
+    # Return a list of K-fold Dataset:
     K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
-    ''' Plotting if necessary: '''
-    #from plotting.plotting import plot_k_fold_split
-    #plot_k_fold_split(K_subway_ds,K_subway_ds[0].init_invalid_dates)
-    ''' ______________________ ''' 
-
-    ## Split Tuning and Validation datasets:
-    # ds_tuning = K_subway_ds[0]
+    # Keep the first fold or not : 
     if hp_tuning_on_first_fold :
         ds_validation = K_subway_ds[1:]
     else:

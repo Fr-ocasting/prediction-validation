@@ -144,7 +144,6 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
 if __name__ == '__main__': 
     from constants.config import get_args,update_modif
     from constants.paths import FOLDER_PATH,FILE_NAME
-    from utils.utilities_DL import match_period_coverage_with_netmob,get_small_ds
     from K_fold_validation.K_fold_validation import KFoldSplitter
 
     # Set working directory (the one where you will find folder 'save/' or 'HP_tuning'):
@@ -169,8 +168,6 @@ if __name__ == '__main__':
     # Coverage Period : 
     small_ds = False
     coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names=dataset_names)
-    (coverage,args) = get_small_ds(small_ds,coverage,args)
-
     # Choose DataSet and VisionModel if needed: 
     dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
     vision_model_name = 'ImageAvgPooling'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',

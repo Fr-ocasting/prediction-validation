@@ -5,7 +5,7 @@ import pandas as pd
 from datetime import datetime
 import argparse
 import inspect
-
+import math 
 from torch.optim import SGD,Adam,AdamW
 try:
     from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
@@ -143,7 +143,7 @@ def choose_optimizer(model,args):
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 
 def load_scheduler(optimizer,args):
-    if args.scheduler is None :
+    if (args.scheduler is None) or (math.isnan(args.scheduler)) :
         scheduler = None
     else:
         scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)
@@ -185,14 +185,6 @@ def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_ve
     Optimizer_list = [model_opt[1] for model_opt in model_opt_sched_list]
     Scheduler_list = [model_opt[2] for model_opt in model_opt_sched_list]
     return(loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding)
-
-def get_small_ds(small_ds,coverage,args):
-    if small_ds:
-        coverage = coverage[:1000]
-        args.W = 0
-        args.D = 0
-        print(f'Seulement les {1000} premiers time-slots sont utilisés.')
-    return(coverage,args)
 
 def forward_and_display_info(model,inputs):
     nb_total_param = sum(p.numel() for p in model.parameters() if p.requires_grad)
