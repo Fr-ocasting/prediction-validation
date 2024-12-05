@@ -22,6 +22,15 @@ def peak_hour(coverage,morning_peak= [7,8,9], evening_peak = [16,17,18,19]):
     peak_hour = [x for x in coverage if x.hour in morning_peak+evening_peak]
     return peak_hour
 
+def build_window(kick_off_time,coverage,range):
+
+    match_times= [ts for kick_time in kick_off_time
+                    for ts in coverage
+                    if kick_time - timedelta(minutes=range) <= ts <= kick_time + timedelta(minutes=range)
+                    ]
+    kick_off_time = [ts for ts in kick_off_time if ts in coverage]
+
+    return kick_off_time,match_times
 
 def rugby_matches(coverage, range = 3*60):
    """Retrieves the rugby match times of the 'Lyon Lou Rugby Team' at 'Gerland Stadium' from a list of of timestamps 'coverage'.
@@ -57,13 +66,49 @@ def rugby_matches(coverage, range = 3*60):
     datetime(2020, 10, 18, 17, 0)    # 18 Oct 2020 17h
    ]
 
-   match_times= [ts for kick_time in kick_off_time
-                 for ts in coverage
-                 if kick_time - timedelta(minutes=range) <= ts <= kick_time + timedelta(minutes=range)
-                 ]
-   kick_off_time = [ts for ts in kick_off_time if ts in coverage]
-   
-   return kick_off_time,match_times
+   return build_window(kick_off_time,coverage,range)
 
+
+if False:
+    def basket_matches(coverage, range = 3*60):
+    """Retrieves the rugby match times of the 'Lyon Lou Rugby Team' at 'Gerland Stadium' from a list of of timestamps 'coverage'.
+
+        args:
+        ------
+        coverage : list of Timestamp, a list containing timestamps to evaluate.
+        range : int, the range in minutes to look for timestamps around each kick-off time  
+
+        outputs:
+        ------
+        match_times : list of Timestamp, a list of timestamps within +/- 3 hours of the match time ."""
+    kick_off_time= [
+        datetime(2019,3,2,20,45),      
+        datetime(2019,3,11,20,45),  
+        datetime(2019,3,24,20,45),  
+        datetime(2019,4,1,20,45),   
+        datetime(2019,4,6,20,45),   
+        datetime(2019,4,11,20,45), 
+        datetime(2019,4,14,20,45), 
+        datetime(2019,4,22,20,45), 
+        datetime(2019,4,25,20,45),
+        datetime(2019,4,29,20,45), 
+        datetime(2019,5,6,20,45), 
+        datetime(2019,5,8,20,45), 
+        datetime(2019,5,16,20,45), 
+        datetime(2019,5,19,20,45), 
+        datetime(2019,5,26,20,45), 
+        datetime(2019,5,28,20,45), 
+        datetime(2019,6,3,20,45), 
+        datetime(2019,6,5,20,45), 
+        datetime(2019,6,8,20,45), 
+        datetime(2019,6,16,20,45), 
+        datetime(2019,6,18,20,45), 
+        datetime(2019,6,21,20,45), 
+        datetime(2019,6,23,20,45), 
+        datetime(2019,6,26,20,45), 
+    ]
+
+    
+    return build_window(kick_off_time,coverage,range)
 
 

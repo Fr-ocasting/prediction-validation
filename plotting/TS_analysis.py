@@ -4,7 +4,9 @@ import torch
 from datetime import timedelta
 import pandas as pd 
 from bokeh.palettes import Set3_12 
+from bokeh.palettes import Plasma256 
 from bokeh.palettes import Turbo256 as palette
+
 from bokeh.plotting import output_notebook,show
 import numpy as np 
 
@@ -60,15 +62,25 @@ def drag_selection_box(df,p1,p2=None,p3=None, width=1500, height=150):
 
 
 def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False):
+       '''
+       args:
+       ------
+       station:  str or list of str. each elmt of the list represent a spatial unit of the predicted dataset.
+       '''
+
        legend_it = []
        p = figure(x_axis_type="datetime", title= title,
                      width=width,height=height)
 
-       c = p.line(x=df_true.index, line_width = 2.5, y=df_true[station], alpha=0.8,  legend_label = f'{station}',color = 'blue')
-       legend_it.append(('True', [c]))
+       if type(station) != list:
+             station = [station]
+       
+       for k,station_i in enumerate(station):
+              c = p.line(x=df_true.index, line_width = 2.5, y=df_true[station_i], alpha=0.8,color = Plasma256[int(k*255/len(station))])
+              legend_it.append((f'True_{station_i}', [c]))
 
-       c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station], alpha=0.8,  legend_label = f'{station}',color = 'red')
-       legend_it.append(('Prediction', [c]))
+              c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
+              legend_it.append((f'Prediction_{station_i}', [c]))
 
 
        # Add rugby matches :
@@ -90,7 +102,7 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
             minutes="%a %d  %H:%M"
                 )
        legend = Legend(items=legend_it)
-
+       legend.click_policy="hide"
        p.add_layout(legend, 'right')
 
        if bool_show:
