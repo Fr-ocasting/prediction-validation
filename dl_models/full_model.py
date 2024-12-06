@@ -89,9 +89,11 @@ class full_model(nn.Module):
             self.remove_trafic_inputs = True
             print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
         # ...
+
         
         # === Vision NetMob ===
         self.tackle_netmob(args)
+        self.concatenation_late = args.concatenation_late
 
         # === TE ===
         self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
@@ -213,7 +215,11 @@ class full_model(nn.Module):
         # ...
         
         # Core model 
-        x = self.core_model(x)
+        if self.concatenation_late:
+            x= self.core_model(x,extracted_feature)
+        else:
+            x = self.core_model(x)
+
         # ...
 
         return(x)

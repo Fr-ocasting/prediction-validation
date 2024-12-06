@@ -6,7 +6,7 @@ from bokeh.plotting import show,output_notebook
 import sys
 import os
 import pandas as pd
-
+import numpy as np 
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
@@ -53,12 +53,12 @@ def update_args_train_visu(model_name,name_ds,dataset_names,vision_model_name,da
     visualisation(trainer,ds,training_mode = 'test',station = station)
     return trainer,df_results
 
-def load_all(model_name,args,dataset_for_coverage,modification,vision_model_name,folds,save_folder,station='CHA'):
+def load_all(model_name,args,dataset_for_coverage,modification,vision_model_name,save_folder,station='CHA'):
     # Load DS: 
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
 
     # Load complete ds, no K-fold:
-    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,vision_model_name,np.array([0]))
     ds,_,_,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
 
     # Analyses : 

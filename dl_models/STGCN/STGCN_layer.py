@@ -277,18 +277,30 @@ class OutputBlock(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout):
+    def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout,concatenation_late,extracted_feature_dim):
         super(OutputBlock, self).__init__()
         self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
-        self.fc1 = nn.Linear(in_features=channels[0], out_features=channels[1], bias=bias)
+        if concatenation_late:
+            in_channel_fc1 = channels[0] + extracted_feature_dim
+        else:
+            in_channel_fc1 = channels[0]
+
+        self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
         self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
+        self.concatenation_late = concatenation_late
 
-    def forward(self, x):
+    def forward(self, x,x_c = None):
         x = self.tmp_conv1(x)
         x = self.tc1_ln(x.permute(0, 2, 3, 1))
+        
+        if self.concatenation_late:
+            # Concat [B,C,N,Z] and [B,C,N,L']
+            x = torch.concat([x,x_c],axis=-1)
+
+            
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)

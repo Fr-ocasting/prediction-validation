@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 # ============================ ======================== ============================
 # ============================ VariableSelectionNetwork ============================
 class FastGLU(nn.Module):
@@ -106,10 +107,18 @@ class Attn_weight_POI(nn.Module):
 
 
 class VariableSelectionNetwork(nn.Module):
-    def __init__(self,input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout):
+    def __init__(self,input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout,grn = False):
         super(VariableSelectionNetwork,self).__init__()
         self.attn = Attn_weight_POI(input_size*nb_channels,grn_h_dim,nb_channels,contextual_static_dim,dropout)
-        self.transformed_inputs = nn.ModuleList([GRN(input_size, grn_h_dim, grn_out_dim,contextual_static_dim=None,dropout=dropout) for i in range(nb_channels)])
+
+
+        if grn :
+            self.transformed_inputs = nn.ModuleList([GRN(input_size, grn_h_dim, grn_out_dim,contextual_static_dim=None,dropout=dropout) for i in range(nb_channels)])
+        else:
+            self.fc1 = nn.Linear(nb_channels,grn_h_dim)
+            self.fc2 = nn.Linear(grn_h_dim,grn_out_dim*nb_channels)
+            self.relu = nn.ReLU()
+        self.grn = grn
     def forward(self,x,x_c=None):
         '''
         Inputs: 
@@ -127,8 +136,18 @@ class VariableSelectionNetwork(nn.Module):
         flattened_x = x.reshape(x.size(0),-1)
 
         # GRN on each POIs separately 
-        out_grn = torch.stack([self.transformed_inputs[k](flattened_x[:,k*dim_input:(k+1)*dim_input]) for k in range(nb_features)],dim=1)
-                # torch.stack(self.transformed_inputs[k](x[Ellipsis, i*self.input_size:(i+1)*self.input_size]) for k in range(self.output_size)], axis=-1)
+        if self.grn:
+            out_grn = torch.stack([self.transformed_inputs[k](flattened_x[:,k*dim_input:(k+1)*dim_input]) for k in range(nb_features)],dim=1)
+        else:
+            # [B,C] -> [B,H] 
+            x_out = self.fc1(x[:,:,-1])
+            x_out = self.relu(x_out) 
+            # [B,H] -> [B,Z*C]
+            x_out = self.fc2(x_out)
+            # [B,H] -> [B,C,Z]    
+            out_grn = x_out.reshape(x_out.size(0),nb_features,-1)
+
+                    # torch.stack(self.transformed_inputs[k](x[Ellipsis, i*self.input_size:(i+1)*self.input_size]) for k in range(self.output_size)], axis=-1)
 
         # GRN on POIs matrix summed with (repeated) embedding 
         attn_weighs = self.attn(flattened_x,x_c)
@@ -246,13 +265,111 @@ class SimpleVariableSelection(nn.Module):
 
 # ============================           END            ============================
 # ============================ ======================== ============================
+
+
+# ============================ ======================== ============================
+# ============================           Attention Classic pour selectionner les series      ============================
+
+class AttentionPooling(nn.Module):
+    def __init__(self, input_length, d_model):
+        super(AttentionPooling, self).__init__()
+        self.proj = nn.Linear(input_length, d_model)
+        self.query = nn.Parameter(torch.randn(d_model))
+        nn.init.normal_(self.query, mean=0, std=0.1)
+
+    def forward(self, x,x_c = None):
+        # x: [B, P, L]
+        
+        # Projection des P times-séries dans un espace de dimension d_model
+        # embeddings: [B, P, d_model]
+        embeddings = self.proj(x)
+        
+        # Calcul des poids d'attention
+        # scores: [B, P]
+        scores = torch.matmul(embeddings, self.query)
+        scores = scores / math.sqrt(embeddings.size(-1))
+        
+        # Normalisation softmax pour obtenir les poids
+        attn_weights = torch.softmax(scores, dim=1)  # [B, P]
+        
+        # Agrégation pondérée
+        # context: [B, d_model]
+        context = torch.sum(embeddings * attn_weights.unsqueeze(-1), dim=1)
+        
+        return context,attn_weights
+
+# ============================           END            ============================
+# ============================ ======================== ============================
+
+
+# ============================ ======================== ============================
+# ============================  Scaled Dot Product     ============================
+class ScaledDotProduct(nn.Module):
+    def __init__(self, input_length, d_model):
+        super(ScaledDotProduct, self).__init__()
+        self.proj = nn.Linear(input_length, d_model)
+
+        self.d_model = d_model
+
+        self.W_q = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+        self.W_k = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+        self.W_v = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+
+        self.softmax = nn.Softmax(dim = -1)
+
+
+    def forward(self, x,x_c = None):
+        # x: [B, P, L]
+        
+        # Projection des P times-séries dans un espace de dimension d_model
+        # embeddings: [B, P, d_model]
+        embeddings = self.proj(x)
+        
+        #[B, P, d_model]
+        Q = torch.matmul(embeddings,self.W_q)
+        K = torch.matmul(embeddings,self.W_k)
+        V = torch.matmul(embeddings,self.W_v)
+
+        #[B, d_model, P]
+        K = K.permute(0,2,1)
+
+        #[B, P, P]
+        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
+        attn_weights = self.softmax(scaled_compat)
+
+        #[B, P, P] x [B, P, d] ->   [B, P, d]
+        context = torch.matmul(attn_weights,V)
+
+        #[B, P, d] ->   [B,d]
+        context = torch.sum(context, dim=1)
+        
+        return context,attn_weights
+
+
+
+
+
 class model(nn.Module):
     def __init__(self,List_input_sizes,List_nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout):
         super(model,self).__init__()
-        #self.model = nn.ModuleList([VariableSelectionNetwork(input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout) 
-        #                            for input_size,nb_channels in zip(List_input_sizes,List_nb_channels)])
-        self.model = nn.ModuleList([SimpleVariableSelection(input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout) 
-                                    for input_size,nb_channels in zip(List_input_sizes,List_nb_channels)])
+        # Attention avec Scaled Dot Product pour chaque station:
+        if True: 
+            self.model = nn.ModuleList([ScaledDotProduct(input_size, grn_out_dim)
+                                        for input_size,_ in zip(List_input_sizes,List_nb_channels)])
+
+        # Attention Pooling 'simple':
+        if False: 
+            self.model = nn.ModuleList([AttentionPooling(input_size, grn_out_dim)
+                                        for input_size,_ in zip(List_input_sizes,List_nb_channels)])
+        # Gating Mecanisme avec GRN 
+        if False: 
+            self.model = nn.ModuleList([VariableSelectionNetwork(input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout) 
+                                        for input_size,nb_channels in zip(List_input_sizes,List_nb_channels)])
+            
+        # Gating Mecanisme simple avec quelques FC layers: 
+        if False: 
+            self.model = nn.ModuleList([SimpleVariableSelection(input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout) 
+                                        for input_size,nb_channels in zip(List_input_sizes,List_nb_channels)])
     def forward(self,List_of_x,x_c=None):
         '''
         Inputs: 

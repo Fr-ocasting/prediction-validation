@@ -53,13 +53,27 @@ class STGCN(nn.Module):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, args.n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
         self.st_blocks = nn.Sequential(*modules)
 
+        if args.concatenation_late :
+            self.concatenation_late = args.concatenation_late 
+        else:
+            self.concatenation_late = False
+
         self.Ko = Ko
+        if hasattr(args.args_vision,'out_dim'):
+            extracted_feature_dim = args.args_vision.out_dim 
+        else:
+            extracted_feature_dim = None
 
 
         if self.Ko > 0:
-            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout)
+            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout,self.concatenation_late,extracted_feature_dim)
         elif self.Ko == 0:
-            self.fc1 = nn.Linear(in_features=blocks[-3][-1], out_features=blocks[-2][0], bias=args.enable_bias)
+            if self.concatenation_late:
+                in_feature_fc1 = blocks[-3][-1] +extracted_feature_dim
+            else: 
+                in_feature_fc1 = blocks[-3][-1]     
+
+            self.fc1 = nn.Linear(in_features=in_feature_fc1, out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)
             self.relu = nn.ReLU()
 
@@ -68,7 +82,8 @@ class STGCN(nn.Module):
             #self.silu = nn.SiLU()
             #self.dropout = nn.Dropout(p=args.dropout)
 
-    def forward(self, x):
+    def forward(self, x,x_c=None):
+            
             ''' 
             Args:
             -------
@@ -95,9 +110,12 @@ class STGCN(nn.Module):
 
             if self.Ko > 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
-                x = self.output(x)
+                x = self.output(x,x_c)
             elif self.Ko == 0:
-                # [B,C,L',N] ->  [B,1,L',N]
+                # [B,C_out,L',N] = [B,1,L',N]
+                if self.concatenation_late:
+                    x_c = x_c.permute(0,1,3,2)
+                    x = torch.concat([x,x_c],axis=2)
                 x = self.fc1(x.permute(0, 2, 3, 1))
                 x = self.relu(x)
                 x = self.fc2(x).permute(0, 3, 1, 2)
