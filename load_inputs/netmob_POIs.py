@@ -10,10 +10,11 @@ if parent_dir not in sys.path:
 from datetime import datetime 
 from dataset import DataSet
 from dataset import PersonnalInput
+from sklearn.cluster import AgglomerativeClustering
 import numpy as np 
 import pickle
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS,EXPANDED
+from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS,EXPANDED,EPSILON
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -52,12 +53,20 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     NetMob_ds = []
     for id_station in id_stations:
         # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
-        data_app = load_data_npy(id_station,ROOT,FOLDER_PATH,args)
-        netmob_T = torch.Tensor(data_app)
+        data_station = load_data_npy(id_station,ROOT,FOLDER_PATH)
+
+        # Reduce dimensionality : 
+        data_station = data_station.transpose(3,0,1,2)
+        data_station = data_station.reshape(data_station.shape[0],-1)
+        multi_ts = pd.DataFrame(data_station)
+        data_station = reduce_dim_by_clustering(multi_ts,epsilon = EPSILON)
+
+
+        netmob_T = torch.Tensor(data_station)
         # netmob_T.shape : [T,len(apps),len(osmid_associated),len(transfer_modes)]
-        netmob_T = netmob_T.permute(3,0,1,2)
+        #netmob_T = netmob_T.permute(3,0,1,2)
         # netmob_T.shape : [T,len(apps)*len(osmid_associated)*len(transfer_modes)] = [T,R]
-        netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
+        #netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
         
         # Extract only usefull data, and replace "heure d'été"
         indices_dates = [k for k,date in enumerate(COVERAGE) if date in intesect_coverage_period]
@@ -75,7 +84,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
 
 
 
-def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
+def load_data_npy(id_station,ROOT,FOLDER_PATH):
     save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{EXPANDED}/Inputs/{id_station}"
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
     metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
@@ -102,3 +111,37 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
     NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
 
     return NetMob_ds
+
+
+def agg_clustering(multi_ts,epsilon):
+    clustering = AgglomerativeClustering(
+        n_clusters=None,  # 
+        metric='precomputed',  # We are already using a disance matrix, so no need to compute it 
+        linkage='complete',  # 'complete' to assert the 'distance max' is kept within every cluster 
+        distance_threshold=epsilon  # 'distance max' threshold
+    )
+    # define distance matrix
+    df_distance = 1-abs(multi_ts).corr()
+
+    # Get labels
+    labels = clustering.fit_predict(df_distance.values)
+
+    return(labels)
+
+def reduce_dim_by_clustering(multi_ts,epsilon):
+    '''
+    args:
+    -----
+    multi_ts: DataFrame multi time-serie. 
+    epsilon: maximum accepted distance correlation as diameter within cluster (agglomerative clustering)
+    '''
+    labels = agg_clustering(multi_ts,epsilon = epsilon)
+    unique_labels = list(set(labels))
+    df_reduced = pd.DataFrame()
+    for label in unique_labels:
+        columns= [k for k,lab in enumerate(labels) if lab == label]
+        ts_rpz_label = multi_ts[columns].max(axis=1)
+        df_reduced[label] = ts_rpz_label
+
+    return(df_reduced)
+
