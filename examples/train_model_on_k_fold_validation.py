@@ -39,15 +39,7 @@ def load_configuration(trial_id,load_config,epochs):
 
     return args,dataset_names,vision_model_name,folds
 
-def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
-    '''
-    args:
-    ------
-    folds: list of folds (within [0,args.K-fold]) we would like to evaluate
-    hp_tuning_on_first_fold : if True, then we remove the fold 0, which has been used for HP-tuning
-    '''
-        
-    # Return a list of K-fold Dataset:
+def load_k_fold_dataset(args,vision_model_name,folds,hp_tuning_on_first_fold):
     K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
@@ -66,6 +58,19 @@ def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,tr
         subway_ds,_,_,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
         ds_validation.append(subway_ds)
         del subway_ds
+    return(ds_validation,args,dic_class2rpz)
+
+
+def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
+    '''
+    args:
+    ------
+    folds: list of folds (within [0,args.K-fold]) we would like to evaluate
+    hp_tuning_on_first_fold : if True, then we remove the fold 0, which has been used for HP-tuning
+    '''
+        
+    # Return a list of K-fold Dataset:
+    ds_validation,args,dic_class2rpz = load_k_fold_dataset(args,vision_model_name,folds,hp_tuning_on_first_fold)
 
     ## Train on the K-1 folds:
 

@@ -59,7 +59,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df.columns = df_correspondance.COD_TRG
 
 
-    if args.set_spatial_units is not None:
+    if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
         print('Considered Spatial-Unit: ',args.set_spatial_units)
         spatial_unit = args.set_spatial_units
         indices_spatial_unit = [list(df.columns).index(station_i) for station_i in  spatial_unit]
