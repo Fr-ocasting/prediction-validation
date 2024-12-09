@@ -47,13 +47,9 @@ def load_calendar(subway_ds):
 
 
 def tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding):
-    if 'calendar' in args.dataset_names:
-        args.time_embedding = True
-    else:
+    if not('calendar' in args.dataset_names):
         dic_class2rpz,dic_rpz2class,nb_words_embedding = None,None,None
-        args.time_embedding = False
         
     args_embedding = get_args_embedding(args,nb_words_embedding)
     args.args_embedding = args_embedding
-
     return args,dic_class2rpz,dic_rpz2class,nb_words_embedding

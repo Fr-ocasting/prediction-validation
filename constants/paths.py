@@ -21,9 +21,9 @@ else:
 
 SAVE_DIRECTORY = '../save/'
 ''' NetMob Parameters: '''
-SELECTED_APPS = ['Instagram','Google_Maps','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-TRANSFER_MODE = ['DL','UL'] # ['DL'] # ['UL'] #['DL','UL']
-SELECTED_TAGS = ['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+SELECTED_APPS = ['Instagram','Google_Maps'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+TRANSFER_MODE = ['DL'] # ['DL'] # ['UL'] #['DL','UL']
+SELECTED_TAGS = ['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
 EXPANDED =  '' # '' # '_expanded'
 EPSILON = 0.3  # Distance max for Agglomerative Cluster based on distance correlation 
 #

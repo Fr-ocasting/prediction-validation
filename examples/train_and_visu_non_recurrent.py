@@ -14,6 +14,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
     
 from examples.benchmark import local_get_args,get_trial_id,train_on_ds,keep_track_on_model_metrics
+from constants.config import update_modif
 import matplotlib.pyplot as plt 
 from K_fold_validation.K_fold_validation import KFoldSplitter
 
@@ -41,11 +42,19 @@ def update_args_train_visu(model_name,name_ds,dataset_names,vision_model_name,da
     if ds is None:
         ds = globals()[f"ds_{name_ds}"]
         args = globals()[f"args_{name_ds}"]  
-    args_bis,folds,hp_tuning_on_first_fold = local_get_args(model_name,
-                                                        args,
-                                                        dataset_names=dataset_names,
-                                                        dataset_for_coverage=dataset_for_coverage,
-                                                        modification = modification)
+
+    for key,value in modification.items():
+        setattr(args,key,value)
+
+    # update each modif
+    args_bis = update_modif(args)
+
+    #args_bis,folds,hp_tuning_on_first_fold = local_get_args(model_name,
+    #                                                    args,
+    #                                                    dataset_names=dataset_names,
+    #                                                    dataset_for_coverage=dataset_for_coverage,
+    #                                                    modification = modification)
+
     trial_id = get_trial_id(args_bis,vision_model_name=vision_model_name)
     trainer,df_loss = train_on_ds(model_name,ds,args_bis,trial_id,save_folder,dic_class2rpz,df_loss)
     metrics = trainer.metrics

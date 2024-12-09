@@ -37,14 +37,9 @@ def get_output_kernel_size(args):
     return(Ko)
 
 def get_block_dims(args,Ko):
-    blocks = []
-    blocks.append([1])
-    for l in range(args.stblock_num):
-        blocks.append([64, 16, 64])
-    if Ko == 0:
-        blocks.append([128])
-    elif Ko > 0:
-        blocks.append([128, 128])
+    blocks = args.blocks
+    if Ko > 0:
+        blocks[-1] = blocks[-1]*2
     blocks.append([args.out_dim])
     number_of_st_conv_blocks = len(blocks) - 3
     assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"

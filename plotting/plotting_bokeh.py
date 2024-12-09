@@ -38,7 +38,7 @@ def generate_bokeh(trainer,normalizer,df_verif_test,Q,args,trial_id = None,trial
     pi,pi_cqr,p1 = plot_prediction(trainer,normalizer,df_verif_test,Q,args,station)
     p2 = plot_loss(trainer)
     
-    if args.time_embedding:
+    if len(vars(getattr(args,'args_embedding')))>0:
         p3 = plot_latent_space(trainer,trainer.dataloader,args,trainer.dic_class2rpz[args.calendar_class],station)
     else:
         p3 = None

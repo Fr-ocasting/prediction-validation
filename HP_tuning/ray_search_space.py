@@ -36,7 +36,7 @@ def get_search_space_ray(args):
 
 
    # Tackle Embedding
-    if args.time_embedding:
+    if len(vars(getattr(args,'args_embedding')))>0:
         config_embedding = {#'calendar_class' : tune.choice([1,2,3]),
                         'embedding_dim' : tune.choice([3,4,8]),
                         'multi_embedding' : tune.choice([True,False]),

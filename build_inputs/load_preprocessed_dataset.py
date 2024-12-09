@@ -27,17 +27,12 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
 
     pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
     positions['calibration_calendar'] = pos_calibration_calendar
-
-    if not('calendar' in args.dataset_names):
-        args.time_embedding = False
-
     contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != DATA_TO_PREDICT]
 
     for dataset_name in contextual_dataset_names:
         if dataset_name == 'calendar':
             pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calendar_class}')
             positions['calendar'] = pos_calendar
-            args.time_embedding = True
             
         elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
              contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
@@ -84,10 +79,8 @@ def load_complete_ds(args,coverage_period = None,vision_model_name = None,normal
 
     # Calendar data for training (with Time-Embedding):
     args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
-
     # Netmob: 
     args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,vision_model_name,normalize = normalize)
-    
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 

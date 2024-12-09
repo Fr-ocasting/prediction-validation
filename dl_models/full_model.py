@@ -22,13 +22,6 @@ from dl_models.STGCN.STGCN import STGCN
 from dl_models.DCRNN.DCRNN import DCRNN
 from dl_models.TFT.TFT import TFT
 
-'''
-from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
-from dl_models.vision_models.simple_feature_extractor import FeatureExtractor_ResNetInspired,MinimalFeatureExtractor,FeatureExtractor_ResNetInspired_bis
-from dl_models.vision_models.AttentionFeatureExtractor import AttentionFeatureExtractor
-from dl_models.vision_models.FeatureExtractorEncoderDecoder import FeatureExtractorEncoderDecoder
-from dl_models.vision_models.VideoFeatureExtractorWithSpatialTemporalAttention import VideoFeatureExtractorWithSpatialTemporalAttention
-'''
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
 from constants.paths import DATA_TO_PREDICT
@@ -44,35 +37,6 @@ def load_vision_model(args_vision):
     func = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}").model
     filered_args = filter_args(func, args_vision)
     return func(**filered_args) 
-
-    '''
-    elif args_vision.model_name == 'MinimalFeatureExtractor':
-        filered_args = filter_args(MinimalFeatureExtractor, args_vision)
-        return MinimalFeatureExtractor(**filered_args)
-    
-    elif args_vision.model_name == 'FeatureExtractor_ResNetInspired':
-        filered_args = filter_args(FeatureExtractor_ResNetInspired, args_vision)
-        return FeatureExtractor_ResNetInspired(**filered_args)
-                                   
-    elif args_vision.model_name == 'FeatureExtractor_ResNetInspired_bis':
-        filered_args = filter_args(FeatureExtractor_ResNetInspired_bis, args_vision)
-        return FeatureExtractor_ResNetInspired_bis(**filered_args)
-
-    elif args_vision.model_name == 'AttentionFeatureExtractor':
-        filered_args = filter_args(AttentionFeatureExtractor, args_vision)
-        return AttentionFeatureExtractor(**filered_args)
-
-    elif args_vision.model_name == 'VideoFeatureExtractorWithSpatialTemporalAttention':
-        filered_args = filter_args(VideoFeatureExtractorWithSpatialTemporalAttention, args_vision)
-        return VideoFeatureExtractorWithSpatialTemporalAttention(**filered_args)
-
-    elif args_vision.model_name == 'FeatureExtractorEncoderDecoder':
-        filered_args = filter_args(FeatureExtractorEncoderDecoder, args_vision)
-        return FeatureExtractorEncoderDecoder(**filered_args)
-                                   
-    else:
-        NotImplementedError(f"Model {args_vision.model_name} has not been implemented")
-    '''
 
 
 class full_model(nn.Module):
@@ -96,7 +60,7 @@ class full_model(nn.Module):
         self.concatenation_late = args.concatenation_late
 
         # === TE ===
-        self.te = TE_module(args,args.args_embedding,dic_class2rpz) if args.time_embedding else None
+        self.te = TE_module(args,args.args_embedding,dic_class2rpz) if len(vars(getattr(args,'args_embedding')))>0 else None
 
         # === Trafic Model ===
         self.core_model = load_model(dataset, args)

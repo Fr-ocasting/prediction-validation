@@ -7,4 +7,7 @@ config = {#"Kt" : tune.choice([3]),  # [2,3,4]
         #"graph_conv_type" : tune.choice(['cheb_graph_conv','graph_conv']),
         #"gso_type" : tune.choice(['sym_norm_lap', 'rw_norm_lap', 'sym_renorm_adj', 'rw_renorm_adj']),
         #"adj_type" : tune.choice(['adj','corr','dist'])
+        'temporal_h_dim':tune.choice([8,16,32,64,128,256]),
+        'spatial_h_dim': tune.choice([8,16,32,64,128,256]),
+        'output_h_dim' : tune.choice([8,16,32,64,128,256]),
         }

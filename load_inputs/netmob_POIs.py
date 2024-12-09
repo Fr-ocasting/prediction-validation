@@ -62,7 +62,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
         data_station = reduce_dim_by_clustering(multi_ts,epsilon = EPSILON)
 
 
-        netmob_T = torch.Tensor(data_station)
+        netmob_T = torch.Tensor(data_station.values)
         # netmob_T.shape : [T,len(apps),len(osmid_associated),len(transfer_modes)]
         #netmob_T = netmob_T.permute(3,0,1,2)
         # netmob_T.shape : [T,len(apps)*len(osmid_associated)*len(transfer_modes)] = [T,R]
@@ -121,7 +121,7 @@ def agg_clustering(multi_ts,epsilon):
         distance_threshold=epsilon  # 'distance max' threshold
     )
     # define distance matrix
-    df_distance = 1-abs(multi_ts).corr()
+    df_distance = 1-abs(multi_ts.corr())
 
     # Get labels
     labels = clustering.fit_predict(df_distance.values)

@@ -18,10 +18,6 @@ import matplotlib.pyplot as plt
 def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
     # Load base args
     args = get_args(model_name,dataset_names,dataset_for_coverage)
-    print(args.n_vertex)
-
-    args.W = 0
-    args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
     args.ray = False
 
     #  evaluation on the first fold only :
@@ -41,7 +37,6 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
     if args_init is not None:
         args.args_vision = args_init.args_vision
         args.contextual_positions = args_init.contextual_positions
-        args.time_embedding = args_init.time_embedding
         args.vision_input_type = args_init.vision_input_type
     
 

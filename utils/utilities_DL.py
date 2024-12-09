@@ -30,7 +30,7 @@ from dl_models.full_model import full_model
 
 
 def get_args_embedding(args,nb_words_embedding):
-    if args.time_embedding:
+    if 'calendar' in args.dataset_names:
         config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
         args_embedding = convert_into_parameters(config_Tembed)
     else:
@@ -122,7 +122,7 @@ def load_model_and_optimizer(args,dic_class2rpz):
 
 def choose_optimizer(model,args):
     # Training and Calibration :
-    specific_lr = optimizer_specific_lr(model,args) if ((args.specific_lr) and (args.time_embedding)) else None
+    specific_lr = optimizer_specific_lr(model,args) if ((args.specific_lr) and (len(vars(args.args_embedding))>0)) else None
 
     if args.optimizer == 'adam':
         if specific_lr is not None: 
