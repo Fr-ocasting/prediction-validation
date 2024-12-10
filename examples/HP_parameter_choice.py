@@ -21,12 +21,12 @@ from HP_tuning.hyperparameter_tuning_ray import HP_tuning
 
 
 # === Train and Evaluate Model: 
-def hyperparameter_tuning(args,vision_model_name,num_samples):
+def hyperparameter_tuning(args,num_samples):
     # Load K-fold subway-ds 
     folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
 
     # Split in K-fold : 
-    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     # Train on the first fold: 
@@ -54,4 +54,4 @@ if __name__ == '__main__':
     # Choose DataSet and VisionModel if needed: 
     num_samples = 1000
     vision_model_name = None #'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
-    analysis,trial_id = hyperparameter_tuning(args,vision_model_name,num_samples)
+    analysis,trial_id = hyperparameter_tuning(args,num_samples)

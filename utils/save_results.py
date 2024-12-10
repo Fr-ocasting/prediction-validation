@@ -16,28 +16,20 @@ from datetime import datetime
 def get_date_id():
     return(f"{datetime.now().strftime('%Y_%m_%d_%H_%M')}_{random.randint(1,100000)}")
 
-def get_trial_id(args,fold = None):
-    if args.loss_function_type == 'quantile':
-        l = 0
-    elif args.loss_function_type == 'MSE':
-        l = 1
-    else:
-        raise NotImplementedError(f"{args.loss_function_type} not implemented")
 
-    t = 1 if args.time_embedding is True else 0
-    s = 1 if args.scheduler is True else 0
+def get_trial_id(args):
+    date_id = get_date_id()
+    dataset_names = '_'.join(args.dataset_names)
 
+    models_names = [args.model_name]
+    if hasattr(args.args_vision,'model_name'):
+        models_names.append(args.args_vision.model_name)
+    if len(vars(args.args_embedding))>0:
+        models_names.append('TE')       
+    model_names = '_'.join(models_names)
 
-    trial_id0 = get_date_id()
-
-    if fold is None:
-        trial_id1 = f"{trial_id0}_{args.model_name}_F{args.K_fold}f"
-        trial_id2 = f"_{args.batch_size}_{args.epochs}_{l}{t}{s}"
-        return(trial_id1,trial_id2)
-    
-    else : 
-        trial_id = f"{trial_id0}_{args.model_name}_F{args.K_fold}f{fold}_{args.batch_size}_{args.epochs}_{l}{t}{s}"
-        return(trial_id)
+    trial_id =  f"{dataset_names}_{model_names}_{args.loss_function_type}Loss_{date_id}_F{args.K_fold}"
+    return trial_id
 
 def load_json_file(save_dir):
     ''' Load Json-file containing ID of DeepLearning trial and all the usefull arguments'''

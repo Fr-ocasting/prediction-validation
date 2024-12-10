@@ -52,6 +52,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     id_stations = dataset.spatial_unit
     NetMob_ds = []
     for id_station in id_stations:
+        print('Spatial unit: ',id_station)
         # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
         data_station = load_data_npy(id_station,ROOT,FOLDER_PATH)
 

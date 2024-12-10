@@ -40,6 +40,7 @@ def get_search_alg(name,metric,mode,points_to_evaluate = None):
 def get_point_to_evaluate(args):
     confif_path = f"dl_models.{args.model_name}.load_config"
     default_config_model = importlib.import_module(confif_path)
+    importlib.reload(default_config_model)
     dic_args_model = vars(default_config_model.args)
     dic_args__HP_model = vars(default_config_model.args_HP)
     point_to_evaluate = [dic_args_model.update(dic_args__HP_model)]

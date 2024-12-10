@@ -17,7 +17,6 @@ from trainer import Trainer, report
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
-#from utils.utilities_DL import get_loss,load_model_and_optimizer
 from utils.save_results import get_date_id,load_json_file,update_json
 
 
@@ -56,10 +55,6 @@ def load_trainer(config, dataset, args, dic_class2rpz):
     - batch-size
     '''
     args = HP_modification(config,args)
-
-    #loss_function = get_loss(args)
-    #model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
-
     model = load_model(dataset, args,dic_class2rpz)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
 
@@ -179,7 +174,7 @@ if __name__ == '__main__':
     # In case we need to compute the Sliding K-fold validation:
     # folds = np.arange(1,args.K_fold)
 
-    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
+    K_fold_splitter = KFoldSplitter(args,folds)
     K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
 
     num_samples = 8

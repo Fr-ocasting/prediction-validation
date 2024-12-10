@@ -31,9 +31,6 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
     values_after = tensor[end:end+1]
 
     mean_values = (values_before + values_after) / 2
-    print('mean_values: ',mean_values.size())
-    print('tensor size: ',tensor[start:end,:].size())
-    print('mean_values repeated: ', mean_values.repeat(4,1).size())
     if tensor.dim() == 5:
         mean_values = mean_values.repeat(4,1,1,1,1)
         tensor[start:end,:,:,:,:] = mean_values
@@ -102,12 +99,14 @@ def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
         List_input_sizes = [NetMob_ds[k].U_train.size(2) for k in range(len(NetMob_ds)) ]
         List_nb_channels = [NetMob_ds[k].U_train.size(1) for k in range(len(NetMob_ds)) ]
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+        importlib.reload(script) 
         config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
     else: 
         C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
         H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+        importlib.reload(script) 
         config_vision = script.get_config(H,W,L)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
 
@@ -148,7 +147,7 @@ def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
     return args_vision
 
 
-def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,vision_model_name,normalize = True):
+def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize = True):
 
     # BOOLEAN VALUE : True IF NETMOB IS USED
     bool_netmob = (sum([True for d in args.dataset_names if 'netmob' in d])) > 0
@@ -159,8 +158,8 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,vision_mod
 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         print('vision_input_type', args.vision_input_type)
-        print('vision_model_name', vision_model_name)
-        args_vision = Namespace(**{'dataset_name': netmob_dataset_name, 'model_name':vision_model_name,'input_type':args.vision_input_type})
+        print('vision_model_name', args.vision_model_name)
+        args_vision = Namespace(**{'dataset_name': netmob_dataset_name, 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
         args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
         args.args_vision = args_vision
 

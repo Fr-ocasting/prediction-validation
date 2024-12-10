@@ -28,6 +28,7 @@ def get_search_space_ray(args):
     # Load Search Space associated to the Model: 
     module_path = f"dl_models.{args.model_name}.search_space"
     search_space_module = importlib.import_module(module_path)
+    importlib.reload(search_space_module)
     globals()[f"config_{args.model_name}"] = search_space_module.config
 
     # Update Config : 
@@ -48,6 +49,7 @@ def get_search_space_ray(args):
     if len(vars(args.args_vision)) > 0:
         module_path = f"dl_models.vision_models.{args.args_vision.model_name}.search_space"
         search_space_module = importlib.import_module(module_path)
+        importlib.reload(search_space_module)
         config_vision = search_space_module.config  
 
         keys = list(config_vision.keys())

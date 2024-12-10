@@ -42,7 +42,7 @@ if False:
                                                                 dataset_names=dataset_names,
                                                                 dataset_for_coverage=dataset_for_coverage,
                                                                 modification = modification)
-        trial_id = get_trial_id(args,vision_model_name=vision_model_name)
+        trial_id = get_trial_id(args)
         K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,vision_model_name,folds)
         ds = K_subway_ds[0]
         return(ds,args,trial_id,save_folder,dic_class2rpz,df_loss)

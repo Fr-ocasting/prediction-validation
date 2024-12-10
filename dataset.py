@@ -395,7 +395,6 @@ class DataSet(object):
 
         elif train_valid_test_split_method == 'similar_length_method':
             split_limits= train_valid_test_split.similar_length_method(self,self.df_verif,train_prop,valid_prop,test_prop)
-            print(f'>>>> Train/Valid/Test split method : {train_valid_test_split_method}')
 
         else:
             raise NotImplementedError(f'Train/Valid/Test split method {train_valid_test_split_method} has not been implemented')
@@ -488,15 +487,22 @@ class DataSet(object):
             setattr(self,f"{name}_test", test_tensor_ds.tensor)
 
     def display_info_on_inputs(self):
-        print('\nU size: ',self.U.size(),'Utarget size: ',self.Utarget.size())
-        print('U_train size: ',self.U_train.size(),'Utarget_train size: ',self.Utarget_train.size())
-        if hasattr(self,'U_valid'): print('U_valid size: ',self.U_valid.size(),'Utarget_valid size: ',self.Utarget_valid.size()) 
-        if hasattr(self,'U_test'): print('U_test size: ', self.U_test.size(),'Utarget_test size: ',self.Utarget_test.size())
+        str_to_display = ''
+        str_to_display = f"{str_to_display}U/Utarget size: {self.U.size()}/{self.Utarget.size()}"
+        str_to_display = f"{str_to_display} Train"
+        if hasattr(self,'U_valid'):
+            str_to_display = f"{str_to_display}/Valid"
+        if hasattr(self,'U_test'):
+            str_to_display = f"{str_to_display}/Test"
 
-        print('U_train min: ',self.U_train.min(), 'U_train max: ',self.Utarget_train.max())
-        if hasattr(self,'U_valid'): print('U_valid min: ',self.U_valid.min(),'U_valid max: ',self.Utarget_valid.max())
-        if hasattr(self,'U_test'): print('U_test min: ',self.U_test.min(),'U_test max: ',self.Utarget_test.max())
+        str_to_display = f"{str_to_display} {self.U_train.size(0)}"
 
+        if hasattr(self,'U_valid'):
+            str_to_display = f"{str_to_display} {self.U_valid.size(0)}"
+        if hasattr(self,'U_test'):
+            str_to_display = f"{str_to_display} {self.U_test.size(0)}"
+        print(str_to_display)
+        
     def split_tensors(self,normalize):
         ''' Split input tensors  in Train/Valid/Test part '''
         self.normalizer = Normalizer(reference = self.train_input,minmaxnorm = self.minmaxnorm, standardize = self.standardize, dims = self.dims) if normalize else None

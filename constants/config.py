@@ -6,6 +6,7 @@ import importlib
 from argparse import Namespace
 import sys 
 import os 
+import gc
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -17,8 +18,12 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['model_name'] = model_name
     config['dataset_names'] = dataset_names
     config['dataset_for_coverage'] = dataset_for_coverage
-    config['n_vertex'] =  importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}").n_vertex
-    config['C'] =  importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}").C
+
+    data_module = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
+    importlib.reload(data_module)
+    config['n_vertex'] = data_module.n_vertex
+    config['C'] =  data_module.C
+    
     # === Common config for everyone: ===
     config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
@@ -120,6 +125,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     #if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
     #if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
     #'''
+    config['vision_model_name'] =  None  # -> Define the type of model used to extract contextual information from NetMob
     config['vision_input_type'] =  None  # 'image_per_stations' # 'unique_image_through_lyon'  
 
     return(config)
@@ -152,12 +158,14 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
     # Load Config associated to the Model: 
     module_path = f"dl_models.{args.model_name}.load_config"
     module = importlib.import_module(module_path)
-    globals()[f"args_{args.model_name}"] = module.args
-    globals()[f"args_HP_{args.model_name}"] = module.args_HP 
+    importlib.reload(module)
+    locals()[f"args_{args.model_name}"] = module.args
+    locals()[f"args_HP_{args.model_name}"] = module.args_HP 
 
     # Merge Args: 
-    args = Namespace(**{**vars(args),**vars(globals()[f"args_{args.model_name}"]),**vars(globals()[f"args_HP_{args.model_name}"])})
+    args = Namespace(**{**vars(args),**vars(locals()[f"args_{args.model_name}"]),**vars(locals()[f"args_HP_{args.model_name}"])})
 
+    
     return(args)
 
 def convert_into_parameters(config):

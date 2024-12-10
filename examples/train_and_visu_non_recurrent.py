@@ -37,8 +37,8 @@ def visualisation(trainer,ds,training_mode = 'test',station = ['CHA']):
     output_notebook()
     show(grid)
 
-def update_args_train_visu(model_name,name_ds,dataset_names,vision_model_name,dataset_for_coverage,modification,dic_class2rpz,df_loss,df_results,save_folder,station = ['CHA'],ds=None,args = None):
-    print(f'\n>>>>Training {model_name} on {dataset_names}')
+def update_args_train_visu(name_ds,modification,dic_class2rpz,df_loss,df_results,save_folder,station = ['CHA'],ds=None,args = None):
+    print(f'\n>>>>Training {args.model_name} on {args.dataset_names}')
     if ds is None:
         ds = globals()[f"ds_{name_ds}"]
         args = globals()[f"args_{name_ds}"]  
@@ -49,30 +49,25 @@ def update_args_train_visu(model_name,name_ds,dataset_names,vision_model_name,da
     # update each modif
     args_bis = update_modif(args)
 
-    #args_bis,folds,hp_tuning_on_first_fold = local_get_args(model_name,
-    #                                                    args,
-    #                                                    dataset_names=dataset_names,
-    #                                                    dataset_for_coverage=dataset_for_coverage,
-    #                                                    modification = modification)
 
-    trial_id = get_trial_id(args_bis,vision_model_name=vision_model_name)
-    trainer,df_loss = train_on_ds(model_name,ds,args_bis,trial_id,save_folder,dic_class2rpz,df_loss)
+    trial_id = get_trial_id(args_bis,vision_model_name=args.args_vision.vision_model_name if hasattr(args.args_vision,'vision_model_name') else None)
+    trainer,df_loss = train_on_ds(ds,args_bis,trial_id,save_folder,dic_class2rpz,df_loss)
     metrics = trainer.metrics
-    df_results = keep_track_on_model_metrics(trainer,df_results,model_name,trainer,metrics)
+    df_results = keep_track_on_model_metrics(trainer,df_results,args.model_name,trainer,metrics)
     visualisation(trainer,ds,training_mode = 'test',station = station)
     return trainer,df_results
 
-def load_all(model_name,args,dataset_for_coverage,modification,vision_model_name,save_folder,station='CHA'):
+def load_all(args,dataset_for_coverage,modification,save_folder,station='CHA'):
     # Load DS: 
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
 
     # Load complete ds, no K-fold:
-    K_fold_splitter = KFoldSplitter(args,vision_model_name,np.array([0]))
+    K_fold_splitter = KFoldSplitter(args,
+                                    folds = np.array([0]))
     ds,_,_,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
 
     # Analyses : 
-    trainer,df_results = update_args_train_visu(model_name,None,
-                                                args.dataset_names,vision_model_name,
+    trainer,df_results = update_args_train_visu(None,
                                                 dataset_for_coverage,modification,
                                                 dic_class2rpz,df_loss,
                                                 df_results,save_folder,station,

@@ -29,18 +29,17 @@ def load_configuration(trial_id,load_config,epochs):
         #Change/Set epochs: 
         if epochs is not None:
             args.epochs = epochs
-        dataset_names = args.dataset_names 
-        vision_model_name = args.args_vision.model_name if len(vars(args.args_vision))>0 else None
         folds = list(np.arange(args.K_fold))
 
     # If new config : 
     else:
-        from examples.load_random_config import args,dataset_names,vision_model_name,folds
+        from examples.load_random_config import args,folds
 
-    return args,dataset_names,vision_model_name,folds
+    return args,folds
 
-def load_k_fold_dataset(args,vision_model_name,folds,hp_tuning_on_first_fold):
-    K_fold_splitter = KFoldSplitter(args,vision_model_name,folds)
+def load_k_fold_dataset(args,folds,hp_tuning_on_first_fold):
+    K_fold_splitter = KFoldSplitter(args,
+                                    folds=folds)
     K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
 
     # Keep the first fold or not : 
@@ -61,7 +60,7 @@ def load_k_fold_dataset(args,vision_model_name,folds,hp_tuning_on_first_fold):
     return(ds_validation,args,dic_class2rpz)
 
 
-def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder):
+def train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder):
     '''
     args:
     ------
@@ -70,7 +69,7 @@ def train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,tr
     '''
         
     # Return a list of K-fold Dataset:
-    ds_validation,args,dic_class2rpz = load_k_fold_dataset(args,vision_model_name,folds,hp_tuning_on_first_fold)
+    ds_validation,args,dic_class2rpz = load_k_fold_dataset(args,folds,hp_tuning_on_first_fold)
 
     ## Train on the K-1 folds:
 
@@ -146,10 +145,10 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     5. Save them.
     '''
     # 1. Load the best config according to our HP-Tuning / Or Load random config :
-    args,dataset_names,vision_model_name,folds = load_configuration(trial_id,load_config,epochs)
+    args,folds = load_configuration(trial_id,load_config,epochs)
 
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,vision_model_name,folds,hp_tuning_on_first_fold,trial_id,save_folder)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder)
     # 5.
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
 

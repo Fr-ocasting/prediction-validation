@@ -43,7 +43,14 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     invalid_dates : All the dates which have been removed 
     '''
     # Load the Intersection of all the coverage period of each dataset_name:
-    list_of_list_coverage_period = [importlib.import_module(f"load_inputs.{ds_name}").COVERAGE for ds_name in args.dataset_for_coverage]
+    list_of_list_coverage_period,list_of_list_invalid_dates = [],[]
+    for ds_name in args.dataset_for_coverage:
+        data_module = importlib.import_module(f"load_inputs.{ds_name}")
+        importlib.reload(data_module) 
+        list_of_list_coverage_period.append(data_module.COVERAGE)
+        list_of_list_invalid_dates.append(data_module.INVALID_DATES)
+    
+
     intesect_coverage_period = list(set.intersection(*map(set, list_of_list_coverage_period)))
     # ___Intersection between the expected coverage_period 
     if coverage_period is not None: 
@@ -51,8 +58,6 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     # ...
        
     # Load the union of all the invalid_dates: 
-    
-    list_of_list_invalid_dates = [importlib.import_module(f"load_inputs.{ds_name}").INVALID_DATES for ds_name in args.dataset_for_coverage]
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
     # ___Restrain the invalid dates to the specific restained coverage period :
     union_invalid_dates = list(set(union_invalid_dates)&set(intesect_coverage_period))
@@ -61,6 +66,7 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
 
     # Load the dataset and its associated caracteristics
     module_data = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
+    importlib.reload(module_data) 
     #args.n_vertex = module_data.n_vertex
     #args.C = module_data.C
     dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intesect_coverage_period)

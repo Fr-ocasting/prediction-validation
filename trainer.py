@@ -24,14 +24,14 @@ except :
     print('Training and Hyper-parameter tuning with Ray is not possible')
 
 from profiler.profiler import print_memory_usage,get_cpu_usage
-from utils.save_results import results2dict, update_results_df, save_best_model_and_update_json, get_trial_id
+from utils.save_results import results2dict, update_results_df, save_best_model_and_update_json,get_trial_id
 from utils.metrics import evaluate_metrics
 from PI.PI_object import PI_object
 from PI.PI_calibration import Calibrator
 from constants.paths import SAVE_DIRECTORY
 
 
-
+'''
 class MultiModelTrainer(object):
     def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,dic_class2rpz,show_figure = True):
         super(MultiModelTrainer).__init__()
@@ -96,7 +96,7 @@ class MultiModelTrainer(object):
         # ...
 
         return(results_by_fold,mean_picp,mean_mpiw,dict_last,dict_scores)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
-
+'''
 
     
 
@@ -149,17 +149,11 @@ class Trainer(object):
         self.calib_loss =[]
         self.show_figure = show_figure
 
-        if trial_id is None:
-            if fold is None: 
-                trial_id1,trial_id2 = get_trial_id(args,fold)
-                self.trial_id = f"{trial_id1}{-1}{trial_id2}"
-            else:
-                self.trial_id = get_trial_id(args,fold)
+        self.trial_id = get_trial_id(args) 
+        if fold is not None: 
+            self.trial_id = f"{self.trial_id}_f{fold}"
         else:
-            if fold is None:
-                self.trial_id = f"f-1_{trial_id}"
-            else:
-                self.trial_id = f"f{fold}_{trial_id}"
+            self.trial_id = f"{self.trial_id}_f{-1}"
 
         if fold is not None:
             self.args.current_fold = fold

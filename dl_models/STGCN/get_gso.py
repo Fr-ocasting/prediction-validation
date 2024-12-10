@@ -37,13 +37,13 @@ def get_output_kernel_size(args):
     return(Ko)
 
 def get_block_dims(args,Ko):
-    blocks = args.blocks
+    blocks = args.blocks.copy()
     if Ko > 0:
         blocks[-1] = blocks[-1]*2
     blocks.append([args.out_dim])
     number_of_st_conv_blocks = len(blocks) - 3
-    assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
 
+    assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
     return(blocks)
 
 def get_gso_from_adj(dataset, args):

@@ -36,37 +36,45 @@ if __name__ == '__main__':
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
     if False:
-        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']],['VariableSelectionNetwork']):
-            args,_,_ = local_get_args(model_name,
-                                    args_init = None,
-                                    dataset_names=dataset_names,
-                                    dataset_for_coverage=dataset_for_coverage,
-                                    modification = {'ray':True,
-                                                    'grace_period':1,
-                                                    'HP_max_epochs':1,
-                                                    'evaluate_complete_ds' : True
-                                                    })
-
-            # Init 
-            epochs_validation = 1
-            num_samples = 1
-
-            # HP and evaluate K-fold best config
-            HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)
-    if True:
-        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs'],['netmob_POIs'],['subway_in']],['VariableSelectionNetwork','VariableSelectionNetwork',None]):
+        for dataset_names,vision_model_name,concatenation_late in zip([['subway_in','netmob_POIs'],['subway_in','netmob_POIs'],['subway_in'],['subway_in','calendar'],['subway_in','netmob_POIs','calendar']],
+                                                   ['VariableSelectionNetwork','VariableSelectionNetwork',None,None,'VariableSelectionNetwork'],
+                                                   [False,True,False,False,False]
+                                                   ):
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,
                                     dataset_for_coverage=dataset_for_coverage,
                                     modification = {'ray':True,
                                                     'grace_period':2,
-                                                    'HP_max_epochs':30,
-                                                     'evaluate_complete_ds' : True})
+                                                    'HP_max_epochs':50,
+                                                    'evaluate_complete_ds' : True,
+                                                    'concatenation_late' : concatenation_late,
+                                                    })
 
             # Init 
-            epochs_validation = 30
-            num_samples = 200
+            epochs_validation = 50
+            num_samples = 400
+
+            # HP and evaluate K-fold best config
+            HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)
+    if True:
+        for dataset_names,vision_model_name in zip([['subway_in'],['subway_in','netmob_POIs','calendar']],
+                                                   [None,'VariableSelectionNetwork']):
+            args,_,_ = local_get_args(model_name,
+                                    args_init = None,
+                                    dataset_names=dataset_names,
+                                    dataset_for_coverage=dataset_for_coverage,
+                                    modification = {'ray':True,
+                                                    'grace_period':2,
+                                                    'HP_max_epochs':10,
+                                                    'evaluate_complete_ds' : True,
+                                                    'set_spatial_units' : ['BON','SOI','GER','CHA']
+                                                   }
+                                     )
+
+            # Init 
+            epochs_validation = 10
+            num_samples = 10
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,vision_model_name,num_samples)

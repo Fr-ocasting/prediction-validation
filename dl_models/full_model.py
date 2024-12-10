@@ -34,7 +34,9 @@ def filter_args(func, args):
     return filered_args
 
 def load_vision_model(args_vision):
-    func = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}").model
+    script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}")
+    importlib.reload(script)
+    func = script.model
     filered_args = filter_args(func, args_vision)
     return func(**filered_args) 
 

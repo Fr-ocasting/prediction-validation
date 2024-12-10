@@ -18,11 +18,10 @@ from load_inputs.subway_in import get_trigram_correspondance
 #LIST_COD_TRG = list(get_trigram_correspondance().COD_TRG)
 
 class KFoldSplitter(object):
-    def __init__(self,args,vision_model_name,folds):
+    def __init__(self,args,folds):
         super(KFoldSplitter,self).__init__()
         self.args = args
         self.FOLDER_PATH = FOLDER_PATH
-        self.vision_model_name = vision_model_name
         self.folds = folds
 
     def add_df_verif_test(self,subway_ds_tmps,subway_ds):
@@ -70,7 +69,6 @@ class KFoldSplitter(object):
     
     def load_init_ds(self,normalize = False):
         subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.args,
-                                                                  vision_model_name = self.vision_model_name,
                                                                   normalize = normalize)
         
         return(subway_ds,NetMob_ds,args,dic_class2rpz)
@@ -126,7 +124,8 @@ class KFoldSplitter(object):
         # Découpe la dataframe en K_fold 
         for k in self.folds:
             # Slicing 
-            print(f'\nFold n°{k}')
+            print(f'----------------------------------------')
+            print(f'Fold n°{k}')
             if args.validation == 'sliding_window':
                 #if (args.train_valid_test_split_method == 'similar_length_method'):
                 start_coverage = int(k*fold_length*valid_prop_tmps)
@@ -137,24 +136,9 @@ class KFoldSplitter(object):
                     coverage_tmps = coverage_without_test[(coverage_without_test>coverage_without_test.iloc[start_coverage]) &
                                                         (coverage_without_test<coverage_without_test.iloc[start_coverage+fold_length])
                                                         ]   
-                '''
-                else:
-                    width_dataset = int(n/(1+(args.K_fold-1)*valid_prop_tmps))   # Stay constant. W = N/(1 + (K-1)*Pv/(Pv+Pt))
-                    l_lim_pos = int(k*valid_prop_tmps*width_dataset)    # Shifting of (valid_prop/train_prop)% of the width of the window, at each iteration 
-                    if k == args.K_fold - 1:
-                        u_lim_pos = n
-                    else:
-                        u_lim_pos = l_lim_pos + width_dataset
-                    
-                    # Get df_tmps and coverage_tmps:
-                    coverage_tmps = coverage_without_test[l_lim_pos:u_lim_pos] 
-                    #time_slot_limits = np.arange(l_lim_pos,u_lim_pos)
-                '''
-
 
             subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(args,
                                                                  coverage_period=coverage_tmps,
-                                                                 vision_model_name = self.vision_model_name, 
                                                                  normalize = True)  # Normalize
 
             # Tackle U_test and Utarget_test (normalize U_test with normalizer from subway_ds_TMPS):

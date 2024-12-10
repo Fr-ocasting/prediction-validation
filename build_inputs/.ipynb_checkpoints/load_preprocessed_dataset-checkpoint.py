@@ -70,7 +70,7 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
 
 
 
-def load_complete_ds(args,coverage_period = None,normalize = True):
+def load_complete_ds(args,coverage_period = None,vision_model_name = None,normalize = True):
     # Load subway-in DataSet:
     subway_ds,dataset,invalid_dates,intesect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
 
@@ -80,7 +80,7 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     # Calendar data for training (with Time-Embedding):
     args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     # Netmob: 
-    args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize = normalize)
+    args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,vision_model_name,normalize = normalize)
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
