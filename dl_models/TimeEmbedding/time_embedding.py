@@ -87,14 +87,15 @@ class TimeEmbedding(nn.Module):
     
 
 class TE_module(nn.Module):
-    def __init__(self,args,args_embedding,dic_class2rpz):
+    def __init__(self,args):
         super(TE_module, self).__init__()
+        args_embedding =  args.args_embedding
 
         # size of mapping_tensor = number of class * 3.   3 = tuple size (weekday,hour,minute)
-        mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(dic_class2rpz[args.calendar_class].items())]).to(args.device)
+        mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(args_embedding.dic_class2rpz[args_embedding.calendar_class].items())]).to(args.device)
 
-        self.multi_embedding = args.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args.type_calendar,mapping_tensor,calendar_class = args.calendar_class, n_embedding= args.n_vertex if self.multi_embedding else 1)
+        self.multi_embedding = args_embedding.multi_embedding
+        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args_embedding.type_calendar,mapping_tensor,calendar_class = args_embedding.calendar_class, n_embedding= args.n_vertex if self.multi_embedding else 1)
         self.Tembedding_position = args_embedding.position
         self.N_repeat = 1 if self.multi_embedding else args.n_vertex
         self.C = args.C

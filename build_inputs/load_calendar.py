@@ -8,19 +8,19 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 # ...
 
-
+import argparse 
+import  importlib
 from dataset import TrainValidTest_Split_Normalize
 from calendar_class import get_time_slots_labels
-from utils.utilities_DL import get_args_embedding
 
 def load_calendar(subway_ds):
     '''Tackling Calendar Data''' 
-    time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding = get_time_slots_labels(subway_ds)
+    Dic_T_labels,Dic_class2rpz,Dic_rpz2class,Dic_nb_words_embedding = get_time_slots_labels(subway_ds)
     tensor_limits_keeper = subway_ds.tensor_limits_keeper
 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = {},{},{}
     for calendar_class in [0,1,2,3]:
-        calendar_tensor = time_slots_labels[calendar_class] #args.calendar_class
+        calendar_tensor = Dic_T_labels[calendar_class] #args.calendar_class
 
         splitter = TrainValidTest_Split_Normalize(calendar_tensor,
                                     first_train = tensor_limits_keeper.first_train_U, last_train= tensor_limits_keeper.last_train_U,
@@ -42,14 +42,32 @@ def load_calendar(subway_ds):
         dict_calendar_U_train[calendar_class] = calendar_U_train
         dict_calendar_U_valid[calendar_class] = calendar_U_valid
         dict_calendar_U_test[calendar_class] = calendar_U_test
-    return(dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+    return(dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,Dic_class2rpz,Dic_rpz2class,Dic_nb_words_embedding)
 
+def get_args_embedding(args,nb_words_embedding,dic_class2rpz):
+    if 'calendar' in args.dataset_names:
+        module_path = f"dl_models.TimeEmbedding.load_config"
+        module = importlib.import_module(module_path)
+        importlib.reload(module)
+        args_embedding = module.args
+        args_embedding.nb_words_embedding = nb_words_embedding
+        args_embedding.dic_class2rpz = dic_class2rpz
+    else:
+        args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
 
+    args.args_embedding = args_embedding
+
+    return(args)
 
 def tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding):
     if not('calendar' in args.dataset_names):
         dic_class2rpz,dic_rpz2class,nb_words_embedding = None,None,None
         
-    args_embedding = get_args_embedding(args,nb_words_embedding)
-    args.args_embedding = args_embedding
-    return args,dic_class2rpz,dic_rpz2class,nb_words_embedding
+    args = get_args_embedding(args,nb_words_embedding,dic_class2rpz)
+
+    args.dic_class2rpz = dic_class2rpz
+    args.dic_rpz2class = dic_rpz2class
+    args.nb_words_embedding = nb_words_embedding
+
+
+    return args

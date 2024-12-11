@@ -73,15 +73,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['calibration_calendar_class'] = 0  # Calibrates data by defined calendar-class 
     config['type_calib'] = 'classic'  # Calibration after quantile regression. If 'classic' then no calibration. If 'CQR' then CQR calibration
 
-    # Config Time Embedding: 
-    config['position'] = 'input'  # Position of time_embedding module : before or after the core model
-    config['type_calendar'] = 'tuple' # unique_long_embedding : embedding for a single long vector. tuple:  embedding of each element of the tuple
-    config['calendar_class'] = 3
-    config['specific_lr'] = False  #True, False
-    config['embedding_dim'] = 3
-    config['multi_embedding'] = False
-    config['TE_transfer'] = False
-
     # Config DataSet:
     config['H'] = 6
     config['W'] = 0
@@ -207,12 +198,3 @@ def update_modif(args,name_gpu='cuda'):
     print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
     print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     return(args)
-
-def get_config_embed(nb_words_embedding,embedding_dim,position):
-    '''
-    args
-    -----
-    nb_words_embedding : represent the number of expected class from tuple (weekday,hour,minute) 
-    '''
-    config_Tembed = dict(nb_words_embedding= nb_words_embedding,embedding_dim = embedding_dim, position=position)
-    return(config_Tembed)

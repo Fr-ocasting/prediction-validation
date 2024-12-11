@@ -22,20 +22,12 @@ if ROOT not in sys.path:
 # ...
 
 # Personnal import: 
-from constants.config import optimizer_specific_lr, get_config_embed, convert_into_parameters
+from constants.config import optimizer_specific_lr, convert_into_parameters
 from DL_class import QuantileLoss
 from dataset import  DataSet
 from TE_transfer_learning import TE_transfer
 from dl_models.full_model import full_model
 
-
-def get_args_embedding(args,nb_words_embedding):
-    if 'calendar' in args.dataset_names:
-        config_Tembed = get_config_embed(nb_words_embedding,embedding_dim = args.embedding_dim,position = args.position)
-        args_embedding = convert_into_parameters(config_Tembed)
-    else:
-        args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
-    return(args_embedding)
 
 
 def get_associated__df_verif_index(dataset,date,iloc):
@@ -122,7 +114,13 @@ def load_model_and_optimizer(args,dic_class2rpz):
 
 def choose_optimizer(model,args):
     # Training and Calibration :
-    specific_lr = optimizer_specific_lr(model,args) if ((args.specific_lr) and (len(vars(args.args_embedding))>0)) else None
+    
+    # Specific LR for TimeEmbedding : 
+    args_embedding = args.args_embedding
+    if (len(vars(args_embedding)) and (args_embedding.specific_lr))>0: 
+        specific_lr = optimizer_specific_lr(model,args)
+    else:
+        specific_lr = None
 
     if args.optimizer == 'adam':
         if specific_lr is not None: 
@@ -167,24 +165,6 @@ def load_init_trainer(args):
     dataset,invalid_dates = get_DataSet_and_invalid_dates(args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
     (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
     return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
-
-def get_MultiModel_loss_args_emb_opts(args,nb_words_embedding,dic_class2rpz,n_vertex = None):
-    args.n_vertex = n_vertex
-    loss_function = get_loss(args)
-    args_embedding = get_args_embedding(args,nb_words_embedding)
-
-    model_opt_sched_list = [load_model_and_optimizer(args,dic_class2rpz) for _ in range(args.K_fold)]
-    Model_list = [model_opt[0] for model_opt in model_opt_sched_list]
-    if args.TE_transfer:
-        if os.path.exists(f'{args.abs_path}data/Trained_Time_Embedding{args.embedding_dim}.pkl'):
-            Model_list = [TE_transfer(model,n_vertex,args,model_dir = 'data/') for model in Model_list]
-        else:
-            print('TE impossible')
-                                      
-        
-    Optimizer_list = [model_opt[1] for model_opt in model_opt_sched_list]
-    Scheduler_list = [model_opt[2] for model_opt in model_opt_sched_list]
-    return(loss_function,Model_list,Optimizer_list,Scheduler_list,args_embedding)
 
 def forward_and_display_info(model,inputs):
     nb_total_param = sum(p.numel() for p in model.parameters() if p.requires_grad)

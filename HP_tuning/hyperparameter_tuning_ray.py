@@ -44,6 +44,8 @@ def HP_modification(config,args):
                 # Cas Particulier, devrait être gérer mieux, avec une implémentation générale
                 if key == 'grn_out_dim':
                     setattr(args.args_vision,'out_dim',value)
+            elif 'TE_' in key:
+                key = key.replace('TE_', '')
             else: 
                 raise ValueError(f"Key {key} issue")
     return(args)

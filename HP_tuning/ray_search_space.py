@@ -34,16 +34,20 @@ def get_search_space_ray(args):
     # Update Config : 
     config.update(globals()[f"config_{args.model_name}"])
 
-
-
    # Tackle Embedding
-    if len(vars(getattr(args,'args_embedding')))>0:
-        config_embedding = {#'calendar_class' : tune.choice([1,2,3]),
-                        'embedding_dim' : tune.choice([3,4,8]),
-                        'multi_embedding' : tune.choice([True,False]),
-                        #'TE_transfer' : tune.choice([True,False]),
-                        }
-        config.update(config_embedding)
+    if len(vars(args.args_embedding))>0:
+        module_path = f"dl_models.TimeEmbedding.search_space"
+        search_space_module = importlib.import_module(module_path)
+        importlib.reload(search_space_module)
+        config_TE= search_space_module.config  
+
+        keys = list(config_TE.keys())
+        # Add specific 'TE' argument for time embedding
+        for key in keys:
+            config_TE[f"TE_{key}"] = config_TE[key]
+            config_TE.pop(key) 
+
+        config.update(config_TE)
 
     # Tackle Vision Models
     if len(vars(args.args_vision)) > 0:
@@ -58,42 +62,5 @@ def get_search_space_ray(args):
             config_vision.pop(key) 
 
         config.update(config_vision)
-        '''
-        # ImageAvgPooling
-        if args.args_vision.model_name == 'ImageAvgPooling':
-            config_vision = {}  # No possible HP Tuning
- 
-        elif args.args_vision.model_name == 'FeatureExtractor_ResNetInspired':
-            config_vision = {'vision_h_dim': tune.choice([8,16,32,64])} #,64,128,256
-
-        elif args.args_vision.model_name == 'FeatureExtractorEncoderDecoder':  # (c_in=3, z_dim=64, N=40)
-            config_vision = {'vision_out_dim': tune.choice([8,16,32,64,128])
-                             }
-
-        elif args.args_vision.model_name == 'AttentionFeatureExtractor': # (c_in=3, z_dim=64, N=40)
-            config_vision = {'vision_out_dim': tune.choice([8,16,32,64,128])
-                             }
-
-        elif args.args_vision.model_name == 'FeatureExtractor_ResNetInspired_bis':
-            config_vision = {'vision_out_dim': tune.choice([8,16,32,64,128])
-                             }
-
-        elif args.args_vision.model_name == 'VideoFeatureExtractorWithSpatialTemporalAttention': # (c_in=3, out_dim=64, N=40, d_model=128))
-            config_vision = {'vision_out_dim': tune.choice([8,16,32,64,128]),
-                             'vision_d_model': tune.choice([8,16,32,64]),
-                             } 
-             
-        # MinimalFeatureExtractor  
-        elif args.args_vision.model_name == 'MinimalFeatureExtractor':
-            config_vision = {'vision_h_dim': tune.choice([8,16,32,64]) #,64,128,256
-                             } 
-        else:
-            raise NotImplementedError(f"Model {args.args_vision.model_name} has not been implemented for HP Tuning")
-        '''
-        
-        
-
-
-
 
     return(config)    

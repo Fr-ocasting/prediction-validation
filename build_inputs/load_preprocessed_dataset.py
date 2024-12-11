@@ -31,7 +31,7 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
 
     for dataset_name in contextual_dataset_names:
         if dataset_name == 'calendar':
-            pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calendar_class}')
+            pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.args_embedding.calendar_class}')
             positions['calendar'] = pos_calendar
             
         elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
@@ -78,7 +78,7 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
 
     # Calendar data for training (with Time-Embedding):
-    args,dic_class2rpz,dic_rpz2class,nb_words_embedding = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+    args = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
     # Netmob: 
     args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize = normalize)
     # Add Contextual Tensors and their positions: 
@@ -86,4 +86,4 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
 
     # Update/Set arguments: 
     assert subway_ds.U_train.dim() == 3, f'Feature Vector does not have the good dimension. Expected shape dimension [B,N,L], got {subway_ds.U_train.dim()} dim: {subway_ds.U_train.size()}'
-    return(subway_ds,NetMob_ds,args,dic_class2rpz)
+    return(subway_ds,NetMob_ds,args,args.dic_class2rpz)

@@ -62,7 +62,7 @@ class full_model(nn.Module):
         self.concatenation_late = args.concatenation_late
 
         # === TE ===
-        self.te = TE_module(args,args.args_embedding,dic_class2rpz) if len(vars(getattr(args,'args_embedding')))>0 else None
+        self.te = TE_module(args) if len(vars(getattr(args,'args_embedding')))>0 else None
 
         # === Trafic Model ===
         self.core_model = load_model(dataset, args)
