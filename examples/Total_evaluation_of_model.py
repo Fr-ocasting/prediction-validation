@@ -36,9 +36,9 @@ if __name__ == '__main__':
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
     if False:
-        for dataset_names,vision_model_name,concatenation_late in zip([['subway_in','netmob_POIs'],['subway_in','netmob_POIs'],['subway_in'],['subway_in','calendar'],['subway_in','netmob_POIs','calendar']],
+        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs'],['subway_in','netmob_POIs'],['subway_in'],['subway_in','calendar'],['subway_in','netmob_POIs','calendar']],
                                                    ['VariableSelectionNetwork','VariableSelectionNetwork',None,None,'VariableSelectionNetwork'],
-                                                   [False,True,False,False,False]
+                                                   # [False,True,False,False,False] concatenation late plus possible 
                                                    ):
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
@@ -48,7 +48,7 @@ if __name__ == '__main__':
                                                     'grace_period':2,
                                                     'HP_max_epochs':50,
                                                     'evaluate_complete_ds' : True,
-                                                    'concatenation_late' : concatenation_late,
+                                                    # 'concatenation_late' : concatenation_late, PLUS POSSIBLE
                                                     'vision_model_name': vision_model_name
                                                     })
 

@@ -22,5 +22,13 @@ parser.add_argument('--type_calendar', type=str, default='tuple', choices=['tupl
 parser.add_argument('--specific_lr', type=bool, default=False, choices=[True,False],
                     help='If True then design a specific lr (more significant) for the embedding module, to force the training.')
 
+parser.add_argument('--concatenation_late', type=bool, default=False, 
+                    choices = [True,False],
+                    help='If True then concatenation of extracted feature just before the output module of the backbone model')
 
+parser.add_argument('--concatenation_early', type=bool, default=True, 
+                    choices = [True,False],
+                    help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')
+                    
+                       
 args = parser.parse_args(args=[])

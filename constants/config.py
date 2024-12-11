@@ -36,7 +36,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
     config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'
     config['set_spatial_units'] =  None # ['BON','SOI','GER','CHA']  # None -> Select a sub-set of desired spatial-units to work on.
-    config['concatenation_late'] = False # True -> If True then exracted feature are concatenated at the output of the backbone model, before passing through FC layers
     # Optimization 
     if torch.cuda.is_available():
         config['num_workers'] = 2 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB

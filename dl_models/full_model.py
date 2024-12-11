@@ -59,11 +59,11 @@ class full_model(nn.Module):
         
         # === Vision NetMob ===
         self.tackle_netmob(args)
-        self.concatenation_late = args.concatenation_late
+        self.vision_concatenation_early = args.args_vision.concatenation_early
 
         # === TE ===
         self.te = TE_module(args) if len(vars(getattr(args,'args_embedding')))>0 else None
-
+        self.TE_concatenation_early = args.args_embedding.concatenation_early
         # === Trafic Model ===
         self.core_model = load_model(dataset, args)
 
@@ -162,30 +162,30 @@ class full_model(nn.Module):
         # if NetMob data is on :
         if self.netmob_vision is not None: 
             extracted_feature = self.forward_netmob_model(contextual)
-            #print('extracted_feature size: ',extracted_feature.size())
-            # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
-            x = torch.cat([x,extracted_feature],dim = -1)
-            #print('concatenated x size: ',x.size())
-        # ...
-        #print('self.netmob_vision: ',self.netmob_vision)
-        #print('x size after Netmob: ',x.size())
+
+            if self.vision_concatenation_early:
+                # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
+                x = torch.cat([x,extracted_feature],dim = -1)
+        else:
+            extracted_feature = None
+
+
 
         # if calendar data is on : 
         if self.te is not None:
             time_elt = contextual[self.pos_calendar].long()
             # Extract feature: [B] -> [B,C,N,L_calendar]
             time_elt = self.te(time_elt)
-            
-            # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
-            x = torch.cat([x,time_elt],dim = -1)
-        # ...
+
+            if self.TE_concatenation_early:
+                # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
+                x = torch.cat([x,time_elt],dim = -1)
+        else:
+            time_elt = None
+            # ...
         
         # Core model 
-        if self.concatenation_late:
-            x= self.core_model(x,extracted_feature)
-        else:
-            x = self.core_model(x)
-
+        x= self.core_model(x,extracted_feature,time_elt)
         # ...
 
         return(x)
@@ -195,16 +195,20 @@ def load_model(dataset, args):
 
     # Init L_add 
     if hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
-        # Depend wether out_dim is implicit or defined by other parameters:
-        if hasattr(args.args_vision,'out_dim'):
-            L_add = args.args_vision.out_dim
-        else:
-            L_add = args.args_vision.L*args.args_vision.h_dim//2
+        # IF Early concatenation : 
+        if args.args_vision.concatenation_early:
+            # Depend wether out_dim is implicit or defined by other parameters:
+            if hasattr(args.args_vision,'out_dim'):
+                L_add = args.args_vision.out_dim
+            else:
+                L_add = args.args_vision.L*args.args_vision.h_dim//2
     else:
         L_add = 0
 
     if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0): #if not empty 
-        L_add = L_add + args.args_embedding.embedding_dim
+        # IF Early concatenation : 
+        if args.args_embedding.concatenation_early:
+            L_add = L_add + args.args_embedding.embedding_dim
 
 
     if args.model_name == 'TFT':
