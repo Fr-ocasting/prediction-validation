@@ -13,7 +13,9 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
     
-from examples.benchmark import local_get_args,get_trial_id,train_on_ds,keep_track_on_model_metrics
+
+from examples.benchmark import local_get_args,train_on_ds,keep_track_on_model_metrics
+from utils.save_results import get_trial_id
 from constants.config import update_modif
 import matplotlib.pyplot as plt 
 from K_fold_validation.K_fold_validation import KFoldSplitter
@@ -48,16 +50,14 @@ def update_args_train_visu(name_ds,modification,dic_class2rpz,df_loss,df_results
 
     # update each modif
     args_bis = update_modif(args)
-
-
-    trial_id = get_trial_id(args_bis,vision_model_name=args.args_vision.vision_model_name if hasattr(args.args_vision,'vision_model_name') else None)
+    trial_id = get_trial_id(args_bis)
     trainer,df_loss = train_on_ds(ds,args_bis,trial_id,save_folder,dic_class2rpz,df_loss)
     metrics = trainer.metrics
     df_results = keep_track_on_model_metrics(trainer,df_results,args.model_name,trainer,metrics)
     visualisation(trainer,ds,training_mode = 'test',station = station)
     return trainer,df_results
 
-def load_all(args,dataset_for_coverage,modification,save_folder,station='CHA'):
+def load_all(args,modification,save_folder,station='CHA'):
     # Load DS: 
     df_loss,df_results = pd.DataFrame(),pd.DataFrame()
 
@@ -67,9 +67,8 @@ def load_all(args,dataset_for_coverage,modification,save_folder,station='CHA'):
     ds,_,_,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
 
     # Analyses : 
-    trainer,df_results = update_args_train_visu(None,
-                                                dataset_for_coverage,modification,
+    trainer,df_results = update_args_train_visu(None,modification,
                                                 dic_class2rpz,df_loss,
                                                 df_results,save_folder,station,
-                                                ds = ds, args= args)
+                                                ds, args)
     return ds,trainer,df_results

@@ -68,6 +68,7 @@ def get_week_hour_minute_class(type_class):
 
 def get_time_slots_labels(dataset,nb_class = [0,1,2,3]):
     dataset.nb_class = nb_class
+    tsph = dataset.time_step_per_hour 
     Dic_T_labels,Dic_nb_words_embedding,Dic_class2rpz,Dic_rpz2class = {},{},{},{}
     # Associate Label to a timestamp
     df_time_slots = pd.DataFrame(dataset.df_verif[f"t+{dataset.step_ahead-1}"]).rename(columns = {f"t+{dataset.step_ahead-1}":'datetime'})
@@ -77,7 +78,7 @@ def get_time_slots_labels(dataset,nb_class = [0,1,2,3]):
 
     for calendar_class in range(len(nb_class)):
         week_group,hour_minute_group = get_week_hour_minute_class(calendar_class)
-        dic_class2rpz = {i*len(hour_minute_group)+k:([w1,w2],[(h1,m1),(h2,m2)]) for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
+        dic_class2rpz = {i*len(hour_minute_group)+k:([w1,w2],[(h1,m1//tsph),(h2,m2//tsph)]) for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
         dic_rpz2class = {f"{'_'.join(list(map(str,[w1,w2])))}-{'_'.join(list(map(str,[(h1,m1),(h2,m2)])))}":i*len(hour_minute_group)+k for i,(w1,w2) in enumerate(week_group) for k,([(h1,m1),(h2,m2)]) in enumerate(hour_minute_group)  }
 
         # According choosen type_class: 

@@ -14,6 +14,61 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
+    def __init__(self,args_embedding,n_vertex):
+        super(TimeEmbedding, self).__init__()
+        self.nb_words_embedding = args_embedding.nb_words_embedding
+        self.embedding_dim = args_embedding.embedding_dim
+        self.calendar_class =  args_embedding.calendar_class
+        self.multi_embedding = args_embedding.multi_embedding
+
+        if self.multi_embedding:
+            self.embeddings = nn.ModuleList([
+                nn.Embedding(self.nb_words_embedding[self.calendar_class], self.embedding_dim)
+                for _ in range(n_vertex)
+            ])
+        else:
+            self.embedding = nn.Embedding(self.nb_words_embedding[self.calendar_class],self.embedding_dim)
+
+
+        if args_embedding.fc1:
+            self.output1 = nn.Linear(self.embedding_dim,args_embedding.fc1)
+            self.output2 = nn.Linear(args_embedding.fc1,args_embedding.embedding_dim) 
+        else:
+            self.output1= None
+
+        self.relu = nn.ReLU()
+
+    def forward(self,elt): 
+        if self.multi_embedding:
+            z = torch.stack([embedding(elt) for embedding in self.embeddings], dim=1)
+        else:
+            z = self.embedding(elt)
+        if self.output1 is not None:
+            z = self.output1(z)
+            z = self.output2(self.relu(z))
+        return(z)
+    
+
+class TE_module(nn.Module):
+    def __init__(self,args):
+        super(TE_module, self).__init__()
+        args_embedding =  args.args_embedding
+        self.multi_embedding = args_embedding.multi_embedding
+        self.Tembedding = TimeEmbedding(args_embedding,args.n_vertex)
+        self.N_repeat = 1 if self.multi_embedding else args.n_vertex
+        self.C = args.C
+        self.n_vertex = args.n_vertex
+
+    def forward(self,time_elt):
+        mini_batch_size = time_elt.size(0)
+        time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
+        if not(self.multi_embedding):
+            time_elt = time_elt.repeat(1,self.N_repeat*self.C,1)
+        time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
+        return(time_elt)
+
+"""
+class TimeEmbedding(nn.Module):
     def __init__(self,nb_words,embedding_dim,type_calendar,mapping_tensor,calendar_class,embedding_with_dense_layer = True, n_embedding = 1):
         super(TimeEmbedding, self).__init__()
         self.nb_words = nb_words
@@ -27,8 +82,8 @@ class TimeEmbedding(nn.Module):
             nb_embeddings = mapping_tensor.size(1)  # = size tuple = 3  (weekday, hour, minute)
 
             # self.dic_sizes = [nb_weekdays rpz, nb_hours rpz, nb_minutes rpz] within mappin tensor (i.e represenntation of the class) 
-            #self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
-            self.dic_sizes = [mapping_tensor[:,i].unique().numel() for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
+            self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
+            #self.dic_sizes = [mapping_tensor[:,i].unique().numel() for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
 
             # self.Embedding_dims ~ self.dic_sizes/2
             self.Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
@@ -123,4 +178,4 @@ class TE_module(nn.Module):
             raise NotImplementedError(f'Position {self.Tembedding_position} has not been implemented')
 
         return(time_elt)
-    
+"""

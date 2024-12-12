@@ -78,7 +78,7 @@ def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metric
 
 if __name__ == '__main__':
 
-    for dataset_names,vision_model_name in zip([['netmob_POIs','calendar']],['VariableSelectionNetwork']): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
+    for dataset_names,vision_model_name in zip([['subway_in','calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
         # GET PARAMETERS
         #dataset_names = ['subway_in','netmob_POIs'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon'] #['netmob_POIs']
         dataset_for_coverage = ['subway_in','netmob_POIs'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon'] #['netmob_POIs'] 

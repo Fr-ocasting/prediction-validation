@@ -35,8 +35,7 @@ def HP_modification(config,args):
                     for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
                          setattr(args, args_scheduler, config['scheduler'][args_scheduler])
 
-            elif hasattr(args, key):
-                setattr(args, key, value)
+            ## Tackle Vision HP tuning
             elif 'vision_' in key:
                 key = key.replace('vision_', '')
                 setattr(args.args_vision,key,value)
@@ -44,8 +43,23 @@ def HP_modification(config,args):
                 # Cas Particulier, devrait être gérer mieux, avec une implémentation générale
                 if key == 'grn_out_dim':
                     setattr(args.args_vision,'out_dim',value)
+            # ....
+            
+            ## Takle calendar HP tuning : 
+            elif 'TE_fc1' in key:
+                for key_i in ['fc1','fc2']:
+                    setattr(args.args_embedding,key_i,config['TE_fc1'][key_i])
+            elif 'TE_concatenation_order' in key:
+                for key_i in ['concatenation_early','concatenation_late']:
+                    setattr(args.args_embedding,key_i,config['TE_concatenation_order'][key_i])          
             elif 'TE_' in key:
                 key = key.replace('TE_', '')
+                setattr(args.args_embedding,key,value)
+            # ...
+
+
+            elif hasattr(args, key):
+                setattr(args, key, value)
             else: 
                 raise ValueError(f"Key {key} issue")
     return(args)

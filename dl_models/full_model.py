@@ -61,7 +61,7 @@ class full_model(nn.Module):
             else:
                 vision_concatenation_early = False
             if (len(vars(args.args_embedding))>0):
-                TE_concatenation_early = args.args_vision.concatenation_early
+                TE_concatenation_early = args.args_embedding.concatenation_early
             else:
                 TE_concatenation_early = False
             if not(vision_concatenation_early) and not(TE_concatenation_early):

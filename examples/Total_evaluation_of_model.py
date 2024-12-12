@@ -66,7 +66,7 @@ if __name__ == '__main__':
                                     dataset_names=dataset_names,
                                     dataset_for_coverage=dataset_for_coverage,
                                     modification = {'ray':True,
-                                                    'grace_period':2,
+                                                    'grace_period':5,
                                                     'HP_max_epochs':2,
                                                     'evaluate_complete_ds' : True,
                                                     'set_spatial_units' : ['BON','SOI','GER','CHA'],
@@ -77,7 +77,7 @@ if __name__ == '__main__':
 
             # Init 
             epochs_validation = 2
-            num_samples = 2
+            num_samples = 20
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,num_samples)

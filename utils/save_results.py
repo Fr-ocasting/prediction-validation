@@ -69,7 +69,6 @@ def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_di
 
 def time_embedding2dict(args):
     dict1 = dict(CalendarClass = args.calendar_class, 
-        Position = args.position, 
         Specific_lr = args.specific_lr,
         Type_calendar = args.type_calendar,
         Multi_Emb = args.multi_embedding,

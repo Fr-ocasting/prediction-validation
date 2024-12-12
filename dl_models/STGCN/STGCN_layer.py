@@ -18,13 +18,7 @@ class Align(nn.Module):
             batch_size, _, timestep, n_vertex = x.shape
 
             padding =  torch.zeros([batch_size, self.c_out - self.c_in, timestep, n_vertex]).to(x)
-
-            print('x.size', x.size(),x.device)
-            print('padding.size', padding.size(),padding.device)
-            
             x = torch.cat([x,padding], dim=1)
-            print('x.size after concat', x.size())
-            print(x.device)  
         else:
             x = x
         
