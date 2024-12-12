@@ -305,23 +305,14 @@ class OutputBlock(nn.Module):
 
     def forward(self, x,x_vision = None,x_calendar = None):
         x = self.tmp_conv1(x)
-        x = self.tc1_ln(x.permute(0, 2, 3, 1))
-        
-        print('x_size before output: ' ,x.size())
+        x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
+
         if self.vision_concatenation_late:
-            # Concat [B,C,N,Z] and [B,C,N,L']
+            # Concat [B,C,N,Z] + [B,C,N,L'] -> [B,C,N,Z+L']
             x = torch.concat([x,x_vision],axis=-1)
         if self.TE_concatenation_late:
-            # Concat [B,C,N,Z] and [B,C,N,L_calendar]
-            x = torch.concat([x,x_calendar],axis=-1)      
-        print('vision_concatenation_late: ' ,self.vision_concatenation_late)
-        print('extracted_feature.size(): ',x_vision.size() if x_vision is not None else None)
-
-        print('TE_concatenation_late: ' ,self.TE_concatenation_late)
-        print('time_elt.size(): ',x_calendar.size() if x_calendar is not None else None)
-
-        print('x_size before output and after concat: ' ,x.size())
-
+            # Concat [B,C,N,Z] + [B,C,N,L_calendar]-> [B,C,N,Z+L_calendar]
+            x = torch.concat([x,x_calendar],axis=-1) 
             
         x = self.fc1(x)
         x = self.relu(x)

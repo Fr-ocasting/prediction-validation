@@ -27,7 +27,8 @@ class TimeEmbedding(nn.Module):
             nb_embeddings = mapping_tensor.size(1)  # = size tuple = 3  (weekday, hour, minute)
 
             # self.dic_sizes = [nb_weekdays rpz, nb_hours rpz, nb_minutes rpz] within mappin tensor (i.e represenntation of the class) 
-            self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
+            #self.dic_sizes = [mapping_tensor[:,i].max().item() +1 for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
+            self.dic_sizes = [mapping_tensor[:,i].unique().numel() for i in range(nb_embeddings) if mapping_tensor[:,i].max().item() > 0]
 
             # self.Embedding_dims ~ self.dic_sizes/2
             self.Embedding_dims = [max(int(dic_size/2), 1) for dic_size in self.dic_sizes]
@@ -63,7 +64,9 @@ class TimeEmbedding(nn.Module):
 
     def forward(self,elt): 
         if self.type_calendar == 'tuple':
+            #print('elt: ',elt)
             elt = self.mapping_tensor[elt.long()].to(elt)
+            #print('mappped elt: ',elt)
             concat_z = torch.Tensor().to(elt)
             for i,emb_layer in enumerate(self.embedding):
                 if len(elt.size()) == 1:    # When there is no batch, but just a  single element
@@ -74,8 +77,13 @@ class TimeEmbedding(nn.Module):
                 emb_vector = emb_vector.reshape(elt.size(0),self.n_embedding,self.Embedding_dims[i])
                 concat_z = torch.cat([concat_z,emb_vector],dim=-1) # [B,N_stations,embedding_dim*len(self.dic_sizes)]
 
- 
-            z = self.output2(self.relu(self.output1(concat_z)))  # [B, N_stations, Z]
+            #    print('concat_z size: ',concat_z.size())
+            #print('embedded vector before FC layer: ',concat_z.size())
+            z = self.relu(self.output1(concat_z))
+            #print('embedded vector after FC1: ',z.size())
+            z = self.output2(z)  # [B, N_stations, Z]
+            #print('embedded vector after FC2: ',z.size())
+
 
         if self.type_calendar == 'unique_long_embedding':
             if self.embedding_with_dense_layer:

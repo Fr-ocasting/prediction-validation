@@ -159,6 +159,7 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         print('vision_input_type', args.vision_input_type)
         print('vision_model_name', args.vision_model_name)
+        if args.vision_model_name is None: raise ValueError("You are using 'NetMob' data but you didnot defined 'args.vision_model_name'. It needs to be set ")
         args_vision = Namespace(**{'dataset_name': netmob_dataset_name, 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
         args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
         args.args_vision = args_vision

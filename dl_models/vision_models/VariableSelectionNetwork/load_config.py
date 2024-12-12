@@ -18,11 +18,11 @@ parser.add_argument('--contextual_static_dim', type=int, default=None,
                     choices = [None,1,2,3],
                     help='Number of static variable information (such as calendar)')
 
-parser.add_argument('--concatenation_late', type=bool, default=True, 
+parser.add_argument('--concatenation_late', type=bool, default=False, 
                     choices = [True,False],
                     help='If True then concatenation of extracted feature just before the output module of the backbone model')
 
-parser.add_argument('--concatenation_early', type=bool, default=False, 
+parser.add_argument('--concatenation_early', type=bool, default=True, 
                     choices = [True,False],
                     help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')                  
 

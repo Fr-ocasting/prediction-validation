@@ -25,15 +25,17 @@ def get_output_kernel_size(args):
         Ko = 0
 
     if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0): #if not empty 
-        Ko = Ko + args.args_embedding.embedding_dim
+        if args.args_embedding.concatenation_early:
+            Ko = Ko + args.args_embedding.embedding_dim
 
     if  hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
         # Depend wether out_dim is implicit or defined by other parameters:
-        if hasattr(args.args_vision,'out_dim'):
-            Ko = Ko + args.args_vision.out_dim
-        else:
-            vision_out_dim = args.args_vision.L*args.args_vision.h_dim//2
-            Ko = Ko + vision_out_dim
+        if args.args_vision.concatenation_early:
+            if hasattr(args.args_vision,'out_dim'):
+                Ko = Ko + args.args_vision.out_dim
+            else:
+                vision_out_dim = args.args_vision.L*args.args_vision.h_dim//2
+                Ko = Ko + vision_out_dim
     return(Ko)
 
 def get_block_dims(args,Ko):

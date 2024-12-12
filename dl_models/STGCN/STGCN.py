@@ -104,12 +104,14 @@ class STGCN(nn.Module):
             # Reshape and permute : [B,N,L] or [B,C,N,L] ->  [B,C,L,N]
             if len(x.size())<4:
                 x = x.unsqueeze(1)
-            B,C,N,L = x.size()
-            x = x.permute(0,1,3,2)
-            # ....
-
-            # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
-            x = self.st_blocks(x)
+            ### Core model :
+            if not x.numel() == 0:
+                B,C,N,L = x.size()
+                x = x.permute(0,1,3,2)
+                # ....
+                # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
+                x = self.st_blocks(x)
+            ### ---
 
             if self.Ko > 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
@@ -120,13 +122,18 @@ class STGCN(nn.Module):
                     # [B,C_out,N,L'] -> [B,C_out,L',N] 
                     x_vision = x_vision.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C_out,L',N]
-                    x = torch.concat([x,x_vision],axis=2)
+                    if not (x.numel() == 0):
+                        x = torch.concat([x,x_vision],axis=2)
+                    else:
+                        x = x_vision
                 if self.TE_concatenation_late:
                     # [B,C,N,L_calendar]  -> [B,C,L_calendar,N] 
                     x_calendar = x_calendar.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C,L_calendar,N] 
-                    x = torch.concat([x,x_calendar],axis=2)
-
+                    if not (x.numel() == 0):
+                        x = torch.concat([x,x_calendar],axis=2)
+                    else:
+                        x = x_calendar
                 x = self.fc1(x.permute(0, 2, 3, 1))
                 x = self.relu(x)
                 x = self.fc2(x).permute(0, 3, 1, 2)

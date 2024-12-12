@@ -48,12 +48,24 @@ class full_model(nn.Module):
         # Add positions for each contextual data:
         if 'calendar' in args.contextual_positions.keys(): 
             self.pos_calendar = args.contextual_positions['calendar']
+
         if DATA_TO_PREDICT in args.dataset_names :
             self.remove_trafic_inputs = False
-
         else:
             self.remove_trafic_inputs = True
             print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
+
+            # Assert STGCN there is inputs for the STGCN
+            if (len(vars(args.args_vision))>0):
+                vision_concatenation_early = args.args_vision.concatenation_early
+            else:
+                vision_concatenation_early = False
+            if (len(vars(args.args_embedding))>0):
+                TE_concatenation_early = args.args_vision.concatenation_early
+            else:
+                TE_concatenation_early = False
+            if not(vision_concatenation_early) and not(TE_concatenation_early):
+                raise ValueError(f"Need to set {DATA_TO_PREDICT} in dataset_name or at least args_embedding or args_vision with concatenation early otherwise STGCN is not used.")
         # ...
 
         
@@ -187,14 +199,11 @@ class full_model(nn.Module):
         else:
             time_elt = None
             # ...
-        print('x.size(): ' ,x.size())
-        print('extracted_feature.size(): ',extracted_feature.size() if extracted_feature is not None else None)
-        print('time_elt.size(): ',time_elt.size() if time_elt is not None else None)
+
         # Core model 
         x= self.core_model(x,extracted_feature,time_elt)
         # ...
 
-        blabla
         return(x)
 
 
