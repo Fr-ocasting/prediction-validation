@@ -283,28 +283,44 @@ class OutputBlock(nn.Module):
                  ):
         super(OutputBlock, self).__init__()
         self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
+
+
+        # Design Input Dimension according to contextual data integration or not: 
+        in_channel_fc1 = channels[0]
         if vision_concatenation_late:
-            in_channel_fc1 = channels[0] + extracted_feature_dim
-        else:
-            in_channel_fc1 = channels[0]
+            in_channel_fc1 = in_channel_fc1 + extracted_feature_dim
+        if TE_concatenation_late:
+            in_channel_fc1 = in_channel_fc1 +embedding_dim
+
+        self.vision_concatenation_late = vision_concatenation_late
+        self.TE_concatenation_late = TE_concatenation_late
+        # ...
 
         self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
         self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
-        self.vision_concatenation_late = vision_concatenation_late
+
 
     def forward(self, x,x_vision = None,x_calendar = None):
         x = self.tmp_conv1(x)
         x = self.tc1_ln(x.permute(0, 2, 3, 1))
         
+        print('x_size before output: ' ,x.size())
         if self.vision_concatenation_late:
             # Concat [B,C,N,Z] and [B,C,N,L']
             x = torch.concat([x,x_vision],axis=-1)
         if self.TE_concatenation_late:
             # Concat [B,C,N,Z] and [B,C,N,L_calendar]
             x = torch.concat([x,x_calendar],axis=-1)      
+        print('vision_concatenation_late: ' ,self.vision_concatenation_late)
+        print('extracted_feature.size(): ',x_vision.size() if x_vision is not None else None)
+
+        print('TE_concatenation_late: ' ,self.TE_concatenation_late)
+        print('time_elt.size(): ',x_calendar.size() if x_calendar is not None else None)
+
+        print('x_size before output and after concat: ' ,x.size())
 
             
         x = self.fc1(x)

@@ -59,11 +59,12 @@ class full_model(nn.Module):
         
         # === Vision NetMob ===
         self.tackle_netmob(args)
-        self.vision_concatenation_early = args.args_vision.concatenation_early
 
         # === TE ===
         self.te = TE_module(args) if len(vars(getattr(args,'args_embedding')))>0 else None
-        self.TE_concatenation_early = args.args_embedding.concatenation_early
+        self.TE_concatenation_early = args.args_embedding.concatenation_early if self.te is not None else False
+        if ((self.te is not None) and not(args.args_embedding.concatenation_early) and not(args.args_embedding.concatenation_late)):
+                 raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         # === Trafic Model ===
         self.core_model = load_model(dataset, args)
 
@@ -81,11 +82,14 @@ class full_model(nn.Module):
             args.args_vision.dropout = args.dropout
             self.netmob_vision = load_vision_model(args.args_vision)
             self.vision_input_type = args.vision_input_type
-
+            self.vision_concatenation_early = args.args_vision.concatenation_early
             self.pos_netmob = args.contextual_positions[args.args_vision.dataset_name]
+            if (not(args.args_vision.concatenation_early) and not(args.args_vision.concatenation_late)):
+                 raise ValueError('NetMob input but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         else:
             self.netmob_vision =  None
             self.vision_input_type = None
+            self.vision_concatenation_early = False
 
     def foward_image_per_stations(self,netmob_video_batch):
         ''' Foward for input shape [B,C,N,H,W,L]'''
@@ -183,11 +187,14 @@ class full_model(nn.Module):
         else:
             time_elt = None
             # ...
-        
+        print('x.size(): ' ,x.size())
+        print('extracted_feature.size(): ',extracted_feature.size() if extracted_feature is not None else None)
+        print('time_elt.size(): ',time_elt.size() if time_elt is not None else None)
         # Core model 
         x= self.core_model(x,extracted_feature,time_elt)
         # ...
 
+        blabla
         return(x)
 
 

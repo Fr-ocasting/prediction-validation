@@ -67,19 +67,15 @@ class STGCN(nn.Module):
         else:
             embedding_dim = None
 
+
+        in_feature_fc1 = blocks[-3][-1] 
+
         if self.Ko > 0:
-            self.output = layers.OutputBlock(self.Ko, blocks[-3][-1], blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout,
+            self.output = layers.OutputBlock(self.Ko, in_feature_fc1, blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout,
                                              self.vision_concatenation_late,extracted_feature_dim,
                                              self.TE_concatenation_late,embedding_dim
                                              )
         elif self.Ko == 0:
-            in_feature_fc1 = blocks[-3][-1] 
-            if self.vision_concatenation_late:
-                in_feature_fc1 = in_feature_fc1 +extracted_feature_dim
-            if self.TE_concatenation_late:
-                in_feature_fc1 = in_feature_fc1 +  embedding_dim
-
-
             self.fc1 = nn.Linear(in_features=in_feature_fc1, out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)
             self.relu = nn.ReLU()
