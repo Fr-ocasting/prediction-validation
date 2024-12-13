@@ -29,7 +29,20 @@ from dl_models.MTGNN.MTGNN_layer import graph_constructor, LayerNorm,dilated_inc
 #   - La gate passe par une sigmoid
 #   - Les deux sont multiplié, puis passe dans un dropout
 class MTGNN(nn.Module):
-    def __init__(self, gcn_true, buildA_true, gcn_depth, n_vertex, device, predefined_A=None, static_feat=None, dropout=0.3, subgraph_size=20, node_dim=40, dilation_exponential=1, conv_channels=32, residual_channels=32, skip_channels=64, end_channels=128, seq_length=12, c_in=2, out_dim=12, layers=3, propalpha=0.05, tanhalpha=3, layer_norm_affline=True,L_add=0):
+    def __init__(self, gcn_true, buildA_true, gcn_depth, n_vertex, device, 
+                 predefined_A=None, static_feat=None, dropout=0.3, 
+                 subgraph_size=20, 
+                 node_dim=40, 
+                 dilation_exponential=1, 
+                 conv_channels=32, 
+                 residual_channels=32, 
+                 skip_channels=64, end_channels=128, 
+                 seq_length=12, c_in=2, out_dim=12, 
+                 layers=3, propalpha=0.05, 
+                 tanhalpha=3, 
+                 layer_norm_affline=True,L_add=0,
+                 vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None
+                 ):
         super(MTGNN, self).__init__()
         self.gcn_true = gcn_true
         self.buildA_true = buildA_true
@@ -99,7 +112,18 @@ class MTGNN(nn.Module):
                 new_dilation *= dilation_exponential
 
         self.layers = layers
-        self.end_conv_1 = nn.Conv2d(in_channels=skip_channels,
+
+        ## ======= Tackle Output Module if concatenation with contextual data: 
+        in_channels_end_conv_1 = skip_channels
+        self.vision_concatenation_late = vision_concatenation_late
+        self.TE_concatenation_late = TE_concatenation_late
+        if self.vision_concatenation_late:
+            in_channels_end_conv_1 = in_channels_end_conv_1+ vision_out_dim
+        if self.TE_concatenation_late:
+            in_channels_end_conv_1 = in_channels_end_conv_1+ TE_embedding_dim
+        ## =======
+
+        self.end_conv_1 = nn.Conv2d(in_channels=in_channels_end_conv_1,
                                              out_channels=end_channels,
                                              kernel_size=(1,1),
                                              bias=True)
@@ -119,7 +143,7 @@ class MTGNN(nn.Module):
         self.idx = torch.arange(self.n_vertex).to(device)
 
 
-    def forward(self, x,idx=None):
+    def forward(self, x,x_vision=None,x_calendar = None,idx=None):
         '''
         Inputs: 
         --------
@@ -128,7 +152,6 @@ class MTGNN(nn.Module):
         Outputs:
 
         '''
-
         # Vérifie que x:  [B,C,N,L], et met le 'padding' necessaire pour pouvoir faire les temporal conv avec dilation
         if len(x.size())<4:
             x = x.unsqueeze(1)
@@ -189,6 +212,25 @@ class MTGNN(nn.Module):
         # Skip de l'Input + Embedding  (conv2D kernel (1,1) si sequence petite ou (1,s) avec L sequence grande) de l'output des couches 
         skip = self.skipE(x) + skip
 
+        ## == Concatenation of Contextual Data Before output Module :
+        # skip size: [B,H,N,1]
+        if self.vision_concatenation_late:
+            # [B,1,N,Z] -> [B,Z,N,1]     (1 = C_out actually )
+            x_vision = x_vision.permute(0,3,2,1)
+            # Concat [B,H,N, 1] + [B,Z,N,1] ->  [B,H',N, 1]
+            if not (x.numel() == 0):
+                skip = torch.concat([skip,x_vision],axis=1)
+            else:
+                skip = x_vision
+        if self.TE_concatenation_late:
+            # [B,1,N,L_calendar]  -> [B,L_calendar,N,1] 
+            x_calendar = x_calendar.permute(0,3,2,1)
+            # Concat  [B,H,N,1] +  [B,L_calendar,N,1]  ->  [B,H',N, 1]
+            if not (x.numel() == 0):
+                skip = torch.concat([skip,x_calendar],axis=1)
+            else:
+                skip = x_calendar
+        ## == ...
 
         # Sortie embedding et Relu en Série. Après les end_conv : [B,1, N, 1] (car out_dim =1 ???)
         x = F.relu(skip)

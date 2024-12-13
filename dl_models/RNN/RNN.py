@@ -2,7 +2,10 @@ from torch import nn
 import torch
 
 class RNN(nn.Module):
-    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,dropout = 0.0, nonlinearity = 'tanh',batch_first = True,bidirectional = False,lstm = False, gru = False, device = None):
+    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,
+                 dropout = 0.0, nonlinearity = 'tanh',batch_first = True,
+                 bidirectional = False,lstm = False, gru = False, device = None,
+                 vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None):
         super().__init__()
 
         # Parameters
@@ -22,7 +25,18 @@ class RNN(nn.Module):
             self.rnn = nn.RNN(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)  # tanh or ReLU as non linear activation
           
         self.D =  2 if bidirectional else 1
-        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([self.D*h_dim*L]+self.C_outs[:-1], self.C_outs)])
+
+        ## ======= Tackle Output Module if concatenation with contextual data: 
+        L_outs_in = [self.D*h_dim*L]+self.C_outs[:-1]
+        self.vision_concatenation_late = vision_concatenation_late
+        self.TE_concatenation_late = TE_concatenation_late
+        if self.vision_concatenation_late:
+            L_outs_in[0] = L_outs_in[0]+ vision_out_dim
+        if self.TE_concatenation_late:
+            L_outs_in[0] = L_outs_in[0]+ TE_embedding_dim
+        ## =======
+
+        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip(L_outs_in, self.C_outs)])
         self.relu = nn.ReLU()
         self.flatten = nn.Flatten()
 
@@ -37,7 +51,7 @@ class RNN(nn.Module):
             return(h0)
     
 
-    def forward(self,x):
+    def forward(self,x,x_vision=None,x_calendar = None):
         ''' x.shape : [B,C,N,L]
         
         has to be transformed in [B',L,C] to return [B',L,D*C']  
@@ -53,23 +67,46 @@ class RNN(nn.Module):
             permute_back = False
         elif len(x.shape)== 4:
             B,C,N,L = x.shape
-            x = x.permute(0,2,3,1)
-            x = x.reshape(-1,x.size(2),x.size(3))
+            x = x.permute(0,2,3,1)  #[B,N,L,C]
+            x = x.reshape(-1,x.size(2),x.size(3))  # [B*N,L,C]
             permute_back = True
 
         # Init hidden state
-
-
-        # Rnn
+        # Rnn  [B*N,L,C] ->  [B*N,L,D*H]
         if self.lstm:
             h0,c0 = self.init_hidden(x.size(0) if self.batch_first else x.size(1))
-            x, (_,_) = self.rnn(x,(h0,c0)) #[B,L,D*H_dim]   
+            x, (_,_) = self.rnn(x,(h0,c0))  
         else:
             h0 = self.init_hidden(x.size(0) if self.batch_first else x.size(1))
-            x, _ = self.rnn(x,h0)  #[B,L,D*H_dim]
+            x, _ = self.rnn(x,h0) 
 
-        # Output Module : 
+        # Output Module :  [B*N,L,D*H] -> [B*N,L*D*H]
         x = self.flatten(x)
+
+        ## == Concatenation of Contextual Data Before output Module :
+        # skip size: [B,H,N,1]
+        if self.vision_concatenation_late:
+            # [B,1,N,Z] -> [B,N,Z,1]    
+            x_vision = x_vision.permute(0,2,3,1)
+            #  [B,N,Z,1]-> [B*N,Z]
+            x_vision = x_vision.reshape(x_vision.size(0)*x_vision.size(-1),-1)
+            # Concat [B*N,L*D*H] + [B*N,Z] ->  [B*N,H*L+Z]
+            if not (x.numel() == 0):
+                x = torch.concat([x,x_vision],axis=1)
+            else:
+                x = x_vision
+        if self.TE_concatenation_late:
+            # [B,1,N,L_calendar]  -> [B,N,L_calendar,1]  
+            x_calendar = x_calendar.permute(0,2,3,1)
+            # [B,N,L_calendar,1]-> [B*N,L_calendar]
+            x_calendar = x_calendar.reshape(x_calendar.size(0)*x_calendar.size(-1),-1)          
+            # Concat   [B*N,L*D*H] + [B*N,L_calendar]  ->   [B*N,H*L+L_calendar]
+            if not (x.numel() == 0):
+                x = torch.concat([x,x_calendar],axis=1)
+            else:
+                x = x_calendar
+        ## == ...
+
         for dense_out in self.Dense_outs[:-1]:
             x = self.relu(dense_out(x))
         out = self.Dense_outs[-1](x)    # No activation

@@ -212,6 +212,8 @@ def load_model(dataset, args):
     # Init L_add 
     if hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
         # IF Early concatenation : 
+        vision_concatenation_late = args.args_vision.concatenation_late
+        vision_out_dim = args.args_vision.out_dim
         if args.args_vision.concatenation_early:
             # Depend wether out_dim is implicit or defined by other parameters:
             if hasattr(args.args_vision,'out_dim'):
@@ -220,24 +222,36 @@ def load_model(dataset, args):
                 L_add = args.args_vision.L*args.args_vision.h_dim//2
     else:
         L_add = 0
+        vision_concatenation_late = False
+        vision_out_dim = None
 
     if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0): #if not empty 
         # IF Early concatenation : 
+        TE_concatenation_late = args.args_embedding.concatenation_late
+        TE_embedding_dim = args.args_embedding.embedding_dim
         if args.args_embedding.concatenation_early:
             L_add = L_add + args.args_embedding.embedding_dim
+    else:
+        TE_concatenation_late = False
+        TE_embedding_dim = None
+
 
 
     if args.model_name == 'TFT':
         model = TFT(args)
 
     if args.model_name == 'CNN': 
-        model = CNN(args,L_add = L_add)
+        model = CNN(args,L_add = L_add,vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None)
 
     if args.model_name == 'MTGNN': 
         filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(MTGNN.__init__).parameters.keys()}
         model = MTGNN(**filtered_args,
                     L_add=L_add,
                     seq_length=args.L,
+                    vision_concatenation_late = vision_concatenation_late,
+                    TE_concatenation_late = TE_concatenation_late,
+                    vision_out_dim = vision_out_dim,
+                    TE_embedding_dim = TE_embedding_dim
                     ).to(args.device)
         
     if args.model_name == 'DCRNN':

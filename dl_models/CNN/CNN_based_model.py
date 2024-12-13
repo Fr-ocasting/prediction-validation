@@ -14,7 +14,8 @@ if parent_dir not in sys.path:
 from dl_models.TimeEmbedding.time_embedding import TimeEmbedding
 
 class CNN(nn.Module):
-    def __init__(self,args,dilation = 1, stride = 1,L_add = 0):
+    def __init__(self,args,dilation = 1, stride = 1,L_add = 0,
+                 vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None):
         super().__init__()
     
         #self.c_out = args.C_outs[-1]
@@ -45,10 +46,20 @@ class CNN(nn.Module):
         self.relu = nn.ReLU()
         self.flatten = nn.Flatten()
 
+
+        ## ======= Tackle Output Module if concatenation with contextual data: 
+        L_outs_in = [l_out*args.H_dims[-1]]+args.C_outs
+        self.vision_concatenation_late = vision_concatenation_late
+        self.TE_concatenation_late = TE_concatenation_late
+        if self.vision_concatenation_late:
+            L_outs_in[0] = L_outs_in[0]+ vision_out_dim
+        if self.TE_concatenation_late:
+            L_outs_in[0] = L_outs_in[0]+ TE_embedding_dim
+        ## =======
         # Output Module (traditionnaly 1 or 2 linear layers)
-        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip([l_out*args.H_dims[-1]]+args.C_outs, args.C_outs+[self.c_out])])
+        self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip(L_outs_in, args.C_outs+[self.c_out])])
             
-    def forward(self,x):
+    def forward(self,x,x_vision=None,x_calendar = None):
         '''
         Pass input through a 2 layer CNN
              --------  --------    -------    -------    ------    ------
@@ -64,6 +75,7 @@ class CNN(nn.Module):
         x.shape [B,N,1]
 
         '''
+        # x [B,N,L] or [B,N,C,L] -> [B*N,C,L]
         if x.dim() == 3:
             B,N,L = x.shape
             C = 1
@@ -75,12 +87,39 @@ class CNN(nn.Module):
         else:
             raise NotImplemented(f'Dimension {x.dim()} has not been implemented')
 
-        # Conv Layers :        
+        # Conv Layers :    [B*N,C,L] -> [B*N,H,L]        
         for conv in self.Convs:
             x = self.dropout(self.relu(conv(x)))
 
-        # Flatten :
+
+        # Flatten :   [B*N,H,L] -> [B*N,H*L]
         x = self.flatten(x)
+
+        ## == Concatenation of Contextual Data Before output Module :
+        # skip size: [B,H,N,1]
+        if self.vision_concatenation_late:
+            # [B,1,N,Z] -> [B,N,Z,1]    
+            x_vision = x_vision.permute(0,2,3,1)
+            #  [B,N,Z,1]-> [B*N,Z]
+            x_vision = x_vision.reshape(x_vision.size(0)*x_vision.size(-1),-1)
+            # Concat [B*N,H*L] + [B*N,Z] ->  [B*N,H*L+Z]
+            if not (x.numel() == 0):
+                x = torch.concat([x,x_vision],axis=1)
+            else:
+                x = x_vision
+        if self.TE_concatenation_late:
+            # [B,1,N,L_calendar]  -> [B,N,L_calendar,1]  
+            x_calendar = x_calendar.permute(0,2,3,1)
+            # [B,N,L_calendar,1]-> [B*N,L_calendar]
+            x_calendar = x_calendar.reshape(x_calendar.size(0)*x_calendar.size(-1),-1)          
+            # Concat   [B*N,H*L] + [B*N,L_calendar]  ->   [B*N,H*L+L_calendar]
+            if not (x.numel() == 0):
+                x = torch.concat([x,x_calendar],axis=1)
+            else:
+                x = x_calendar
+        ## == ...
+
+
         # Output Module : 
         for dense_out in self.Dense_outs[:-1]:
             x = self.dropout(self.relu(dense_out(x)))

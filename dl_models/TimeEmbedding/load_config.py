@@ -25,7 +25,7 @@ parser.add_argument('--fc1', type=int, default=16, choices=[8,16,32,64,None],
 parser.add_argument('--fc2', type=int, default=16, choices=[8,16,32,64],
                     help='If fc1 is not None then design the output dim of FC2')
 
-parser.add_argument('--concatenation_late', type=bool, default=True, 
+parser.add_argument('--concatenation_late', type=bool, default=False, 
                     choices = [True,False],
                     help='If True then concatenation of extracted feature just before the output module of the backbone model')
 
