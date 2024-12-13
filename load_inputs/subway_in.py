@@ -76,9 +76,9 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       historical_len= args.H,
                       step_ahead=args.step_ahead,
                       spatial_unit = spatial_unit,
-                      indices_spatial_unit = indices_spatial_unit
+                      indices_spatial_unit = indices_spatial_unit,
+                      dims = [0]
                       )
-    
 
     
     return(dataset)

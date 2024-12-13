@@ -23,12 +23,14 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
                                      tensor = dataset.raw_values, 
                                      dates = dataset.df_dates, 
                                      spatial_unit = dataset.spatial_unit,
+                                    indices_spatial_unit = dataset.indices_spatial_unit,
                                      time_step_per_hour = dataset.time_step_per_hour,
                                      Weeks = args.W, 
                                      Days = args.D, 
                                      historical_len = args.H,
                                      step_ahead = args.step_ahead,
-                                     minmaxnorm = True ,dims=[0])
+                                     minmaxnorm = True ,
+                                     dims=dataset.dims)
 
     preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     

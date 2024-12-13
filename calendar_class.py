@@ -1,13 +1,104 @@
 import torch
 import pandas as pd
+from datetime import datetime
+import torch
+
+def is_bank_holidays(timestamp):
+    # Liste des jours fériés en 2019 en France
+    bank_holidays = [
+        "2019-01-01",  # Mardi 1er janvier 2019
+        "2019-04-22",  # Lundi 22 avril 2019
+        "2019-05-01",  # Mercredi 1er mai 2019
+        "2019-05-08",  # Mercredi 8 mai 2019
+        "2019-05-30",  # Jeudi 30 mai 2019
+        "2019-06-10",  # Lundi 10 juin 2019
+        "2019-07-14",  # Dimanche 14 juillet 2019
+        "2019-08-15",  # Jeudi 15 août 2019
+        "2019-11-01",  # Vendredi 1er novembre 2019
+        "2019-11-11",  # Lundi 11 novembre 2019
+        "2019-12-25",  # Mercredi 25 décembre 2019
+    ]
+    date = timestamp.strftime("%Y-%m-%d")
+    
+    return date in bank_holidays
+
+def is_school_holidays(timestamp):
+    school_holidays = [
+        ("2018-12-22", "2019-01-07"),  # Vacances de Noël
+        ("2019-02-16", "2019-03-04"),  # Vacances d'hiver
+        ("2019-04-13", "2019-04-29"),  # Vacances de printemps
+    ]
+
+    for start, end in school_holidays:
+        start_date = datetime.strptime(start, "%Y-%m-%d")
+        end_date = datetime.strptime(end, "%Y-%m-%d")
+        if start_date <= timestamp < end_date:
+            # remaining days before the end of the holidays
+            days_to_end = (end_date - timestamp).days
+            return True, days_to_end
+
+    return False, -1
+
+def calendar_inputs(df_dates, calendar_type=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']):
+    df = pd.DataFrame({'date': df_dates})
+    df['date'] = pd.to_datetime(df['date'])
+
+    if 'dayofweek' in calendar_type:
+        df['dayofweek'] = df['date'].dt.weekday
+    if 'hour' in calendar_type:
+        df['hour'] = df['date'].dt.hour
+    if 'minute' in calendar_type:
+        df['minute'] = df['date'].dt.minute
+    if 'bank_holidays' in calendar_type:
+        df['bank_holidays'] = df['date'].apply(is_bank_holidays)
+    if 'school_holidays' in calendar_type:
+        school_holidays,remaining_holidays  = zip(*df['date'].apply(is_school_holidays))
+        df['school_holidays'] = school_holidays
+        if 'remaining_holidays' in calendar_type:
+            df['remaining_holidays'] = remaining_holidays
+
+    return df.drop(columns=['date'])
+
+
+def one_hot_encode_dataframe(df, columns):
+    """
+    Encode selected columns in a DataFrame into a dictionary of one-hot encoded PyTorch tensors.
+
+    :param df: The DataFrame to encode.
+    :param columns: List of column names to encode.
+    :return: Dictionary where keys are column names and values are tensors of one-hot encodings.
+    """
+    one_hot_dict = {}
+    for column in columns:
+        unique_labels = df[column].fillna(-1).unique().tolist()  # Treat NaN as -1
+        df[column] = df[column].fillna(-1)
+        one_hot = pd.get_dummies(df[column], prefix=column)
+        one_hot_tensor = torch.tensor(one_hot.values, dtype=torch.float32)
+        one_hot_dict[column] = one_hot_tensor
+    return one_hot_dict
 
 
 
 
+if __name__ == '__main__':
+
+    calendar_type=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
+    dates = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
+
+    # Load calendar-related informaiton : 
+    df_calendar = calendar_inputs(dates)
+
+    # Load One-Hot encoded Vector :
+    one_hot_dict = one_hot_encode_dataframe(df_calendar, calendar_type)
 
 
 
-
+# ===================================================================================================
+# ===================================================================================================
+# ===================== A SUPPRIMER A SUPPRIMER A SUPPRIMER =========================================
+# ===================================================================================================
+# ===================================================================================================
+# ====== Calendar Class compliqué. Ce formalisme ne peut pas prendre en compte les vacances, les jours fériées, ou autre 'événement' notable.
 
 
 
@@ -116,3 +207,9 @@ def get_time_slots_labels(dataset,nb_class = [0,1,2,3]):
 
 
     return(Dic_T_labels,Dic_class2rpz,Dic_rpz2class,Dic_nb_words_embedding)
+
+
+
+# ===================================================================================================
+# ====== Calendar Class compliqué. Ce formalisme ne peut pas prendre en compte les vacances, les jours fériées, ou autre 'événement' notable. 
+# ===================================================================================================

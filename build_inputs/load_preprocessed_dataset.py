@@ -73,7 +73,6 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
 def load_complete_ds(args,coverage_period = None,normalize = True):
     # Load subway-in DataSet:
     subway_ds,dataset,invalid_dates,intesect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
-
     # Calendar data for Calibration : 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
 
