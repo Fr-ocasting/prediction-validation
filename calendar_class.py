@@ -1,6 +1,20 @@
 import torch
 import pandas as pd
 
+
+
+
+
+
+
+
+
+
+
+# ===================================================================================================
+# ====== Calendar Class compliqué. Ce formalisme ne peut pas prendre en compte les vacances, les jours fériées, ou autre 'événement' notable. 
+# ===================================================================================================
+
 def find_class(elt, week_group, hour_minute_group):
     day,hour,minute = elt
     

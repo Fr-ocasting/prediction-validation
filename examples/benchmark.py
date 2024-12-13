@@ -81,22 +81,22 @@ def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metric
 
 if __name__ == '__main__':
 
-    for dataset_names,vision_model_name in zip([['METR_LA','calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
+    for dataset_names,vision_model_name in zip([['subway_in','calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
         # GET PARAMETERS
         #dataset_names = ['subway_in','netmob_POIs'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon'] #['netmob_POIs']
-        dataset_for_coverage = ['METR_LA'] #['subway_in','netmob_POIs'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon'] #['netmob_POIs'] 
+        dataset_for_coverage = ['subway_in','netmob_POIs'] #['subway_in','netmob_POIs'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon'] #['netmob_POIs'] 
         #vision_model_name = 'VariableSelectionNetwork' # None # 'VariableSelectionNetwork'
 
         from constants.paths import DATA_TO_PREDICT
 
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-        modification = {'epochs' : 10, #100,
+        modification = {'epochs' : 1, #100,
                         #'set_spatial_units' : ['BON','SOI','GER','CHA'],
                         'vision_model_name': vision_model_name,
                         }
     
-        model_names =['LSTM'] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
+        model_names =['STGCN'] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
         args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],

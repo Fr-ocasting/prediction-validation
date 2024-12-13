@@ -71,44 +71,44 @@ def rugby_matches(coverage, range = 3*60):
 
 if False:
     def basket_matches(coverage, range = 3*60):
-    """Retrieves the rugby match times of the 'Lyon Lou Rugby Team' at 'Gerland Stadium' from a list of of timestamps 'coverage'.
+        """Retrieves the rugby match times of the 'Lyon Lou Rugby Team' at 'Gerland Stadium' from a list of of timestamps 'coverage'.
 
-        args:
-        ------
-        coverage : list of Timestamp, a list containing timestamps to evaluate.
-        range : int, the range in minutes to look for timestamps around each kick-off time  
+            args:
+            ------
+            coverage : list of Timestamp, a list containing timestamps to evaluate.
+            range : int, the range in minutes to look for timestamps around each kick-off time  
 
-        outputs:
-        ------
-        match_times : list of Timestamp, a list of timestamps within +/- 3 hours of the match time ."""
-    kick_off_time= [
-        datetime(2019,3,2,20,45),      
-        datetime(2019,3,11,20,45),  
-        datetime(2019,3,24,20,45),  
-        datetime(2019,4,1,20,45),   
-        datetime(2019,4,6,20,45),   
-        datetime(2019,4,11,20,45), 
-        datetime(2019,4,14,20,45), 
-        datetime(2019,4,22,20,45), 
-        datetime(2019,4,25,20,45),
-        datetime(2019,4,29,20,45), 
-        datetime(2019,5,6,20,45), 
-        datetime(2019,5,8,20,45), 
-        datetime(2019,5,16,20,45), 
-        datetime(2019,5,19,20,45), 
-        datetime(2019,5,26,20,45), 
-        datetime(2019,5,28,20,45), 
-        datetime(2019,6,3,20,45), 
-        datetime(2019,6,5,20,45), 
-        datetime(2019,6,8,20,45), 
-        datetime(2019,6,16,20,45), 
-        datetime(2019,6,18,20,45), 
-        datetime(2019,6,21,20,45), 
-        datetime(2019,6,23,20,45), 
-        datetime(2019,6,26,20,45), 
-    ]
+            outputs:
+            ------
+            match_times : list of Timestamp, a list of timestamps within +/- 3 hours of the match time ."""
+        kick_off_time= [
+            datetime(2019,3,2,20,45),      
+            datetime(2019,3,11,20,45),  
+            datetime(2019,3,24,20,45),  
+            datetime(2019,4,1,20,45),   
+            datetime(2019,4,6,20,45),   
+            datetime(2019,4,11,20,45), 
+            datetime(2019,4,14,20,45), 
+            datetime(2019,4,22,20,45), 
+            datetime(2019,4,25,20,45),
+            datetime(2019,4,29,20,45), 
+            datetime(2019,5,6,20,45), 
+            datetime(2019,5,8,20,45), 
+            datetime(2019,5,16,20,45), 
+            datetime(2019,5,19,20,45), 
+            datetime(2019,5,26,20,45), 
+            datetime(2019,5,28,20,45), 
+            datetime(2019,6,3,20,45), 
+            datetime(2019,6,5,20,45), 
+            datetime(2019,6,8,20,45), 
+            datetime(2019,6,16,20,45), 
+            datetime(2019,6,18,20,45), 
+            datetime(2019,6,21,20,45), 
+            datetime(2019,6,23,20,45), 
+            datetime(2019,6,26,20,45), 
+        ]
 
-    
-    return build_window(kick_off_time,coverage,range)
+        
+        return build_window(kick_off_time,coverage,range)
 
 
