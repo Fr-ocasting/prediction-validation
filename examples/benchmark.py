@@ -91,12 +91,12 @@ if __name__ == '__main__':
 
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-        modification = {'epochs' : 1, #100,
+        modification = {'epochs' : 10, #100,
                         #'set_spatial_units' : ['BON','SOI','GER','CHA'],
                         'vision_model_name': vision_model_name,
                         }
     
-        model_names = ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
+        model_names =['LSTM'] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
         args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],
