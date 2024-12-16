@@ -257,7 +257,7 @@ class DataSet(object):
                  train_df = None,cleaned_df = None,Weeks = None, Days = None, 
                  historical_len = None,step_ahead = None,
                  standardize = None, minmaxnorm = None,dims = None,
-                 spatial_unit = None,indices_spatial_unit = None):
+                 spatial_unit = None,indices_spatial_unit = None,city = None):
         
         if df is not None:
             self.length = len(df)
@@ -273,7 +273,7 @@ class DataSet(object):
             self.raw_values = tensor.to(torch.float32)
             self.df_dates = pd.DataFrame(dates,index = np.arange(self.length),columns = ['date'])
             self.spatial_unit = spatial_unit
-
+        self.city  = city
         self.dims = dims
         self.minmaxnorm = minmaxnorm
         self.standardize = standardize

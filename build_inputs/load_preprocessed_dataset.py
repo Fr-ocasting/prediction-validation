@@ -10,7 +10,8 @@ if parent_dir not in sys.path:
 # Personnal inputs:
 from build_inputs.load_netmob_data import tackle_netmob
 from build_inputs.load_datasets_to_predict import load_datasets_to_predict
-from build_inputs.load_calendar import load_calendar,tackle_calendar
+from build_inputs.load_calendar import load_calendar,get_args_embedding
+# from build_inputs.load_calendar import tackle_calendar
 from constants.paths import DATA_TO_PREDICT
 
 
@@ -74,10 +75,15 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     # Load subway-in DataSet:
     subway_ds,dataset,invalid_dates,intesect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
     # Calendar data for Calibration : 
+    '''
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
-
+    '''
+    dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = load_calendar(subway_ds)
+    args = get_args_embedding(args)
     # Calendar data for training (with Time-Embedding):
+    '''
     args = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
+    '''
     # Netmob: 
     args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize = normalize)
     # Add Contextual Tensors and their positions: 

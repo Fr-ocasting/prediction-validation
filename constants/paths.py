@@ -18,8 +18,12 @@ else:
     DATA_TO_PREDICT = 'METR_LA' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
-
+    
 SAVE_DIRECTORY = '../save/'
+
+''' Calendar Parameters: '''
+CALENDAR_TYPE=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
+
 ''' NetMob Parameters: '''
 SELECTED_APPS = ['Instagram','Google_Maps'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
 TRANSFER_MODE = ['DL'] # ['DL'] # ['UL'] #['DL','UL']

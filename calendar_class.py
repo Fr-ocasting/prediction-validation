@@ -39,7 +39,11 @@ def is_school_holidays(timestamp):
 
     return False, -1
 
-def calendar_inputs(df_dates, calendar_type=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']):
+def calendar_inputs(df_dates, calendar_type=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays'],city = 'Lyon'):
+    if city != 'Lyon': 
+        if ('bank_holidays' in calendar_type) or ('school_holidays' in calendar_type) or ('remaining_holidays' in calendar_type) :
+            raise NotImplementedError(f'The holidays are not designed for another city than Lyon (here city is {city})')
+        
     df = pd.DataFrame({'date': df_dates})
     df['date'] = pd.to_datetime(df['date'])
 
@@ -86,7 +90,7 @@ if __name__ == '__main__':
     dates = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
 
     # Load calendar-related informaiton : 
-    df_calendar = calendar_inputs(dates)
+    df_calendar = calendar_inputs(dates,city = 'Lyon')
 
     # Load One-Hot encoded Vector :
     one_hot_dict = one_hot_encode_dataframe(df_calendar, calendar_type)
