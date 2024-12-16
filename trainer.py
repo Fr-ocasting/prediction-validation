@@ -199,6 +199,8 @@ class Trainer(object):
         self.training_mode = 'train'
         self.model.train()   #Activate Dropout 
         self.loop_epoch()
+
+        print('\n>>>>VALID')
         self.training_mode = 'valid'
         self.model.eval()   # Desactivate Dropout 
         Preds,Y_true,T_labels = self.loop_epoch() 

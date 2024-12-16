@@ -25,7 +25,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['C'] =  data_module.C
     
     # === Common config for everyone: ===
-    config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config['device'] =  'cpu' #torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
     config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'

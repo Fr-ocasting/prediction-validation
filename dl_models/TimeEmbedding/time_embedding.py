@@ -16,24 +16,13 @@ def elt2word_indx(elt,Encoded_dims):
 class TimeEmbedding(nn.Module):
     def __init__(self,args_embedding): #n_vertex
         super(TimeEmbedding, self).__init__()
-        #self.nb_words_embedding = args_embedding.nb_words_embedding
         self.embedding_dim = args_embedding.embedding_dim
         self.dic_sizes = args_embedding.dic_sizes
         self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
-
-        #self.calendar_class =  args_embedding.calendar_class
-        #self.multi_embedding = args_embedding.multi_embedding
-
-        #if self.multi_embedding:
-        #    self.embeddings = nn.ModuleList([
-        #        nn.Embedding(self.nb_words_embedding[self.calendar_class], self.embedding_dim)
-        #        for _ in range(n_vertex)
-        #    ])
-        #else:
-        #    self.embedding = nn.Embedding(self.nb_words_embedding[self.calendar_class],self.embedding_dim)
-        self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
+        self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
         
         input_dim = sum(self.embedding_dim_calendar_units)
+
         if args_embedding.fc1:
             self.output1 = nn.Linear(input_dim,args_embedding.fc1)
             self.output2 = nn.Linear(args_embedding.fc1,args_embedding.embedding_dim) 
@@ -43,25 +32,23 @@ class TimeEmbedding(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self,elt): 
-        #if self.multi_embedding:
-        #    z = torch.stack([embedding(elt) for embedding in self.embeddings], dim=1)
-        #else:
-        #    z = self.embedding(elt)
-        print(self.dic_sizes)
-        print(self.embedding_dim_calendar_units)
-        print('premier embedding: ',self.embedding[0])
-        print('premier elt: ',elt[0].size())
-
-        print('second embedding: ',self.embedding[1])
-        print('second elt: ',elt[1].size())
-
-        L = []
+        z = []
         for k,emb in enumerate(self.embedding):
-            L.append(emb(elt[k].argmax(dim=1)))
-            print(emb(elt[k].argmax(dim=1)).size())
-        z = torch.cat(L,-1)
-       
-        #z = torch.cat([emb(elt[k]) for k,emb in enumerate(self.embedding)],-1)
+            elt_i = elt[k].argmax(dim=1).long()
+            print('dic_size/emb_dim: ',self.dic_sizes[k],'/',self.embedding_dim_calendar_units[k],'elt_i: ',elt_i.size(), elt_i)
+            try:
+                emb_elt = emb(elt_i)
+            except:
+                print('\n>>> PROBLEM')
+                print(elt_i)
+                print(emb)
+                blabla
+            print('EMB elt_i: ',emb_elt.size())
+            z.append(emb_elt)
+        z = torch.cat(z,-1)
+
+        print('z.size(): ',z.size(),'\n')
+        #z = torch.cat([emb(elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
 
         if self.output1 is not None:
             z = self.output1(z)
