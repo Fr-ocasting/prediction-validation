@@ -30,6 +30,7 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
                                      historical_len = args.H,
                                      step_ahead = args.step_ahead,
                                      minmaxnorm = True ,
+                                     city = dataset.city,
                                      dims=dataset.dims)
 
     preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)

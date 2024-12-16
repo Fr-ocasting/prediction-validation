@@ -48,13 +48,13 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
 
 def get_inputs(args,folds):
     K_fold_splitter = KFoldSplitter(args,folds)
-    K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
-    return(K_fold_splitter,K_subway_ds,dic_class2rpz)
+    K_subway_ds,_ = K_fold_splitter.split_k_fold()
+    return(K_fold_splitter,K_subway_ds)
 
-def train_on_ds(ds,args,trial_id,save_folder,dic_class2rpz,df_loss):
-    model = load_model(ds, args,dic_class2rpz)
+def train_on_ds(ds,args,trial_id,save_folder,df_loss):
+    model = load_model(ds, args)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
     trainer.train_and_valid(mod = 1000,mod_plot = None) 
     df_loss[f"{args.model_name}_train_loss"] = trainer.train_loss
     df_loss[f"{args.model_name}_valid_loss"] = trainer.valid_loss
@@ -105,11 +105,11 @@ if __name__ == '__main__':
                                                             dataset_for_coverage=dataset_for_coverage,
                                                             modification = modification)
  
-        K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,folds)
+        K_fold_splitter,K_subway_ds = get_inputs(args,folds)
         trial_id = get_trial_id(args)
         ds = K_subway_ds[0]
 
-        trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
+        trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
         metrics = trainer.metrics
         df_results = keep_track_on_model_metrics(trainer,df_results,model_names[0],trainer,metrics)
         for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
@@ -120,7 +120,7 @@ if __name__ == '__main__':
                                                                 dataset_for_coverage=dataset_for_coverage,
                                                                 modification = modification)
             trial_id = get_trial_id(args)
-            trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,dic_class2rpz,df_loss)
+            trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
             metrics = trainer.metrics
             df_results = keep_track_on_model_metrics(trainer,df_results,model_name,trainer,metrics)
 

@@ -6,8 +6,8 @@ from K_fold_validation.K_fold_validation import KFoldSplitter
 
 # =======================================================================================================================
 # =======================================================================================================================
-def load_model(dataset, args,dic_class2rpz):
-    model = full_model(dataset, args,dic_class2rpz).to(args.device)
+def load_model(dataset, args):
+    model = full_model(dataset, args).to(args.device)
     print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
     print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
     return(model)
@@ -24,27 +24,27 @@ def load_everything(args):
     # Load DataSet, DataLoader, Args :
     folds = [0]
     K_fold_splitter = KFoldSplitter(args,folds)
-    K_subway_ds,dic_class2rpz,args = K_fold_splitter.split_k_fold()
+    K_subway_ds,args = K_fold_splitter.split_k_fold()
     subway_ds = K_subway_ds[0]
     # ...
 
     # Load Model:
-    model = load_model(subway_ds,args,dic_class2rpz)
+    model = load_model(subway_ds,args)
 
     # Load Optimizer, Scheduler, Loss function: 
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     
-    return(model,subway_ds,loss_function,optimizer,scheduler,args,dic_class2rpz)
+    return(model,subway_ds,loss_function,optimizer,scheduler,args)
 
 
 def evaluate_config(dataset_names,FOLDER_PATH,FILE_NAME,args,coverage,vision_model_name,mod_plot):
     # Load Model, Optimizer, Scheduler:
 
-    model,subway_ds,loss_function,optimizer,scheduler,args,dic_class2rpz = load_everything(args)
+    model,subway_ds,loss_function,optimizer,scheduler,args = load_everything(args)
     normalizer = subway_ds.normalizer
     df_verif_test = subway_ds.tensor_limits_keeper.df_verif_test
     # Load trainer: 
-    trainer = Trainer(subway_ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = True)# Ajoute dans trainer, if calibration_prop is not None .... et on modifie le dataloader en ajoutant un clabration set
+    trainer = Trainer(subway_ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = True)# Ajoute dans trainer, if calibration_prop is not None .... et on modifie le dataloader en ajoutant un clabration set
     # Train Model 
     trainer.train_and_valid(mod = 1000,mod_plot = mod_plot)  # Récupère les conformity scores sur I1, avec les estimations faites precedemment 
 

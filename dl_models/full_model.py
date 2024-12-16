@@ -42,7 +42,7 @@ def load_vision_model(args_vision):
 
 
 class full_model(nn.Module):
-    def __init__(self,dataset, args,dic_class2rpz):
+    def __init__(self,dataset, args):
         super(full_model,self).__init__()
 
         # Add positions for each contextual data:
@@ -189,7 +189,8 @@ class full_model(nn.Module):
 
         # if calendar data is on : 
         if self.te is not None:
-            time_elt = contextual[self.pos_calendar].long()
+            time_elt = [contextual[pos]for pos in self.pos_calendar] # contextual[self.pos_calendar] 
+            time_elt = [elt.long() for elt in time_elt]# time_elt.long()
             # Extract feature: [B] -> [B,C,N,L_calendar]
             time_elt = self.te(time_elt)
 

@@ -14,24 +14,28 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,args_embedding,n_vertex):
+    def __init__(self,args_embedding): #n_vertex
         super(TimeEmbedding, self).__init__()
-        self.nb_words_embedding = args_embedding.nb_words_embedding
+        #self.nb_words_embedding = args_embedding.nb_words_embedding
         self.embedding_dim = args_embedding.embedding_dim
-        self.calendar_class =  args_embedding.calendar_class
-        self.multi_embedding = args_embedding.multi_embedding
+        self.dic_sizes = args_embedding.dic_sizes
+        self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
 
-        if self.multi_embedding:
-            self.embeddings = nn.ModuleList([
-                nn.Embedding(self.nb_words_embedding[self.calendar_class], self.embedding_dim)
-                for _ in range(n_vertex)
-            ])
-        else:
-            self.embedding = nn.Embedding(self.nb_words_embedding[self.calendar_class],self.embedding_dim)
+        #self.calendar_class =  args_embedding.calendar_class
+        #self.multi_embedding = args_embedding.multi_embedding
 
-
+        #if self.multi_embedding:
+        #    self.embeddings = nn.ModuleList([
+        #        nn.Embedding(self.nb_words_embedding[self.calendar_class], self.embedding_dim)
+        #        for _ in range(n_vertex)
+        #    ])
+        #else:
+        #    self.embedding = nn.Embedding(self.nb_words_embedding[self.calendar_class],self.embedding_dim)
+        self.embedding = nn.ModuleList([nn.Linear(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
+        
+        input_dim = sum(self.embedding_dim_calendar_units)
         if args_embedding.fc1:
-            self.output1 = nn.Linear(self.embedding_dim,args_embedding.fc1)
+            self.output1 = nn.Linear(input_dim,args_embedding.fc1)
             self.output2 = nn.Linear(args_embedding.fc1,args_embedding.embedding_dim) 
         else:
             self.output1= None
@@ -39,10 +43,26 @@ class TimeEmbedding(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self,elt): 
-        if self.multi_embedding:
-            z = torch.stack([embedding(elt) for embedding in self.embeddings], dim=1)
-        else:
-            z = self.embedding(elt)
+        #if self.multi_embedding:
+        #    z = torch.stack([embedding(elt) for embedding in self.embeddings], dim=1)
+        #else:
+        #    z = self.embedding(elt)
+        print(self.dic_sizes)
+        print(self.embedding_dim_calendar_units)
+        print('premier embedding: ',self.embedding[0])
+        print('premier elt: ',elt[0].size())
+
+        print('second embedding: ',self.embedding[1])
+        print('second elt: ',elt[1].size())
+
+        L = []
+        for k,emb in enumerate(self.embedding):
+            L.append(emb(elt[k].argmax(dim=1)))
+            print(emb(elt[k].argmax(dim=1)).size())
+        z = torch.cat(L,-1)
+       
+        #z = torch.cat([emb(elt[k]) for k,emb in enumerate(self.embedding)],-1)
+
         if self.output1 is not None:
             z = self.output1(z)
             z = self.output2(self.relu(z))
@@ -53,17 +73,19 @@ class TE_module(nn.Module):
     def __init__(self,args):
         super(TE_module, self).__init__()
         args_embedding =  args.args_embedding
-        self.multi_embedding = args_embedding.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding,args.n_vertex)
-        self.N_repeat = 1 if self.multi_embedding else args.n_vertex
+        #self.multi_embedding = args_embedding.multi_embedding
+        self.Tembedding = TimeEmbedding(args_embedding) #args.n_vertex
+        #self.N_repeat = 1 if self.multi_embedding else args.n_vertex
         self.C = args.C
         self.n_vertex = args.n_vertex
+        #self.n_vertex = args.n_vertex
 
     def forward(self,time_elt):
-        mini_batch_size = time_elt.size(0)
+        mini_batch_size = time_elt[0].size(0)
         time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
-        if not(self.multi_embedding):
-            time_elt = time_elt.repeat(1,self.N_repeat*self.C,1)
+        #if not(self.multi_embedding):
+        #    time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
+        time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
         time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
         return(time_elt)
 

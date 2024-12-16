@@ -40,7 +40,7 @@ def load_configuration(trial_id,load_config,epochs):
 def load_k_fold_dataset(args,folds,hp_tuning_on_first_fold):
     K_fold_splitter = KFoldSplitter(args,
                                     folds=folds)
-    K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
+    K_subway_ds,_ = K_fold_splitter.split_k_fold()
 
     # Keep the first fold or not : 
     if hp_tuning_on_first_fold :
@@ -54,10 +54,10 @@ def load_k_fold_dataset(args,folds,hp_tuning_on_first_fold):
         args.train_prop = 0.6
         args.valid_prop = 0.2
         args.test_prop = 0.2
-        subway_ds,_,_,dic_class2rpz = K_fold_splitter.load_init_ds(normalize = True)
+        subway_ds,_,_ = K_fold_splitter.load_init_ds(normalize = True)
         ds_validation.append(subway_ds)
         del subway_ds
-    return(ds_validation,args,dic_class2rpz)
+    return(ds_validation,args)
 
 
 def train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder):
@@ -69,7 +69,7 @@ def train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder
     '''
         
     # Return a list of K-fold Dataset:
-    ds_validation,args,dic_class2rpz = load_k_fold_dataset(args,folds,hp_tuning_on_first_fold)
+    ds_validation,args = load_k_fold_dataset(args,folds,hp_tuning_on_first_fold)
 
     ## Train on the K-1 folds:
 
@@ -90,9 +90,9 @@ def train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder
         if condition:
             fold = 'complete_dataset'
 
-        model = load_model(ds, args,dic_class2rpz)
+        model = load_model(ds, args)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-        trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,dic_class2rpz = dic_class2rpz,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
+        trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
         trainer.train_and_valid(mod = 1000,mod_plot = None) 
 
         df_loss[f"f{fold}_train_loss"] = trainer.train_loss

@@ -27,11 +27,11 @@ def hyperparameter_tuning(args,num_samples):
 
     # Split in K-fold : 
     K_fold_splitter = KFoldSplitter(args,folds)
-    K_subway_ds,dic_class2rpz,_ = K_fold_splitter.split_k_fold()
+    K_subway_ds,_ = K_fold_splitter.split_k_fold()
 
     # Train on the first fold: 
     subway_ds = K_subway_ds[0]
-    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir=working_dir)
+    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,working_dir=working_dir)
     return(analysis,trial_id)
 
 

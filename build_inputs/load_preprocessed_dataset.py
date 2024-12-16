@@ -19,20 +19,24 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
     # === Define DataLoader : 
     contextual_tensors,positions = {},{}
 
-    # Define contextual tensor for Calibration with Calendar Class:
-    contextual_tensors = {f'calendar_{calendar_class}': {'train': dict_calendar_U_train[calendar_class],
-                                'valid': dict_calendar_U_valid[calendar_class],
-                                'test': dict_calendar_U_test[calendar_class]} for calendar_class in dict_calendar_U_train.keys()
+    # Define contextual tensor for Calendar Information:
+    contextual_tensors = {f'calendar_{calendar_type}': {'train': dict_calendar_U_train[calendar_type],
+                                'valid': dict_calendar_U_valid[calendar_type],
+                                'test': dict_calendar_U_test[calendar_type]} for calendar_type in dict_calendar_U_train.keys()
                                 } 
     # ...
 
-    pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
-    positions['calibration_calendar'] = pos_calibration_calendar
+    # == Define contextual tensor for Calibration : 
+    # pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
+    # positions['calibration_calendar'] = pos_calibration_calendar
+    # ==
+
     contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != DATA_TO_PREDICT]
 
     for dataset_name in contextual_dataset_names:
         if dataset_name == 'calendar':
-            pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.args_embedding.calendar_class}')
+            #pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.args_embedding.calendar_class}')
+            pos_calendar = [list(contextual_tensors.keys()).index(f'calendar_{calendar_type}') for calendar_type in dict_calendar_U_train.keys()]
             positions['calendar'] = pos_calendar
             
         elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
@@ -79,7 +83,7 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test,dic_class2rpz,dic_rpz2class,nb_words_embedding = load_calendar(subway_ds)
     '''
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = load_calendar(subway_ds)
-    args = get_args_embedding(args)
+    args = get_args_embedding(args,dict_calendar_U_train)
     # Calendar data for training (with Time-Embedding):
     '''
     args = tackle_calendar(args,dic_class2rpz,dic_rpz2class,nb_words_embedding)
@@ -91,4 +95,4 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
 
     # Update/Set arguments: 
     assert subway_ds.U_train.dim() == 3, f'Feature Vector does not have the good dimension. Expected shape dimension [B,N,L], got {subway_ds.U_train.dim()} dim: {subway_ds.U_train.size()}'
-    return(subway_ds,NetMob_ds,args,args.dic_class2rpz)
+    return(subway_ds,NetMob_ds,args) #,args.dic_class2rpz)

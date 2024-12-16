@@ -46,12 +46,14 @@ def load_calendar(subway_ds):
 
     return(dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
-def get_args_embedding(args):
+def get_args_embedding(args,dict_calendar_U_train):
     if 'calendar' in args.dataset_names:
         module_path = f"dl_models.TimeEmbedding.load_config"
         module = importlib.import_module(module_path)
         importlib.reload(module)
         args_embedding = module.args
+        args_embedding.dic_sizes = [dict_calendar_U_train[calendar_type].size(-1) for calendar_type in dict_calendar_U_train.keys()]
+        args_embedding.embedding_dim_calendar_units = [max(1,size//2) for size in args_embedding.dic_sizes]
     else:
         args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
 

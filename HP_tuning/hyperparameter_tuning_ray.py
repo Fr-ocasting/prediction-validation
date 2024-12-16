@@ -64,20 +64,19 @@ def HP_modification(config,args):
                 raise ValueError(f"Key {key} issue")
     return(args)
 
-def load_trainer(config, dataset, args, dic_class2rpz):
+def load_trainer(config, dataset, args):
     '''Change the hyperparameters and load the model accordingly. 
     The hyperparameters to be modified must not concern the dataloader, so don't change: 
     - train/valid/test/calib proportion
     - batch-size
     '''
     args = HP_modification(config,args)
-    model = load_model(dataset, args,dic_class2rpz)
+    model = load_model(dataset, args)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
 
     #model_ref = ray.put(model)
     trainer = Trainer(dataset,model,
                       args,optimizer,loss_function,scheduler = scheduler,
-                      dic_class2rpz = dic_class2rpz,
                       #show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder
                       )
 
@@ -85,7 +84,7 @@ def load_trainer(config, dataset, args, dic_class2rpz):
 
     return(trainer)
 
-def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
+def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
     # Load ray parameters:
     config = get_search_space_ray(args)
     ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
@@ -113,7 +112,7 @@ def HP_tuning(dataset,args,num_samples,dic_class2rpz,working_dir = '/home/rrocha
     def train_with_tuner(config):
         # Dereference the large objects within the worker
         dataset = ray.get(dataset_ref)
-        trainer = load_trainer(config, dataset, args, dic_class2rpz)
+        trainer = load_trainer(config, dataset, args)
         trainer.train_and_valid()  # No plotting, No testing
 
         # Clean Memory: 
@@ -191,8 +190,8 @@ if __name__ == '__main__':
     # folds = np.arange(1,args.K_fold)
 
     K_fold_splitter = KFoldSplitter(args,folds)
-    K_subway_ds,dic_class2rpz = K_fold_splitter.split_k_fold()
+    K_subway_ds = K_fold_splitter.split_k_fold()
 
     num_samples = 8
     subway_ds = K_subway_ds[0]
-    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,dic_class2rpz,working_dir,save_dir)
+    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,working_dir,save_dir)

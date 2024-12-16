@@ -68,10 +68,9 @@ class KFoldSplitter(object):
         return(subway_ds_tmps)
     
     def load_init_ds(self,normalize = False):
-        subway_ds,NetMob_ds,args,dic_class2rpz = load_complete_ds(self.args,
-                                                                  normalize = normalize)
+        subway_ds,NetMob_ds,args = load_complete_ds(self.args,normalize = normalize)  #,dic_class2rpz
         
-        return(subway_ds,NetMob_ds,args,dic_class2rpz)
+        return(subway_ds,NetMob_ds,args) #,dic_class2rpz)
 
     def split_k_fold(self):
         '''Split ds in K-fold with respected proportion train_prop/valid_prop and keep initial test dataset:
@@ -88,7 +87,7 @@ class KFoldSplitter(object):
         '''
 
         # Init
-        subway_ds,_,args,dic_class2rpz = self.load_init_ds(normalize = False)  # build a copy of 'args'
+        subway_ds,_,args = self.load_init_ds(normalize = False)  # build a copy of 'args'
         K_subway_ds = []
 
 
@@ -137,7 +136,7 @@ class KFoldSplitter(object):
                                                         (coverage_without_test<coverage_without_test.iloc[start_coverage+fold_length])
                                                         ]   
 
-            subway_ds_tmps,NetMob_ds_tmps,_,_ = load_complete_ds(args,
+            subway_ds_tmps,NetMob_ds_tmps,_= load_complete_ds(args,
                                                                  coverage_period=coverage_tmps,
                                                                  normalize = True)  # Normalize
 
@@ -155,4 +154,4 @@ class KFoldSplitter(object):
             # ...
 
             K_subway_ds.append(subway_ds_tmps)
-        return K_subway_ds,dic_class2rpz,args
+        return K_subway_ds,args

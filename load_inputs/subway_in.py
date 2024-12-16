@@ -80,7 +80,6 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       dims = [0],
                       city = 'Lyon'
                       )
-
     
     return(dataset)
     
