@@ -56,6 +56,8 @@ if __name__ == '__main__':
         # Init 
         epochs_validation = 30
         num_samples = 1000
+        
+        HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:
         for dataset_names,vision_model_name in zip([['subway_in','calendar']],
                                                    [None]):
