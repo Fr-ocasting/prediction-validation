@@ -286,9 +286,8 @@ class OutputBlock(nn.Module):
         super(OutputBlock, self).__init__()
         self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
 
-
         # Design Input Dimension according to contextual data integration or not: 
-        in_channel_fc1 = channels[0]
+        in_channel_fc1 = channels[0]  #blocks[-2][0]
         if vision_concatenation_late:
             in_channel_fc1 = in_channel_fc1 + extracted_feature_dim
         if TE_concatenation_late:
@@ -297,7 +296,6 @@ class OutputBlock(nn.Module):
         self.vision_concatenation_late = vision_concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
         # ...
-
         self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
         self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
@@ -306,8 +304,9 @@ class OutputBlock(nn.Module):
 
 
     def forward(self, x,x_vision = None,x_calendar = None):
-        x = self.tmp_conv1(x)
-        x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
+        if not(x.numel() == 0):
+            x = self.tmp_conv1(x)
+            x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
 
         if self.vision_concatenation_late:
             # Concat [B,C,N,Z] + [B,C,N,L'] -> [B,C,N,Z+L']
@@ -315,10 +314,11 @@ class OutputBlock(nn.Module):
         if self.TE_concatenation_late:
             # Concat [B,C,N,Z] + [B,C,N,L_calendar]-> [B,C,N,Z+L_calendar]
             x = torch.concat([x,x_calendar],axis=-1) 
-            
+        
         x = self.fc1(x)
         x = self.relu(x)
         x = self.dropout(x)
-        x = self.fc2(x).permute(0, 3, 1, 2)
+        x = self.fc2(x)
+        x = x.permute(0, 3, 1, 2)
 
         return x

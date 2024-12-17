@@ -1,8 +1,6 @@
 from ray import tune
 
 
-
-
 config = {#'calendar_class' : tune.choice([1,2,3]),
         'embedding_dim' : tune.choice([3,4,8,16,32]),
         #'multi_embedding' : tune.choice([True,False]),
@@ -16,7 +14,10 @@ config = {#'calendar_class' : tune.choice([1,2,3]),
                                              {"concatenation_early" :False, "concatenation_late" :True},
                                             ]),
         ## ====
-        'fc1' : tune.choice([{'fc1':tune.choice([4,8,16,32,64]),'fc2':tune.choice([4,8,16,32,64])},
-                             {'fc1':None,'fc2':None}
-                             ])
+        'fc1' : tune.choice([{'fc1':tune.choice([4,8,16,32,64]),'fc2':tune.choice([4,8,16,32,64]),'activation_fc1': tune.choice([True,False])},
+                             {'fc1':tune.choice([4,8,16,32,64]),'fc2':None,'activation_fc1':None}
+                            ]),
+        'out_h_dim' : tune.choice([4,8,16,32]),
+        
         }
+

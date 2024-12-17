@@ -47,7 +47,7 @@ def HP_modification(config,args):
             
             ## Takle calendar HP tuning : 
             elif 'TE_fc1' in key:
-                for key_i in ['fc1','fc2']:
+                for key_i in ['fc1','fc2','activation_fc1']:
                     setattr(args.args_embedding,key_i,config['TE_fc1'][key_i])
             elif 'TE_concatenation_order' in key:
                 for key_i in ['concatenation_early','concatenation_late']:

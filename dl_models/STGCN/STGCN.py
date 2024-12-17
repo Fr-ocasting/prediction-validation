@@ -57,6 +57,7 @@ class STGCN(nn.Module):
         self.TE_concatenation_late = args.args_embedding.concatenation_late if hasattr(args.args_embedding,'concatenation_late') else False 
 
         self.Ko = Ko
+        self.n_vertex = args.n_vertex
         if hasattr(args.args_vision,'out_dim'):
             extracted_feature_dim = args.args_vision.out_dim 
         else:
@@ -100,21 +101,23 @@ class STGCN(nn.Module):
             1st step: reshape permute input for first st_blocks : [B,C,L,N] 
             
             '''
+            # Tackle case where we only want to use the output module (and not the core-model STGCN
+            if not (x.numel() == 0):
+                # Reshape and permute : [B,N,L] or [B,C,N,L] ->  [B,C,L,N]
+                if len(x.size())<4:
+                    x = x.unsqueeze(1)
+                ### Core model :
+                if not x.numel() == 0:
+                    B,C,N,L = x.size()
+                    x = x.permute(0,1,3,2)
+                    # ....
+                    # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
+                    x = self.st_blocks(x)
+                ### ---
 
-            # Reshape and permute : [B,N,L] or [B,C,N,L] ->  [B,C,L,N]
-            if len(x.size())<4:
-                x = x.unsqueeze(1)
-            ### Core model :
-            if not x.numel() == 0:
-                B,C,N,L = x.size()
-                x = x.permute(0,1,3,2)
-                # ....
-                # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
-                x = self.st_blocks(x)
-            ### ---
-
-            if self.Ko > 1:
+            if self.Ko >= 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
+
                 x = self.output(x,x_vision,x_calendar)
             elif self.Ko == 0:
                 # [B,C_out,L',N] = [B,1,L',N] actually 
@@ -134,15 +137,18 @@ class STGCN(nn.Module):
                         x = torch.concat([x,x_calendar],axis=2)
                     else:
                         x = x_calendar
+
+            
                 x = self.fc1(x.permute(0, 2, 3, 1))
+
                 x = self.relu(x)
-                x = self.fc2(x).permute(0, 3, 1, 2)
-
+                x = self.fc2(x)
+                x = x.permute(0, 3, 1, 2)
+            B = x.size(0)
             x = x.squeeze()
-
             if B ==1:
                 x = x.unsqueeze(0)
-            if N == 1:
+            if self.n_vertex == 1:
                 x = x.unsqueeze(-1)
             if self.out_dim == 1:
                 x = x.unsqueeze(-2)

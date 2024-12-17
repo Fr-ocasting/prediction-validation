@@ -64,8 +64,6 @@ class full_model(nn.Module):
                 TE_concatenation_early = args.args_embedding.concatenation_early
             else:
                 TE_concatenation_early = False
-            if not(vision_concatenation_early) and not(TE_concatenation_early):
-                raise ValueError(f"Need to set {DATA_TO_PREDICT} in dataset_name or at least args_embedding or args_vision with concatenation early otherwise STGCN is not used.")
         # ...
 
         

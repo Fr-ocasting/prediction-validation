@@ -18,35 +18,41 @@ class TimeEmbedding(nn.Module):
         super(TimeEmbedding, self).__init__()
         self.embedding_dim = args_embedding.embedding_dim
         self.dic_sizes = args_embedding.dic_sizes
+        self.activation_fc1 = args_embedding.activation_fc1
         self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
         self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
 
-        self.fc_layers = nn.ModuleList([nn.Linear(emb_dim,emb_dim) for emb_dim in self.embedding_dim_calendar_units])
-
+        #self.fc_layers = nn.ModuleList([nn.Linear(emb_dim,emb_dim) for emb_dim in self.embedding_dim_calendar_units])
         input_dim = sum(self.embedding_dim_calendar_units)
         if args_embedding.out_h_dim is not None: 
             out_h_dim = args_embedding.out_h_dim
         else:
             out_h_dim = input_dim//2
-        if args_embedding.fc1:
+
+        if args_embedding.fc2:
             self.output1 = nn.Linear(input_dim,out_h_dim)#,args_embedding.fc1)
             self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)#args_embedding.fc1,args_embedding.embedding_dim) 
         else:
-            self.output1= None
-
+            self.output1 = nn.Linear(input_dim,args_embedding.embedding_dim)#,args_embedding.fc1)
+            self.output2 =None
         self.relu = nn.ReLU()
 
     def forward(self,elt): 
-        #z = torch.cat([emb(elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
-        emb_list = []
-        for k,emb in enumerate(self.embedding):
-            embedding_k = emb(elt[k].argmax(dim=1).long())
-            embedding_k = self.fc_layers[k](embedding_k)
-            emb_list.append(embedding_k)
-        z = torch.cat(emb_list,-1)
 
-        if self.output1 is not None:
-            z = self.output1(self.relu(z))
+        z = torch.cat([emb(elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
+        if False:
+            emb_list = []
+            for k,emb in enumerate(self.embedding):
+                embedding_k = emb(elt[k].argmax(dim=1).long())
+                embedding_k = self.fc_layers[k](embedding_k)
+                emb_list.append(embedding_k)
+            z = torch.cat(emb_list,-1)
+
+
+        if self.activation_fc1:
+            z = self.relu(z)
+        z = self.output1(z)
+        if self.output2 is not None:
             z = self.output2(self.relu(z))
         return(z)
     
