@@ -2,7 +2,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='TimeEmbedding')
 
-parser.add_argument('--embedding_dim', type=int, default=3, choices=[3,4,8],
+parser.add_argument('--embedding_dim', type=int, default=4, choices=[3,4,8],
                     help='Embedding Dimension')
 
 #parser.add_argument('--multi_embedding', type=bool, default=True, choices=[True,False],
@@ -32,6 +32,10 @@ parser.add_argument('--concatenation_late', type=bool, default=False,
 parser.add_argument('--concatenation_early', type=bool, default=True, 
                     choices = [True,False],
                     help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')
-                    
+
+parser.add_argument('--out_h_dim', type=bool, default=16, 
+                    choices = [8,16,32,64],
+                    help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')
+
                        
 args = parser.parse_args(args=[])

@@ -22,7 +22,7 @@ else:
 SAVE_DIRECTORY = '../save/'
 
 ''' Calendar Parameters: '''
-CALENDAR_TYPE=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
+CALENDAR_TYPE=['dayofweek','hour']#['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 
 ''' NetMob Parameters: '''
 SELECTED_APPS = ['Instagram','Google_Maps'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']

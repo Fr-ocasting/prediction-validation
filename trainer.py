@@ -200,7 +200,6 @@ class Trainer(object):
         self.model.train()   #Activate Dropout 
         self.loop_epoch()
 
-        print('\n>>>>VALID')
         self.training_mode = 'valid'
         self.model.eval()   # Desactivate Dropout 
         Preds,Y_true,T_labels = self.loop_epoch() 
@@ -540,7 +539,7 @@ class Trainer(object):
         (Preds,Y_true,T_labels) = self.test_prediction(allow_dropout,training_mode,X,Y_true,T_labels,track_loss)  # Get Normalized Pred and Y_true
         Preds = Preds.detach().cpu()
         Y_true = Y_true.detach().cpu()
-        T_labels = T_labels.detach().cpu()
+        T_labels = [tensor_ohe.detach().cpu() if tensor_ohe is not None else None for tensor_ohe in T_labels]
 
         # Set feature_vect = True cause output last dimension = 2 if quantile_loss or = 1.
         '''normalizer = self.dataset.normalizer.unormalize_tensor'''

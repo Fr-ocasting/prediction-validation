@@ -20,38 +20,33 @@ class TimeEmbedding(nn.Module):
         self.dic_sizes = args_embedding.dic_sizes
         self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
         self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
-        
-        input_dim = sum(self.embedding_dim_calendar_units)
 
+        self.fc_layers = nn.ModuleList([nn.Linear(emb_dim,emb_dim) for emb_dim in self.embedding_dim_calendar_units])
+
+        input_dim = sum(self.embedding_dim_calendar_units)
+        if args_embedding.out_h_dim is not None: 
+            out_h_dim = args_embedding.out_h_dim
+        else:
+            out_h_dim = input_dim//2
         if args_embedding.fc1:
-            self.output1 = nn.Linear(input_dim,args_embedding.fc1)
-            self.output2 = nn.Linear(args_embedding.fc1,args_embedding.embedding_dim) 
+            self.output1 = nn.Linear(input_dim,out_h_dim)#,args_embedding.fc1)
+            self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)#args_embedding.fc1,args_embedding.embedding_dim) 
         else:
             self.output1= None
 
         self.relu = nn.ReLU()
 
     def forward(self,elt): 
-        z = []
-        for k,emb in enumerate(self.embedding):
-            elt_i = elt[k].argmax(dim=1).long()
-            print('dic_size/emb_dim: ',self.dic_sizes[k],'/',self.embedding_dim_calendar_units[k],'elt_i: ',elt_i.size(), elt_i)
-            try:
-                emb_elt = emb(elt_i)
-            except:
-                print('\n>>> PROBLEM')
-                print(elt_i)
-                print(emb)
-                blabla
-            print('EMB elt_i: ',emb_elt.size())
-            z.append(emb_elt)
-        z = torch.cat(z,-1)
-
-        print('z.size(): ',z.size(),'\n')
         #z = torch.cat([emb(elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
+        emb_list = []
+        for k,emb in enumerate(self.embedding):
+            embedding_k = emb(elt[k].argmax(dim=1).long())
+            embedding_k = self.fc_layers[k](embedding_k)
+            emb_list.append(embedding_k)
+        z = torch.cat(emb_list,-1)
 
         if self.output1 is not None:
-            z = self.output1(z)
+            z = self.output1(self.relu(z))
             z = self.output2(self.relu(z))
         return(z)
     
@@ -75,6 +70,40 @@ class TE_module(nn.Module):
         time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
         time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
         return(time_elt)
+
+# ======     
+# ======
+# Debug Calendar : 
+def debug(elt,z):
+    def f_cal2str(calendar_type,x):
+        if calendar_type == 0: #dayofweek
+            dayofweek = ['lundi','mardi','mercredi','jeudi','vendredi','samedi','dimanche']
+            return(dayofweek[x])
+        elif calendar_type == 1: #'hour'
+            return(f" {x}:") 
+        elif calendar_type == 2: # 'minute'
+            return(f"{15*x} ")
+        elif calendar_type == 3: #'bank_holidays
+            return(f"bh{x}")
+        elif calendar_type == 4: #'school_holidays
+            return(f"sh{x}")
+        elif calendar_type == 5: #'remaining_holidays
+            return(f"rh{x}")
+        else:
+            return(f'calendar type {calendar_type} as not been designed')
+    #print('elt: ',elt)
+    batch_size = elt[0].size(0)
+    time_step_ohe = []
+    for b in range(batch_size):
+        total_ohe = [calendar_tensor[b].argmax(0) for calendar_tensor in elt]
+        time_step_ohe.append(total_ohe)
+    
+    for b in range(batch_size):
+        print('\n',''.join([f_cal2str(calendar_type,total_ohe.item()) for calendar_type,total_ohe in enumerate(time_step_ohe[b])]))
+        #print([f_cal2str(calendar_type,elt[calendar_type][b]) for calendar_type in range(len(time_step_ohe))])
+        print('embedding: ',z[b,:])
+# ======
+# ======       
 
 """
 class TimeEmbedding(nn.Module):

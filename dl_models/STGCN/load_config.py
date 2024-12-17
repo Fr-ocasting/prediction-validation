@@ -37,28 +37,30 @@ parser.add_argument('--act_func', type=str, default='glu',
                     choices = ['glu','gtu','silu'],
                     help="Type of activation function on the output module (FC layers at the output of STGCN)")
 
-parser.add_argument('--temporal_h_dim', type=int, default=128,  #64
+parser.add_argument('--temporal_h_dim', type=int, default=128, # 128 #64
                     choices = [8,16,32,64,128,256],
                     help="Dimension of temporal convolution. Stblocks dims = [temporal_h_dim, spatial_h_dim, temporal_h_dim]")
 
-parser.add_argument('--spatial_h_dim', type=int, default=32,  #16
+parser.add_argument('--spatial_h_dim', type=int, default=32, #32  #16 
                     choices = [8,16,32,64,128,256],
                     help="Dimension of spatial graph convolution. Stblocks dims = [temporal_h_dim, spatial_h_dim, temporal_h_dim]")
 
-parser.add_argument('--output_h_dim', type=int, default=128,
+parser.add_argument('--output_h_dim', type=int, default=128, #128
                     choices = [8,16,32,64,128,256],
                     help="Dimension of hidden layers in output module")
 
 args = parser.parse_args(args=[])
 
 # Def STGCN dim
-blocks = []
-blocks.append([1])
-for l in range(args.stblock_num):
-    blocks.append([args.temporal_h_dim, args.spatial_h_dim, args.temporal_h_dim])
-blocks.append([args.output_h_dim])
+def load_blocks(stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
+    blocks = []
+    blocks.append([1])
+    for l in range(stblock_num):
+        blocks.append([temporal_h_dim, spatial_h_dim, temporal_h_dim])
+    blocks.append([output_h_dim])
+    return(blocks)
 # ...
-
+blocks = load_blocks(args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
 args.blocks = blocks
 
 parser_HP = argparse.ArgumentParser(description='HP')

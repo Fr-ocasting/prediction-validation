@@ -25,7 +25,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['C'] =  data_module.C
     
     # === Common config for everyone: ===
-    config['device'] =  'cpu' #torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
     config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
@@ -196,4 +196,16 @@ def update_modif(args,name_gpu='cuda'):
     
     print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
     print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
+    return(args)
+
+def modification_contextual_args(args,modification):
+    for key,value in modification.items():
+        if 'TE_' in key:
+            key = key.replace('TE_','')
+            setattr(args.args_embedding,key,value)
+        elif 'vision_' in key:
+            key = key.replace('vision_','')
+            setattr(args.args_vision,key,value)
+        else:
+            setattr(args,key,value)
     return(args)

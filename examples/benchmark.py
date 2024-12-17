@@ -9,13 +9,14 @@ if parent_dir not in sys.path:
 
 import pandas as pd
 import numpy as np 
-from constants.config import get_args,update_modif
+from constants.config import get_args,update_modif, modification_contextual_args
 from utils.save_results import get_date_id
 from K_fold_validation.K_fold_validation import KFoldSplitter
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
 from utils.save_results import get_trial_id
 from trainer import Trainer
 import matplotlib.pyplot as plt 
+import importlib
 def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
     # Load base args
     args = get_args(model_name,dataset_names,dataset_for_coverage)
@@ -27,6 +28,7 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
 
     # Modification :
     for key,value in modification.items():
+        
         setattr(args,key,value)
 
     # update each modif
@@ -41,6 +43,11 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
         args.contextual_positions = args_init.contextual_positions
         args.vision_input_type = args_init.vision_input_type
 
+    if model_name == 'STGCN':
+        from dl_models.STGCN.load_config import load_blocks
+        blocks = load_blocks(args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
+        args.blocks = blocks
+
     
 
     return(args,folds,hp_tuning_on_first_fold)
@@ -48,8 +55,8 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
 
 def get_inputs(args,folds):
     K_fold_splitter = KFoldSplitter(args,folds)
-    K_subway_ds,_ = K_fold_splitter.split_k_fold()
-    return(K_fold_splitter,K_subway_ds)
+    K_subway_ds,args = K_fold_splitter.split_k_fold()
+    return(K_fold_splitter,K_subway_ds,args)
 
 def train_on_ds(ds,args,trial_id,save_folder,df_loss):
     model = load_model(ds, args)
@@ -105,7 +112,8 @@ if __name__ == '__main__':
                                                             dataset_for_coverage=dataset_for_coverage,
                                                             modification = modification)
  
-        K_fold_splitter,K_subway_ds = get_inputs(args,folds)
+        K_fold_splitter,K_subway_ds,args = get_inputs(args,folds)
+        args = modification_contextual_args(args,modification)
         trial_id = get_trial_id(args)
         ds = K_subway_ds[0]
 
