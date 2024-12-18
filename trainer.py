@@ -404,7 +404,7 @@ class Trainer(object):
             pred = self.model(x_b,contextual_b)
             loss = self.loss_function(pred.float(),y_b)
             #print('\nloss: ',loss) 
-                
+
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
             self.chrono.backward()
@@ -545,7 +545,6 @@ class Trainer(object):
         '''normalizer = self.dataset.normalizer.unormalize_tensor'''
         Preds = normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
         Y_true = normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
-
         return(Preds,Y_true,T_labels)
     
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):

@@ -14,8 +14,6 @@ if parent_dir not in sys.path:
 from build_inputs.load_preprocessed_dataset import load_complete_ds
 from dataset import TensorDataset
 from constants.paths import FOLDER_PATH
-from load_inputs.subway_in import get_trigram_correspondance
-#LIST_COD_TRG = list(get_trigram_correspondance().COD_TRG)
 
 class KFoldSplitter(object):
     def __init__(self,args,folds):

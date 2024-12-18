@@ -37,7 +37,7 @@ parser.add_argument('--act_func', type=str, default='glu',
                     choices = ['glu','gtu','silu'],
                     help="Type of activation function on the output module (FC layers at the output of STGCN)")
 
-parser.add_argument('--temporal_h_dim', type=int, default=128, # 128 #64
+parser.add_argument('--temporal_h_dim', type=int, default=32, # 128 #64
                     choices = [8,16,32,64,128,256],
                     help="Dimension of temporal convolution. Stblocks dims = [temporal_h_dim, spatial_h_dim, temporal_h_dim]")
 
@@ -45,7 +45,7 @@ parser.add_argument('--spatial_h_dim', type=int, default=32, #32  #16
                     choices = [8,16,32,64,128,256],
                     help="Dimension of spatial graph convolution. Stblocks dims = [temporal_h_dim, spatial_h_dim, temporal_h_dim]")
 
-parser.add_argument('--output_h_dim', type=int, default=128, #128
+parser.add_argument('--output_h_dim', type=int, default=64, #128
                     choices = [8,16,32,64,128,256],
                     help="Dimension of hidden layers in output module")
 

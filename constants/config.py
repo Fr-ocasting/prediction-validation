@@ -146,16 +146,23 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
     args = convert_into_parameters(config)
 
     # Load Config associated to the Model: 
-    module_path = f"dl_models.{args.model_name}.load_config"
-    module = importlib.import_module(module_path)
-    importlib.reload(module)
-    locals()[f"args_{args.model_name}"] = module.args
-    locals()[f"args_HP_{args.model_name}"] = module.args_HP 
+    if model_name is not None:
+        module_path = f"dl_models.{args.model_name}.load_config"
+        module = importlib.import_module(module_path)
+        importlib.reload(module)
+        locals()[f"args_{args.model_name}"] = module.args
+        locals()[f"args_HP_{args.model_name}"] = module.args_HP 
 
-    # Merge Args: 
-    args = Namespace(**{**vars(args),**vars(locals()[f"args_{args.model_name}"]),**vars(locals()[f"args_HP_{args.model_name}"])})
-
-    
+        # Merge Args: 
+        args = Namespace(**{**vars(args),**vars(locals()[f"args_{args.model_name}"]),**vars(locals()[f"args_HP_{args.model_name}"])})
+    else:
+        args.HP_max_epochs=50
+        args.weight_decay=0.005
+        args.batch_size=32
+        args.lr=5e-3
+        args.dropout=0.2,
+        args.epochs=100
+        args.scheduler=None
     return(args)
 
 def convert_into_parameters(config):

@@ -21,11 +21,12 @@ def get_trial_id(args):
     date_id = get_date_id()
     dataset_names = '_'.join(args.dataset_names)
 
-    models_names = [args.model_name]
+    models_names = [args.model_name] if args.model_name is not None else []
     if hasattr(args,'args_vision') and hasattr(args.args_vision,'model_name'):
         models_names.append(args.args_vision.model_name)
     if len(vars(args.args_embedding))>0:
-        models_names.append('TE')       
+        models_names.append('TE') 
+
     model_names = '_'.join(models_names)
 
     trial_id =  f"{dataset_names}_{model_names}_{args.loss_function_type}Loss_{date_id}_F{args.K_fold}"

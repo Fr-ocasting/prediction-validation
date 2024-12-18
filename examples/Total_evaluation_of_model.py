@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
-    if True:
+    if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['calendar']
@@ -58,9 +58,9 @@ if __name__ == '__main__':
         num_samples = 1000
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
-    if False:
-        for dataset_names,vision_model_name in zip([['subway_in','calendar']],
-                                                   [None]):
+    if True:
+        for dataset_names,vision_model_name in zip([['subway_in','calendar'],['subway_in']],
+                                                   [None,None]):
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,
@@ -69,7 +69,6 @@ if __name__ == '__main__':
                                                     'grace_period':20,
                                                     'HP_max_epochs':100,
                                                     'evaluate_complete_ds' : True,
-                                                    'set_spatial_units' : ['BON','SOI','GER','CHA'],
                                                     'vision_model_name': vision_model_name
                                                    }
                                     
@@ -77,7 +76,7 @@ if __name__ == '__main__':
 
             # Init 
             epochs_validation = 100
-            num_samples = 5000
+            num_samples = 2000
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,num_samples)

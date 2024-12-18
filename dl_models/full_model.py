@@ -54,16 +54,6 @@ class full_model(nn.Module):
         else:
             self.remove_trafic_inputs = True
             print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
-
-            # Assert STGCN there is inputs for the STGCN
-            if (len(vars(args.args_vision))>0):
-                vision_concatenation_early = args.args_vision.concatenation_early
-            else:
-                vision_concatenation_early = False
-            if (len(vars(args.args_embedding))>0):
-                TE_concatenation_early = args.args_embedding.concatenation_early
-            else:
-                TE_concatenation_early = False
         # ...
 
         
@@ -71,17 +61,18 @@ class full_model(nn.Module):
         self.tackle_netmob(args)
 
         # === TE ===
-        self.te = TE_module(args) if len(vars(getattr(args,'args_embedding')))>0 else None
-        self.TE_concatenation_early = args.args_embedding.concatenation_early if self.te is not None else False
+        self.te = TE_module(args) if len(vars(args.args_embedding))>0 else None
+        if self.te is not None :
+            self.TE_concatenation_early = args.args_embedding.concatenation_early 
+            print('number of Parameters in Embedding Module: {}'.format(sum([p.numel() for p in self.te.parameters()])))
+        else :
+            self.TE_concatenation_early = False
         if ((self.te is not None) and not(args.args_embedding.concatenation_early) and not(args.args_embedding.concatenation_late)):
                  raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         # === Trafic Model ===
         self.core_model = load_model(dataset, args)
 
         self.n_vertex = args.n_vertex
-
-
-
 
     def tackle_netmob(self,args):
         # If 'netmob' is used as contextual data:
@@ -94,6 +85,7 @@ class full_model(nn.Module):
             self.vision_input_type = args.vision_input_type
             self.vision_concatenation_early = args.args_vision.concatenation_early
             self.pos_netmob = args.contextual_positions[args.args_vision.dataset_name]
+            print('number of Parameters in Vision Module: {}'.format(sum([p.numel() for p in self.netmob_vision.parameters()])))
             if (not(args.args_vision.concatenation_early) and not(args.args_vision.concatenation_late)):
                  raise ValueError('NetMob input but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         else:
@@ -200,9 +192,20 @@ class full_model(nn.Module):
             # ...
 
         # Core model 
-        x= self.core_model(x,extracted_feature,time_elt)
+        if self.core_model is not None:
+            x= self.core_model(x,extracted_feature,time_elt)
         # ...
+        if x.dim()==4:
+            x = x.squeeze()
 
+        # Tackle the case when C=1 and output_dim = 1  
+        if x.dim()==2:
+            x = x.unsqueeze(-1)
+
+        # Tackle the case when n_vertex = 1
+        if x.dim()==1: 
+            x = x.unsqueeze(-1)           
+            x = x.unsqueeze(-1) 
         return(x)
 
 
@@ -276,5 +279,8 @@ def load_model(dataset, args):
         from dl_models.RNN.load_config import args as RNN_args
         model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L+L_add,dropout=args.dropout,device = args.device).to(args.device)
 
-    model_memory_cost(model)
+    if args.model_name == None:
+        model = None
+
+    if model is not None : model_memory_cost(model)
     return(model)

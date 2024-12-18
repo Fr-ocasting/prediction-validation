@@ -32,22 +32,6 @@ def get_output_kernel_size(args):
         Ko = 0
         if is_condition(args):
             Ko = 1
-        ''' si pas de vision, mais calendar: 
-        if not(len(vars(args.args_vision))>0):
-            # Si on concatène seulement en sortie et pas en entrée : 
-            if not(getattr(args.args_embedding,'concatenation_early')):
-                Ko = 1
-        # si pas de calendar, mais vision:    
-        if not(len(vars(args.args_embedding))>0):
-            # Si on concatène seulement en sortie et pas en entrée : 
-            if not(getattr(args.args_vision,'concatenation_early')):
-                Ko = 1
-        # Si calendar et vision,
-        if (len(vars(args.args_embedding))>0) and (len(vars(args.args_vision))>0):
-            #et qu'aucun des deux de concatène en entrée:     
-            if not(getattr(args.args_embedding,'concatenation_early')) and not(getattr(args.args_vision,'concatenation_early')):
-                Ko = 1
-        '''
 
     if hasattr(args,'args_embedding') and (len(vars(args.args_embedding))>0): #if not empty 
         if args.args_embedding.concatenation_early:
@@ -68,7 +52,7 @@ def get_block_dims(args,Ko):
     blocks = args.blocks.copy()
     if Ko > 0:
         blocks[-1] = blocks[-1]*2
-        if is_condition(args):
+        if  not(DATA_TO_PREDICT in args.dataset_names) and is_condition(args):
             blocks[-1][0] = 0
     blocks.append([args.out_dim])
     number_of_st_conv_blocks = len(blocks) - 3

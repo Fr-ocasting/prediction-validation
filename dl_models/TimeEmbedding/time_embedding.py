@@ -14,46 +14,53 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,args_embedding): #n_vertex
+    def __init__(self,args_embedding,n_vertex): #n_vertex
         super(TimeEmbedding, self).__init__()
         self.embedding_dim = args_embedding.embedding_dim
         self.dic_sizes = args_embedding.dic_sizes
-        self.activation_fc1 = args_embedding.activation_fc1
+        #self.activation_fc1 = args_embedding.activation_fc1
         self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
         self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
-
         #self.fc_layers = nn.ModuleList([nn.Linear(emb_dim,emb_dim) for emb_dim in self.embedding_dim_calendar_units])
+
         input_dim = sum(self.embedding_dim_calendar_units)
         if args_embedding.out_h_dim is not None: 
             out_h_dim = args_embedding.out_h_dim
         else:
             out_h_dim = input_dim//2
 
-        if args_embedding.fc2:
-            self.output1 = nn.Linear(input_dim,out_h_dim)#,args_embedding.fc1)
-            self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)#args_embedding.fc1,args_embedding.embedding_dim) 
+        self.output1 = nn.Linear(input_dim,out_h_dim)
+
+        if args_embedding.multi_embedding:
+            self.output2 = nn.Linear(out_h_dim,n_vertex*args_embedding.embedding_dim)
         else:
-            self.output1 = nn.Linear(input_dim,args_embedding.embedding_dim)#,args_embedding.fc1)
-            self.output2 =None
+            self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)        
+        #if args_embedding.fc2:
+        #    self.output1 = nn.Linear(input_dim,out_h_dim)#,args_embedding.fc1)
+        #    self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)#args_embedding.fc1,args_embedding.embedding_dim) 
+        #else:
+        #    self.output1 = nn.Linear(input_dim,args_embedding.embedding_dim)#,args_embedding.fc1)
+        #    self.output2 =None
         self.relu = nn.ReLU()
 
     def forward(self,elt): 
 
+        #if fc_layer_by_embedding:
+        #    emb_list = []
+        #    for k,emb in enumerate(self.embedding):
+        #        embedding_k = emb(elt[k].argmax(dim=1).long())
+        #        embedding_k = self.fc_layers[k](embedding_k)
+        #        emb_list.append(embedding_k)
+        #    z = torch.cat(emb_list,-1)
+        #else:
         z = torch.cat([emb(elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
-        if False:
-            emb_list = []
-            for k,emb in enumerate(self.embedding):
-                embedding_k = emb(elt[k].argmax(dim=1).long())
-                embedding_k = self.fc_layers[k](embedding_k)
-                emb_list.append(embedding_k)
-            z = torch.cat(emb_list,-1)
 
-
-        if self.activation_fc1:
-            z = self.relu(z)
+        #if self.activation_fc1:
+        #    z = self.relu(z)
         z = self.output1(z)
-        if self.output2 is not None:
-            z = self.output2(self.relu(z))
+        z = self.output2(self.relu(z))
+        #if self.output2 is not None:
+        #    z = self.output2(self.relu(z))
         return(z)
     
 
@@ -62,18 +69,24 @@ class TE_module(nn.Module):
         super(TE_module, self).__init__()
         args_embedding =  args.args_embedding
         #self.multi_embedding = args_embedding.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding) #args.n_vertex
+        self.Tembedding = TimeEmbedding(args_embedding,args.n_vertex) #args.n_vertex
         #self.N_repeat = 1 if self.multi_embedding else args.n_vertex
         self.C = args.C
         self.n_vertex = args.n_vertex
+        self.multi_embedding = args_embedding.multi_embedding
         #self.n_vertex = args.n_vertex
 
     def forward(self,time_elt):
+        """
+        args:
+        time_elt: list of One-Hot Encoded torch.Tensor. Each element of the list correspond to a calendar attribute (Weekdays, Hour, Minutes...)
+        >>> time_elt[i] is a torch.Tensor of dimension [B,P_i], where B is a batch_size, P_i is the number of possible label of the i-th calendar attribute.
+        >>> if i correspond to 'weekdays', then P_i = 7, and 'a sample of Tuesday' will be represented by [0,1,0,0,0,0,0]
+        """
         mini_batch_size = time_elt[0].size(0)
         time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
-        #if not(self.multi_embedding):
-        #    time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
-        time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
+        if not(self.multi_embedding):
+            time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
         time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
         return(time_elt)
 

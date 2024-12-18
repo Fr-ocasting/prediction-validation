@@ -113,11 +113,11 @@ class STGCN(nn.Module):
                     # ....
                     # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
                     x = self.st_blocks(x)
+
                 ### ---
 
             if self.Ko >= 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
-
                 x = self.output(x,x_vision,x_calendar)
             elif self.Ko == 0:
                 # [B,C_out,L',N] = [B,1,L',N] actually 

@@ -11,7 +11,7 @@ class Align(nn.Module):
         self.c_out = c_out
         self.align_conv = nn.Conv2d(in_channels=c_in, out_channels=c_out, kernel_size=(1, 1))
 
-    def forward(self, x):
+    def forward(self, x):   
         if self.c_in > self.c_out:
             x = self.align_conv(x)
         elif self.c_in < self.c_out:
