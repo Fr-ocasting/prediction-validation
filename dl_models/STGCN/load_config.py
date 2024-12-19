@@ -65,10 +65,10 @@ args.blocks = blocks
 
 parser_HP = argparse.ArgumentParser(description='HP')
 parser_HP.add_argument('--HP_max_epochs', type=int, default=50, help="Number maximum of epochs per trial with ASHA Scheduler on Ray Tune")
-parser_HP.add_argument('--weight_decay', type=float, default=0.005, help="weight decay for AdamW")
+parser_HP.add_argument('--weight_decay', type=float, default=0.05, help="weight decay for AdamW")
 parser_HP.add_argument('--batch_size', type=int, default=32, help="Batch size")
-parser_HP.add_argument('--lr', type=float, default=5e-3, help="Lr")
-parser_HP.add_argument('--dropout', type=float, default=0.2, help="Dropout")
+parser_HP.add_argument('--lr', type=float, default=2e-3, help="Lr")
+parser_HP.add_argument('--dropout', type=float, default=0.15, help="Dropout")
 parser_HP.add_argument('--epochs', type=int, default=100, help="Epochs")
 parser_HP.add_argument('--scheduler', type=bool, default=None, choices = [True, None], help="If True then acitvate a Lr scheduler with a warmup before reducing following an exponential function")
 args_HP = parser_HP.parse_args(args=[])

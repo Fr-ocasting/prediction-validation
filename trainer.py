@@ -404,7 +404,6 @@ class Trainer(object):
             pred = self.model(x_b,contextual_b)
             loss = self.loss_function(pred.float(),y_b)
             #print('\nloss: ',loss) 
-
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
             self.chrono.backward()
@@ -425,6 +424,7 @@ class Trainer(object):
             t_label =  contextual_b[self.args.contextual_positions['calibration_calendar']]
         else: 
             t_label = None
+            
         return(pred,y_b,t_label,nb_samples,loss_epoch)
         
     def loop_through_batches(self,loader):
@@ -469,6 +469,7 @@ class Trainer(object):
         with torch.set_grad_enabled(self.training_mode=='train'):
             loader = self.get_loader()
             Preds,Y_true,T_labels,nb_samples,loss_epoch = self.loop_through_batches(loader)
+            self.gradient_tracking()
 
 
         if self.training_mode=='valid':self.chrono.validation()
@@ -554,4 +555,33 @@ class Trainer(object):
             self.valid_loss.append(loss_epoch/nb_samples)
         elif training_mode == 'cal':
             self.calib_loss.append(loss_epoch/nb_samples)
+    def gradient_tracking(self):
+        module_list = ['te','core_model','output_module','netmob_vision']
+
+        if not(hasattr(self,'gradient_metrics')):  
+            self.gradient_metrics = {name:{} for name in module_list}  
+        with torch.no_grad():
+            for name in module_list:
+                module = getattr(self.model, name, None)
+                if module is not None:
+                    grads = [p.grad for p in module.parameters() if p.grad is not None]
+                    if grads:
+                        all_grads = torch.cat([g.flatten() for g in grads])
+                        metrics = {
+                            #'max_grad': all_grads.abs().max().item(),
+                            'abs_mean_grad': all_grads.abs().mean().item(),
+                            'abs_median_grad': all_grads.abs().median().item(),
+                            'median_grad': all_grads.median().item(),
+                            'Q25': torch.quantile(all_grads,0.25).item(),
+                            'Q75': torch.quantile(all_grads,0.75).item(),
+                        }
+
+                        for metric in metrics.keys(): 
+                            if not(metric in self.gradient_metrics[name].keys()): 
+                                self.gradient_metrics[name][metric] = []  
+
+                        for metric in metrics.keys():
+                            self.gradient_metrics[name][metric].append(metrics[metric])
+
+        
 

@@ -22,7 +22,7 @@ def get_trial_id(args):
     dataset_names = '_'.join(args.dataset_names)
 
     models_names = [args.model_name] if args.model_name is not None else []
-    if hasattr(args,'args_vision') and hasattr(args.args_vision,'model_name'):
+    if len(vars(args.args_vision))>0: #hasattr(args,'args_vision') and hasattr(args.args_vision,'model_name'):
         models_names.append(args.args_vision.model_name)
     if len(vars(args.args_embedding))>0:
         models_names.append('TE') 

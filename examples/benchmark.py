@@ -88,7 +88,7 @@ def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metric
 
 if __name__ == '__main__':
 
-    for dataset_names,vision_model_name in zip([['subway_in','calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
+    for dataset_names,vision_model_name in zip([['calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
         # GET PARAMETERS
         #dataset_names = ['subway_in','netmob_POIs'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon'] #['netmob_POIs']
         dataset_for_coverage = ['subway_in','netmob_POIs'] #['subway_in','netmob_POIs'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon'] #['netmob_POIs'] 
@@ -98,20 +98,21 @@ if __name__ == '__main__':
 
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-        modification = {'epochs' : 1, #100,
-                        #'set_spatial_units' : ['BON','SOI','GER','CHA'],
-                        'vision_model_name': vision_model_name,
+        modification = {'epochs' : 20, #100,
+                        'set_spatial_units' : ['BON','SOI','GER','CHA'],
+                        'TE_concatenation_early':True,
+                        'TE_concatenation_late':False,
+                        'TE_embedding_dim':1
                         }
     
-        model_names =['STGCN'] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
+        model_names =[None] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
         args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],
-                                                            None,
+                                                            args_init = None,
                                                             dataset_names=dataset_names,
                                                             dataset_for_coverage=dataset_for_coverage,
                                                             modification = modification)
- 
         K_fold_splitter,K_subway_ds,args = get_inputs(args,folds)
         args = modification_contextual_args(args,modification)
         trial_id = get_trial_id(args)
@@ -120,10 +121,19 @@ if __name__ == '__main__':
         trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
         metrics = trainer.metrics
         df_results = keep_track_on_model_metrics(trainer,df_results,model_names[0],trainer,metrics)
+
+        # Display Gradient : 
+        gradient_metrics = trainer.gradient_metrics
+
+        for module in gradient_metrics.keys():
+            df_to_plot = pd.DataFrame()
+            for metric_grad in gradient_metrics[module].keys():
+                df_to_plot[f"{module}_{metric_grad}"] = gradient_metrics[module][metric_grad]
+            if len(df_to_plot) > 0: df_to_plot.plot()
         for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
             print(f'\n>>>>Training {model_name} on {dataset_names}')
             args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
-                                                                args,
+                                                                args_init = args,
                                                                 dataset_names=dataset_names,
                                                                 dataset_for_coverage=dataset_for_coverage,
                                                                 modification = modification)

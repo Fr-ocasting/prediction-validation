@@ -15,7 +15,7 @@ else:
     #package_path = os.path.abspath(os.path.join(current_path, '..'))
     #FOLDER_PATH = '../../../../Data/'
     FOLDER_PATH =  '../data'
-    DATA_TO_PREDICT = 'METR_LA' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
+    DATA_TO_PREDICT = 'subway_in' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
     

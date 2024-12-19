@@ -110,40 +110,6 @@ def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
         config_vision = script.get_config(H,W,L)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
 
-
-    # ===== Define Namespace 'args_vision': 
-    # =====================================
-    # FeatureExtractor_ResNetInspired
-    if False : 
-        if args_vision['model_name'] == 'FeatureExtractor_ResNetInspired':
-            args_vision.update({'c_in' : C_netmob, 'h_dim': 128, 'L':L}) # out_dim = L*h_dim//2
-        
-        elif args_vision['model_name'] == 'FeatureExtractor_ResNetInspired_bis':
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
-
-        # MinimalFeatureExtractor  
-        elif args_vision['model_name'] == 'MinimalFeatureExtractor':
-            h_dim = 16
-            args_vision.update({'c_in' : C_netmob,'h_dim': h_dim, 'L' : L}) # out_dim = L*h_dim//2
-
-        
-        # ImageAvgPooling
-        #elif args_vision['model_name'] == 'ImageAvgPooling':
-        #    args_vision.update({'out_dim' : L}) # out_dim = L
-        #
-
-        elif args_vision['model_name'] == 'FeatureExtractorEncoderDecoder':  # (c_in=3, z_dim=64, N=40)
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'H':H,'W':W,L:'L'}) 
-
-        elif args_vision['model_name'] == 'AttentionFeatureExtractor': # (c_in=3, z_dim=64, N=40)
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64}) 
-
-        elif args_vision['model_name'] == 'VideoFeatureExtractorWithSpatialTemporalAttention': # (c_in=3, out_dim=64, N=40, d_model=128))
-            args_vision.update({'c_in' : C_netmob, 'out_dim': 64, 'd_model':128}) 
-
-        else:
-            raise NotImplementedError(f"Model vision {args_vision['model_name']} has not been implemented")
-        
     return args_vision
 
 
@@ -159,7 +125,7 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         print('vision_input_type', args.vision_input_type)
         print('vision_model_name', args.vision_model_name)
-        if args.vision_model_name is None: raise ValueError("You are using 'NetMob' data but you didnot defined 'args.vision_model_name'. It needs to be set ")
+        if args.vision_model_name is None: raise ValueError("You are using 'NetMob' data but you did not defined 'args.vision_model_name'. It needs to be set ")
         args_vision = Namespace(**{'dataset_name': netmob_dataset_name, 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
         args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
         args.args_vision = args_vision
@@ -174,4 +140,5 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize 
     else:
         NetMob_ds = None
         args.args_vision = argparse.ArgumentParser(description='netmob').parse_args(args=[])
+
     return args,NetMob_ds
