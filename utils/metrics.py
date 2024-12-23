@@ -101,6 +101,31 @@ def personnal_MAPE(Preds,Y_true,inf_border=0):
     error = 100*torch.mean(torch.abs(Y_true[mask] - Preds[mask])/Y_true[mask])
     return error
 
+def error_along_ts(predict,real,metric,min_flow):
+       if not isinstance(real, torch.Tensor):
+        real = torch.tensor(real.values).reshape(-1)
+        predict = torch.tensor(predict.values).reshape(-1)
+       else:
+        real = real.detach().clone().reshape(-1)
+        predict = predict.detach().clone().reshape(-1)            
+
+       mask = real>min_flow
+       error = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
+       if metric == 'mape':
+              error[mask] = 100 * (torch.abs(real[mask] - predict[mask]) / real[mask]) 
+              error[mask] = torch.clamp(error[mask], max=100)
+
+       elif metric == 'mae':
+              err = torch.abs(real[mask] - predict[mask])
+              error[mask] = 100 * err/err.max()
+       elif metric == 'mse':
+              err = (real[mask] - predict[mask])**2
+              error[mask] = 100 * err/err.max()
+       else:
+              raise NotImplementedError
+       
+       return(error)
+
 
 
 

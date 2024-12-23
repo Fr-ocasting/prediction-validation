@@ -89,7 +89,7 @@ def analysis_on_specific_training_mode(trainer,ds,gdf_POI_2_tile_ids,training_mo
                                        station = 'BON'
                                        ):
 
-    Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)
+    Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)                                  
     df_true,df_prediction = get_df_for_visualisation(ds,Preds,Y_true,training_mode)
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
 

@@ -11,6 +11,19 @@ from bokeh.plotting import output_notebook,show
 import numpy as np 
 
 
+import torch.nn as nn
+import torch
+import sys
+import os
+# Get Parent folder : 
+current_path = os.getcwd()
+parent_dir = os.path.abspath(os.path.join(current_path, '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+    
+from utils.metrics import error_along_ts
+
+
 def plot_subway_patterns(df,Metro_A_stations,palette,width=1500, height=600,title=f'Trafic Volume by stations'):
 
     p = figure(x_axis_type="datetime", 
@@ -115,33 +128,17 @@ def plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','m
        legend_it = []
        p = figure(x_axis_type="datetime", title= title,
                      width=width,height=height)
+       if type(station) != list:
+             station = [station]
        
-       def f_error(predict,real,metric):
-              real = torch.tensor(real).reshape(-1)
-              predict = torch.tensor(predict).reshape(-1)
+       for ind_station,station_i in enumerate(station):
+              for k,metric in enumerate(metrics):
+                     error = error_along_ts(predict= df_prediction[station_i],real= df_true[station_i],metric = metric,min_flow=min_flow)
+                     df_error = pd.DataFrame(error.numpy(), index = df_true.index, columns = [station_i])
+                     
+                     c = p.line(x=df_error.index, line_width = 2.5, y=df_error[station_i], alpha=0.8,color = Set3_12[k+2])
+                     legend_it.append((f"{metric}_{station_i}", [c]))
 
-              mask = real>min_flow
-              error = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
-              if metric == 'mape':
-                     error[mask] = 100 * (torch.abs(real[mask] - predict[mask]) / real[mask]) 
-
-              elif metric == 'mae':
-                     err = torch.abs(real[mask] - predict[mask])
-                     error[mask] = 100 * err/err.max()
-              elif metric == 'mse':
-                     err = (real[mask] - predict[mask])**2
-                     error[mask] = 100 * err/err.max()
-              else:
-                     raise NotImplementedError
-              
-              return(error)
-       
-       for k,metric in enumerate(metrics):
-              error = f_error(predict= df_prediction[station],real= df_true[station],metric = metric)
-              df_error = pd.DataFrame(error.numpy(), index = df_true.index, columns = [station])
-              
-              c = p.line(x=df_error.index, line_width = 2.5, y=df_error[station], alpha=0.8,color = Set3_12[k+2])
-              legend_it.append((metric, [c]))
 
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
        legend = Legend(items=legend_it)
