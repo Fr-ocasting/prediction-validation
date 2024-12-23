@@ -89,10 +89,15 @@ def metrics_by_station(Preds,Y_true,metric_name):
     return(errors) 
 
 
-def personnal_MAPE(Preds,Y_true):
+def personnal_MAPE(Preds,Y_true,inf_border=0):
+    '''
+    args
+    -------
+    inf_border: compute MAPE only when expected values > inf_border. 
+    '''
     Y_true = Y_true.reshape(-1)
     Preds = Preds.reshape(-1)
-    mask = Y_true>0
+    mask = Y_true>inf_border
     error = 100*torch.mean(torch.abs(Y_true[mask] - Preds[mask])/Y_true[mask])
     return error
 

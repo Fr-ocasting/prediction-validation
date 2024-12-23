@@ -106,7 +106,8 @@ class KFoldSplitter(object):
 
         #if (args.train_valid_test_split_method == 'similar_length_method') #or (args.train_valid_test_split_method == 'iterative_method') :
         df_verif = subway_ds.tensor_limits_keeper.df_verif 
-        coverage_without_test = df_verif['t+0']
+        t_step_ahead = [c for c in df_verif.columns if 't+' in c][0]
+        coverage_without_test = df_verif[t_step_ahead]
         coverage_without_test = coverage_without_test[coverage_without_test<first_test_date]  # Remove samples associated to test dataset
         fold_length = int(len(coverage_without_test)/(valid_prop_tmps*args.K_fold+(1-valid_prop_tmps)))
 

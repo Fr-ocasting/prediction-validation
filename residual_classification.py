@@ -109,7 +109,8 @@ def load_inputs_preds_and_init_PI(trainer,calibration_calendar_class=3,dataloade
     return(X_cal,Y_cal,T_cal,T_cal_exact_dates,res_lower,res_upper)
 
 def load_df_dummies(T_cal_exact_dates,bank_holidays,school_holidays, add_bank_holidays = True, add_scholar_holidays = True,hour =True,weekday = True,minutes = True):
-    df_T = pd.DataFrame(T_cal_exact_dates).rename(columns={'t+0':'date'})
+    t_step_ahead = [c for c in T_cal_exact_dates.columns if 't+' in c][0]
+    df_T = pd.DataFrame(T_cal_exact_dates).rename(columns={t_step_ahead:'date'})
     if hour:
         df_T['hour'] = df_T.date.dt.hour.astype(str)
     if weekday:
