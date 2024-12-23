@@ -216,7 +216,7 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
 
 
 
-def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, cmap ="afmhot", save = None, cbar_label =  "Number of Data"):
+def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False,v_min=None,v_max=None):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
 
@@ -226,12 +226,20 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, c
     data[data == 0] = np.nan
     cax = plt.matshow(data.values, cmap=cmap,fignum=False)  #
 
-    cmap_perso = plt.get_cmap(cmap)
+    #cmap_perso = plt.get_cmap(cmap)
+    if bool_reversed: 
+        cmap_perso =  plt.cm.get_cmap(cmap).reversed()
+    else: 
+        cmap_perso =  plt.cm.get_cmap(cmap)
     cmap_perso.set_bad('gray', 1.0)  # Configurez la couleur grise pour les valeurs nulles
 
     # Configurez la colormap pour gérer les valeurs NaN comme le gris
     cax.set_cmap(cmap_perso)
-    cax.set_clim(vmin=0.001, vmax=data.max().max())  # Ajustez les limites pour exclure les NaN
+    if v_min is None:
+        v_min=0.001
+    if v_max is None:
+        v_max=data.max().max()
+    cax.set_clim(vmin=v_min, vmax=v_max)  # Ajustez les limites pour exclure les NaN
 
 
     #x labels
@@ -292,7 +300,8 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                                        index_matshow = 'day_date',
                                        columns_matshow = 'hour',
                                        min_flow = 20,
-                                       figsize = (20,20)
+                                       figsize = (20,20),
+                                       limit_percentage_error = 300
                                        ):
     '''
     args:
@@ -309,6 +318,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)
     inputs = [[x,y,x_c] for  x,y,x_c in ds.dataloader[training_mode]]
     X = torch.cat([x for x,_,_ in inputs],0)
+    X = ds.normalizer.unormalize_tensor(inputs = X,feature_vect = True) # unormalize input cause prediction is unormalized 
     #index_perrache = list(ds.spatial_unit).index('PER')
 
     for station_c in range(n_station):
@@ -326,11 +336,25 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                 error_previous = (real - previous)**2
 
                 # error est ici le gain en pourcent de MSE sur prédiction avec le model de DL complexe par à l'utilisation de la donnée précédente.  
-                error = (error_previous-error_pred)/error_previous
+                error_previous_replaced = error_previous.clone()
+
+                # Si l'erreur de référence est trop faible, on se rapport au cas d'une 'erreur acceptable', qui serait de 20 flow (20**2 = 400)
+                mask = error_previous <  min_flow**2
+                error_previous_replaced[mask] = min_flow**2  # quadratic error
+                error = 100*(error_pred/error_previous_replaced - 1)
+
+                # Si > x% d'erreur par rapport au cas où on utilise la donnée précédente: 
+                mask = error > limit_percentage_error
+                error[mask] = limit_percentage_error
                 cmap = 'RdYlBu'
+                bool_reversed = True
+                v_min,v_max = -limit_percentage_error,limit_percentage_error
             else:
                 error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i)
                 cmap = 'YlOrRd'
+                bool_reversed = False
+                v_min,v_max = None,None
+
             df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")
             dates = df_verif.iloc[:,-1]
 
@@ -344,7 +368,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
 
             # Plotting : 
             plt.sca(axes[station_c,ind_metric])
-            plot_coverage_matshow(df_agg, log=False, cmap=cmap, save=None, cbar_label=cbar_label)
+            plot_coverage_matshow(df_agg, log=False, cmap=cmap, save=None, cbar_label=cbar_label,bool_reversed=bool_reversed,v_min=v_min,v_max=v_max)
 
             if metric == 'previous_value':
                 title = f"Gain (%) of MSE error compared to using previous value as prediction"
