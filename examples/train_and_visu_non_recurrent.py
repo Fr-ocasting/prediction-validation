@@ -18,7 +18,7 @@ from plotting.TS_analysis import drag_selection_box,plot_single_point_prediction
 from bokeh.plotting import show,output_notebook
 from bokeh.layouts import column,row
 from utils.specific_event import rugby_matches
-
+from constants.paths import FOLDER_PATH
 
 RANGE = 3*60  # +/- range (min) supposed to be affected around the event 
 WIDTH = 1000
@@ -28,15 +28,24 @@ MIN_FLOW = 20
 
 
 def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes= None,
-                    type_POIs = ['stadium','nightclub'],
-                    spatial_units = ['Lou_rugby','Ninkasi_Kao'],
-                    apps = ['Instagram'],
-                    POI_or_stations = ['POI'],
-                    expanded ='',
+                    type_POIs = None,
+                    spatial_units = None,
+                    apps = None,
+                    POI_or_stations = None,
+                    expanded =None,
                     modification = {},
-                    station='GER',
+                    station=['GER'],
                     training_mode_to_visualise = ['test','valid','train']
                     ):
+    
+    '''
+    args: 
+    type_POIs : list of type of POIs.                         >>> ['stadium','nightclub']
+    spatial_units : list of name of spatial units to analyse. >>> ['Lou_rugby','Ninkasi_Kao']
+    apps : list of apps to deal with.                         >>> ['Instagram']
+    POI_or_stations : list of type of object to analyse contains occurence of 'POI' or 'station'.  >>> ['POI']
+    expanded: '' if we look at the intensity of netmob consumption at the POI. '_expanded' if we look also one square around.
+    '''
     ds,args,trial_id,save_folder,df_loss = get_ds(model_name,dataset_names,dataset_for_coverage,modification=modification)
     trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
     # Allow us to have 'dataloader['train'] with no shuffle !!!!
@@ -49,12 +58,8 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
     trainer.dataloader = ds_no_shuffle.dataloader
     # ======
 
-    # Load gdf for POIs:
-    folder_path= '../../../../data/rrochas/prediction_validation'
-    gdf_POI_2_tile_ids = gpd.read_file(f"{folder_path}/POIs/gdf_POI_2_tile_ids.geojson")
-
     for training_mode in training_mode_to_visualise:
-        analysis_on_specific_training_mode(trainer,ds_no_shuffle,gdf_POI_2_tile_ids,
+        analysis_on_specific_training_mode(trainer,ds_no_shuffle,
                                            training_mode=training_mode,
                                            transfer_modes= transfer_modes,
                                            type_POIs = type_POIs,
@@ -65,7 +70,7 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
                                            station=station)
     return(trainer,ds,ds_no_shuffle,args)
 
-def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'DL',type_POI = 'stadium', spatial_unit = 'Lou_rugby',POI_or_station='POI',expanded='', folder_path= '../../../../data/rrochas/prediction_validation'):
+def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'DL',type_POI = 'stadium', spatial_unit = 'Lou_rugby',POI_or_station='POI',expanded=''):
 
     gdf_obj = gdf_POI_2_tile_ids[(gdf_POI_2_tile_ids['tag'] == type_POI) &
                     (gdf_POI_2_tile_ids['name'] == spatial_unit ) & 
@@ -74,13 +79,13 @@ def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'D
     assert len(gdf_obj) == 1, f"Length of gdf = {len(gdf_obj)} while it should be = 1"
 
     osmid = gdf_obj['id'].values[0]
-    path_df = f"{folder_path}/POIs/netmob_POI_Lyon{expanded}/{type_POI}/{app}/df_{osmid}_{transfer_mode}.csv"
+    path_df = f"{FOLDER_PATH}/POIs/netmob_POI_Lyon{expanded}/{type_POI}/{app}/df_{osmid}_{transfer_mode}.csv"
     serie = pd.read_csv(path_df,index_col = 0).sum(axis=1)
     serie.index = pd.to_datetime(serie.index)
     return(serie)
 
 
-def analysis_on_specific_training_mode(trainer,ds,gdf_POI_2_tile_ids,training_mode,transfer_modes= None,
+def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= None,
                                        type_POIs = ['stadium','nightclub'],
                                        spatial_units = ['Lou_rugby','Ninkasi_Kao'],
                                        apps = ['Instagram'],
@@ -94,6 +99,8 @@ def analysis_on_specific_training_mode(trainer,ds,gdf_POI_2_tile_ids,training_mo
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
 
     if apps is not None : 
+        # Load gdf for POIs:
+        gdf_POI_2_tile_ids = gpd.read_file(f"{FOLDER_PATH}/POIs/gdf_POI_2_tile_ids.geojson")
         netmob_consumption = pd.DataFrame(index = df_true.index)
         for app in apps:
             for type_POI,spatial_unit,POI_or_station in zip(type_POIs,spatial_units,POI_or_stations):
@@ -108,6 +115,8 @@ def analysis_on_specific_training_mode(trainer,ds,gdf_POI_2_tile_ids,training_mo
 
                     netmob_consumption[name_netmob_serie] = serie_netmob
         netmob_consumption['Sum_of_apps'] = netmob_consumption.sum(axis=1)/len(netmob_consumption.columns)
+    else:
+        netmob_consumption = None
 
     visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time,RANGE,WIDTH,HEIGHT,MIN_FLOW,training_mode = training_mode,netmob_consumption = netmob_consumption)
 
@@ -133,7 +142,10 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
 
     select = drag_selection_box(df_true,p1,p2,p3,width=width,height=height//3)
     output_notebook()
-    col1 = column(p1,p2,p3,select)
+    if p2 is not None:
+        col1 = column(p1,p2,p3,select)
+    else: 
+        col1 = column(p1,p3,select)     
 
     col2 = plot_loss_from_trainer(trainer,width=width//3,height=height,bool_show=False)
     grid = row(col1,col2)

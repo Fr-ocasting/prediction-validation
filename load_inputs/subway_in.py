@@ -58,6 +58,8 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df_correspondance.set_index('Station').reindex(df.columns)
     df.columns = df_correspondance.COD_TRG
 
+    # Remove ouliers
+    df = remove_outliers(df)
 
     if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
         print('Considered Spatial-Unit: ',args.set_spatial_units)
@@ -83,6 +85,31 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     
     return(dataset)
     
+
+def remove_outliers(df):
+    '''
+    Replace the outliers by linear interpolation. Outliers are identified as MaxiMum flow recorded during the 'light festival' in Lyon. 
+    It's an atypical event which reach the highest possible flow. Having higher flow on passenger is almost impossible.
+    '''
+    limits = {
+        'BEL': 2700,
+        'CHA': 1700,
+        'GOR': 1700
+    }
+    default_limit = 1500
+
+    # Appliquer les limites
+    for column in df.columns:
+        limit = limits.get(column, default_limit)
+        df[column] = df[column].where(df[column] <= limit, None)
+
+    # Interpolation linéaire
+    df_interpolated = df.interpolate(method='linear')
+
+    # Remplacer les valeurs originales par les interpolées
+    df.update(df_interpolated)
+    return df
+
 def restrain_df_to_specific_period(df,coverage_period):
     if coverage_period is not None:
         df = df.loc[coverage_period]
