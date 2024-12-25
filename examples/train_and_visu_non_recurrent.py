@@ -136,7 +136,7 @@ def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
 
 def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time,Range,width,height,min_flow,training_mode,netmob_consumption):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
-    p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic Volume Prediction around at "Stade du Lou Gerland" subway station ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
+    p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic Volume Prediction at each subway station ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
     p3 = plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
 

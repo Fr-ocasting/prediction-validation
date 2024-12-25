@@ -353,7 +353,10 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                 error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i)
                 cmap = 'YlOrRd'
                 bool_reversed = False
-                v_min,v_max = None,None
+                if metric == 'mape':
+                    v_min,v_max = 0,50
+                else:
+                    v_min,v_max = None,None
 
             df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")
             dates = df_verif.iloc[:,-1]
