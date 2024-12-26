@@ -126,7 +126,7 @@ class full_model(nn.Module):
         return extracted_feature
   
 
-    def forward_netmob_model(self,contextual):
+    def forward_netmob_model(self,x,contextual):
         if self.vision_input_type == 'image_per_stations':
             netmob_video_batch = contextual[self.pos_netmob]
             extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
@@ -137,7 +137,7 @@ class full_model(nn.Module):
 
         elif self.vision_input_type == 'POIs':
             # contextual[pos]: [B,nb_POIs,L']  // after forward : List of [B,Z] // After unsqueeze : [B,C,Z] with C = 1
-            extracted_feature = self.netmob_vision([contextual[pos]for pos in self.pos_netmob])
+            extracted_feature = self.netmob_vision(x,[contextual[pos]for pos in self.pos_netmob])
             # list of N tensor [B,Z] -> [B,N,Z]  And then unsqueeze :  [B,N,Z] -> [B,C,N,Z]
             extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1)  
 
@@ -167,7 +167,7 @@ class full_model(nn.Module):
 
         # if NetMob data is on :
         if self.netmob_vision is not None: 
-            extracted_feature = self.forward_netmob_model(contextual)
+            extracted_feature = self.forward_netmob_model(x,contextual)
 
             if self.vision_concatenation_early:
                 # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]

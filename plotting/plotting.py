@@ -228,9 +228,9 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, c
 
     #cmap_perso = plt.get_cmap(cmap)
     if bool_reversed: 
-        cmap_perso =  plt.cm.get_cmap(cmap).reversed()
+        cmap_perso =  plt.get_cmap(cmap).reversed()
     else: 
-        cmap_perso =  plt.cm.get_cmap(cmap)
+        cmap_perso =  plt.get_cmap(cmap)
     cmap_perso.set_bad('gray', 1.0)  # Configurez la couleur grise pour les valeurs nulles
 
     # Configurez la colormap pour gérer les valeurs NaN comme le gris
@@ -294,6 +294,61 @@ def coverage_day_month(df_metro,freq= '24h',index = 'month_year',columns = 'day_
     plot_coverage_matshow(df_agg_tot, log  = False, cmap = 'YlOrRd',save = f'{folder_save}tot_{save}')  
     return(df_agg_in,df_agg_out)
 
+
+def build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,columns_matshow):
+    '''
+    From a time-series of error (error) and associated dates, 
+    return de pd.DataFrame with :
+    >>> 'index_matshow' (day) as index
+    >>> 'columns_matshow' (hour) as column
+    and containing the associated flow by hour and by day 
+    '''
+    df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")
+    dates = df_verif.iloc[:,-1]
+
+    # Get predition error :
+    df_error_station_i = pd.DataFrame({column: error, 'datetime':dates})
+
+    # Plotting error by day/hour to display daily pattern : 
+    df_agg = add_calendar_columns(df_error_station_i,freq=freq,key_columns=df_error_station_i.columns,agg_func = 'mean')
+    df_agg = df_agg.pivot(index = index_matshow,columns = columns_matshow,values = column).fillna(0)
+
+    return df_agg
+
+
+def plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_c,ind_metric):
+    ''' Plotting function for 'error_per_station_calendar_pattern' '''
+    plt.sca(axes[station_c,ind_metric])
+    plot_coverage_matshow(df_agg, log=False, cmap=cmap, save=None, cbar_label=cbar_label,bool_reversed=bool_reversed,v_min=v_min,v_max=v_max)
+
+    if metric == 'previous_value':
+        title = f"Gain (%) of MSE error compared to using previous value as prediction"
+    else : 
+        title = f"{metric} error on station {column}"       
+    axes[station_c,ind_metric].set_title(title)
+
+def get_gain_from_naiv_model(real,predict,previous,min_flow,limit_percentage_error):
+
+    real = real.detach().clone().reshape(-1)
+    predict = predict.detach().clone().reshape(-1)    
+    previous = previous.detach().clone().reshape(-1)      
+    
+    error_pred = (real - predict)**2
+    error_previous = (real - previous)**2
+
+    # error est ici le gain en pourcent de MSE sur prédiction avec le model de DL complexe par à l'utilisation de la donnée précédente.  
+    error_previous_replaced = error_previous.clone()
+
+    # Si l'erreur de référence est trop faible, on se rapport au cas d'une 'erreur acceptable', qui serait de 20 flow (20**2 = 400)
+    mask = error_previous <  min_flow**2
+    error_previous_replaced[mask] = min_flow**2  # quadratic error
+    error = 100*(error_pred/error_previous_replaced - 1)
+
+    # Si > x% d'erreur par rapport au cas où on utilise la donnée précédente: 
+    mask = error > limit_percentage_error
+    error[mask] = limit_percentage_error
+    return error
+
 def error_per_station_calendar_pattern(trainer,ds,training_mode,
                                        metrics = ['mse','mae','mape','previous_value'],
                                        freq='1h',
@@ -312,7 +367,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
     columns_matshow : set the type of calendar information to display along the columns.
     '''
     n_station = len(ds.spatial_unit)
-    fig, axes = plt.subplots(n_station, len(metrics), figsize=figsize)
+    fig, axes = plt.subplots(n_station+1, len(metrics), figsize=figsize)
 
     # Get Prediction
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)
@@ -321,36 +376,34 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
     X = ds.normalizer.unormalize_tensor(inputs = X,feature_vect = True) # unormalize input cause prediction is unormalized 
     #index_perrache = list(ds.spatial_unit).index('PER')
 
-    for station_c in range(n_station):
-        column = ds.spatial_unit[station_c]
-
+    # Evaluate Prediciton per stations:
+    for station_c in range(n_station+1):
+        if station_c<n_station:
+            column = ds.spatial_unit[station_c] 
+        else:
+            column = 'All'
         for ind_metric,metric in enumerate(metrics) : 
             min_flow_i = min_flow if metric == 'mape' else 0 
             cbar_label = f"Percentage error" if metric == 'mape' else 'absolute error'
             if metric == 'previous_value':
-                real = Y_true[:,station_c:station_c+1,:].detach().clone().reshape(-1)
-                predict = Preds[:,station_c:station_c+1,:].detach().clone().reshape(-1)    
-                previous = X[:,station_c:station_c+1,-1].detach().clone().reshape(-1)      
-                
-                error_pred = (real - predict)**2
-                error_previous = (real - previous)**2
-
-                # error est ici le gain en pourcent de MSE sur prédiction avec le model de DL complexe par à l'utilisation de la donnée précédente.  
-                error_previous_replaced = error_previous.clone()
-
-                # Si l'erreur de référence est trop faible, on se rapport au cas d'une 'erreur acceptable', qui serait de 20 flow (20**2 = 400)
-                mask = error_previous <  min_flow**2
-                error_previous_replaced[mask] = min_flow**2  # quadratic error
-                error = 100*(error_pred/error_previous_replaced - 1)
-
-                # Si > x% d'erreur par rapport au cas où on utilise la donnée précédente: 
-                mask = error > limit_percentage_error
-                error[mask] = limit_percentage_error
+                if station_c<n_station:
+                    error = get_gain_from_naiv_model(Y_true[:,station_c:station_c+1,:],Preds[:,station_c:station_c+1,:],X[:,station_c:station_c+1,-1],min_flow,limit_percentage_error)
+                else:
+                    T,N,C = Y_true.size()
+                    error = get_gain_from_naiv_model(Y_true,Preds,X[:,:,-1],min_flow,limit_percentage_error)
+                    error = error.reshape(T,N)     
+                    error = error.mean(axis=1)
                 cmap = 'RdYlBu'
                 bool_reversed = True
                 v_min,v_max = -limit_percentage_error,limit_percentage_error
             else:
-                error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i)
+                if station_c<n_station:
+                    error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i)
+                else:
+                    T,N,C = Y_true.size()
+                    error = error_along_ts(Preds,Y_true,metric,min_flow_i)
+                    error = error.reshape(T,N)     
+                    error = error.mean(axis=1)
                 cmap = 'YlOrRd'
                 bool_reversed = False
                 if metric == 'mape':
@@ -358,27 +411,11 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                 else:
                     v_min,v_max = None,None
 
-            df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")
-            dates = df_verif.iloc[:,-1]
-
-            # Get predition error :
-            df_error_station_i = pd.DataFrame({column: error, 'datetime':dates})
-
-            # Plotting error by day/hour to display daily pattern : 
-            df_agg = add_calendar_columns(df_error_station_i,freq=freq,key_columns=df_error_station_i.columns,agg_func = 'mean')
-            df_agg = df_agg.pivot(index = index_matshow,columns = columns_matshow,values = column).fillna(0)
-
+            # Build Matshow matrix : 
+            df_agg = build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,columns_matshow)
 
             # Plotting : 
-            plt.sca(axes[station_c,ind_metric])
-            plot_coverage_matshow(df_agg, log=False, cmap=cmap, save=None, cbar_label=cbar_label,bool_reversed=bool_reversed,v_min=v_min,v_max=v_max)
-
-            if metric == 'previous_value':
-                title = f"Gain (%) of MSE error compared to using previous value as prediction"
-            else : 
-                title = f"{metric} error on station {column}"       
-            axes[station_c,ind_metric].set_title(title)
-            
+            plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_c,ind_metric)      
 
     plt.tight_layout()
     plt.show()

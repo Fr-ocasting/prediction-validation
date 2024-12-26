@@ -370,11 +370,12 @@ class model(nn.Module):
         if False: 
             self.model = nn.ModuleList([SimpleVariableSelection(input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout) 
                                         for input_size,nb_channels in zip(List_input_sizes,List_nb_channels)])
-    def forward(self,List_of_x,x_c=None):
+    def forward(self,x,List_of_x,x_c=None):
         '''
         Inputs: 
         -------
-        List_of_x : list of N 3-th rder torch.Tensor of dimension [B,C_i,L]
+        x : batch of sequence of historical trafic flow  [B,N,L]
+        List_of_x : list of N 3-th rder torch.Tensor of dimension: N*[B,C_i,L]
 
         Ouputs: 
         -------
