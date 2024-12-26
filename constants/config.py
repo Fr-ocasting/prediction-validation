@@ -160,7 +160,7 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
         args.weight_decay=0.005
         args.batch_size=32
         args.lr=5e-3
-        args.dropout=0.2,
+        args.dropout=0.2
         args.epochs=100
         args.scheduler=None
     return(args)

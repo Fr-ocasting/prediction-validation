@@ -1,6 +1,15 @@
 import torch
 import torch.nn as nn
 
+import sys 
+import os 
+# Get Parent folder : 
+current_path = os.getcwd()
+parent_dir = os.path.abspath(os.path.join(current_path, '..','..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+from dl_models.vision_models.VariableSelectionNetwork.VariableSelectionNetwork import GRN
 
 def elt2word_indx(elt,Encoded_dims):
     # Eventuellement, on peut faire -1 sur chaque 'elt'. 
@@ -14,53 +23,53 @@ def elt2word_indx(elt,Encoded_dims):
     return(word_indx)
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,args_embedding,n_vertex): #n_vertex
+    def __init__(self,args_embedding,n_vertex,x_input_size,dropout): #n_vertex
         super(TimeEmbedding, self).__init__()
         self.embedding_dim = args_embedding.embedding_dim
         self.dic_sizes = args_embedding.dic_sizes
-        #self.activation_fc1 = args_embedding.activation_fc1
         self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
         self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
-        #self.fc_layers = nn.ModuleList([nn.Linear(emb_dim,emb_dim) for emb_dim in self.embedding_dim_calendar_units])
-
+        
         input_dim = sum(self.embedding_dim_calendar_units)
+        self.n_vertex = n_vertex
         if args_embedding.out_h_dim is not None: 
             out_h_dim = args_embedding.out_h_dim
         else:
             out_h_dim = input_dim//2
 
-        self.output1 = nn.Linear(input_dim,out_h_dim)
+        if False: 
+            self.output1 = nn.Linear(input_dim,out_h_dim)
 
-        if args_embedding.multi_embedding:
-            self.output2 = nn.Linear(out_h_dim,n_vertex*args_embedding.embedding_dim)
-        else:
-            self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)        
-        #if args_embedding.fc2:
-        #    self.output1 = nn.Linear(input_dim,out_h_dim)#,args_embedding.fc1)
-        #    self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)#args_embedding.fc1,args_embedding.embedding_dim) 
-        #else:
-        #    self.output1 = nn.Linear(input_dim,args_embedding.embedding_dim)#,args_embedding.fc1)
-        #    self.output2 =None
-        self.relu = nn.ReLU()
+            if args_embedding.multi_embedding:
+                self.output2 = nn.Linear(out_h_dim,n_vertex*args_embedding.embedding_dim)
+            else:
+                self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)        
 
-    def forward(self,elt): 
+            self.relu = nn.ReLU()
+        if True: 
+            self.gru = GRN(x_input_size,out_h_dim,args_embedding.embedding_dim,input_dim,dropout)
 
-        #if fc_layer_by_embedding:
-        #    emb_list = []
-        #    for k,emb in enumerate(self.embedding):
-        #        embedding_k = emb(elt[k].argmax(dim=1).long())
-        #        embedding_k = self.fc_layers[k](embedding_k)
-        #        emb_list.append(embedding_k)
-        #    z = torch.cat(emb_list,-1)
-        #else:
-        z = torch.cat([emb(elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
+    def forward(self,x,time_elt): 
+        '''
+        x : 4-th order Tensor [B,C,N,L]
+        elt : List of One-Hot-Encoded Vector (2-th order Tensor [B,L_calendar_i]) 
+        '''
+        z = torch.cat([emb(time_elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
 
-        #if self.activation_fc1:
-        #    z = self.relu(z)
-        z = self.output1(z)
-        z = self.output2(self.relu(z))
-        #if self.output2 is not None:
-        #    z = self.output2(self.relu(z))
+        if False:
+            z = self.output1(z)
+            z = self.output2(self.relu(z))
+        if True: 
+            # PROBLEME -> Même information calendaire commune à toute les stations. 
+            # __ z [B,z] ) -> [B,1,N,z]
+            z = z.unsqueeze(1)
+            z = z.repeat(1,self.n_vertex,1)
+            z = z.unsqueeze(1)
+            # __
+
+            #print('calendar_embedding size: ',z.size())
+            z = self.gru(x,z)
+            #print('x size après prise en compte calendar: ',z.size())
         return(z)
     
 
@@ -69,14 +78,14 @@ class TE_module(nn.Module):
         super(TE_module, self).__init__()
         args_embedding =  args.args_embedding
         #self.multi_embedding = args_embedding.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding,args.n_vertex) #args.n_vertex
+        self.Tembedding = TimeEmbedding(args_embedding,args.n_vertex,args.L,args.dropout) #args.n_vertex
         #self.N_repeat = 1 if self.multi_embedding else args.n_vertex
         self.C = args.C
         self.n_vertex = args.n_vertex
         self.multi_embedding = args_embedding.multi_embedding
         #self.n_vertex = args.n_vertex
 
-    def forward(self,time_elt):
+    def forward(self,x,time_elt):
         """
         args:
         time_elt: list of One-Hot Encoded torch.Tensor. Each element of the list correspond to a calendar attribute (Weekdays, Hour, Minutes...)
@@ -84,7 +93,7 @@ class TE_module(nn.Module):
         >>> if i correspond to 'weekdays', then P_i = 7, and 'a sample of Tuesday' will be represented by [0,1,0,0,0,0,0]
         """
         mini_batch_size = time_elt[0].size(0)
-        time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
+        time_elt = self.Tembedding(x,time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
         if not(self.multi_embedding):
             time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
         time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]

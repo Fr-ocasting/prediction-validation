@@ -60,15 +60,18 @@ class GRN(nn.Module):
 
         ## Forward backbone model 
 
-        #[B,C,h_dim] -> [B,C,h_dim]
+        #[B,C,N,L] -> [B,C,N,h_dim]
+        #print('\nx size avant gru: ',x.size())
         x = self.dense1(x)
+        #print('x size après dense: ',x.size())
         if x_c is not None:
-            #[B,z_contextual] -> [B,h_dim] 
-            contextual_info = self.dense_contextual(x_c)
-
+            #[B,N,z_contextual] -> [B,N,h_dim] 
+            #print('calendar data avant passage dans dense: ',x_c.size())
+            x_c = self.dense_contextual(x_c)  
+            #print('calendar data après passage dans dense: ',x_c.size())
             # PAS BON ON VEUT IDEALEMENT QUE CE SOIT DIFFERENT  (same contextual information added to every POIs)
             # [B,C,h_dim] + [B,h_dim] -> [B,C,h_dim]   
-            x  = x+contextual_info
+            x  = x+x_c
 
         x = self.elu(x)
         x = self.dense2(x)
@@ -345,8 +348,65 @@ class ScaledDotProduct(nn.Module):
         
         return context,attn_weights
 
+# ============================ ======================== ============================
+# ============================  AttentionGRU ============================
+class AttentionGRU(nn.Module):
+    def __init__(self, input_length1,input_length2, d_model,grn_h_dim,dropout):
+        super(AttentionGRU, self).__init__()
 
+        self.gru  = GRN(input_length1,grn_h_dim,d_model,input_length2,dropout)
+        self.attention = ScaledDotProduct_i(input_length1, d_model)
 
+    def forward(self, x_trafic,x_dynamic,x_known):
+        ''''
+        x_trafic : 2-th order Tensor : historical sequence of trafic flow [B,L]
+        x_context : 3-th order Tensor : R Embedding or P_i contextual data associated to the spatial unit of x_trafic [B,P_i,L]
+        '''
+
+        # Gru to design 'query' 
+        query = self.gru(x_trafic,x_known)
+        enhanced_x,attn_weights = self.attention(query,x_dynamic,x_dynamic)
+        return enhanced_x,attn_weights
+    
+
+class ScaledDotProduct_i(nn.Module):
+    def __init__(self, input_length1, d_model):
+        super(ScaledDotProduct_i, self).__init__()
+        self.proj1 = nn.Linear(input_length1, d_model)
+        self.d_model = d_model
+
+        self.W_q = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+        self.W_k = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+        self.W_v = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+
+        self.softmax = nn.Softmax(dim = -1)
+
+    def forward(self, query,key,values):
+        # x: [B, P, L]
+        
+        # Projection des P times-séries dans un espace de dimension d_model
+        # embeddings: [B, P, d_model]
+        query = self.proj1(query)
+
+        #[B, P, d_model]
+        Q = torch.matmul(query,self.W_q)
+        K = torch.matmul(key,self.W_k)
+        V = torch.matmul(values,self.W_v)
+
+        #[B, d_model, P]
+        K = K.permute(0,2,1)
+
+        #[B, P, P]
+        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
+        attn_weights = self.softmax(scaled_compat)
+
+        #[B, P, P] x [B, P, d] ->   [B, P, d]
+        context = torch.matmul(attn_weights,V)
+
+        #[B, P, d] ->   [B,d]
+        context = torch.sum(context, dim=1)
+        
+        return context,attn_weights
 
 
 class model(nn.Module):
@@ -354,6 +414,9 @@ class model(nn.Module):
         super(model,self).__init__()
         # Attention avec Scaled Dot Product pour chaque station:
         if True: 
+            self.model = nn.ModuleList([AttentionGRU(input_size, grn_out_dim)
+                                        for input_size,_ in zip(List_input_sizes,List_nb_channels)])      
+        if False: 
             self.model = nn.ModuleList([ScaledDotProduct(input_size, grn_out_dim)
                                         for input_size,_ in zip(List_input_sizes,List_nb_channels)])
 

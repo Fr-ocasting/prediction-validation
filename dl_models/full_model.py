@@ -182,11 +182,13 @@ class full_model(nn.Module):
             time_elt = [contextual[pos]for pos in self.pos_calendar] # contextual[self.pos_calendar] 
             time_elt = [elt.long() for elt in time_elt]# time_elt.long()
             # Extract feature: [B] -> [B,C,N,L_calendar]
-            time_elt = self.te(time_elt)
-
+            time_elt = self.te(x,time_elt)
+            #print('x',x.size())
+            #print('time embedding + x passage dans gru',time_elt.size())
             if self.TE_concatenation_early:
                 # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
                 x = torch.cat([x,time_elt],dim = -1)
+                #print('concat de x et  x + calendar',x.size())
         else:
             time_elt = None
             # ...
