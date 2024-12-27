@@ -36,6 +36,10 @@ parser.add_argument('--out_h_dim', type=int, default=16,
                     choices = [8,16,32,64],
                     help='hidden dim of the output of the first layer of the output module')
 
+parser.add_argument('--variable_selection_model_name', type=bool, default='MLP', 
+                    choices = ['MLP','GRN'],
+                    help='Design the type of module to capture Calendar Dependencies.')  
+
 #parser.add_argument('--activation_fc1', type=bool, default=True, 
 #                    choices = [True,False],
 #                    help='Set if activation function for the fc1 or not')

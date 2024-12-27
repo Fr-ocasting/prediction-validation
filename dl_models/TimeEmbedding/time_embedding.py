@@ -11,16 +11,74 @@ if parent_dir not in sys.path:
 
 from dl_models.vision_models.VariableSelectionNetwork.VariableSelectionNetwork import GRN
 
-def elt2word_indx(elt,Encoded_dims):
-    # Eventuellement, on peut faire -1 sur chaque 'elt'. 
-        # Car minute de 0 à 3
-        # heure de 0 à 23
-        # Jour de 0 à 6
-    Encoded_dims_tensor = torch.tensor([1] + Encoded_dims[:-1])
-    product_dimension = Encoded_dims_tensor.cumprod(dim=0)
-    bijection = torch.dot(torch.Tensor(elt).float(),product_dimension.float())  
-    word_indx = torch.cuda.LongTensor([bijection.item()]) if torch.cuda.is_available() else torch.LongTensor([bijection.item()])
-    return(word_indx)
+class MLP(nn.Module):
+    '''
+    2 Layer Perceptron to capture calendar dependencies.
+    inputs:
+    --------
+    Concatenation of embedded vector. 
+    '''
+    def __init__(self,input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout):
+        super(MLP, self).__init__()
+        self.output1 = nn.Linear(input_dim,out_h_dim)
+
+        if multi_embedding:
+            self.output2 = nn.Linear(out_h_dim,n_vertex*embedding_dim)
+        else:
+            self.output2 = nn.Linear(out_h_dim,embedding_dim)        
+
+        self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(dropout)
+
+    def forward(self,x,z): 
+        '''
+        args:
+        ------
+        x is None (only consider calendar embedding here, does not mix it with trafic flow)
+        z : concatenation of all the calendar embedding. 2-th order Tensor [B,z]
+        '''
+        z = self.dropout(self.output1(z))
+        z = self.output2(self.relu(z))
+        return(z)
+    
+class GRN_time_embedding(nn.Module):
+    '''
+    GRN which take as input traffic volume and embedded calendar vector
+    inputs:
+    --------
+    Concatenation of embedded vector. 
+    '''
+    def __init__(self,x_input_size,out_h_dim,embedding_dim,input_dim,dropout,n_vertex):
+        super(GRN_time_embedding, self).__init__()
+        self.n_vertex = n_vertex
+        self.grn = GRN(x_input_size,out_h_dim,embedding_dim,input_dim,dropout)
+
+    def forward(self,x,z):
+        z = z.unsqueeze(1)
+        z = z.repeat(1,self.n_vertex,1)
+        z = z.unsqueeze(1)
+        x_enhanced = self.grn(x,z)
+        return x_enhanced
+
+
+class OutputModule(nn.Module):
+    def __init__(self,input_dim,x_input_size,out_h_dim,n_vertex,embedding_dim,dropout,multi_embedding,variable_selection_model_name):
+        super(OutputModule, self).__init__()
+
+        if variable_selection_model_name == 'MLP':
+            self.module = MLP(input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout)
+
+        elif variable_selection_model_name == 'GRN':
+            self.module = GRN_time_embedding(x_input_size,out_h_dim,embedding_dim,input_dim,dropout,n_vertex)
+
+        else:
+            raise NotImplementedError(f"Variable Selection Model '{variable_selection_model_name}' has not been implemented for capturing Calendar Informations")
+
+    def forward(self,x,z): 
+        z = self.module(x,z)
+        return(z)
+
+
 
 class TimeEmbedding(nn.Module):
     def __init__(self,args_embedding,n_vertex,x_input_size,dropout): #n_vertex
@@ -37,17 +95,8 @@ class TimeEmbedding(nn.Module):
         else:
             out_h_dim = input_dim//2
 
-        if False: 
-            self.output1 = nn.Linear(input_dim,out_h_dim)
+        self.output_module = OutputModule(input_dim,x_input_size,out_h_dim,n_vertex,args_embedding.embedding_dim,dropout,args_embedding.multi_embedding,args_embedding.variable_selection_model_name)
 
-            if args_embedding.multi_embedding:
-                self.output2 = nn.Linear(out_h_dim,n_vertex*args_embedding.embedding_dim)
-            else:
-                self.output2 = nn.Linear(out_h_dim,args_embedding.embedding_dim)        
-
-            self.relu = nn.ReLU()
-        if True: 
-            self.gru = GRN(x_input_size,out_h_dim,args_embedding.embedding_dim,input_dim,dropout)
 
     def forward(self,x,time_elt): 
         '''
@@ -55,23 +104,10 @@ class TimeEmbedding(nn.Module):
         elt : List of One-Hot-Encoded Vector (2-th order Tensor [B,L_calendar_i]) 
         '''
         z = torch.cat([emb(time_elt[k].argmax(dim=1).long()) for k,emb in enumerate(self.embedding)],-1)
-
-        if False:
-            z = self.output1(z)
-            z = self.output2(self.relu(z))
-        if True: 
-            # PROBLEME -> Même information calendaire commune à toute les stations. 
-            # __ z [B,z] ) -> [B,1,N,z]
-            z = z.unsqueeze(1)
-            z = z.repeat(1,self.n_vertex,1)
-            z = z.unsqueeze(1)
-            # __
-
-            #print('calendar_embedding size: ',z.size())
-            z = self.gru(x,z)
-            #print('x size après prise en compte calendar: ',z.size())
+        z = self.output_module(x,z)
         return(z)
     
+
 
 class TE_module(nn.Module):
     def __init__(self,args):

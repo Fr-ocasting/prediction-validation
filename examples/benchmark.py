@@ -103,10 +103,11 @@ if __name__ == '__main__':
                         'set_spatial_units' : ['BON','SOI','GER','CHA'],
                         'TE_concatenation_early':True,
                         'TE_concatenation_late':False,
-                        'TE_embedding_dim':16
+                        'TE_embedding_dim':1,
+                        'TE_variable_selection_model_name': 'GRN'
                         }
     
-        model_names =['STGCN'] # [None] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
+        model_names =[None] # [None] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
         args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],

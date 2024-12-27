@@ -24,7 +24,7 @@ parser.add_argument('--concatenation_late', type=bool, default=False,
 
 parser.add_argument('--concatenation_early', type=bool, default=True, 
                     choices = [True,False],
-                    help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')                  
+                    help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')  
 
 args = parser.parse_args(args=[])
 
