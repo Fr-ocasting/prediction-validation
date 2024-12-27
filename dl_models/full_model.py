@@ -92,7 +92,102 @@ class full_model(nn.Module):
             self.netmob_vision =  None
             self.vision_input_type = None
             self.vision_concatenation_early = False
+        
+    def forward_te_model(self,x,contextual):
+        if self.te is not None:
+            time_elt = [contextual[pos]for pos in self.pos_calendar] # contextual[self.pos_calendar] 
+            time_elt = [elt.long() for elt in time_elt]# time_elt.long()
+            # Extract feature: [B] -> [B,C,N,L_calendar]
+            time_elt = self.te(x,time_elt)
+            #print('x',x.size())
+            #print('time embedding + x passage dans gru',time_elt.size())
+            if self.TE_concatenation_early:
+                # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
+                x = torch.cat([x,time_elt],dim = -1)
+                #print('concat de x et  x + calendar',x.size())
+        else:
+            time_elt = None
+            # ... 
+        return x,time_elt  
 
+    def forward_netmob_model(self,x,contextual):
+        if self.netmob_vision is not None:
+            if self.vision_input_type == 'image_per_stations':
+                netmob_video_batch = contextual[self.pos_netmob]
+                extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
+        
+            elif self.vision_input_type == 'unique_image_through_lyon':
+                netmob_video_batch = contextual[self.pos_netmob]
+                extracted_feature =  self.forward_unique_image_through_lyon(netmob_video_batch)
+
+            elif self.vision_input_type == 'POIs':
+                # contextual[pos]: [B,nb_POIs,L']  // after forward : List of [B,Z] // After unsqueeze : [B,C,Z] with C = 1
+                extracted_feature = self.netmob_vision(x,[contextual[pos]for pos in self.pos_netmob])
+                # list of N tensor [B,Z] -> [B,N,Z]  And then unsqueeze :  [B,N,Z] -> [B,C,N,Z]
+                extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1)  
+
+
+            else:
+                raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
+            
+            # Concatenation early: 
+            if self.vision_concatenation_early:
+                # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
+                x = torch.cat([x,extracted_feature],dim = -1)
+            
+        else:
+            extracted_feature = None
+
+        return x,extracted_feature
+    
+    def reshaping(self,x):
+        if x.dim()==4:
+            x = x.squeeze()
+
+        # Tackle the case when C=1 and output_dim = 1  
+        if x.dim()==2:
+            x = x.unsqueeze(-1)
+
+        # Tackle the case when n_vertex = 1
+        if x.dim()==1: 
+            x = x.unsqueeze(-1)           
+            x = x.unsqueeze(-1) 
+        return x
+
+    def forward(self,x,contextual = None):
+        ''' 
+        Args:
+        -----
+        x : 4-th order Tensor: Trafic Flow historical inputs [B,C,N,L]
+        contextual : list of contextual data. 
+            >>>> contextual[netmob_position]: [B,N,C,H,W,L]
+            >>>> contextual[calendar]: [B]
+        '''
+        #print('\nx size before forward: ',x.size())
+        if self.remove_trafic_inputs:
+            x = torch.Tensor().to(x)
+        else:
+            if x.dim() == 3:
+                x = x.unsqueeze(1)
+
+        #print('x size after reshaping or reduction to 0: ',x.size())
+        x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
+        #print('x after NetMob model: ',x.size())
+        x,time_elt = self.forward_te_model(x,contextual)         # Tackle Calendar Data (if exists)
+        #print('x after Calendar model: ',x.size())
+        #print('CalendarEmbedded Vector: ',time_elt.size())
+
+        # Core model 
+        if self.core_model is not None:
+            x= self.core_model(x,extracted_feature,time_elt)
+            #print('x after Core Model: ',x.size())
+        # ...
+        x = self.reshaping(x)
+        #print('x after reshaping: ',x.size())
+        return(x)
+    
+    # =========================================================================== #
+    ## ==== SHOULD BE USELESS FOR FUTURE ====================================
     def foward_image_per_stations(self,netmob_video_batch):
         ''' Foward for input shape [B,C,N,H,W,L]'''
         B,N,C_netmob,H,W,L = netmob_video_batch.size()
@@ -124,91 +219,8 @@ class full_model(nn.Module):
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
         return extracted_feature
-  
-
-    def forward_netmob_model(self,x,contextual):
-        if self.vision_input_type == 'image_per_stations':
-            netmob_video_batch = contextual[self.pos_netmob]
-            extracted_feature =  self.foward_image_per_stations(netmob_video_batch)
-    
-        elif self.vision_input_type == 'unique_image_through_lyon':
-            netmob_video_batch = contextual[self.pos_netmob]
-            extracted_feature =  self.forward_unique_image_through_lyon(netmob_video_batch)
-
-        elif self.vision_input_type == 'POIs':
-            # contextual[pos]: [B,nb_POIs,L']  // after forward : List of [B,Z] // After unsqueeze : [B,C,Z] with C = 1
-            extracted_feature = self.netmob_vision(x,[contextual[pos]for pos in self.pos_netmob])
-            # list of N tensor [B,Z] -> [B,N,Z]  And then unsqueeze :  [B,N,Z] -> [B,C,N,Z]
-            extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1)  
-
-
-        else:
-            raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
-        return extracted_feature
-    
-
-    def forward(self,x,contextual = None):
-        ''' 
-        Args:
-        -----
-        x : 4-th order Tensor: Trafic Flow historical inputs [B,C,N,L]
-        contextual : list of contextual data. 
-            >>>> contextual[netmob_position]: [B,N,C,H,W,L]
-            >>>> contextual[calendar]: [B]
-        '''
-        #print('x size before forward: ',x.size())
-        if self.remove_trafic_inputs:
-            x = torch.Tensor().to(x)
-        else:
-            if x.dim() == 3:
-                x = x.unsqueeze(1)
-
-        #print('x size: ',x.size())
-
-        # if NetMob data is on :
-        if self.netmob_vision is not None: 
-            extracted_feature = self.forward_netmob_model(x,contextual)
-
-            if self.vision_concatenation_early:
-                # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
-                x = torch.cat([x,extracted_feature],dim = -1)
-        else:
-            extracted_feature = None
-
-
-
-        # if calendar data is on : 
-        if self.te is not None:
-            time_elt = [contextual[pos]for pos in self.pos_calendar] # contextual[self.pos_calendar] 
-            time_elt = [elt.long() for elt in time_elt]# time_elt.long()
-            # Extract feature: [B] -> [B,C,N,L_calendar]
-            time_elt = self.te(x,time_elt)
-            #print('x',x.size())
-            #print('time embedding + x passage dans gru',time_elt.size())
-            if self.TE_concatenation_early:
-                # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
-                x = torch.cat([x,time_elt],dim = -1)
-                #print('concat de x et  x + calendar',x.size())
-        else:
-            time_elt = None
-            # ...
-
-        # Core model 
-        if self.core_model is not None:
-            x= self.core_model(x,extracted_feature,time_elt)
-        # ...
-        if x.dim()==4:
-            x = x.squeeze()
-
-        # Tackle the case when C=1 and output_dim = 1  
-        if x.dim()==2:
-            x = x.unsqueeze(-1)
-
-        # Tackle the case when n_vertex = 1
-        if x.dim()==1: 
-            x = x.unsqueeze(-1)           
-            x = x.unsqueeze(-1) 
-        return(x)
+    ## ==========================================================================
+    # =========================================================================== #
 
 
 def load_model(dataset, args):
@@ -280,6 +292,11 @@ def load_model(dataset, args):
     if args.model_name == 'RNN':
         from dl_models.RNN.load_config import args as RNN_args
         model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L+L_add,dropout=args.dropout,device = args.device).to(args.device)
+
+    if args.model_name == 'MLP':
+        from dl_models.MLP.MLP import MLP_output 
+        input_dim = args.L+L_add
+        model = MLP_output(input_dim=input_dim,out_h_dim=input_dim,n_vertex=None,embedding_dim=args.out_dim,multi_embedding=False,dropout=args.dropout).to(args.device)
 
     if args.model_name == None:
         model = None

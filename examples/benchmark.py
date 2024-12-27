@@ -86,6 +86,17 @@ def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metric
     df_results = pd.concat([df_results,row])
     return df_results
 
+def plot_gradient(trainer):
+    gradient_metrics = trainer.gradient_metrics
+    for module in gradient_metrics.keys():
+        df_to_plot = pd.DataFrame()
+        for metric_grad in gradient_metrics[module].keys():
+            df_to_plot[f"{module}_{metric_grad}"] = gradient_metrics[module][metric_grad]
+        if len(df_to_plot) > 0: 
+            if len(df_to_plot)> 3:
+                df_to_plot.iloc[3:].plot()
+            else:
+                df_to_plot.plot()
 if __name__ == '__main__':
 
     for dataset_names,vision_model_name in zip([['subway_in','calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
@@ -98,16 +109,16 @@ if __name__ == '__main__':
 
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()
-        modification = {'epochs' : 20, #100,
+        modification = {'epochs' : 2, #100,
                         'lr':4e-4,
                         'set_spatial_units' : ['BON','SOI','GER','CHA'],
                         'TE_concatenation_early':True,
                         'TE_concatenation_late':False,
-                        'TE_embedding_dim':1,
+                        'TE_embedding_dim':4,
                         'TE_variable_selection_model_name': 'GRN'
                         }
     
-        model_names =[None] # [None] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
+        model_names =['STGCN'] # [None] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
         args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],
@@ -125,13 +136,8 @@ if __name__ == '__main__':
         df_results = keep_track_on_model_metrics(trainer,df_results,model_names[0],trainer,metrics)
 
         # Display Gradient : 
-        gradient_metrics = trainer.gradient_metrics
+        plot_gradient(trainer)
 
-        for module in gradient_metrics.keys():
-            df_to_plot = pd.DataFrame()
-            for metric_grad in gradient_metrics[module].keys():
-                df_to_plot[f"{module}_{metric_grad}"] = gradient_metrics[module][metric_grad]
-            if len(df_to_plot) > 0: df_to_plot.plot()
         for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
             print(f'\n>>>>Training {model_name} on {dataset_names}')
             args,folds,hp_tuning_on_first_fold = local_get_args(model_name,

@@ -469,7 +469,9 @@ class Trainer(object):
         with torch.set_grad_enabled(self.training_mode=='train'):
             loader = self.get_loader()
             Preds,Y_true,T_labels,nb_samples,loss_epoch = self.loop_through_batches(loader)
-            self.gradient_tracking()
+
+            if self.training_mode == 'train':
+                self.gradient_tracking()
 
 
         if self.training_mode=='valid':self.chrono.validation()

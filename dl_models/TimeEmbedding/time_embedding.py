@@ -10,43 +10,16 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from dl_models.vision_models.VariableSelectionNetwork.VariableSelectionNetwork import GRN
+from dl_models.MLP.MLP import MLP_embedding
 
-class MLP(nn.Module):
-    '''
-    2 Layer Perceptron to capture calendar dependencies.
-    inputs:
-    --------
-    Concatenation of embedded vector. 
-    '''
-    def __init__(self,input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout):
-        super(MLP, self).__init__()
-        self.output1 = nn.Linear(input_dim,out_h_dim)
-
-        if multi_embedding:
-            self.output2 = nn.Linear(out_h_dim,n_vertex*embedding_dim)
-        else:
-            self.output2 = nn.Linear(out_h_dim,embedding_dim)        
-
-        self.relu = nn.ReLU()
-        self.dropout = nn.Dropout(dropout)
-
-    def forward(self,x,z): 
-        '''
-        args:
-        ------
-        x is None (only consider calendar embedding here, does not mix it with trafic flow)
-        z : concatenation of all the calendar embedding. 2-th order Tensor [B,z]
-        '''
-        z = self.dropout(self.output1(z))
-        z = self.output2(self.relu(z))
-        return(z)
     
 class GRN_time_embedding(nn.Module):
     '''
     GRN which take as input traffic volume and embedded calendar vector
     inputs:
     --------
-    Concatenation of embedded vector. 
+    z: 2-th order Tensor [B,z]  Concatenation of embedded vector
+    x: 4-th order Tensor [B,C,N,L] Sequence of Traffic data for each spatial units
     '''
     def __init__(self,x_input_size,out_h_dim,embedding_dim,input_dim,dropout,n_vertex):
         super(GRN_time_embedding, self).__init__()
@@ -66,7 +39,7 @@ class OutputModule(nn.Module):
         super(OutputModule, self).__init__()
 
         if variable_selection_model_name == 'MLP':
-            self.module = MLP(input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout)
+            self.module = MLP_embedding(input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout)
 
         elif variable_selection_model_name == 'GRN':
             self.module = GRN_time_embedding(x_input_size,out_h_dim,embedding_dim,input_dim,dropout,n_vertex)
