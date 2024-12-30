@@ -88,6 +88,12 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normal
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'netmob_POIs'
 
+    elif 'subway_out' in args.dataset_names:
+        from load_inputs.subway_out import load_data      
+        NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intesect_coverage_period,normalize,invalid_dates)  
+        args.vision_input_type = 'POIs'
+        netmob_dataset_name = 'netmob_POIs'
+
     else :
         raise NotImplementedError(f'load data has not been implemented for the netmob file here {args.dataset_names}')
     
@@ -117,7 +123,9 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize 
 
     # BOOLEAN VALUE : True IF NETMOB IS USED
     bool_netmob = (sum([True for d in args.dataset_names if 'netmob' in d])) > 0
-    
+    if 'subway_out' in args.dataset_names:
+        bool_netmob = True 
+        
     if bool_netmob: 
         # TACKLE THE INPUT DATA 
         NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize)

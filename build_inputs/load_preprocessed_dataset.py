@@ -60,6 +60,18 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
 
              positions[dataset_name] = pos_netmob
 
+        elif dataset_name == 'subway_out':
+             contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,
+                                            'valid': subway_out_station.U_valid if hasattr(subway_out_station,'U_valid') else None,
+                                            'test': subway_out_station.U_test  if hasattr(subway_out_station,'U_test') else None}
+                                            for subway_out_station in NetMob_ds
+                                            }
+                                         )
+             pos_stations = [list(contextual_tensors.keys()).index(f'netmob_{subway_out_station.station_name}') for subway_out_station in NetMob_ds]
+
+             positions[dataset_name] = pos_stations
+
+
         else:
             raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')
 
