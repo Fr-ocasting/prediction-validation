@@ -38,6 +38,7 @@ def load_vision_model(args_vision):
     importlib.reload(script)
     func = script.model
     filered_args = filter_args(func, args_vision)
+
     return func(**filered_args) 
 
 
@@ -81,6 +82,7 @@ class full_model(nn.Module):
             args.args_vision.H = args.H
             args.args_vision.W = args.W
             args.args_vision.dropout = args.dropout
+            args.args_vision.x_input_size = args.L
             self.netmob_vision = load_vision_model(args.args_vision)
             self.vision_input_type = args.vision_input_type
             self.vision_concatenation_early = args.args_vision.concatenation_early

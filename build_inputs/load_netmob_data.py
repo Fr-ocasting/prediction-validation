@@ -92,7 +92,7 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normal
         from load_inputs.subway_out import load_data      
         NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intesect_coverage_period,normalize,invalid_dates)  
         args.vision_input_type = 'POIs'
-        netmob_dataset_name = 'netmob_POIs'
+        netmob_dataset_name = 'subway_out'
 
     else :
         raise NotImplementedError(f'load data has not been implemented for the netmob file here {args.dataset_names}')
@@ -100,7 +100,7 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normal
     return(NetMob_ds,args,netmob_dataset_name)
 
 def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
-    if args_vision.dataset_name == 'netmob_POIs':
+    if (args_vision.dataset_name == 'netmob_POIs') or (args_vision.dataset_name == 'subway_out') :
         C_netmob = NetMob_ds[0].U_train.size(1) # [B,R]
         List_input_sizes = [NetMob_ds[k].U_train.size(2) for k in range(len(NetMob_ds)) ]
         List_nb_channels = [NetMob_ds[k].U_train.size(1) for k in range(len(NetMob_ds)) ]
@@ -109,6 +109,7 @@ def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
         config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
     else: 
+        raise NotImplementedError(f"args_vision.dataset_name '{args_vision.dataset_name}' n'est probabelment pas importé correctement. Modifier le code.")
         C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
         H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
@@ -125,7 +126,7 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize 
     bool_netmob = (sum([True for d in args.dataset_names if 'netmob' in d])) > 0
     if 'subway_out' in args.dataset_names:
         bool_netmob = True 
-        
+
     if bool_netmob: 
         # TACKLE THE INPUT DATA 
         NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize)

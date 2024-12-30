@@ -67,7 +67,7 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
                                             for subway_out_station in NetMob_ds
                                             }
                                          )
-             pos_stations = [list(contextual_tensors.keys()).index(f'netmob_{subway_out_station.station_name}') for subway_out_station in NetMob_ds]
+             pos_stations = [list(contextual_tensors.keys()).index(f'subway_out_{subway_out_station.station_name}') for subway_out_station in NetMob_ds]
 
              positions[dataset_name] = pos_stations
 

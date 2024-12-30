@@ -16,7 +16,7 @@ from load_inputs.netmob_POIs import load_input_and_preprocess
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-FILE_NAME = 'subway_out/subway_out'
+FILE_NAME = 'subway_in/subway_in'   # 'subway_out/subway_out' 
 
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
@@ -43,7 +43,9 @@ def load_data(dataset,args,ROOT,FOLDER_PATH,intesect_coverage_period,normalize,i
     subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intesect_coverage_period)
     for id_station in id_stations:
         print('Spatial unit: ',id_station)
-        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=torch.Tensor(subway_out.raw_values),dataset=dataset)
+        #netmob_T = torch.Tensor(subway_out.raw_values)
+        netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
+        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
         preprocessed_personal_input.station_name = id_station
         contextual_subway_out.append(preprocessed_personal_input)
     return contextual_subway_out

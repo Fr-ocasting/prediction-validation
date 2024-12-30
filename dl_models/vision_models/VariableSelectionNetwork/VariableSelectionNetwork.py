@@ -338,6 +338,7 @@ class ScaledDotProduct(nn.Module):
 
         #[B, P, P]
         scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
+
         attn_weights = self.softmax(scaled_compat)
 
         #[B, P, P] x [B, P, d] ->   [B, P, d]
@@ -354,6 +355,7 @@ class AttentionGRU(nn.Module):
     def __init__(self, input_length1,input_length2, d_model,grn_h_dim,dropout):
         super(AttentionGRU, self).__init__()
 
+        print('\n>>>>>>>>> input_length1,grn_h_dim,d_model,input_length2 :',input_length1,grn_h_dim,d_model,input_length2)
         self.gru  = GRN(input_length1,grn_h_dim,d_model,input_length2,dropout)
         self.attention = ScaledDotProduct_i(input_length1, d_model)
 
@@ -362,9 +364,15 @@ class AttentionGRU(nn.Module):
         x_trafic : 2-th order Tensor : historical sequence of trafic flow [B,L]
         x_context : 3-th order Tensor : R Embedding or P_i contextual data associated to the spatial unit of x_trafic [B,P_i,L]
         '''
+        #print('x_trafic: ',x_trafic.size())  #[B,L]  -> torch.Size([32,7])  
+        #print('x_dynamic: ',x_dynamic.size()) #[B, P, L']  -> torch.Size([32, 4, 7]) 
+        #print('x_known None: ',x_known)
 
         # Gru to design 'query' 
-        query = self.gru(x_trafic,x_known)
+        
+        #query = self.gru(x_trafic,x_known)
+        query = x_trafic
+
         enhanced_x,attn_weights = self.attention(query,x_dynamic,x_dynamic)
         return enhanced_x,attn_weights
     
@@ -381,24 +389,55 @@ class ScaledDotProduct_i(nn.Module):
 
         self.softmax = nn.Softmax(dim = -1)
 
+        '''Ajout'''
+        self.proj2 = nn.Linear(input_length1, d_model)
+
+        nn.init.xavier_uniform_(self.W_q)
+        nn.init.xavier_uniform_(self.W_k)
+        nn.init.xavier_uniform_(self.W_v)
+
+        self.layer_norm = nn.LayerNorm(d_model)
+
     def forward(self, query,key,values):
+        '''
+        query: From x_traffic
+        key : From x_dynamic
+        values: From x_dynamic
+        '''
+
         # x: [B, P, L]
         
         # Projection des P times-séries dans un espace de dimension d_model
         # embeddings: [B, P, d_model]
-        query = self.proj1(query)
+        key = self.proj1(key)
+
+        '''Ajout'''
+        query = self.proj2(query)  
+        #print('Embedding dim: ',key.size(),' Résultats attendu: [B, P, d_model]')
+
+        # Normalize inputs: 
+        # Case where only 1 traffic time-serie for P contextual data
+        if query.dim() == 2:
+            query = query.unsqueeze(1)
 
         #[B, P, d_model]
-        Q = torch.matmul(query,self.W_q)
-        K = torch.matmul(key,self.W_k)
-        V = torch.matmul(values,self.W_v)
+        Q = self.layer_norm(torch.matmul(query,self.W_q))
+        K = self.layer_norm(torch.matmul(key,self.W_k))
+        V = self.layer_norm(torch.matmul(key,self.W_v))
 
         #[B, d_model, P]
         K = K.permute(0,2,1)
 
+
         #[B, P, P]
         scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
+
+        # Softmax: 
         attn_weights = self.softmax(scaled_compat)
+
+
+        #print('Q,K.T,V: ',Q.size(),K.size(),V.size(),' Résultats attendu: [B, P_trafic, d_model],[B, d_model, P],[B, P, d_model]')  
+        #print('scaled_compat: ',scaled_compat.size(),' Résultats attendu: [B, P_trafic, P]') 
 
         #[B, P, P] x [B, P, d] ->   [B, P, d]
         context = torch.matmul(attn_weights,V)
@@ -410,12 +449,12 @@ class ScaledDotProduct_i(nn.Module):
 
 
 class model(nn.Module):
-    def __init__(self,List_input_sizes,List_nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout):
+    def __init__(self,List_input_sizes,List_nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout,x_input_size):
         super(model,self).__init__()
         # Attention avec Scaled Dot Product pour chaque station:
         if True: 
-            self.model = nn.ModuleList([AttentionGRU(input_size, grn_out_dim)
-                                        for input_size,_ in zip(List_input_sizes,List_nb_channels)])      
+            self.model = nn.ModuleList([AttentionGRU(x_input_size,input_size, grn_out_dim,grn_h_dim,dropout)
+                                        for input_size in List_input_sizes])      
         if False: 
             self.model = nn.ModuleList([ScaledDotProduct(input_size, grn_out_dim)
                                         for input_size,_ in zip(List_input_sizes,List_nb_channels)])
@@ -446,4 +485,5 @@ class model(nn.Module):
         '''
         # x = List_of_x[k]    Shape: [B,C_i,L]
         # self.model[k](List_of_x[k]) = (combined, attn_weight). We only keep 'combined'.
-        return([self.model[k](List_of_x[k],x_c)[0] for k in range(len(List_of_x))])
+         
+        return([self.model[k](x[:,:,k,:].squeeze(),List_of_x[k],x_c)[0] for k in range(len(List_of_x))])
