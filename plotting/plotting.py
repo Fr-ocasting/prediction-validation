@@ -421,6 +421,106 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
     plt.show()
     return fig,axes
 
+
+def temporal_aggregation_of_attn_weight(attn_weights_reshaped,ds,training_mode,temporal_agg):
+    ''' 
+    Return the temporal aggregation of attn weights to visualise them 
+
+    args:
+    ------
+    temporal_agg : choices ['hour','weekday','weekday_hour','weekday_hour_minutes']
+    '''
+
+    if temporal_agg is not None:
+        index_df = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}").iloc[:,-1]
+        df = pd.DataFrame(attn_weights_reshaped,index = index_df,columns = ds.spatial_unit)
+        weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+
+        if temporal_agg == 'hour':
+            df_agg = df.groupby([df.index.hour]).agg('mean')
+            str_dates = list(df_agg.index.map(lambda x: f"{x:02d}"))
+
+        elif temporal_agg == 'weekday':
+            df_agg = df.groupby([df.index.weekday]).agg('mean')
+            str_dates = list(df_agg.index.map(lambda x: weekdays[x]))
+
+        elif temporal_agg == 'weekday_hour':
+            df_agg = df.groupby([df.index.weekday,df.index.hour]).agg('mean')
+            str_dates = list(df_agg.index.map(lambda x: f"{weekdays[x[0]]} {x[1]:02d}"))
+
+        elif temporal_agg == 'weekday_hour_minute':
+            df_agg = df.groupby([df.index.weekday,df.index.hour,df.index.minute]).agg('mean')
+            str_dates = list(df_agg.index.map(lambda x: f"{weekdays[x[0]]} {x[1]:02d}:{x[2]:02d}"))
+        else:
+            raise NotImplementedError(f'Temporal aggregation {temporal_agg} has not been implemented')
+        attn_weights_reshaped = df_agg.values  
+    else:
+        str_dates = list(df.index.strftime('%Y-%m-%d %H:%M'))
+
+    return attn_weights_reshaped,str_dates
+
+def get_y_size_from_temporal_agg(temporal_agg):
+    if temporal_agg is not None:
+        if temporal_agg == 'hour':
+            y_size = 12
+        elif temporal_agg == 'weekday':
+            y_size = 7    
+        elif temporal_agg == 'weekday_hour':
+            y_size = 7*3
+        elif temporal_agg == 'weekday_hour_minute':
+            y_size = 7*8
+        else:
+            raise NotImplementedError(f'Temporal aggregation {temporal_agg} has not been implemented')
+    else:
+        y_size = 7*6
+    return(y_size)
+
+def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temporal_agg = None,save=None):
+
+    # Load Inputs : 
+    X,Y,X_c,nb_contextual = trainer.load_all_inputs_from_training_mode(training_mode)
+
+    # Init:
+    num_stations = len(X_c) - nb_calendar_data
+    num_cols = 4
+    num_rows = (num_stations + num_cols - 1) // num_cols  
+    y_size = get_y_size_from_temporal_agg(temporal_agg)
+    #plt.figure(figsize=(5*num_cols,y_size))  
+    plt.figure(figsize=(5*num_cols*max(1,num_stations//15),int(y_size*max(1,num_stations//num_cols))))
+
+    vmin,vmax = 0,min(1,1/(num_stations/3))
+    for station_i in range(num_stations):
+        enhanced_x,attn_weights = trainer.model.netmob_vision.model[station_i](X[:,station_i,:],X_c[station_i+nb_calendar_data],x_known = None)
+        attn_weights_reshaped = attn_weights.squeeze(1).detach().cpu().numpy()  # Shape [B, P]
+
+        # Temporal Aggregation of attn weight:
+        attn_weights_reshaped,str_dates = temporal_aggregation_of_attn_weight(attn_weights_reshaped,ds,training_mode,temporal_agg)
+        ax = plt.subplot(num_rows, num_cols, station_i + 1)  # Créer un subplot
+        im = ax.imshow(attn_weights_reshaped, cmap='hot', aspect='auto',vmin=vmin,vmax=vmax)
+        plt.colorbar(im,label='Attention Weight',shrink = 0.25)
+        
+        if temporal_agg is None:
+            plt.title(f'Attention Weight\nof station {station_i} ({ds.spatial_unit[station_i]}) \nfor each sample of the batch')
+            plt.ylabel('Samples')
+        else:
+            plt.title(f'Mean Attention Weight\nof station {station_i}({ds.spatial_unit[station_i]}) \nby calendar class') 
+            plt.ylabel('Calendar class')
+        plt.xlabel('Stations')
+
+
+        num_samples, num_stations = attn_weights_reshaped.shape
+        plt.xticks(ticks=np.arange(num_stations), labels=[f'Station {i}' for i in range(num_stations)], rotation=45)
+        plt.yticks(ticks=np.arange(num_samples), labels=str_dates)
+
+    plt.tight_layout()
+
+    if save is not None:
+        plt.savefig(f'{save}.pdf',format = 'pdf',bbox_inches='tight')
+    plt.show()
+
+
+
 if __name__ == '__main__':
     # Exemple with 'plot_coverage_matshow':
     range_dates = pd.date_range(start= "2019-9-30",end="2021-5-31",freq = '7D')

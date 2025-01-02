@@ -526,6 +526,14 @@ class Trainer(object):
             self.optimizer.step()
         return(loss)
     
+    def load_all_inputs_from_training_mode(self,training_mode):
+        inputs_i = [[x,y,x_c] for  x,y,x_c  in self.dataloader[training_mode]]
+        X = torch.cat([x for x,_,_ in inputs_i])
+        Y = torch.cat([y for _,y,_ in inputs_i])
+        nb_contextual = len(next(iter(self.dataloader[training_mode]))[2])
+        X_c = [torch.cat([x_c[k] for _,_,x_c in inputs_i])for k in range(nb_contextual)]
+        return X,Y,X_c,nb_contextual
+    
     def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None,track_loss = False):
         self.training_mode = training_mode
         if allow_dropout:

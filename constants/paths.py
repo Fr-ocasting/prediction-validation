@@ -21,6 +21,11 @@ else:
     
 SAVE_DIRECTORY = '../save/'
 
+''' Training Parameters'''
+USELESS_DATES = {'hour':[1,2,3,4,5,6],
+                 'weekday':[5,6],
+                 }
+
 ''' Calendar Parameters: '''
 CALENDAR_TYPE=['dayofweek','hour']#['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 

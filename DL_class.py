@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import torch 
 import torch.nn as nn 
-
+from constants.paths import USELESS_DATES
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
         super().__init__()
@@ -218,6 +218,7 @@ class DatesVerifFeatureVect(object):
         '''
         args:
         -------
+        df_shifted: dataframe of date which could be predicted, for each historical (t-w,t-d,t-h,t-h+1,...,t-1) time-step and time-step to predict (t+s-1)
         invalid_dates : list of TimeStamps
 
         outputs:
@@ -225,11 +226,29 @@ class DatesVerifFeatureVect(object):
         forbidden_index : list of index within 'df_shifted' which are related to invalid dates
         forbidden_indice_U: list of indices withing the feature vector 'U' which contains at least one value related to a forbidden dates
         '''
-        
+
+        L_useless_index = []
+        for key in USELESS_DATES.keys():
+            if key == 'hour':
+                useless_object = self.df_shifted.iloc[:,-1].apply(lambda x : x.hour)
+                useless_index = useless_object[useless_object.isin(USELESS_DATES[key])].index
+            elif key == 'weekday':
+                useless_object = self.df_shifted.iloc[:,-1].apply(lambda x : x.weekday())
+                useless_index = useless_object[useless_object.isin(USELESS_DATES[key])].index       
+            else:
+                raise NotImplementedError(f"key {key} has not been implemented as useless index")  
+            L_useless_index = L_useless_index+list(useless_index)
+
+
         # Mask for dataframe df_verif
         df_shifted_forbiden = pd.concat([self.df_shifted[self.df_shifted[c].isin(invalid_dates)] for c in self.df_shifted.columns])  # Concat forbidden indexes within each columns
+
         # Identify forbidden df indexes
-        self.forbidden_index = df_shifted_forbiden.index.unique()  # drop dupplicates
+        self.forbidden_index = df_shifted_forbiden.index.unique() # drop dupplicates
+
+        # Union of Indexes to remove: 
+        #self.forbidden_index = list(set(set(L_useless_index)&set(list(df_shifted_forbiden.index.unique()))))  
+        self.forbidden_index =  self.forbidden_index.union(pd.Index(L_useless_index)).unique()
         # Identify forbidden Tensor Indices 
         self.forbidden_indice_U = self.forbidden_index - self.shift_from_first_elmt  #shift index to get back to corresponding indices
 
