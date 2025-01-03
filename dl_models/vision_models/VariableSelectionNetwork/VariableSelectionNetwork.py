@@ -373,7 +373,7 @@ class AttentionGRU(nn.Module):
         #query = self.gru(x_trafic,x_known)
         query = x_trafic
 
-        enhanced_x,attn_weights =self.attention(query,x_dynamic,x_dynamic)
+        enhanced_x,attn_weights =self.attention(x_dynamic,x_dynamic,x_dynamic) # self.attention(query,x_dynamic,x_dynamic)
         return enhanced_x,attn_weights
     
 
