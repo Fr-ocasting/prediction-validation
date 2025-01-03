@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser(description='VariableSelectionNetwork')
 parser.add_argument('--grn_h_dim', type=int, default=8, choices=[8,16,32,64,128,256],  # 16
                     help='Number of hidden dimension wihtin the GRU')
 
-parser.add_argument('--grn_out_dim', type=int, default=8, choices=[8,16,32,64,128,256],  #  16
+parser.add_argument('--grn_out_dim', type=int, default=32, choices=[8,16,32,64,128,256],  #  16
                     help='Output dimension of the enhanced vectors')
 
 parser.add_argument('--contextual_static_dim', type=int, default=None, 

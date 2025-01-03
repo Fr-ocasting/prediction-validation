@@ -297,6 +297,8 @@ def load_model(dataset, args):
 
     if args.model_name == 'MLP':
         from dl_models.MLP.MLP import MLP_output 
+        print('\n>>>>Model == MLP, keep in mind Concatenation Late DOES NOT WORK here. Only Concatenation Early')
+        print(f'>>>>Also Stupid model. Input_dim = h_dim = L+L_add. Output_dim = {args.out_dim}')
         input_dim = args.L+L_add
         model = MLP_output(input_dim=input_dim,out_h_dim=input_dim,n_vertex=None,embedding_dim=args.out_dim,multi_embedding=False,dropout=args.dropout).to(args.device)
 

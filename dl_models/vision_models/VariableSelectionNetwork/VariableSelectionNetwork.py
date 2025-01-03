@@ -355,9 +355,9 @@ class AttentionGRU(nn.Module):
     def __init__(self, input_length1,input_length2, d_model,grn_h_dim,dropout):
         super(AttentionGRU, self).__init__()
 
-        print('\n>>>>>>>>> input_length1,grn_h_dim,d_model,input_length2 :',input_length1,grn_h_dim,d_model,input_length2)
+        #print('\n>>>>>>>>> input_length1,grn_h_dim,d_model,input_length2 :',input_length1,grn_h_dim,d_model,input_length2)
         self.gru  = GRN(input_length1,grn_h_dim,d_model,input_length2,dropout)
-        self.attention = ScaledDotProduct_i(input_length1, d_model)
+        self.attention = ScaledDotProduct_i(query_dim=input_length1,key_dim=input_length2, d_model=d_model,num_heads=4)
 
     def forward(self, x_trafic,x_dynamic,x_known):
         ''''
@@ -373,78 +373,77 @@ class AttentionGRU(nn.Module):
         #query = self.gru(x_trafic,x_known)
         query = x_trafic
 
-        enhanced_x,attn_weights = self.attention(query,x_dynamic,x_dynamic)
+        enhanced_x,attn_weights =self.attention(query,x_dynamic,x_dynamic)
         return enhanced_x,attn_weights
     
 
 class ScaledDotProduct_i(nn.Module):
-    def __init__(self, input_length1, d_model):
+    def __init__(self, query_dim, key_dim, d_model,num_heads):
         super(ScaledDotProduct_i, self).__init__()
-        self.proj1 = nn.Linear(input_length1, d_model)
-        self.d_model = d_model
 
-        self.W_q = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
-        self.W_k = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
-        self.W_v = nn.Parameter(torch.cuda.FloatTensor(d_model, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(d_model, d_model))
+        self.d_model = d_model
+        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
+        self.d_k = d_model // num_heads
+        self.num_heads = num_heads
+
+        self.W_q = nn.Parameter(torch.cuda.FloatTensor(query_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(query_dim, d_model))
+        self.W_k = nn.Parameter(torch.cuda.FloatTensor(key_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(key_dim, d_model))
+        self.W_v = nn.Parameter(torch.cuda.FloatTensor(key_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(key_dim, d_model))
 
         self.softmax = nn.Softmax(dim = -1)
-
-        '''Ajout'''
-        self.proj2 = nn.Linear(input_length1, d_model)
 
         nn.init.xavier_uniform_(self.W_q)
         nn.init.xavier_uniform_(self.W_k)
         nn.init.xavier_uniform_(self.W_v)
 
-        self.layer_norm = nn.LayerNorm(d_model)
+        self.layer_norm = nn.LayerNorm(self.d_k)
+
+    def align_dims(self,query,key,values):
+        # Case where only 1 traffic time-serie for P contextual data
+        if query.dim() == 2: query = query.unsqueeze(1)
+        if key.dim() == 2: key = key.unsqueeze(1)
+        if values.dim() == 2: values = values.unsqueeze(1)
+        return query,key,values
+    
+    def split_heads(self,x):
+        B, P, d_model = x.size()
+        return x.view(B, P, self.num_heads, self.d_k).transpose(1, 2)
+    
+    def combine_heads(self, x):
+        B, num_heads, P, d_k = x.size()
+        return x.transpose(1, 2).contiguous().view(B, P, self.d_model)
 
     def forward(self, query,key,values):
         '''
-        query: From x_traffic
-        key : From x_dynamic
-        values: From x_dynamic
+        query: From x_traffic    -> [B,L]
+        key : From x_dynamic    -> [B,P,L]    --|
+        values: From x_dynamic    -> [B,P,L]  --|---> Same object
         '''
+        query,key,values = self.align_dims(query,key,values)
 
-        # x: [B, P, L]
-        
-        # Projection des P times-séries dans un espace de dimension d_model
-        # embeddings: [B, P, d_model]
-        key = self.proj1(key)
+        #Proejction to a laten space of dimenison d: [B,n_heads, P, d_k]
+        Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
+        K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))
+        V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
 
-        '''Ajout'''
-        query = self.proj2(query)  
-        #print('Embedding dim: ',key.size(),' Résultats attendu: [B, P, d_model]')
+        #[B,n_heads, P, d_k] -> [B,n_heads, d_k, P]
+        K = K.transpose(-2, -1)
 
-        # Normalize inputs: 
-        # Case where only 1 traffic time-serie for P contextual data
-        if query.dim() == 2:
-            query = query.unsqueeze(1)
+        #[B,n_heads, 1, d_k]x[B,n_heads, d_k, P] -> [B,n_heads, 1, P]
+        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
 
-        #[B, P, d_model]
-        Q = self.layer_norm(torch.matmul(query,self.W_q))
-        K = self.layer_norm(torch.matmul(key,self.W_k))
-        V = self.layer_norm(torch.matmul(key,self.W_v))
-
-        #[B, d_model, P]
-        K = K.permute(0,2,1)
-
-
-        #[B, P, P]
-        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
-
-        # Softmax: 
+        # Softmax  ([B,n_heads, 1, P]): 
         attn_weights = self.softmax(scaled_compat)
 
-
-        #print('Q,K.T,V: ',Q.size(),K.size(),V.size(),' Résultats attendu: [B, P_trafic, d_model],[B, d_model, P],[B, P, d_model]')  
-        #print('scaled_compat: ',scaled_compat.size(),' Résultats attendu: [B, P_trafic, P]') 
-
-        #[B, P, P] x [B, P, d] ->   [B, P, d]
+        #[B,n_heads, 1, P] x [B,n_heads, P, d] ->   [B,n_heads, 1, d]
         context = torch.matmul(attn_weights,V)
 
-        #[B, P, d] ->   [B,d]
-        context = torch.sum(context, dim=1)
-        
+        #[B,n_heads, 1, d_k] -> [B, 1, d_models]     
+        context = self.combine_heads(context)
+
+        #[B, 1, d_models] -> [B,d_models]
+        context = torch.sum(context, dim=-2)
+
         return context,attn_weights
 
 
