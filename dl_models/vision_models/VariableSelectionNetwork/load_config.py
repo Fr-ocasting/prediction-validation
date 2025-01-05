@@ -26,6 +26,10 @@ parser.add_argument('--concatenation_early', type=bool, default=True,
                     choices = [True,False],
                     help='If True then concatenation of extracted feature with the inputs at the begining of the backbone model.')  
 
+parser.add_argument('--num_heads', type=bool, default=4, 
+                    choices = [1,2,3,4,8],
+                    help='number of head for the multi-head attention.') 
+
 args = parser.parse_args(args=[])
 
 

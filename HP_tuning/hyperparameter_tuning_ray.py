@@ -38,11 +38,23 @@ def HP_modification(config,args):
             ## Tackle Vision HP tuning
             elif 'vision_' in key:
                 key = key.replace('vision_', '')
-                setattr(args.args_vision,key,value)
                 
                 # Cas Particulier, devrait être gérer mieux, avec une implémentation générale
                 if key == 'grn_out_dim':
                     setattr(args.args_vision,'out_dim',value)
+                    setattr(args.args_vision,key,value)
+
+                elif 'concatenation_order' in key:
+                    for key_i in ['concatenation_early','concatenation_late']:
+                        setattr(args.args_vision,key_i,config['vision_concatenation_order'][key_i])  
+
+                elif 'n_head_d_model' in key:
+                    setattr(args.args_vision,'num_heads',config['vision_n_head_d_model']['num_heads'])     
+                    setattr(args.args_vision,'grn_out_dim',config['vision_n_head_d_model']['grn_out_dim'])       
+                    setattr(args.args_vision,'out_dim',config['vision_n_head_d_model']['grn_out_dim'])       
+                else:
+                    setattr(args.args_vision,key,value)
+                
             # ....
             
             ## Takle calendar HP tuning : 

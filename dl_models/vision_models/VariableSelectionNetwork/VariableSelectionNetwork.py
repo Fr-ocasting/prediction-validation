@@ -352,12 +352,12 @@ class ScaledDotProduct(nn.Module):
 # ============================ ======================== ============================
 # ============================  AttentionGRU ============================
 class AttentionGRU(nn.Module):
-    def __init__(self, input_length1,input_length2, d_model,grn_h_dim,dropout):
+    def __init__(self, input_length1,input_length2, d_model,grn_h_dim,num_heads,dropout):
         super(AttentionGRU, self).__init__()
 
         #print('\n>>>>>>>>> input_length1,grn_h_dim,d_model,input_length2 :',input_length1,grn_h_dim,d_model,input_length2)
         self.gru  = GRN(input_length1,grn_h_dim,d_model,input_length2,dropout)
-        self.attention = ScaledDotProduct_i(query_dim=input_length1,key_dim=input_length2, d_model=d_model,num_heads=4)
+        self.attention = ScaledDotProduct_i(query_dim=input_length1,key_dim=input_length2, d_model=d_model,num_heads=num_heads,dropout = dropout)
 
     def forward(self, x_trafic,x_dynamic,x_known):
         ''''
@@ -372,13 +372,13 @@ class AttentionGRU(nn.Module):
         
         #query = self.gru(x_trafic,x_known)
         query = x_trafic
-
-        enhanced_x,attn_weights =self.attention(x_dynamic,x_dynamic,x_dynamic) # self.attention(query,x_dynamic,x_dynamic)
+                                                # query, key, values
+        enhanced_x,attn_weights =self.attention(query,x_dynamic,x_dynamic) # self.attention(query,x_dynamic,x_dynamic)
         return enhanced_x,attn_weights
     
 
 class ScaledDotProduct_i(nn.Module):
-    def __init__(self, query_dim, key_dim, d_model,num_heads):
+    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout):
         super(ScaledDotProduct_i, self).__init__()
 
         self.d_model = d_model
@@ -391,6 +391,7 @@ class ScaledDotProduct_i(nn.Module):
         self.W_v = nn.Parameter(torch.cuda.FloatTensor(key_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(key_dim, d_model))
 
         self.softmax = nn.Softmax(dim = -1)
+        self.dropout = nn.Dropout(dropout)
 
         nn.init.xavier_uniform_(self.W_q)
         nn.init.xavier_uniform_(self.W_k)
@@ -433,7 +434,7 @@ class ScaledDotProduct_i(nn.Module):
         scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
 
         # Softmax  ([B,n_heads, 1, P]): 
-        attn_weights = self.softmax(scaled_compat)
+        attn_weights = self.dropout(self.softmax(scaled_compat))
 
         #[B,n_heads, 1, P] x [B,n_heads, P, d] ->   [B,n_heads, 1, d]
         context = torch.matmul(attn_weights,V)
@@ -448,11 +449,11 @@ class ScaledDotProduct_i(nn.Module):
 
 
 class model(nn.Module):
-    def __init__(self,List_input_sizes,List_nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout,x_input_size):
+    def __init__(self,List_input_sizes,List_nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout,x_input_size,num_heads = None):
         super(model,self).__init__()
         # Attention avec Scaled Dot Product pour chaque station:
         if True: 
-            self.model = nn.ModuleList([AttentionGRU(x_input_size,input_size, grn_out_dim,grn_h_dim,dropout)
+            self.model = nn.ModuleList([AttentionGRU(x_input_size,input_size, grn_out_dim,grn_h_dim,num_heads,dropout)
                                         for input_size in List_input_sizes])      
         if False: 
             self.model = nn.ModuleList([ScaledDotProduct(input_size, grn_out_dim)
@@ -477,6 +478,7 @@ class model(nn.Module):
         -------
         x : batch of sequence of historical trafic flow  [B,N,L]
         List_of_x : list of N 3-th rder torch.Tensor of dimension: N*[B,C_i,L]
+        x_c : contextual statique data
 
         Ouputs: 
         -------

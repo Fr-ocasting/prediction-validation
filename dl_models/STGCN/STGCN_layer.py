@@ -41,21 +41,25 @@ class CausalConv1d(nn.Conv1d):
 
 class CausalConv2d(nn.Conv2d):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, enable_padding=False, dilation=1, groups=1, bias=True):
-        kernel_size = nn.modules.utils._pair(kernel_size)
-        stride = nn.modules.utils._pair(stride)
-        dilation = nn.modules.utils._pair(dilation)
+        self.kernel_size = nn.modules.utils._pair(kernel_size)
+        self.stride = nn.modules.utils._pair(stride)
+        self.dilation = nn.modules.utils._pair(dilation)
         if enable_padding == True:
-            self.__padding = [int((kernel_size[i] - 1) * dilation[i]) for i in range(len(kernel_size))]
+            self.__padding = [int((self.kernel_size[i] - 1) * self.dilation[i]) for i in range(len(self.kernel_size))]
         else:
             self.__padding = 0
         self.left_padding = nn.modules.utils._pair(self.__padding)
-        super(CausalConv2d, self).__init__(in_channels, out_channels, kernel_size, stride=stride, padding=0, dilation=dilation, groups=groups, bias=bias)
+        super(CausalConv2d, self).__init__(in_channels, out_channels, self.kernel_size, stride=self.stride, padding=0, dilation=self.dilation, groups=groups, bias=bias)
         
     def forward(self, input):
+        print('\nStart Causal Conv')
+        print('x.size(): ',input.size())
         if self.__padding != 0:
-            #print(f'input shape: {input.shape} \n Args F.pad: ({self.left_padding[1]}, 0, {self.left_padding[0]}, 0)')
             input = F.pad(input, (self.left_padding[1], 0, self.left_padding[0], 0))
+            print(f'x after padding: {input.size()}, Args F.pad: ({self.left_padding[1]}, 0, {self.left_padding[0]}, 0)')
+        print('kernel size: ',self.kernel_size)
         result = super(CausalConv2d, self).forward(input)
+        print(f'x after causal conv2D: {result.size()}')    
 
         return result
 
@@ -305,7 +309,11 @@ class OutputBlock(nn.Module):
 
     def forward(self, x,x_vision = None,x_calendar = None):
         if not(x.numel() == 0):
+            print('\nstart output block')
+            print('x.size(): ',x.size())
             x = self.tmp_conv1(x)
+
+            blabla
             x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
 
         if self.vision_concatenation_late:

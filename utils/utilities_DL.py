@@ -141,7 +141,7 @@ def choose_optimizer(model,args):
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 
 def load_scheduler(optimizer,args):
-    if (args.scheduler is None) or (math.isnan(args.scheduler)) :
+    if (args.scheduler is None) or (math.isnan(args.scheduler)) or (args.scheduler == False):
         scheduler = None
     else:
         scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)

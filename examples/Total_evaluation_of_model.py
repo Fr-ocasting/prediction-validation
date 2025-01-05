@@ -59,8 +59,8 @@ if __name__ == '__main__':
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if True:
-        for dataset_names,vision_model_name in zip([['subway_in','calendar'],['subway_in']],
-                                                   [None,None]):
+        for dataset_names,vision_model_name in zip([['subway_in','subway_out']],
+                                                   ['VariableSelectionNetwork']):
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,
@@ -69,14 +69,17 @@ if __name__ == '__main__':
                                                     'grace_period':20,
                                                     'HP_max_epochs':100,
                                                     'evaluate_complete_ds' : True,
-                                                    'vision_model_name': vision_model_name
+                                                    'vision_model_name': vision_model_name,
+                                                    #'vision_concatenation_early':True,   
+                                                    #'vision_concatenation_late':True,
+                                                    #'vision_num_heads':4
                                                    }
                                     
                                      )
 
             # Init 
             epochs_validation = 100
-            num_samples = 2000
+            num_samples = 500
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,num_samples)
