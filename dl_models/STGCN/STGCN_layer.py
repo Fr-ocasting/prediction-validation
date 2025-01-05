@@ -52,14 +52,14 @@ class CausalConv2d(nn.Conv2d):
         super(CausalConv2d, self).__init__(in_channels, out_channels, self.kernel_size, stride=self.stride, padding=0, dilation=self.dilation, groups=groups, bias=bias)
         
     def forward(self, input):
-        print('\nStart Causal Conv')
-        print('x.size(): ',input.size())
+        #print('\nStart Causal Conv')
+        #print('x.size(): ',input.size())
         if self.__padding != 0:
             input = F.pad(input, (self.left_padding[1], 0, self.left_padding[0], 0))
-            print(f'x after padding: {input.size()}, Args F.pad: ({self.left_padding[1]}, 0, {self.left_padding[0]}, 0)')
-        print('kernel size: ',self.kernel_size)
+            #print(f'x after padding: {input.size()}, Args F.pad: ({self.left_padding[1]}, 0, {self.left_padding[0]}, 0)')
+        #print('kernel size: ',self.kernel_size)
         result = super(CausalConv2d, self).forward(input)
-        print(f'x after causal conv2D: {result.size()}')    
+        #print(f'x after causal conv2D: {result.size()}')    
 
         return result
 
@@ -309,11 +309,9 @@ class OutputBlock(nn.Module):
 
     def forward(self, x,x_vision = None,x_calendar = None):
         if not(x.numel() == 0):
-            print('\nstart output block')
-            print('x.size(): ',x.size())
+            #print('\nstart output block')
+            #print('x.size(): ',x.size())
             x = self.tmp_conv1(x)
-
-            blabla
             x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
 
         if self.vision_concatenation_late:

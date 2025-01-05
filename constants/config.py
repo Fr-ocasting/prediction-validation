@@ -213,6 +213,8 @@ def modification_contextual_args(args,modification):
         elif 'vision_' in key:
             key = key.replace('vision_','')
             setattr(args.args_vision,key,value)
+            if key == 'grn_out_dim':
+                setattr(args.args_vision,'out_dim',value)
         else:
             setattr(args,key,value)
     return(args)

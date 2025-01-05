@@ -28,8 +28,8 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
 
     # Modification :
     for key,value in modification.items():
-        
         setattr(args,key,value)
+    
 
     # update each modif
     args = update_modif(args)
