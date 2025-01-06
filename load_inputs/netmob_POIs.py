@@ -14,7 +14,7 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np 
 import pickle
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS,EXPANDED,EPSILON
+from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS,EXPANDED
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -60,7 +60,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
         data_station = data_station.transpose(3,0,1,2)
         data_station = data_station.reshape(data_station.shape[0],-1)
         multi_ts = pd.DataFrame(data_station)
-        data_station = reduce_dim_by_clustering(multi_ts,epsilon = EPSILON)
+        data_station = reduce_dim_by_clustering(multi_ts,epsilon = args.epsilon_clustering)
 
 
         netmob_T = torch.Tensor(data_station.values)

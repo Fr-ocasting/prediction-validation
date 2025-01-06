@@ -8,31 +8,29 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 
-from utils.utilities_DL import match_period_coverage_with_netmob
+from examples.benchmark import local_get_args
 
-from constants.config import get_args,update_modif
-from constants.paths import FILE_NAME
-
-
-# ==== GET PARAMETERS ====
-model_name ='STGCN' #'MTGNN' # 'STGCN'  #'CNN' # 'DCRNN'
-dataset_names = ['subway_in','netmob']
-args = get_args(model_name,dataset_names)
-
-# Modification :
-args.epochs = 10
-args.W = 0
-args.K_fold = 6   # Means we will use the first fold for the Ray Tuning and the 4 other ones to get the metrics
-args.ray = False
-args.loss_function_type = 'MSE'  #'MSE' # 'quantile'
-
-# evaluation on the first fold only :
-args.evaluate_complete_ds = False
-folds =  [0] #  list(np.arange(args.K_fold))  # [0]
-
-update_modif(args)
-coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names = ['calendar','netmob'])
-
-# Choose DataSet and VisionModel if needed: 
-vision_model_name = 'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
-
+model_name = 'STGCN' #'CNN'
+dataset_for_coverage = ['subway_in','netmob_POIs'] 
+dataset_names = ['subway_in']
+vision_model_name = [None]
+args,_,_ = local_get_args(model_name,
+                        args_init = None,
+                        dataset_names=dataset_names,
+                        dataset_for_coverage=dataset_for_coverage,
+                        modification = {'evaluate_complete_ds' : True,
+                                        'vision_model_name': vision_model_name,
+                                        
+                                        'lr':1e-3,
+                                        'weight_decay':0.05,
+                                        'dropout':0.8,
+                                        'scheduler':True,
+                                        'torch_scheduler_milestone':5,
+                                        'torch_scheduler_gamma':0.997,
+                                        'torch_scheduler_lr_start_factor':1,
+                                        #'vision_concatenation_early':True,   
+                                        #'vision_concatenation_late':True,
+                                        #'vision_num_heads':4
+                                        }
+                            )
+folds = list(np.arange(args.K_fold))

@@ -25,16 +25,16 @@ def load_configuration(trial_id,load_config,epochs):
         args.train_prop = 0.6
         args.valid_prop = 0.2
         args.test_prop = 0.2
-        
-        #Change/Set epochs: 
-        if epochs is not None:
-            args.epochs = epochs
         folds = list(np.arange(args.K_fold))
 
     # If new config : 
     else:
         from examples.load_random_config import args,folds
 
+    #Change/Set epochs: 
+    if epochs is not None:
+        args.epochs = epochs
+        
     return args,folds
 
 def load_k_fold_dataset(args,folds,hp_tuning_on_first_fold):

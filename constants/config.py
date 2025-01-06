@@ -29,6 +29,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
     config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
+    config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
 
     config['contextual_positions'] = {}
     config['quick_vision'] = False #if True then load small NetMob tensor with torch.randn(), instead of big one with pickle.load() and torch concat

@@ -24,6 +24,9 @@ def get_search_space_ray(args):
                                         }]
                                         )
               }
+
+    #if 'netmob_POIs' in args.dataset_name:
+    #    config.update({'epsilon_clustering':tune.uniform(0.01, 0.4)})
     
     # Load Search Space associated to the Model: 
     module_path = f"dl_models.{args.model_name}.search_space"

@@ -34,7 +34,7 @@ SELECTED_APPS = ['Instagram','Google_Maps'] #['Google_Maps']# ['Instagram','Goog
 TRANSFER_MODE = ['DL'] # ['DL'] # ['UL'] #['DL','UL']
 SELECTED_TAGS = ['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
 EXPANDED =  '' # '' # '_expanded'
-EPSILON = 0.3  # Distance max for Agglomerative Cluster based on distance correlation 
+ 
 #
 # trafic_apps = ['Uber', 'Google_Maps','Waze'],
 # music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
