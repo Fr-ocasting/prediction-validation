@@ -59,8 +59,8 @@ if __name__ == '__main__':
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if True:
-        for dataset_names,vision_model_name in zip([['subway_in','subway_out']],
-                                                   ['VariableSelectionNetwork']):
+        for dataset_names,vision_model_name in zip([['subway_in']], #['subway_in','subway_out']
+                                                   [None]): #'VariableSelectionNetwork'
             args,_,_ = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,

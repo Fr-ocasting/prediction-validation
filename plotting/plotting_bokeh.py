@@ -43,7 +43,7 @@ def generate_bokeh(trainer,normalizer,df_verif_test,Q,args,trial_id = None,trial
     else:
         p3 = None
 
-    save_dir = f'{SAVE_DIRECTORY}plot/{trial_id}/'
+    save_dir = f'{SAVE_DIRECTORY}/plot/{trial_id}/'
     combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure,save_plot)
     return(pi,pi_cqr)
 

@@ -31,18 +31,33 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     print('\n>>>> Load best CONFIG')
     for arg in HP_args:
         if 'vision_' in arg:
-            print('ARG: ',arg)
             arg_vision = arg.replace('vision_', '')
+            if 'concatenation_order/' in arg_vision:
+                arg_vision = arg_vision.replace('concatenation_order/','')
+            if 'n_head_d_model/' in arg_vision:
+                arg_vision = arg_vision.replace('n_head_d_model/','')   
+
+            if 'grn_out_dim' in arg_vision:
+                setattr(args['args_vision'],'out_dim',best_model[f'config/{arg}'])
+                
             setattr(args['args_vision'],arg_vision,best_model[f'config/{arg}'])
-        if 'scheduler/' in arg:
+
+        elif 'scheduler/' in arg:
             schedule_args = arg.replace('scheduler/', '')
             args[schedule_args] = best_model[f'config/{arg}']
+
+        elif 'TE_' in arg:
+            args_TE = arg.replace('TE_', '')
+            if 'concatenation_order/' in args_TE:
+                args_TE = args_TE.replace('concatenation_order/','')
+            setattr(args['args_embedding'],args_TE,best_model[f'config/{arg}'])
+
         else :
             args[arg] = best_model[f'config/{arg}']
 
     # Transform 'dict' to 'Namespace' object: 
     args = Namespace(**args)
-   
+
     # Update 
     args.ray = False  # !!!
 

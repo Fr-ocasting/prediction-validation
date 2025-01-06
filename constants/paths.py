@@ -19,7 +19,7 @@ else:
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
     
-SAVE_DIRECTORY = '../save/'
+SAVE_DIRECTORY = '../save'
 
 ''' Training Parameters'''
 USELESS_DATES = {'hour':[1,2,3,4,5,6],
@@ -45,6 +45,6 @@ EPSILON = 0.3  # Distance max for Agglomerative Cluster based on distance correl
 # Load CRITER data : 
 #FILE_NAME = 'preprocessed_CRITER_6min.csv'
 
-results_folder = f"{SAVE_DIRECTORY}results/"
+results_folder = f"{SAVE_DIRECTORY}/results/"
 if not(os.path.exists(results_folder)):
     os.makedirs(results_folder)

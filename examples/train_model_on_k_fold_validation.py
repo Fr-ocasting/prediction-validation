@@ -2,10 +2,10 @@ import sys
 import os
 
 # Get Parent folder : 
-current_path = os.getcwd()
-parent_dir = os.path.abspath(os.path.join(current_path, '..'))
+current_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_path,'..'))
 if parent_dir not in sys.path:
-    sys.path.insert(0, parent_dir)
+    sys.path.insert(0,parent_dir)
 
 import pandas as pd
 import numpy as np 
@@ -131,9 +131,11 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
 def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
     df_results,df_metrics =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
 
-    df_results.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
-    df_loss.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
-    df_metrics.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+    df_results.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
+    df_loss.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
+    df_metrics.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+
+    print('df metrics: ',df_metrics)
 
 
 def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None,hp_tuning_on_first_fold= True):
