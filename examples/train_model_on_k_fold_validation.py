@@ -25,6 +25,7 @@ def load_configuration(trial_id,load_config,epochs):
         args.train_prop = 0.6
         args.valid_prop = 0.2
         args.test_prop = 0.2
+        args.hp_tuning_on_first_fold = True
         folds = list(np.arange(args.K_fold))
 
     # If new config : 
@@ -37,13 +38,13 @@ def load_configuration(trial_id,load_config,epochs):
         
     return args,folds
 
-def load_k_fold_dataset(args,folds,hp_tuning_on_first_fold):
+def load_k_fold_dataset(args,folds):
     K_fold_splitter = KFoldSplitter(args,
                                     folds=folds)
     K_subway_ds,_ = K_fold_splitter.split_k_fold()
 
     # Keep the first fold or not : 
-    if hp_tuning_on_first_fold :
+    if args.hp_tuning_on_first_fold :
         ds_validation = K_subway_ds[1:]
     else:
         ds_validation = K_subway_ds
@@ -60,7 +61,7 @@ def load_k_fold_dataset(args,folds,hp_tuning_on_first_fold):
     return(ds_validation,args)
 
 
-def train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder):
+def train_valid_K_models(args,folds,trial_id,save_folder):
     '''
     args:
     ------
@@ -69,7 +70,7 @@ def train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder
     '''
         
     # Return a list of K-fold Dataset:
-    ds_validation,args = load_k_fold_dataset(args,folds,hp_tuning_on_first_fold)
+    ds_validation,args = load_k_fold_dataset(args,folds)
 
     ## Train on the K-1 folds:
 
@@ -138,7 +139,7 @@ def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,
     print('df metrics: ',df_metrics)
 
 
-def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None,hp_tuning_on_first_fold= True):
+def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None):
     '''
     1. Load the best config according to our HP-Tuning
     2. Apply the K-fold validation to split inputs
@@ -150,7 +151,7 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     args,folds = load_configuration(trial_id,load_config,epochs)
 
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,folds,hp_tuning_on_first_fold,trial_id,save_folder)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,folds,trial_id,save_folder)
     # 5.
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
 

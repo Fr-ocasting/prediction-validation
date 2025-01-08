@@ -356,7 +356,8 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                                        columns_matshow = 'hour',
                                        min_flow = 20,
                                        figsize = (20,20),
-                                       limit_percentage_error = 300
+                                       limit_percentage_error = 300,
+                                       stations = None
                                        ):
     '''
     args:
@@ -366,7 +367,10 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
     index_matshow : set the type of calendar information to display along the rows. 
     columns_matshow : set the type of calendar information to display along the columns.
     '''
-    n_station = len(ds.spatial_unit)
+    if stations is not None:
+        n_station = len(stations) 
+    else:
+        n_station = len(ds.spatial_unit)
     fig, axes = plt.subplots(n_station+1, len(metrics), figsize=figsize)
 
     # Get Prediction
@@ -377,16 +381,22 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
     #index_perrache = list(ds.spatial_unit).index('PER')
 
     # Evaluate Prediciton per stations:
-    for station_c in range(n_station+1):
-        if station_c<n_station:
-            column = ds.spatial_unit[station_c] 
+    for station_ind in range(n_station+1):
+        if station_ind<n_station:
+            if stations is not None:
+                station_c = list(ds.spatial_unit).index(stations[station_ind])
+                column = stations[station_ind]
+
+            else:
+                station_c = station_ind
+                column = ds.spatial_unit[station_c] 
         else:
             column = 'All'
         for ind_metric,metric in enumerate(metrics) : 
             min_flow_i = min_flow if metric == 'mape' else 0 
             cbar_label = f"Percentage error" if metric == 'mape' else 'absolute error'
             if metric == 'previous_value':
-                if station_c<n_station:
+                if station_ind<n_station:
                     error = get_gain_from_naiv_model(Y_true[:,station_c:station_c+1,:],Preds[:,station_c:station_c+1,:],X[:,station_c:station_c+1,-1],min_flow,limit_percentage_error)
                 else:
                     T,N,C = Y_true.size()
@@ -397,7 +407,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                 bool_reversed = True
                 v_min,v_max = -limit_percentage_error,limit_percentage_error
             else:
-                if station_c<n_station:
+                if station_ind<n_station:
                     error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i)
                 else:
                     T,N,C = Y_true.size()
@@ -415,7 +425,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
             df_agg = build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,columns_matshow)
 
             # Plotting : 
-            plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_c,ind_metric)      
+            plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_ind,ind_metric)      
 
     plt.tight_layout()
     plt.show()

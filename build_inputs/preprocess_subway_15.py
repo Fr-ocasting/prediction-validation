@@ -195,11 +195,11 @@ if __name__ == '__main__':
     vision_model_name = None
 
     init_model_name ='STGCN' # start with # STGCN #CNN
-    args,folds,hp_tuning_on_first_fold = local_get_args(init_model_name,
+    args= local_get_args(init_model_name,
                                                            dataset_names=dataset_names,
                                                            dataset_for_coverage=dataset_for_coverage,
                                                            modification = {})
-    K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,vision_model_name,folds)
+    K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,folds=[0])
 
     dataset = K_subway_ds[0]
 

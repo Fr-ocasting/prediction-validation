@@ -22,7 +22,7 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
     analysis,trial_id = hyperparameter_tuning(args,num_samples)
 
     # K-fold validation with best config: 
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation,hp_tuning_on_first_fold = True)
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation)
 
 
 
@@ -41,7 +41,7 @@ if __name__ == '__main__':
         dataset_names = ['calendar']
         vision_model_name = None
 
-        args,_,_ = local_get_args(model_name,
+        args = local_get_args(model_name,
                                 args_init = None,
                                 dataset_names=dataset_names,
                                 dataset_for_coverage=dataset_for_coverage,
@@ -61,7 +61,7 @@ if __name__ == '__main__':
     if True:
         for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']], #['subway_in','subway_out'] # ['subway_in']
                                                    ['VariableSelectionNetwork']): #'VariableSelectionNetwork' # None
-            args,_,_ = local_get_args(model_name,
+            args = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,
                                     dataset_for_coverage=dataset_for_coverage,

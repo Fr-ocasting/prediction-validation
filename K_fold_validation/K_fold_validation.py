@@ -85,13 +85,14 @@ class KFoldSplitter(object):
         '''
 
         # Init
+
         subway_ds,_,args = self.load_init_ds(normalize = False)  # build a copy of 'args'
         K_subway_ds = []
-
 
         # Remove test-dates:
         first_test_date = subway_ds.tensor_limits_keeper.first_test_date
         
+
         
         # Adapt Valid and Train Prop (cause we want Test_prop = 0)
         train_prop_tmps = args.train_prop/(args.train_prop+args.valid_prop)   

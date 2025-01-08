@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import numpy as np 
 import geopandas as gpd 
-
+from argparse import Namespace
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
@@ -35,7 +35,9 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
                     expanded =None,
                     modification = {},
                     station=['GER'],
-                    training_mode_to_visualise = ['test','valid','train']
+                    training_mode_to_visualise = ['test','valid','train'],
+                    args_init = None,
+                    fold_to_evaluate = None
                     ):
     
     '''
@@ -46,14 +48,16 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
     POI_or_stations : list of type of object to analyse contains occurence of 'POI' or 'station'.  >>> ['POI']
     expanded: '' if we look at the intensity of netmob consumption at the POI. '_expanded' if we look also one square around.
     '''
-    ds,args,trial_id,save_folder,df_loss = get_ds(model_name,dataset_names,dataset_for_coverage,modification=modification)
+    ds,args,trial_id,save_folder,df_loss = get_ds(model_name,dataset_names,dataset_for_coverage,modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
     # Allow us to have 'dataloader['train'] with no shuffle !!!!
     # ======
     modification.update({'shuffle':False })
     ds_no_shuffle,args_no_shuffle,trial_id,save_folder,df_loss =  get_ds(model_name,dataset_names,
                                                                             dataset_for_coverage, 
-                                                                            modification = modification)
+                                                                            modification = modification,
+                                                                            args_init=args_init,
+                                                                            fold_to_evaluate=fold_to_evaluate)
 
     trainer.dataloader = ds_no_shuffle.dataloader
     # ======
@@ -154,19 +158,39 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
 
 def get_ds(model_name,dataset_names,dataset_for_coverage,
            modification = {},
-            args_init = None
+           args_init = None, 
+           fold_to_evaluate = None
             ):
+
+    if args_init is not None:
+        args_copy = Namespace(**vars(args_init))
+    # Define 'folds' for KFoldSplitter object (in K_fold_validation.K_fold_validation.py)
+    if fold_to_evaluate is None: 
+        if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
+            folds = [0,1]
+        else:
+            folds = [0]
+    else:
+        if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
+            folds = [0] + fold_to_evaluate
+        else:
+            folds = fold_to_evaluate
+    # ...
+    
     save_folder = None
-    df_loss,df_results = pd.DataFrame(),pd.DataFrame()
+    df_loss= pd.DataFrame()
+    # Tricky but here we need to set 'netmob' so that we will use the same period for every combination
+    if args_init is None:
+        args_copy = local_get_args(model_name,
+                                    args_init=None,
+                                    dataset_names=dataset_names,
+                                    dataset_for_coverage=dataset_for_coverage,
+                                    modification = modification)
+    else:
+        for key,values in modification.items():
+            setattr(args_copy,key,values)
 
-
-    # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
-    args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
-                                                        args_init,
-                                                            dataset_names=dataset_names,
-                                                            dataset_for_coverage=dataset_for_coverage,
-                                                            modification = modification)
-    K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args,folds)
+    K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args_copy,folds)
     args_with_contextual = modification_contextual_args(args_with_contextual,modification)
     trial_id = get_trial_id(args_with_contextual)
     ds = K_subway_ds[0]

@@ -17,14 +17,21 @@ from utils.save_results import get_trial_id
 from trainer import Trainer
 import matplotlib.pyplot as plt 
 import importlib
+
 def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
+    ''' Load args for training, but also allow to '''
     # Load base args
     args = get_args(model_name,dataset_names,dataset_for_coverage)
     args.ray = False
 
     #  evaluation on the first fold only :
-    hp_tuning_on_first_fold = True # True # False // if True, then we remove the first fold as we consid we used it for HP-tuning
     args.evaluate_complete_ds = True  # True # False // if True, then evaluation also on the entiere ds 
+
+    if args_init is not None:
+        args.args_vision = args_init.args_vision
+        args.args_embedding = args_init.args_embedding 
+        args.contextual_positions = args_init.contextual_positions
+        args.vision_input_type = args_init.vision_input_type
 
     # Modification :
     for key,value in modification.items():
@@ -33,25 +40,13 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
 
     # update each modif
     args = update_modif(args)
-    
-    # set number of folds to evaluate
-    folds =  [0]
-
-    if args_init is not None:
-        args.args_vision = args_init.args_vision
-        args.args_embedding = args_init.args_embedding 
-        args.contextual_positions = args_init.contextual_positions
-        args.vision_input_type = args_init.vision_input_type
 
     if model_name == 'STGCN':
         from dl_models.STGCN.load_config import load_blocks
         blocks = load_blocks(args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
         args.blocks = blocks
 
-    
-
-    return(args,folds,hp_tuning_on_first_fold)
-
+    return args
 
 def get_inputs(args,folds):
     K_fold_splitter = KFoldSplitter(args,folds)
@@ -121,12 +116,12 @@ if __name__ == '__main__':
         model_names =['STGCN'] # [None] # ['CNN','LSTM','GRU','RNN','STGCN'] #'DCRNN','MTGNN'
         print(f'\n>>>>Training {model_names[0]} on {dataset_names}')
         # Tricky but here we net to set 'netmob' so that we will use the same period for every combination
-        args,folds,hp_tuning_on_first_fold = local_get_args(model_names[0],
-                                                            args_init = None,
-                                                            dataset_names=dataset_names,
-                                                            dataset_for_coverage=dataset_for_coverage,
-                                                            modification = modification)
-        K_fold_splitter,K_subway_ds,args = get_inputs(args,folds)
+        args = local_get_args(model_names[0],
+                                args_init = None,
+                                dataset_names=dataset_names,
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = modification)
+        K_fold_splitter,K_subway_ds,args = get_inputs(args,folds=[0])
         args = modification_contextual_args(args,modification)
         trial_id = get_trial_id(args)
         ds = K_subway_ds[0]
@@ -140,11 +135,11 @@ if __name__ == '__main__':
 
         for model_name in model_names[1:]:  # benchamrk on all the other models, with the same input base['MTGNN','STGCN', 'CNN', 'DCRNN']
             print(f'\n>>>>Training {model_name} on {dataset_names}')
-            args,folds,hp_tuning_on_first_fold = local_get_args(model_name,
-                                                                args_init = args,
-                                                                dataset_names=dataset_names,
-                                                                dataset_for_coverage=dataset_for_coverage,
-                                                                modification = modification)
+            args= local_get_args(model_name,
+                                args_init = args,
+                                dataset_names=dataset_names,
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = modification)
             trial_id = get_trial_id(args)
             trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
             metrics = trainer.metrics
