@@ -38,6 +38,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'
     config['set_spatial_units'] =  None # ['BON','SOI','GER','CHA']  # None -> Select a sub-set of desired spatial-units to work on.
     config['hp_tuning_on_first_fold'] = False # If True then we remove the first fold from the K-fold validation, considering it has been used for HP tuning.
+    config['keep_best_weights'] = False # If True then keep models weights associated to the best valid loss obtained. get best weights from trainer.best_weights
     # Optimization 
     if torch.cuda.is_available():
         config['num_workers'] = 2 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB

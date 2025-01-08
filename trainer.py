@@ -149,6 +149,11 @@ class Trainer(object):
         self.calib_loss =[]
         self.show_figure = show_figure
 
+        if hasattr(args,'keep_best_weights') and (args.keep_best_weights):
+            self.keep_best_weights =  args.keep_best_weights
+        else:
+            self.keep_best_weights = False
+
         self.trial_id = get_trial_id(args) 
         if fold is not None: 
             self.trial_id = f"{self.trial_id}_f{fold}"
@@ -169,6 +174,9 @@ class Trainer(object):
         ''' Save best model in .pkl format'''
         #update checkpoint
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
+
+        if self.keep_best_weights:
+            self.best_weights = self.model.state_dict()
         save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = self.best_model_save_directory)
 
     def plot_bokeh_and_save_results(self,normalizer,df_verif_test,results_df,epoch,station):

@@ -98,6 +98,9 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
                                        station = 'BON'
                                        ):
 
+    if hasattr(trainer,'best_weights'):
+        trainer.model.load_state_dict(trainer.best_weights, strict=True)
+
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)                                  
     df_true,df_prediction = get_df_for_visualisation(ds,Preds,Y_true,training_mode)
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
