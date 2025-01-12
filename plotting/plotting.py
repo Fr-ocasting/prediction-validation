@@ -486,41 +486,52 @@ def get_y_size_from_temporal_agg(temporal_agg):
         y_size = 7*6
     return(y_size)
 
-def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temporal_agg = None,save=None):
+def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temporal_agg = None,save=None,stations= None):
 
     # Load Inputs : 
     X,Y,X_c,nb_contextual = trainer.load_all_inputs_from_training_mode(training_mode)
 
     # Init:
-    num_stations = len(X_c) - nb_calendar_data
+    nb_contextuals = len(X_c) - nb_calendar_data
+    spatial_units = list(trainer.dataset.spatial_unit)
+    if stations is not None :
+        nb_stations_to_plot = len(stations) 
+    else :
+        stations = list(trainer.dataset.spatial_unit)
+        nb_stations_to_plot = Y.size(1)
     num_cols = 4
-    num_rows = (num_stations + num_cols - 1) // num_cols  
+    
+
+    nb_rows = (nb_stations_to_plot + num_cols - 1) // num_cols  
     y_size = get_y_size_from_temporal_agg(temporal_agg)
     #plt.figure(figsize=(5*num_cols,y_size))  
-    plt.figure(figsize=(5*num_cols*max(1,num_stations//15),int(y_size*max(1,num_stations//num_cols))))
+    plt.figure(figsize=(5*num_cols*max(1,nb_stations_to_plot//15),int(y_size*max(1,nb_contextuals//num_cols))))
 
-    vmin,vmax = 0,min(1,1/(num_stations/3))
-    for station_i in range(num_stations):
-        enhanced_x,attn_weights = trainer.model.netmob_vision.model[station_i](X[:,station_i,:],X_c[station_i+nb_calendar_data],x_known = None)
+    vmin,vmax = 0,min(1,1/(nb_contextuals/3)) 
+    for station_i in range(nb_stations_to_plot):
+
+        station_ind  = spatial_units.index(stations[station_i])
+
+        enhanced_x,attn_weights = trainer.model.netmob_vision.model[station_ind](X[:,station_ind,:],X_c[station_ind+nb_calendar_data],x_known = None)
         attn_weights_reshaped = attn_weights.squeeze(1).detach().cpu().numpy()  # Shape [B, P]
 
         # Temporal Aggregation of attn weight:
-        attn_weights_reshaped,str_dates = temporal_aggregation_of_attn_weight(attn_weights_reshaped,ds,training_mode,temporal_agg)
-        ax = plt.subplot(num_rows, num_cols, station_i + 1)  # Créer un subplot
+        attn_weights_reshaped,str_dates = temporal_aggregation_of_attn_weight(attn_weights_reshaped,trainer.dataset,training_mode,temporal_agg)
+        ax = plt.subplot(nb_rows, num_cols, station_i + 1)  # Créer un subplot
         im = ax.imshow(attn_weights_reshaped, cmap='hot', aspect='auto',vmin=vmin,vmax=vmax)
         plt.colorbar(im,label='Attention Weight',shrink = 0.25)
         
         if temporal_agg is None:
-            plt.title(f'Attention Weight\nof station {station_i} ({ds.spatial_unit[station_i]}) \nfor each sample of the batch')
+            plt.title(f'Attention Weight\nof station {station_ind} ({spatial_units[station_ind]}) \nfor each sample of the batch')
             plt.ylabel('Samples')
         else:
-            plt.title(f'Mean Attention Weight\nof station {station_i}({ds.spatial_unit[station_i]}) \nby calendar class') 
+            plt.title(f'Mean Attention Weight\nof station {station_i}({spatial_units[station_ind]}) \nby calendar class') 
             plt.ylabel('Calendar class')
-        plt.xlabel('Stations')
+        plt.xlabel('Contextual time-series')
 
 
-        num_samples, num_stations = attn_weights_reshaped.shape
-        plt.xticks(ticks=np.arange(num_stations), labels=[f'Station {i}' for i in range(num_stations)], rotation=45)
+        num_samples, nb_contextual_on_plot_i = attn_weights_reshaped.shape
+        plt.xticks(ticks=np.arange(nb_contextual_on_plot_i), labels=[f'Unit {i}' for i in range(nb_contextual_on_plot_i)], rotation=45)
         plt.yticks(ticks=np.arange(num_samples), labels=str_dates)
 
     plt.tight_layout()

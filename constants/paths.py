@@ -30,8 +30,8 @@ USELESS_DATES = {'hour':[1,2,3,4,5,6],
 CALENDAR_TYPE=['dayofweek','hour']#['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 
 ''' NetMob Parameters: '''
-SELECTED_APPS = ['Instagram','Google_Maps','Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-TRANSFER_MODE = ['DL','UL'] # ['DL'] # ['UL'] #['DL','UL']
+SELECTED_APPS = ['Instagram','Google_Maps'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+TRANSFER_MODE = ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
 SELECTED_TAGS = ['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
 EXPANDED =  '' # '' # '_expanded'
  
