@@ -92,11 +92,11 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
+    config['min_fold_size_proportion'] = 1 # choice: continuous variable in [0:1]. Set the size of the smallest fold (fold0) as maximum-size - minimum-size*K_fold*min_fold_size_proportion
     config['track_pi'] = False #True
 
-
     # Validation, K-fold
-    config['validation'] = 'sliding_window'  # classic / sliding_window / 
+    config['validation_split_method'] = 'forward_chaining_cv'  # Choices =  ['custom_blocked_cv','forward_chaining_cv']. Design the way we split the data and compute the metrics.
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0

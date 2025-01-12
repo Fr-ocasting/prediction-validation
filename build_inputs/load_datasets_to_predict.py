@@ -37,22 +37,14 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
     
     return(preprocesed_ds)
 
-def load_datasets_to_predict(args,coverage_period,normalize=True):
-    '''Tackling DataSet to predict : Subway_in data,
-    
-    outputs:
-    --------
-    subway_ds : PersonnalInput object, containing dataset.raw_values
-    invalid_dates : All the dates which have been removed 
-    '''
-    # Load the Intersection of all the coverage period of each dataset_name:
+def get_intersect_of_coverage_periods(args,coverage_period):
+     # Load the Intersection of all the coverage period of each dataset_name:
     list_of_list_coverage_period,list_of_list_invalid_dates = [],[]
     for ds_name in args.dataset_for_coverage:
         data_module = importlib.import_module(f"load_inputs.{ds_name}")
         importlib.reload(data_module) 
         list_of_list_coverage_period.append(data_module.COVERAGE)
         list_of_list_invalid_dates.append(data_module.INVALID_DATES)
-    
 
     intesect_coverage_period = list(set.intersection(*map(set, list_of_list_coverage_period)))
     # ___Intersection between the expected coverage_period 
@@ -64,8 +56,19 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
     # ___Restrain the invalid dates to the specific restained coverage period :
     union_invalid_dates = list(set(union_invalid_dates)&set(intesect_coverage_period))
-    # ...
+    return union_invalid_dates,intesect_coverage_period
 
+
+
+def load_datasets_to_predict(args,coverage_period,normalize=True):
+    '''Tackling DataSet to predict : Subway_in data,
+    
+    outputs:
+    --------
+    subway_ds : PersonnalInput object, containing dataset.raw_values
+    invalid_dates : All the dates which have been removed 
+    '''
+    union_invalid_dates,intesect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
 
     # Load the dataset and its associated caracteristics
     module_data = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")

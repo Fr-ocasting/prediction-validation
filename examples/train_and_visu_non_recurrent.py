@@ -167,19 +167,7 @@ def get_ds(model_name,dataset_names,dataset_for_coverage,
 
     if args_init is not None:
         args_copy = Namespace(**vars(args_init))
-    # Define 'folds' for KFoldSplitter object (in K_fold_validation.K_fold_validation.py)
-    if fold_to_evaluate is None: 
-        if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
-            folds = [0,1]
-        else:
-            folds = [0]
-    else:
-        if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
-            folds = [0] + fold_to_evaluate
-        else:
-            folds = fold_to_evaluate
-    # ...
-    
+
     save_folder = None
     df_loss= pd.DataFrame()
     # Tricky but here we need to set 'netmob' so that we will use the same period for every combination
@@ -193,8 +181,31 @@ def get_ds(model_name,dataset_names,dataset_for_coverage,
         for key,values in modification.items():
             setattr(args_copy,key,values)
 
+
+    # Define 'folds' for KFoldSplitter object (in K_fold_validation.K_fold_validation.py)
+    if fold_to_evaluate is None:
+        if (args_copy.K_fold > 1) and (args_init.hp_tuning_on_first_fold):
+            folds = [1]
+        else:
+            folds = [0]
+    else:
+        folds = fold_to_evaluate
+        
+    #if fold_to_evaluate is None: 
+    #    if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
+    #        folds = [0,1]
+    #    else:
+    #        folds = [0]
+    #else:
+    #    if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
+    #        folds = [0] + fold_to_evaluate
+    #    else:
+    #        folds = fold_to_evaluate
+    # ...
+
+
     K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args_copy,folds)
     args_with_contextual = modification_contextual_args(args_with_contextual,modification)
     trial_id = get_trial_id(args_with_contextual)
-    ds = K_subway_ds[0]
+    ds = K_subway_ds[-1]
     return(ds,args_with_contextual,trial_id,save_folder,df_loss)

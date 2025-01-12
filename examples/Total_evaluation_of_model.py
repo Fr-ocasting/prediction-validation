@@ -35,10 +35,10 @@ if __name__ == '__main__':
 
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
-    if False:
+    if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['calendar']
+        dataset_names = ['subway_in']
         vision_model_name = None
 
         args = local_get_args(model_name,
@@ -46,19 +46,19 @@ if __name__ == '__main__':
                                 dataset_names=dataset_names,
                                 dataset_for_coverage=dataset_for_coverage,
                                 modification = {'ray':True,
-                                                'grace_period':10,
-                                                'HP_max_epochs':100,
+                                                'grace_period':5,
+                                                'HP_max_epochs':20,
                                                 'evaluate_complete_ds' : True,
-                                                'set_spatial_units' : ['BON','SOI','GER','CHA'],
-                                                'vision_model_name': None
+                                                #'set_spatial_units' : ['BON','SOI','GER','CHA'],
+                                                'vision_model_name': vision_model_name
                                                 })
 
         # Init 
-        epochs_validation = 30
-        num_samples = 1000
+        epochs_validation = 20
+        num_samples = 50
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
-    if True:
+    if False:
         for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']], #['subway_in','subway_out'] # ['subway_in']
                                                    ['VariableSelectionNetwork']): #'VariableSelectionNetwork' # None
             args = local_get_args(model_name,

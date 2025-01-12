@@ -516,23 +516,6 @@ class DataSet(object):
 
         self.display_info_on_inputs()
 
-        if False : 
-            # Get NetMob_train, NetMob_valid, NetMob_test, Weather_train etc etc ...
-            if hasattr(self,'contextual_tensors'):
-                for name, tensor_dict in self.contextual_tensors.items():
-                    feature_vect = tensor_dict['feature_vect']
-                    dims = tensor_dict['dims']
-                    raw_data = tensor_dict['raw_data']
-                    normalize = tensor_dict['normalize']
-                    self.set_train_valid_test_tensor_attribute(name,feature_vect,dims,raw_data, normalize = normalize)
-            else:
-                print('\nNo Contextual Data has been considered')
-
-        #if self.time_slots_labels is not None : 
-        #    self.time_slots_train = {calendar_class: self.time_slots_labels[calendar_class][self.first_train_U:self.last_train_U] for calendar_class in range(len(self.nb_class)) }
-        #    self.time_slots_valid = {calendar_class: self.time_slots_labels[calendar_class][self.first_valid_U:self.last_valid_U] if self.first_valid_U is not None else None for calendar_class in range(len(self.nb_class))}
-        #    self.time_slots_test = {calendar_class: self.time_slots_labels[calendar_class][self.first_test_U:self.last_test_U] if self.first_test_U is not None else None for calendar_class in range(len(self.nb_class)) }
-
 
 class PersonnalInput(DataSet):
     def __init__(self,invalid_dates,arg_parser,*args, **kwargs):

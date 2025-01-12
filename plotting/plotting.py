@@ -20,10 +20,10 @@ from PI.PI_object import PI_object
 from utils.utilities_DL import get_associated__df_verif_index
 from utils.metrics import error_along_ts
 
-def plot_k_fold_split(Datasets,invalid_dates):
+def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14)):
     if not(type(Datasets) == list):
         Datasets = [Datasets]
-    fig,ax = plt.subplots(figsize=(14,14))
+    fig,ax = plt.subplots(figsize=figsize)
 
     # Forbidden Dates
     delta_t = timedelta(hours= 1/Datasets[0].time_step_per_hour)
@@ -95,18 +95,19 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
         # .........
         # For train bar
-        ax.text(lpt1 + width_predict_train / 2, i - 0.2, f'{mdates.num2date(lpt1).strftime("%m/%d")} - {mdates.num2date(lpt2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
-        ax.text(lt1 + width_train_set / 2, i + 0.2, f'{mdates.num2date(lt1).strftime("%m/%d")} - {mdates.num2date(lt2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
+        fontsize = 12*figsize[1]/14
+        ax.text(lpt1 + width_predict_train / 2, i - 0.2, f'{mdates.num2date(lpt1).strftime("%m/%d")} - {mdates.num2date(lpt2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
+        ax.text(lt1 + width_train_set / 2, i + 0.2, f'{mdates.num2date(lt1).strftime("%m/%d")} - {mdates.num2date(lt2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
 
         # For valid bar
         if not np.isnan(width_predict_valid):
-            ax.text(lpv1 + width_predict_valid / 2, i - 0.2, f'{mdates.num2date(lpv1).strftime("%m/%d")} - {mdates.num2date(lpv2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
-            ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
+            ax.text(lpv1 + width_predict_valid / 2, i - 0.2, f'{mdates.num2date(lpv1).strftime("%m/%d")} - {mdates.num2date(lpv2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
+            ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
 
         # For test bar
         if not np.isnan(width_predict_test):
-            ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
-            ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=12, color='black')
+            ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
+            ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
         # ..........
 
     # ...
@@ -116,13 +117,13 @@ def plot_k_fold_split(Datasets,invalid_dates):
 
     # Add xticks
     ax.set_xticks(dates_xticks)
-    ax.tick_params(axis='x',rotation=30,labelsize = 12)
+    ax.tick_params(axis='x',rotation=30,labelsize = fontsize)
 
     # Might be useless : 
     fig.autofmt_xdate()
 
     #ax.legend()
-    ax.legend(bbox_to_anchor=(0.5, -0.05), loc='upper center',fontsize=16) #loc='upper left'
+    ax.legend(bbox_to_anchor=(0.5, -0.05), loc='upper center',fontsize=fontsize) #loc='upper left'
     plt.show()
 
 def plot_loss(trainer,test_pred,Y_true,window_pred = None):
@@ -312,6 +313,7 @@ def build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,co
     # Plotting error by day/hour to display daily pattern : 
     df_agg = add_calendar_columns(df_error_station_i,freq=freq,key_columns=df_error_station_i.columns,agg_func = 'mean')
     df_agg = df_agg.pivot(index = index_matshow,columns = columns_matshow,values = column).fillna(0)
+    
 
     return df_agg
 

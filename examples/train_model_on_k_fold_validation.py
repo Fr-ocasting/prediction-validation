@@ -22,9 +22,9 @@ def load_configuration(trial_id,load_config,epochs):
         from examples.load_best_config import load_best_config
         args = load_best_config(trial_id)
         #Update modif validation
-        args.train_prop = 0.6
-        args.valid_prop = 0.2
-        args.test_prop = 0.2
+        #args.train_prop = 0.6
+        #args.valid_prop = 0.2
+        #args.test_prop = 0.2
         args.hp_tuning_on_first_fold = True
         folds = list(np.arange(args.K_fold))
 
@@ -39,8 +39,7 @@ def load_configuration(trial_id,load_config,epochs):
     return args,folds
 
 def load_k_fold_dataset(args,folds):
-    K_fold_splitter = KFoldSplitter(args,
-                                    folds=folds)
+    K_fold_splitter = KFoldSplitter(args, folds=folds)
     K_subway_ds,_ = K_fold_splitter.split_k_fold()
 
     # Keep the first fold or not : 
@@ -51,10 +50,10 @@ def load_k_fold_dataset(args,folds):
     del K_subway_ds
 
     ## Specific case if we want to validate on the init entiere dataset:
-    if args.evaluate_complete_ds: 
-        args.train_prop = 0.6
-        args.valid_prop = 0.2
-        args.test_prop = 0.2
+    if (args.evaluate_complete_ds and args.validation_split_method == 'custom_blocked_cv'): 
+        #args.train_prop = 0.6
+        #args.valid_prop = 0.2
+        #args.test_prop = 0.2
         subway_ds,_,_ = K_fold_splitter.load_init_ds(normalize = True)
         ds_validation.append(subway_ds)
         del subway_ds
@@ -85,23 +84,29 @@ def train_valid_K_models(args,folds,trial_id,save_folder):
     df_loss = pd.DataFrame()
 
     #___ Through each fold : 
-    for fold,ds in enumerate(ds_validation):
+    for fold_i,ds in enumerate(ds_validation):
         # ____ Specific case if we want to validate on the init entiere dataset:
-        condition = (args.evaluate_complete_ds) and (fold == len(ds_validation)-1)
-        if condition:
+        condition1 = (args.evaluate_complete_ds) and (fold_i == len(ds_validation)-1)
+        condition2 = condition1 and args.validation_split_method == 'forward_chaining_cv'
+        if condition1:
             fold = 'complete_dataset'
+        else:
+            fold = fold_i
 
         model = load_model(ds, args)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
         trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
         trainer.train_and_valid(mod = 1000,mod_plot = None) 
 
+        if condition1 and args.validation_split_method == 'forward_chaining_cv': 
+            df_loss[f"f{fold_i}_train_loss"] = trainer.train_loss
+            df_loss[f"f{fold_i}_valid_loss"] = trainer.valid_loss
+
         df_loss[f"f{fold}_train_loss"] = trainer.train_loss
         df_loss[f"f{fold}_valid_loss"] = trainer.valid_loss
 
-
-        # ____ Only keep metrics from k-folds (and not about the training on the entiere dataset):
-        if not(condition):
+        # ____ Only keep metrics from k-folds (and not from the training on the added 'complete_dataset'):
+        if not(condition1) or (condition2):
             valid_losses.append(trainer.performance['valid_loss'])
 
         # Keep track on metrics :
@@ -160,17 +165,6 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
 # Application 
 # ========================================================
 if __name__ == '__main__':
-    #'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
-    #'subway_in_calendar_STGCN_MSELoss_2024_08_25_22_56_92429'
-    #'netmob_subway_in_STGCN_ImageAvgPooling_MSELoss_2024_08_24_01_42_17375'
-    #'netmob_subway_in_STGCN_FeatureExtractor_ResNetInspired_MSELoss_2024_08_23_06_53_46982'
-    #'netmob_subway_in_calendar_STGCN_ImageAvgPooling_MSELoss_2024_08_27_00_16_90667'
-    #'netmob_subway_in_calendar_STGCN_FeatureExtractor_ResNetInspired_MSELoss_2024_08_28_06_04_41108'
-    #'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810'
-
-
-
-
     # Case 1. HP tuning have been computed on the first fold. We are training on the K-1 other folds
     # ----------
     if False:

@@ -22,7 +22,7 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
     analysis,trial_id = hyperparameter_tuning(args,num_samples)
 
     # K-fold validation with best config: 
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation,hp_tuning_on_first_fold = True)
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation)
 
 
 
@@ -35,33 +35,33 @@ if __name__ == '__main__':
 
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
-    if False:
-        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs'],['subway_in','netmob_POIs'],['subway_in'],['subway_in','calendar'],['subway_in','netmob_POIs','calendar']],
-                                                   ['VariableSelectionNetwork','VariableSelectionNetwork',None,None,'VariableSelectionNetwork'],
-                                                   # [False,True,False,False,False] concatenation late plus possible 
-                                                   ):
-            args,_,_ = local_get_args(model_name,
-                                    args_init = None,
-                                    dataset_names=dataset_names,
-                                    dataset_for_coverage=dataset_for_coverage,
-                                    modification = {'ray':True,
-                                                    'grace_period':2,
-                                                    'HP_max_epochs':50,
-                                                    'evaluate_complete_ds' : True,
-                                                    # 'concatenation_late' : concatenation_late, PLUS POSSIBLE
-                                                    'vision_model_name': vision_model_name
-                                                    })
-
-            # Init 
-            epochs_validation = 50
-            num_samples = 400
-
-            # HP and evaluate K-fold best config
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
     if True:
-        for dataset_names,vision_model_name in zip([['subway_in','calendar']],
-                                                   [None]):
-            args,_,_ = local_get_args(model_name,
+        model_name = 'STGCN' #'CNN'
+        dataset_for_coverage = ['subway_in','netmob_POIs'] 
+        dataset_names = ['subway_in']
+        vision_model_name = None
+
+        args = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=dataset_names,
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = {'ray':True,
+                                                'grace_period':5,
+                                                'HP_max_epochs':20,
+                                                'evaluate_complete_ds' : True,
+                                                #'set_spatial_units' : ['BON','SOI','GER','CHA'],
+                                                'vision_model_name': vision_model_name
+                                                })
+
+        # Init 
+        epochs_validation = 20
+        num_samples = 50
+        
+        HP_and_valid_one_config(args,epochs_validation,num_samples)
+    if False:
+        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']], #['subway_in','subway_out'] # ['subway_in']
+                                                   ['VariableSelectionNetwork']): #'VariableSelectionNetwork' # None
+            args = local_get_args(model_name,
                                     args_init = None,
                                     dataset_names=dataset_names,
                                     dataset_for_coverage=dataset_for_coverage,
@@ -69,15 +69,14 @@ if __name__ == '__main__':
                                                     'grace_period':20,
                                                     'HP_max_epochs':100,
                                                     'evaluate_complete_ds' : True,
-                                                    'set_spatial_units' : ['BON','SOI','GER','CHA'],
-                                                    'vision_model_name': vision_model_name
+                                                    'vision_model_name': vision_model_name,
                                                    }
                                     
                                      )
 
             # Init 
             epochs_validation = 100
-            num_samples = 5000
+            num_samples = 500
 
             # HP and evaluate K-fold best config
             HP_and_valid_one_config(args,epochs_validation,num_samples)
