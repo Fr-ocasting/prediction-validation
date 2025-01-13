@@ -31,7 +31,8 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
                                      step_ahead = args.step_ahead,
                                      minmaxnorm = True ,
                                      city = dataset.city,
-                                     dims=dataset.dims)
+                                     dims=dataset.dims,
+                                     data_augmentation= dataset.data_augmentation)
 
     preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     

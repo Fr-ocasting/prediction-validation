@@ -305,13 +305,13 @@ class Trainer(object):
                 self.performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
 
                 # Keep Track on Test Metrics
-                Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False)
+                Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False,normalizer=normalizer)
                 test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = self.metrics,
                                                  alpha = self.alpha, type_calib = self.type_calib,dic_metric = {})
                 self.performance.update({'test_metrics': test_metrics})
 
                 # Keep Track on Valid Metrics:
-                Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid',track_loss=False)
+                Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid',track_loss=False,normalizer=normalizer)
                 valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = self.metrics,
                                                  alpha = self.alpha, type_calib = self.type_calib,dic_metric = {})
                 self.performance.update({'valid_metrics': valid_metrics})    
@@ -542,7 +542,7 @@ class Trainer(object):
         X_c = [torch.cat([x_c[k] for _,_,x_c in inputs_i]).to(self.args.device) for k in range(nb_contextual)]
         return X,Y,X_c,nb_contextual
     
-    def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None,track_loss = False):
+    def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None,track_loss = False,normalizer = None):
         self.training_mode = training_mode
         if allow_dropout:
             self.model.train()
@@ -551,6 +551,12 @@ class Trainer(object):
 
         with torch.no_grad():
             Preds,Y_true,T_labels = self.loop_epoch(track_loss)
+        
+        if normalizer is not None: 
+            Preds = Preds.detach().cpu()
+            Y_true = Y_true.detach().cpu()
+            Preds = normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
+            Y_true = normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
 
         return(Preds,Y_true,T_labels)
 

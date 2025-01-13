@@ -133,7 +133,7 @@ def plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','m
        
        for ind_station,station_i in enumerate(station):
               for k,metric in enumerate(metrics):
-                     error = error_along_ts(predict= df_prediction[station_i],real= df_true[station_i],metric = metric,min_flow=min_flow)
+                     error = error_along_ts(predict= df_prediction[station_i],real= df_true[station_i],metric = metric,min_flow=min_flow,normalize=True)
                      df_error = pd.DataFrame(error.numpy(), index = df_true.index, columns = [station_i])
                      
                      c = p.line(x=df_error.index, line_width = 2.5, y=df_error[station_i], alpha=0.8,color = Set3_12[k+2])
@@ -173,12 +173,18 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
 
              last_loss = str_valeur(loss_list[-1])
              best_loss = str_valeur(np.min(np.array(loss_list)))
+             test_mae = str_valeur(trainer.performance['test_metrics']['mae'])
+             test_mse = str_valeur(trainer.performance['test_metrics']['mse'])            
+
              displayed_legend = f"{name} \n   Last loss: {last_loss} \n   Best loss: {best_loss}"
+             if training_mode == 'valid':
+                     displayed_legend = f"{displayed_legend}\n   Test MSE: {test_mse}\n   Test MAE: {test_mae}"
+
              legend_it.append((displayed_legend, [c]))
 
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
        legend = Legend(items=legend_it)
-       p.add_layout(legend, 'right')
+       p.add_layout(legend, 'below')
 
        if bool_show:
               output_notebook()

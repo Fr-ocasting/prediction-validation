@@ -75,6 +75,9 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['calibration_calendar_class'] = 0  # Calibrates data by defined calendar-class 
     config['type_calib'] = 'classic'  # Calibration after quantile regression. If 'classic' then no calibration. If 'CQR' then CQR calibration
 
+    # Data Augmentation:
+    config['data_augmentation'] = False # If True then augment Data in Training DataSet
+
     # Config DataSet:
     config['H'] = 6
     config['W'] = 0

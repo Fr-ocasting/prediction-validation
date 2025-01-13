@@ -23,7 +23,7 @@ SAVE_DIRECTORY = '../save'
 
 ''' Training Parameters'''
 USELESS_DATES = {'hour':[1,2,3,4,5,6],
-                 'weekday':[5,6],
+                 #'weekday':[5,6],
                  }
 
 ''' Calendar Parameters: '''

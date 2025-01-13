@@ -259,7 +259,7 @@ class DataSet(object):
                  train_df = None,cleaned_df = None,Weeks = None, Days = None, 
                  historical_len = None,step_ahead = None,
                  standardize = None, minmaxnorm = None,dims = None,
-                 spatial_unit = None,indices_spatial_unit = None,city = None):
+                 spatial_unit = None,indices_spatial_unit = None,city = None,data_augmentation=False):
         
         if df is not None:
             self.length = len(df)
@@ -309,6 +309,7 @@ class DataSet(object):
         self.Days = Days
         self.historical_len = historical_len
         self.cleaned_df = cleaned_df
+        self.data_augmentation = data_augmentation
 
         
     def bijection_name_indx(self):
@@ -326,6 +327,7 @@ class DataSet(object):
         self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
 
 
+    """
     def clean_dataset_get_tensor_and_train_valid_test_split(self,df,invalid_dates,train_prop,valid_prop,test_prop,normalize):
         '''
         Create a DataSet object from pandas dataframe. Retrieve associated Feature Vector and Target Vector. Remove forbidden indices (dates). Then split it into Train/Valid/Test inputs.
@@ -339,7 +341,9 @@ class DataSet(object):
         dataset.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
         dataset.split_tensors(normalize) # Récupère U_test, Utarget_test, NetMob_test, Weather_test etc....  dans 'dataset_init.contextual_tensors.items()' 
         return(dataset)
-    
+    """
+
+
     def warning(self):
         '''Warning in case we don't use trafic data: '''
         if self.Weeks+self.historical_len+self.Days == 0:
@@ -418,6 +422,31 @@ class DataSet(object):
         
         self.tensor_limits_keeper = tensor_limits_keeper
 
+    def get_data_augmentation(self,contextual_train):
+        if self.data_augmentation:
+            U_train_copy = self.U_train.clone()
+            Utarget_train_copy = self.Utarget_train.clone()
+            # Interpolation t-5 = (t-6 + t-4)/2
+            U_train_copy[:, :, self.Weeks + self.Days + 1] = 0.5 * (self.U_train[:, :, self.Weeks + self.Days] + self.U_train[:, :, self.Weeks + self.Days + 2])
+
+            # Concat with Data-Augmented Values:
+            self.U_train = torch.cat([self.U_train,U_train_copy],dim=0)
+            self.Utarget_train = torch.cat([self.Utarget_train,Utarget_train_copy],dim=0)
+
+            # Tackle contextual data:
+            for name, tensor in contextual_train.items():
+                contextual_train_copy = tensor.clone()
+                if ('subway_out' in name) or ('netmob' in name):
+                    contextual_train_copy[:, :, self.Weeks + self.Days  + 1] = 0.5 * (
+                        tensor[:, :, self.Weeks + self.Days ] + tensor[:, :, self.Weeks + self.Days + 2])
+                elif ('calendar' in name):
+                    print(name,'data augmented by dupplication but not modified')
+                else:
+                    raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
+                
+                contextual_train[name] = torch.cat([contextual_train[name],contextual_train_copy],dim=0)
+        return contextual_train
+
 
     def get_dataloader(self):
         ''' Build DataLoader '''
@@ -426,6 +455,12 @@ class DataSet(object):
         contextual_valid  = {name: self.contextual_tensors[name]['valid'] if 'valid' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()}   # [self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()]
         contextual_test  =  {name: self.contextual_tensors[name]['test'] if 'test' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()] 
 
+        # Data Augmentation if needed : 
+        contextual_train = self.get_data_augmentation(contextual_train)
+
+        # Display usefull information: 
+        self.display_info_on_inputs()
+        # Data Loader: 
         train_tuple =  self.U_train,self.Utarget_train, contextual_train # *contextual_train
         valid_tuple =  (self.U_valid,self.Utarget_valid, contextual_valid)  if hasattr(self,'U_valid') else None # *contextual_valid
         test_tuple =  (self.U_test,self.Utarget_test, contextual_test) if hasattr(self,'U_test') else None# *contextual_test
@@ -514,7 +549,7 @@ class DataSet(object):
         # Get Utarget_train, Utarget_valid, Utarget_test 
         self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget)
 
-        self.display_info_on_inputs()
+        #self.display_info_on_inputs()
 
 
 class PersonnalInput(DataSet):

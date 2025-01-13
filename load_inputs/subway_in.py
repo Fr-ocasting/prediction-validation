@@ -80,7 +80,8 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       spatial_unit = spatial_unit,
                       indices_spatial_unit = indices_spatial_unit,
                       dims = [0],
-                      city = 'Lyon'
+                      city = 'Lyon',
+                      data_augmentation= args.data_augmentation
                       )
     
     return(dataset)

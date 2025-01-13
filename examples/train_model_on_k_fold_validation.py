@@ -96,7 +96,7 @@ def train_valid_K_models(args,folds,trial_id,save_folder):
         model = load_model(ds, args)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
         trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
-        trainer.train_and_valid(mod = 1000,mod_plot = None) 
+        trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
 
         if condition1 and args.validation_split_method == 'forward_chaining_cv': 
             df_loss[f"f{fold_i}_train_loss"] = trainer.train_loss

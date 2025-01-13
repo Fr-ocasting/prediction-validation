@@ -57,7 +57,7 @@ def train_on_ds(ds,args,trial_id,save_folder,df_loss):
     model = load_model(ds, args)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
-    trainer.train_and_valid(mod = 1000,mod_plot = None) 
+    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
     df_loss[f"{args.model_name}_train_loss"] = trainer.train_loss
     df_loss[f"{args.model_name}_valid_loss"] = trainer.valid_loss
 

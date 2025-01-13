@@ -51,7 +51,15 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
     print('Total Number of Elements: ', netmob_T.numel(),'\n')
 
     NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = dataset.df_dates,
-                           time_step_per_hour = dataset.time_step_per_hour,Weeks = args.W, Days = args.D, historical_len = args.H,step_ahead = args.step_ahead,minmaxnorm = True,dims =dims)
+                           time_step_per_hour = dataset.time_step_per_hour,
+                           Weeks = args.W, 
+                           Days = args.D, 
+                           historical_len = args.H,
+                           step_ahead = args.step_ahead,
+                           minmaxnorm = True,
+                           dims =dims,
+                           data_augmentation= args.data_augmentation
+                           )
     NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
 
     return NetMob_ds

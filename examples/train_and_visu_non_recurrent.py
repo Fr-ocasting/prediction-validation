@@ -23,7 +23,7 @@ from constants.paths import FOLDER_PATH
 RANGE = 3*60  # +/- range (min) supposed to be affected around the event 
 WIDTH = 1000
 HEIGHT = 300
-MIN_FLOW = 20
+MIN_FLOW = 40
 
 
 
@@ -52,7 +52,8 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
     trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
     # Allow us to have 'dataloader['train'] with no shuffle !!!!
     # ======
-    modification.update({'shuffle':False })
+    modification.update({'shuffle':False,
+                         'data_augmentation':False })
     ds_no_shuffle,args_no_shuffle,trial_id,save_folder,df_loss =  get_ds(model_name,dataset_names,
                                                                             dataset_for_coverage, 
                                                                             modification = modification,
@@ -145,7 +146,7 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
     p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic Volume Prediction at each subway station ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
-    p3 = plot_prediction_error(df_true,df_prediction,station,metrics =['mae','mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
+    p3 = plot_prediction_error(df_true,df_prediction,station,metrics =['mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
 
     select = drag_selection_box(df_true,p1,p2,p3,width=width,height=height//3)
     output_notebook()
@@ -154,7 +155,7 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
     else: 
         col1 = column(p1,p3,select)     
 
-    col2 = plot_loss_from_trainer(trainer,width=width//3,height=height,bool_show=False)
+    col2 = plot_loss_from_trainer(trainer,width=width//3,height=2*height,bool_show=False)
     grid = row(col1,col2)
 
     show(grid)

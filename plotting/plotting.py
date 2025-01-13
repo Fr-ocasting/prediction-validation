@@ -410,10 +410,10 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                 v_min,v_max = -limit_percentage_error,limit_percentage_error
             else:
                 if station_ind<n_station:
-                    error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i)
+                    error = error_along_ts(Preds[:,station_c:station_c+1,:],Y_true[:,station_c:station_c+1,:],metric,min_flow_i,normalize = False)
                 else:
                     T,N,C = Y_true.size()
-                    error = error_along_ts(Preds,Y_true,metric,min_flow_i)
+                    error = error_along_ts(Preds,Y_true,metric,min_flow_i,normalize = False)
                     error = error.reshape(T,N)     
                     error = error.mean(axis=1)
                 cmap = 'YlOrRd'
@@ -421,7 +421,8 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                 if metric == 'mape':
                     v_min,v_max = 0,50
                 else:
-                    v_min,v_max = None,None
+                    #v_min,v_max = None,None
+                    v_min,v_max = None,torch.quantile(error,0.95).item()
 
             # Build Matshow matrix : 
             df_agg = build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,columns_matshow)

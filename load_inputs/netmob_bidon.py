@@ -54,6 +54,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       Days = args.D, 
                       historical_len= args.H,
                       step_ahead=args.step_ahead,
+                      data_augmentation= args.data_augmentation
                       )
     
     

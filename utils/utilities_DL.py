@@ -71,15 +71,6 @@ def find_nearest_date(date_series, date, inferior=True):
     
     return nearest_index,nearest_indice
 
-def get_DataSet_and_invalid_dates(W,D,H,step_ahead,dataset_names,single_station = False,coverage_period = None):
-    df,invalid_dates,time_step_per_hour = load_raw_data(dataset_names,single_station = single_station)
-    if coverage_period is not None:
-        df = df.loc[coverage_period]
-        invalid_dates = list(set(invalid_dates) & set(coverage_period))
-    dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead)
-    print(f"coverage period: {df.index.min()} - {df.index.max()}")
-    return(dataset,invalid_dates)
-
 def load_prediction(trainer,dataset,dataloader,args,training_mode,normalize):
     data=  [[x,y,t] for x,y,t in dataloader[training_mode]] 
     X = torch.cat([x for x,_,_ in data]).to(args.device)
@@ -159,10 +150,20 @@ def get_loss(args):
 # ============================================
 # USELESS. HAS TO BE REMOVED
 # ============================================
+def get_DataSet_and_invalid_dates(W,D,H,step_ahead,dataset_names,single_station = False,coverage_period = None,data_augmentation = False):
+    df,invalid_dates,time_step_per_hour = load_raw_data(dataset_names,single_station = single_station)
+    if coverage_period is not None:
+        df = df.loc[coverage_period]
+        invalid_dates = list(set(invalid_dates) & set(coverage_period))
+    dataset = DataSet(df,time_step_per_hour=time_step_per_hour, Weeks = W, Days = D, historical_len= H,step_ahead=step_ahead,
+                      data_augmentation= data_augmentation)
+    print(f"coverage period: {df.index.min()} - {df.index.max()}")
+    return(dataset,invalid_dates)
+
 
 def load_init_trainer(args):
     # Load dataset and invalid_dates 
-    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.W,args.D,args.H,args.step_ahead,single_station = args.single_station)
+    dataset,invalid_dates = get_DataSet_and_invalid_dates(args.W,args.D,args.H,args.step_ahead,single_station = args.single_station,data_augmentation = args.data_augmentation)
     (Datasets,DataLoader_list,time_slots_labels,dic_class2rpz,dic_rpz2class,nb_words_embedding) = dataset.split_K_fold(args,invalid_dates)
     return(Datasets,DataLoader_list,dic_class2rpz,nb_words_embedding,time_slots_labels,dic_rpz2class)
 

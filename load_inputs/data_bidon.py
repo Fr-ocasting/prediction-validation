@@ -45,7 +45,8 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       Days = args.D, 
                       historical_len= args.H,
                       step_ahead=args.step_ahead,
-                      spatial_unit = df.columns
+                      spatial_unit = df.columns,
+                      data_augmentation= args.data_augmentation
                       )
     
     return(dataset)

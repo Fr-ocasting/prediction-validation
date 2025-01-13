@@ -46,7 +46,7 @@ def evaluate_config(dataset_names,FOLDER_PATH,FILE_NAME,args,coverage,vision_mod
     # Load trainer: 
     trainer = Trainer(subway_ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = True)# Ajoute dans trainer, if calibration_prop is not None .... et on modifie le dataloader en ajoutant un clabration set
     # Train Model 
-    trainer.train_and_valid(mod = 1000,mod_plot = mod_plot)  # Récupère les conformity scores sur I1, avec les estimations faites precedemment 
+    trainer.train_and_valid(normalizer = normalizer,mod = 1000,mod_plot = mod_plot)  # Récupère les conformity scores sur I1, avec les estimations faites precedemment 
 
     pi,pi_cqr = plot_bokeh(trainer,normalizer,df_verif_test,args)
     return(trainer,model,normalizer,df_verif_test,args,pi,pi_cqr)
