@@ -256,10 +256,14 @@ class DataSet(object):
     '''
     def __init__(self,df=None,tensor = None, dates = None, init_df = None, 
                  normalized = False,time_step_per_hour = None,
-                 train_df = None,cleaned_df = None,Weeks = None, Days = None, 
-                 historical_len = None,step_ahead = None,
+                 train_df = None,cleaned_df = None,W = None, D = None, 
+                 H = None,step_ahead = None,
                  standardize = None, minmaxnorm = None,dims = None,
-                 spatial_unit = None,indices_spatial_unit = None,city = None,data_augmentation=False):
+                 spatial_unit = None,indices_spatial_unit = None,city = None,
+                 data_augmentation=False,
+                 DA_moment_to_focus=None,
+                 DA_method=None
+                 ):
         
         if df is not None:
             self.length = len(df)
@@ -305,11 +309,17 @@ class DataSet(object):
         self.remaining_dates = None
         self.time_slots_labels = None
         self.step_ahead = step_ahead
-        self.Weeks = Weeks
-        self.Days = Days
-        self.historical_len = historical_len
+        self.W = W
+        self.D = D
+        self.H = H
         self.cleaned_df = cleaned_df
+
+        # Data Augmentation: 
         self.data_augmentation = data_augmentation
+        self.DA_moment_to_focus = DA_moment_to_focus
+        self.DA_method = DA_method
+        
+
 
         
     def bijection_name_indx(self):
@@ -318,36 +328,19 @@ class DataSet(object):
         return(colname2indx,indx2colname)
     
     def get_shift_from_first_elmt(self):
-        shift_week = self.Weeks if self.Weeks is not None else 0
-        shift_day = self.Days if self.Days is not None else 0
+        shift_week = self.W if self.W is not None else 0
+        shift_day = self.D if self.D is not None else 0
         self.shift_from_first_elmt = int(max(shift_week*24*7*self.time_step_per_hour,
                                 shift_day*24*self.time_step_per_hour,
-                                self.historical_len+self.step_ahead-1
+                                self.H+self.step_ahead-1
                                 ))
         self.shift_between_set = self.shift_from_first_elmt*timedelta(hours = 1/self.time_step_per_hour)
 
 
-    """
-    def clean_dataset_get_tensor_and_train_valid_test_split(self,df,invalid_dates,train_prop,valid_prop,test_prop,normalize):
-        '''
-        Create a DataSet object from pandas dataframe. Retrieve associated Feature Vector and Target Vector. Remove forbidden indices (dates). Then split it into Train/Valid/Test inputs.
-        '''
-        dataset = DataSet(df, Weeks = self.Weeks, Days = self.Days, historical_len= self.historical_len,
-                                   step_ahead=self.step_ahead,time_step_per_hour=self.time_step_per_hour)
-        
-        dataset.get_shift_from_first_elmt()   # récupère le 'shift from first elmt' pour la construction du feature vect 
-        dataset.get_feature_vect(invalid_dates)  # Construction du feature vect  self.U et self.Utarget 
-
-        dataset.train_valid_test_split_indices(train_prop,valid_prop,test_prop)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U
-        dataset.split_tensors(normalize) # Récupère U_test, Utarget_test, NetMob_test, Weather_test etc....  dans 'dataset_init.contextual_tensors.items()' 
-        return(dataset)
-    """
-
-
     def warning(self):
         '''Warning in case we don't use trafic data: '''
-        if self.Weeks+self.historical_len+self.Days == 0:
-            print(f"! H+D+W = {self.Weeks+self.historical_len+self.Days}, which mean the Tensor U will be set to a Null vector")
+        if self.warning+self.H+self.D == 0:
+            print(f"! H+D+W = {self.W+self.H+self.D}, which mean the Tensor U will be set to a Null vector")
 
     def mask_tensor(self):
         # Mask for Tensor U, Utarget
@@ -360,7 +353,7 @@ class DataSet(object):
 
     def get_feature_vect(self,invalid_dates): 
         # Get shifted Feature Vector and shifted Target
-        featurevectorbuilder = FeatureVectorBuilder(self.step_ahead,self.historical_len,self.Days,self.Weeks,self.Day_nb_steps,self.Week_nb_steps,self.shift_from_first_elmt)
+        featurevectorbuilder = FeatureVectorBuilder(self.step_ahead,self.H,self.D,self.W,self.Day_nb_steps,self.Week_nb_steps,self.shift_from_first_elmt)
         featurevectorbuilder.build_feature_vect(self.raw_values)
         featurevectorbuilder.build_target_vect(self.raw_values)
 
@@ -370,7 +363,7 @@ class DataSet(object):
         #  ...
 
         # Get forbidden indices, and df_verif to check just in case 
-        dates_verif_object = DatesVerifFeatureVect(self.df_dates, Weeks = self.Weeks, Days = self.Days, historical_len = self.historical_len, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour)
+        dates_verif_object = DatesVerifFeatureVect(self.df_dates, Weeks = self.W, Days = self.D, historical_len = self.H, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour)
         dates_verif_object.get_df_verif(invalid_dates)
 
         self.forbidden_indice_U = dates_verif_object.forbidden_indice_U
@@ -423,28 +416,64 @@ class DataSet(object):
         self.tensor_limits_keeper = tensor_limits_keeper
 
     def get_data_augmentation(self,contextual_train):
+        ''' Implement a Data-augmentation on the train dataset.
+
+        args:
+        -----
+        DA_moment_to_focus: focus on some specific moments based on calendar information.
+        
+        Examples: 
+        >>> DA_moment_to_focus = [{'hours':[0,23],'weekdays':[1,3]}] Will focus on Tuesday, Thursday at 23h-00h, i.e last subway
+
+        '''
+
         if self.data_augmentation:
             U_train_copy = self.U_train.clone()
             Utarget_train_copy = self.Utarget_train.clone()
-            # Interpolation t-5 = (t-6 + t-4)/2
-            U_train_copy[:, :, self.Weeks + self.Days + 1] = 0.5 * (self.U_train[:, :, self.Weeks + self.Days] + self.U_train[:, :, self.Weeks + self.Days + 2])
+            dates_train = self.tensor_limits_keeper.df_verif_train.iloc[:,-1].reset_index(drop=True)
 
-            # Concat with Data-Augmented Values:
-            self.U_train = torch.cat([self.U_train,U_train_copy],dim=0)
-            self.Utarget_train = torch.cat([self.Utarget_train,Utarget_train_copy],dim=0)
+            if self.DA_moment_to_focus is not None:
+                series_hour = dates_train.dt.hour
+                series_weekday = dates_train.dt.weekday
 
-            # Tackle contextual data:
-            for name, tensor in contextual_train.items():
-                contextual_train_copy = tensor.clone()
-                if ('subway_out' in name) or ('netmob' in name):
-                    contextual_train_copy[:, :, self.Weeks + self.Days  + 1] = 0.5 * (
-                        tensor[:, :, self.Weeks + self.Days ] + tensor[:, :, self.Weeks + self.Days + 2])
-                elif ('calendar' in name):
-                    print(name,'data augmented by dupplication but not modified')
-                else:
-                    raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
-                
-                contextual_train[name] = torch.cat([contextual_train[name],contextual_train_copy],dim=0)
+                index_to_augment = []
+                for hours_weekdays in self.DA_moment_to_focus:
+                    hours = hours_weekdays['hours']
+                    weekdays = hours_weekdays['weekdays']
+                    
+                    mask_hour = series_hour.isin(hours)
+                    mask_weekday = series_weekday.isin(weekdays)
+
+                    associated_feature_vect_index = (set(series_weekday[mask_weekday].index)&set(series_hour[mask_hour].index))
+
+                    # Union 
+                    index_to_augment = list(set(index_to_augment) | set(associated_feature_vect_index))
+                print(f'{len(index_to_augment)} train samples had been added thank to Data Augmentation')
+            else: 
+                index_to_augment = list(set(dates_train.index))
+
+
+
+            if self.DA_method == 'interpolation':
+                # Interpolation t-5 = (t-6 + t-4)/2
+                U_train_copy[:, :, self.W + self.D + 1] = 0.5 * (self.U_train[:, :, self.W + self.D] + self.U_train[:, :, self.W + self.D + 2])
+
+                # Concat with Data-Augmented Values:
+                self.U_train = torch.cat([self.U_train,U_train_copy[index_to_augment]],dim=0)
+                self.Utarget_train = torch.cat([self.Utarget_train,Utarget_train_copy[index_to_augment]],dim=0)
+
+                # Tackle contextual data:
+                for name, tensor in contextual_train.items():
+                    contextual_train_copy = tensor.clone()
+                    if ('subway_out' in name) or ('netmob' in name):
+                        contextual_train_copy[:, :, self.W + self.D  + 1] = 0.5 * (
+                            tensor[:, :, self.W + self.D ] + tensor[:, :, self.W + self.D + 2])
+                    elif ('calendar' in name):
+                        print(name,'data augmented by dupplication but not modified')
+                    else:
+                        raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
+                    
+                    contextual_train[name] = torch.cat([contextual_train[name],contextual_train_copy[index_to_augment]],dim=0)
         return contextual_train
 
 
@@ -525,7 +554,7 @@ class DataSet(object):
 
     def display_info_on_inputs(self):
         str_to_display = ''
-        str_to_display = f"{str_to_display}U/Utarget size: {self.U.size()}/{self.Utarget.size()}"
+        str_to_display = f"Init {str_to_display}U/Utarget size: {self.U.size()}/{self.Utarget.size()}"
         str_to_display = f"{str_to_display} Train"
         if hasattr(self,'U_valid'):
             str_to_display = f"{str_to_display}/Valid"

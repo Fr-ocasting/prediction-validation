@@ -8,6 +8,8 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime
+from utils.utilities import filter_args
+import numpy as np 
 import h5py
 
 ''' This file has to :
@@ -57,16 +59,18 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
     assert time_step_per_hour == 12, 'TIME STEP PER HOUR = {time_step_per_hour} ALORS QU ON VEUT =12 '
 
+
+    args_DataSet = filter_args(DataSet, args)
+
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 
-                      Weeks = args.W, 
-                      Days = args.D, 
-                      historical_len= args.H,
-                      step_ahead=args.step_ahead,
                       spatial_unit = df.columns,
-                      data_augmentation= args.data_augmentation
-                      )
+                      indices_spatial_unit = np.arange(len(df.columns)),
+                      dims = [0],       DEFINIR 'DIMS'  // MODIFIER ICIIIIIIII
+                      **args_DataSet)
 
+
+    
     return(dataset)
     
 def restrain_df_to_specific_period(df,coverage_period):

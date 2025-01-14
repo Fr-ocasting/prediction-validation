@@ -9,7 +9,7 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime 
-
+from utils.utilities import filter_args
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
@@ -70,19 +70,29 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
         spatial_unit = df.columns
         indices_spatial_unit = np.arange(len(df.columns))
 
+    args_DataSet = filter_args(DataSet, args)
 
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 
-                      Weeks = args.W, 
-                      Days = args.D, 
-                      historical_len= args.H,
-                      step_ahead=args.step_ahead,
                       spatial_unit = spatial_unit,
                       indices_spatial_unit = indices_spatial_unit,
                       dims = [0],
                       city = 'Lyon',
-                      data_augmentation= args.data_augmentation
-                      )
+                      **args_DataSet)
+
+    
+    #dataset = DataSet(df,
+    #                  time_step_per_hour=time_step_per_hour, 
+    #                  Weeks = args.W, 
+    #                  Days = args.D, 
+    #                  historical_len= args.H,
+    #                  step_ahead=args.step_ahead,
+    #                  spatial_unit = spatial_unit,
+    #                  indices_spatial_unit = indices_spatial_unit,
+    #                  dims = [0],
+    #                  city = 'Lyon',
+    #                  data_augmentation= args.data_augmentation
+    #                  )
     
     return(dataset)
     

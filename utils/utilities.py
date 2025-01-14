@@ -9,6 +9,13 @@ import torch.nn as nn
 from scipy.spatial.distance import cdist 
 import pickle 
 import io 
+import inspect
+
+def filter_args(func, args):
+    sig = inspect.signature(func)
+    #valid_args = {k: v for k, v in args.items() if k in sig.parameters}
+    filered_args = {k: v for k, v in vars(args).items() if k in sig.parameters}
+    return filered_args
 
 def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):
     assert 0 <= quantile_order <= 1, "Quantile order must be <= 1 and >=0"

@@ -22,16 +22,11 @@ from dl_models.STGCN.STGCN import STGCN
 from dl_models.DCRNN.DCRNN import DCRNN
 from dl_models.TFT.TFT import TFT
 
+from utils.utilities import filter_args
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
 from constants.paths import DATA_TO_PREDICT
 import importlib
-
-def filter_args(func, args):
-    sig = inspect.signature(func)
-    #valid_args = {k: v for k, v in args.items() if k in sig.parameters}
-    filered_args = {k: v for k, v in vars(args).items() if k in sig.parameters}
-    return filered_args
 
 def load_vision_model(args_vision):
     script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}")

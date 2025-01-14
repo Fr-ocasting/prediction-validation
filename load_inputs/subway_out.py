@@ -10,6 +10,7 @@ from datetime import datetime
 import torch
 from load_inputs.subway_in import load_data as load_data_from_subway_in_py
 from load_inputs.netmob_POIs import load_input_and_preprocess
+from utils.utilities import filter_args
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data

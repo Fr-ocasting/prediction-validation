@@ -10,30 +10,33 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal inputs:
-from dataset import PersonnalInput
+from dataset import PersonnalInput,DataSet
 from constants.paths import DATA_TO_PREDICT,FOLDER_PATH
-
+from utils.utilities import filter_args
 
 def preprocess_dataset(dataset,args,invalid_dates,normalize = True): 
     print('\nInit Dataset: ', dataset.raw_values.size())
     print('Number of Nan Value: ',torch.isnan(dataset.raw_values).sum())
     print('Total Number of Elements: ', dataset.raw_values.numel(),'\n')
 
+    args_DataSet = filter_args(DataSet, args)
     preprocesed_ds = PersonnalInput(invalid_dates,args,
                                      tensor = dataset.raw_values, 
                                      dates = dataset.df_dates, 
                                      spatial_unit = dataset.spatial_unit,
                                     indices_spatial_unit = dataset.indices_spatial_unit,
                                      time_step_per_hour = dataset.time_step_per_hour,
-                                     Weeks = args.W, 
-                                     Days = args.D, 
-                                     historical_len = args.H,
-                                     step_ahead = args.step_ahead,
                                      minmaxnorm = True ,
                                      city = dataset.city,
                                      dims=dataset.dims,
-                                     data_augmentation= dataset.data_augmentation)
+                                     **args_DataSet
 
+                                     #Weeks = args.W, 
+                                     #Days = args.D, 
+                                     #historical_len = args.H,
+                                     #step_ahead = args.step_ahead,
+                                     #data_augmentation= dataset.data_augmentation
+                                     )
     preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
     
     return(preprocesed_ds)
