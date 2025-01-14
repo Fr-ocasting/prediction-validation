@@ -452,6 +452,8 @@ class DataSet(object):
             else: 
                 index_to_augment = list(set(dates_train.index))
 
+            if self.DA_method == 'noise':
+                BLABLA
 
 
             if self.DA_method == 'interpolation':
