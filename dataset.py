@@ -453,7 +453,32 @@ class DataSet(object):
                 index_to_augment = list(set(dates_train.index))
 
             if self.DA_method == 'noise':
-                BLABLA
+
+                p_inject = 1
+                alpha = 1
+
+                n, N, L = U_train_copy.shape
+                
+                # mask_inject : bool de taille [n, N].  On choisit aléatoirement p_inject% des sequences (t, i) à bruiter
+                mask_inject = torch.rand(n, N) < p_inject
+                mask_seq_3d = mask_inject.unsqueeze(-1).expand(-1, -1, L)  # Repeat on the dimension L
+
+                # Get Amplitude of noises for each timesteps:
+                amp_series = s_bruit.reindex(dates_train, fill_value=0)
+
+                # Reshape
+                amp_values = amp_series.to_numpy().reshape(n, N, L)
+                amp_bruit_tensor = torch.from_numpy(amp_values).float()
+
+                # Gaussian Noise
+                noise = torch.randn(n, N, L)  # Gaussian Noise
+
+                # Scaled with computed amplitude and an 'alpha' factor: 
+                scaled_noise = noise * alpha * amp_bruit_tensor  # shape [n, N, L]
+
+                # Noise injection on some masked values 
+                U_train_copy += scaled_noise * mask_seq_3d
+            
 
 
             if self.DA_method == 'interpolation':
