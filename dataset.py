@@ -10,6 +10,7 @@ from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeep
 from utils import train_valid_test_split
 from loader import DictDataLoader
 from utils.save_results import save_object,read_object
+from utils.data_augmentation import DataAugmenter
 # ...
 
 class TrainValidTest_Split_Normalize(object):
@@ -262,7 +263,10 @@ class DataSet(object):
                  spatial_unit = None,indices_spatial_unit = None,city = None,
                  data_augmentation=False,
                  DA_moment_to_focus=None,
-                 DA_method=None
+                 DA_method=None,
+                 min_count_DA= None,
+                 alpha_DA = None,
+                 prop_DA = None,
                  ):
         
         if df is not None:
@@ -318,6 +322,9 @@ class DataSet(object):
         self.data_augmentation = data_augmentation
         self.DA_moment_to_focus = DA_moment_to_focus
         self.DA_method = DA_method
+        self.min_count_DA=min_count_DA
+        self.alpha_DA=alpha_DA
+        self.prop_DA = prop_DA
         
 
 
@@ -428,80 +435,15 @@ class DataSet(object):
         '''
 
         if self.data_augmentation:
-            U_train_copy = self.U_train.clone()
-            Utarget_train_copy = self.Utarget_train.clone()
-            dates_train = self.tensor_limits_keeper.df_verif_train.iloc[:,-1].reset_index(drop=True)
-
-            if self.DA_moment_to_focus is not None:
-                series_hour = dates_train.dt.hour
-                series_weekday = dates_train.dt.weekday
-
-                index_to_augment = []
-                for hours_weekdays in self.DA_moment_to_focus:
-                    hours = hours_weekdays['hours']
-                    weekdays = hours_weekdays['weekdays']
-                    
-                    mask_hour = series_hour.isin(hours)
-                    mask_weekday = series_weekday.isin(weekdays)
-
-                    associated_feature_vect_index = (set(series_weekday[mask_weekday].index)&set(series_hour[mask_hour].index))
-
-                    # Union 
-                    index_to_augment = list(set(index_to_augment) | set(associated_feature_vect_index))
-                print(f'{len(index_to_augment)} train samples had been added thank to Data Augmentation')
-            else: 
-                index_to_augment = list(set(dates_train.index))
-
-            if self.DA_method == 'noise':
-
-                p_inject = 1
-                alpha = 1
-
-                n, N, L = U_train_copy.shape
-                
-                # mask_inject : bool de taille [n, N].  On choisit aléatoirement p_inject% des sequences (t, i) à bruiter
-                mask_inject = torch.rand(n, N) < p_inject
-                mask_seq_3d = mask_inject.unsqueeze(-1).expand(-1, -1, L)  # Repeat on the dimension L
-
-                # Get Amplitude of noises for each timesteps:
-                amp_series = s_bruit.reindex(dates_train, fill_value=0)
-
-                # Reshape
-                amp_values = amp_series.to_numpy().reshape(n, N, L)
-                amp_bruit_tensor = torch.from_numpy(amp_values).float()
-
-                # Gaussian Noise
-                noise = torch.randn(n, N, L)  # Gaussian Noise
-
-                # Scaled with computed amplitude and an 'alpha' factor: 
-                scaled_noise = noise * alpha * amp_bruit_tensor  # shape [n, N, L]
-
-                # Noise injection on some masked values 
-                U_train_copy += scaled_noise * mask_seq_3d
+            data_augmenter = DataAugmenter(self,self.DA_method,self.DA_moment_to_focus)
+            U_train_augmented,Utarget_train_augmented,contextual_train_augmented = data_augmenter.DA_augmentation(self.U_train,self.Utarget_train,contextual_train,ds = self,min_count = self.min_count_DA,alpha = self.alpha_DA, p = self.prop_DA)
+            self.U_train = U_train_augmented
+            self.Utarget_train = Utarget_train_augmented
             
+            return contextual_train_augmented
 
-
-            if self.DA_method == 'interpolation':
-                # Interpolation t-5 = (t-6 + t-4)/2
-                U_train_copy[:, :, self.W + self.D + 1] = 0.5 * (self.U_train[:, :, self.W + self.D] + self.U_train[:, :, self.W + self.D + 2])
-
-                # Concat with Data-Augmented Values:
-                self.U_train = torch.cat([self.U_train,U_train_copy[index_to_augment]],dim=0)
-                self.Utarget_train = torch.cat([self.Utarget_train,Utarget_train_copy[index_to_augment]],dim=0)
-
-                # Tackle contextual data:
-                for name, tensor in contextual_train.items():
-                    contextual_train_copy = tensor.clone()
-                    if ('subway_out' in name) or ('netmob' in name):
-                        contextual_train_copy[:, :, self.W + self.D  + 1] = 0.5 * (
-                            tensor[:, :, self.W + self.D ] + tensor[:, :, self.W + self.D + 2])
-                    elif ('calendar' in name):
-                        print(name,'data augmented by dupplication but not modified')
-                    else:
-                        raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
-                    
-                    contextual_train[name] = torch.cat([contextual_train[name],contextual_train_copy[index_to_augment]],dim=0)
-        return contextual_train
+        else:
+            return contextual_train
 
 
     def get_dataloader(self):
