@@ -3,6 +3,7 @@ import sys
 import os 
 import torch
 import importlib
+import pandas as pd
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -13,11 +14,10 @@ if parent_dir not in sys.path:
 from dataset import PersonnalInput,DataSet
 from constants.paths import DATA_TO_PREDICT,FOLDER_PATH
 from utils.utilities import filter_args
+from utils.seasonal_decomposition import fill_and_decompose_df
 
 def preprocess_dataset(dataset,args,invalid_dates,normalize = True): 
-    print('\nInit Dataset: ', dataset.raw_values.size())
-    print('Number of Nan Value: ',torch.isnan(dataset.raw_values).sum())
-    print('Total Number of Elements: ', dataset.raw_values.numel(),'\n')
+    print(f"\nInit Dataset: '{dataset.raw_values.size()} with {dataset.raw_values.numel()} Total nb of elements and {torch.isnan(dataset.raw_values).sum()} Nan values")
 
     args_DataSet = filter_args(DataSet, args)
     preprocesed_ds = PersonnalInput(invalid_dates,args,
@@ -29,17 +29,32 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
                                      minmaxnorm = True ,
                                      city = dataset.city,
                                      dims=dataset.dims,
+                                     periods = dataset.periods,
                                      **args_DataSet
-
-                                     #Weeks = args.W, 
-                                     #Days = args.D, 
-                                     #historical_len = args.H,
-                                     #step_ahead = args.step_ahead,
-                                     #data_augmentation= dataset.data_augmentation
                                      )
+
     preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
-    
+    preprocesed_ds = add_noise(preprocesed_ds,args)
+
     return(preprocesed_ds)
+
+
+def add_noise(preprocesed_ds,args):
+    if args.data_augmentation and args.DA_method == 'noise':
+        decomposition = fill_and_decompose_df(preprocesed_ds.raw_values,
+                                            preprocesed_ds.tensor_limits_keeper.df_verif_train,
+                                            preprocesed_ds.time_step_per_hour,
+                                            preprocesed_ds.spatial_unit,
+                                            min_count = args.DA_min_count, 
+                                            periods = preprocesed_ds.periods)
+        df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
+        df_noises = df_noises[preprocesed_ds.spatial_unit]
+        preprocesed_ds.noises = {DATA_TO_PREDICT:df_noises}
+    else:
+        preprocesed_ds.noises = {}
+    return preprocesed_ds
+
+
 
 def get_intersect_of_coverage_periods(args,coverage_period):
      # Load the Intersection of all the coverage period of each dataset_name:

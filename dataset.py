@@ -262,11 +262,12 @@ class DataSet(object):
                  standardize = None, minmaxnorm = None,dims = None,
                  spatial_unit = None,indices_spatial_unit = None,city = None,
                  data_augmentation=False,
+                 periods = None,
                  DA_moment_to_focus=None,
                  DA_method=None,
-                 min_count_DA= None,
-                 alpha_DA = None,
-                 prop_DA = None,
+                 DA_min_count= None,
+                 DA_alpha = None,
+                 DA_prop = None,
                  ):
         
         if df is not None:
@@ -322,9 +323,10 @@ class DataSet(object):
         self.data_augmentation = data_augmentation
         self.DA_moment_to_focus = DA_moment_to_focus
         self.DA_method = DA_method
-        self.min_count_DA=min_count_DA
-        self.alpha_DA=alpha_DA
-        self.prop_DA = prop_DA
+        self.DA_min_count=DA_min_count
+        self.DA_alpha=DA_alpha
+        self.DA_prop = DA_prop
+        self.periods = periods
         
 
 
@@ -436,7 +438,7 @@ class DataSet(object):
 
         if self.data_augmentation:
             data_augmenter = DataAugmenter(self,self.DA_method,self.DA_moment_to_focus)
-            U_train_augmented,Utarget_train_augmented,contextual_train_augmented = data_augmenter.DA_augmentation(self.U_train,self.Utarget_train,contextual_train,ds = self,min_count = self.min_count_DA,alpha = self.alpha_DA, p = self.prop_DA)
+            U_train_augmented,Utarget_train_augmented,contextual_train_augmented = data_augmenter.DA_augmentation(self.U_train,self.Utarget_train,contextual_train,ds = self,min_count = self.DA_min_count,alpha = self.DA_alpha, p = self.DA_prop)
             self.U_train = U_train_augmented
             self.Utarget_train = Utarget_train_augmented
             

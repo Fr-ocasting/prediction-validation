@@ -35,7 +35,6 @@ C = 1
 n_vertex = 40
 COVERAGE = pd.date_range(start='03/16/2019', end='06/01/2019', freq='15min')[:-1]
 
-
 def load_data(dataset,args,ROOT,FOLDER_PATH,intesect_coverage_period,normalize,invalid_dates):
     id_stations = dataset.spatial_unit
     contextual_subway_out = []
@@ -43,15 +42,15 @@ def load_data(dataset,args,ROOT,FOLDER_PATH,intesect_coverage_period,normalize,i
     dims = [0]
     subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intesect_coverage_period)
     for id_station in id_stations:
-        print('Spatial unit: ',id_station)
+        T_subway_out = torch.Tensor(subway_out.raw_values)
 
-        netmob_T = torch.Tensor(subway_out.raw_values)
-        #print(">>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
-        #print(">>>>> CAS NORMAL IL FAUT CHANGER 'FILE_NAME' ET COMMENTER LE ROLL ET DE-COMMENTER LA LIGNE DESSUS !!!!")
+        # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:
+        #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
         #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
 
-        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
+        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset)
         preprocessed_personal_input.station_name = id_station
+        preprocessed_personal_input.periods = subway_out.periods
+        
         contextual_subway_out.append(preprocessed_personal_input)
     return contextual_subway_out
-

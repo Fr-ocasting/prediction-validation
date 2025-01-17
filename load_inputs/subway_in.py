@@ -10,6 +10,7 @@ if parent_dir not in sys.path:
 from dataset import DataSet
 from datetime import datetime 
 from utils.utilities import filter_args
+from constants.paths import USELESS_DATES
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
@@ -33,7 +34,6 @@ for start,end in list_of_invalid_period:
 C = 1
 n_vertex = 40
 COVERAGE = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
-
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
@@ -70,6 +70,10 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
         spatial_unit = df.columns
         indices_spatial_unit = np.arange(len(df.columns))
 
+    weekly_period =  int((24-len(USELESS_DATES['hour']))*(7-len(USELESS_DATES['weekday']))*time_step_per_hour)
+    daily_period =  int((24-len(USELESS_DATES['hour']))*time_step_per_hour)
+    periods = [weekly_period,daily_period]  
+
     args_DataSet = filter_args(DataSet, args)
 
     dataset = DataSet(df,
@@ -78,22 +82,9 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       indices_spatial_unit = indices_spatial_unit,
                       dims = [0],
                       city = 'Lyon',
+                      periods = periods,
                       **args_DataSet)
 
-    
-    #dataset = DataSet(df,
-    #                  time_step_per_hour=time_step_per_hour, 
-    #                  Weeks = args.W, 
-    #                  Days = args.D, 
-    #                  historical_len= args.H,
-    #                  step_ahead=args.step_ahead,
-    #                  spatial_unit = spatial_unit,
-    #                  indices_spatial_unit = indices_spatial_unit,
-    #                  dims = [0],
-    #                  city = 'Lyon',
-    #                  data_augmentation= args.data_augmentation
-    #                  )
-    
     return(dataset)
     
 

@@ -13,9 +13,11 @@ from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from build_inputs.load_calendar import load_calendar,get_args_embedding
 # from build_inputs.load_calendar import tackle_calendar
 from constants.paths import DATA_TO_PREDICT
+from utils.seasonal_decomposition import fill_and_decompose_df
+from constants.paths import USELESS_DATES
+import pandas as pd 
 
-
-def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
+def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
     # === Define DataLoader : 
     contextual_tensors,positions = {},{}
 
@@ -40,9 +42,9 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
             positions['calendar'] = pos_calendar
             
         elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
-             contextual_tensors.update({'netmob': {'train': NetMob_ds.U_train,
-                                            'valid': NetMob_ds.U_valid if hasattr(NetMob_ds,'U_valid') else None,
-                                            'test': NetMob_ds.U_test  if hasattr(NetMob_ds,'U_test') else None}
+             contextual_tensors.update({'netmob': {'train': contextual_ds.U_train,
+                                            'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
+                                            'test': contextual_ds.U_test  if hasattr(contextual_ds,'U_test') else None}
                                             }
                                             )
             
@@ -53,10 +55,10 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
              contextual_tensors.update({f'netmob_{NetMob_POI.station_name}': {'train': NetMob_POI.U_train,
                                             'valid': NetMob_POI.U_valid if hasattr(NetMob_POI,'U_valid') else None,
                                             'test': NetMob_POI.U_test  if hasattr(NetMob_POI,'U_test') else None}
-                                            for NetMob_POI in NetMob_ds
+                                            for NetMob_POI in contextual_ds
                                             }
                                          )
-             pos_netmob = [list(contextual_tensors.keys()).index(f'netmob_{NetMob_POI.station_name}') for NetMob_POI in NetMob_ds]
+             pos_netmob = [list(contextual_tensors.keys()).index(f'netmob_{NetMob_POI.station_name}') for NetMob_POI in contextual_ds]
 
              positions[dataset_name] = pos_netmob
 
@@ -64,13 +66,24 @@ def add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_cale
              contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,
                                             'valid': subway_out_station.U_valid if hasattr(subway_out_station,'U_valid') else None,
                                             'test': subway_out_station.U_test  if hasattr(subway_out_station,'U_test') else None}
-                                            for subway_out_station in NetMob_ds
+                                            for subway_out_station in contextual_ds
                                             }
                                          )
-             pos_stations = [list(contextual_tensors.keys()).index(f'subway_out_{subway_out_station.station_name}') for subway_out_station in NetMob_ds]
+             pos_stations = [list(contextual_tensors.keys()).index(f'subway_out_{subway_out_station.station_name}') for subway_out_station in contextual_ds]
 
              positions[dataset_name] = pos_stations
 
+             # build Noises :
+             if args.data_augmentation and args.DA_method == 'noise':
+                decomposition = fill_and_decompose_df(contextual_ds[0].raw_values,
+                                                    contextual_ds[0].tensor_limits_keeper.df_verif_train,
+                                                    contextual_ds[0].time_step_per_hour,
+                                                    contextual_ds[0].spatial_unit,
+                                                    min_count = args.DA_min_count, 
+                                                    periods = contextual_ds[0].periods)
+                df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
+                df_noises = df_noises[contextual_ds[0].spatial_unit]
+                subway_ds.noises[dataset_name] = df_noises
 
         else:
             raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')

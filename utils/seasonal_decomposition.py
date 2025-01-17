@@ -14,7 +14,7 @@ from statsmodels.tsa.seasonal import seasonal_decompose, STL , MSTL
 from constants.paths import USELESS_DATES
 import matplotlib.pyplot as plt 
 
-def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,min_count = 10, period = [24*7*4,24*4]):
+def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,min_count = 10, periods = [24*7*4,24*4]):
     '''
     ds : PersonnalInput ou DataSet object 
     min_count : défini le minimum d'occurence d'un tuple (weekday,hour) pour qu'on y input avec la médiane.
@@ -40,12 +40,12 @@ def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,m
    # MSTL on the filled Time-Series
     decomposition = {}
     for col in time_series_for_seasonal_decomposition.columns:
-        decomposition_i = ts_decomposition(time_series_for_seasonal_decomposition[col], period=period,take_abs= False)
+        decomposition_i = ts_decomposition(time_series_for_seasonal_decomposition[col], periods=periods,take_abs= False)
         decomposition[col] = decomposition_i
 
     return decomposition
 
-def ts_decomposition(ts: pd.Series, period: int = 7, take_abs: bool = False) -> pd.Series:
+def ts_decomposition(ts: pd.Series, periods: list = [7], take_abs: bool = False) -> pd.Series:
     """
     Décompose la série temporelle `ts` (index datetime) en (trend, season, resid).
     Retourne la composante de bruit (résidu) sous forme d'un pd.Series indexé
@@ -56,7 +56,7 @@ def ts_decomposition(ts: pd.Series, period: int = 7, take_abs: bool = False) -> 
         stl = STL(ts, period=period)
         result = stl.fit()
     if True:
-        mstl = MSTL(ts, periods=period)
+        mstl = MSTL(ts, periods=periods)
         result = mstl.fit()
     output  = {
         'trend': result.trend.dropna(),

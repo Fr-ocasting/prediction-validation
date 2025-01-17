@@ -52,6 +52,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
 
     id_stations = dataset.spatial_unit
     NetMob_ds = []
+    nb_pois_by_station = []
     for id_station in id_stations:
         # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
         data_station = load_data_npy(id_station,ROOT,FOLDER_PATH)
@@ -82,7 +83,9 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
         NetMob_POI.station_name = id_station
         NetMob_ds.append(NetMob_POI)
 
-        print('Spatial unit: ',id_station,'. Size: ',netmob_T.size())
+        nb_pois_by_station.append(netmob_T.size(1))
+
+    print('Custom POIs associated by stations: ',[f"{id_station}: {nb_pois_by_station[k]}" for k,id_station in enumerate(id_stations)])
     return(NetMob_ds)
 
 

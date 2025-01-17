@@ -6,7 +6,7 @@ import numpy as np
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0,current_file_path)
 
-from constants.paths import USELESS_DATES
+from constants.paths import USELESS_DATES,DATA_TO_PREDICT
 from DL_class import FeatureVectorBuilder
 from utils.seasonal_decomposition import fill_and_decompose_df
 
@@ -89,19 +89,20 @@ class DataAugmenter(object):
         mask_inject = torch.rand(n, N) < p
 
         # Noise Injection for the Dataset To predict, and its historical data: 
-        raw_values = ds.raw_values
-        columns = ds.spatial_unit
-        U_train_copy,Utarget_train_copy = self.compute_noise_injection(U_train_copy,Utarget_train_copy,raw_values,columns,ds,mask_inject,out_dim,period,min_count,alpha)
+        U_train_copy,Utarget_train_copy = self.compute_noise_injection(U_train_copy,Utarget_train_copy,ds,DATA_TO_PREDICT,mask_inject,out_dim,alpha)
 
         # Noise Injection for the contextual data (subway-out ok, but not for NetMob)
         contextual_train_copy = {}
+        subway_out_already_tackled = False
         for name, tensor in contextual_train.items():
             tensor_copy_i = tensor.clone()
-            if ('subway_out' in name) :
-                columns_contextual_i = ...
-                raw_values_contextual_i = ...
-                noisy_tensor_copy_i,_ = self.compute_noise_injection(tensor_copy_i,None,raw_values_contextual_i,columns_contextual_i,ds,mask_inject,out_dim,period,min_count,alpha)
-                contextual_train_copy[name] = noisy_tensor_copy_i
+            # Same Noise injection for every-single station, and then go break the first loop 
+            if ('subway_out' in name) and not(subway_out_already_tackled):
+                noisy_tensor_copy_i,_ = self.compute_noise_injection(tensor_copy_i,None,ds,'subway_out',mask_inject,out_dim,alpha)
+                for name_i, _ in contextual_train.keys():
+                    if ('subway_out' in name_i) :
+                        contextual_train_copy[name_i] = noisy_tensor_copy_i
+                subway_out_already_tackled = True
             elif ('netmob' in name):
                 print(name,'data augmented by dupplication but not modified')
                 contextual_train_copy[name] = tensor_copy_i
@@ -114,16 +115,16 @@ class DataAugmenter(object):
 
         return U_train_copy,Utarget_train_copy,contextual_train_copy
 
-    def compute_noise_injection(self,U_train_copy,Utarget_train_copy,raw_values,columns,ds,mask_inject,out_dim,period,min_count,alpha):
+    def compute_noise_injection(self,U_train_copy,Utarget_train_copy,ds,dataset_name,mask_inject,out_dim,alpha):
         n, N, L = U_train_copy.shape
         self.mask_seq_3d = mask_inject.unsqueeze(-1).expand(-1, -1, L+out_dim)  # Repeat on the dimension L + out_dim
 
         # Get DataFrame of Noises :
-        self.build_df_noises(raw_values,ds.tensor_limits_keeper.df_verif_train,self.time_step_per_hour,columns,min_count)
+        df_noises = ds.noises[dataset_name]
         featurevectorbuilder = FeatureVectorBuilder(self.step_ahead,self.H,self.D,self.W,self.Day_nb_steps,self.Week_nb_steps,self.shift_from_first_elmt)
 
         # Reindex df of time-series  to tensor: 
-        df_noises_with_init_dates = self.df_noises.reindex(pd.date_range(self.start, self.end, freq=f'{60//self.time_step_per_hour}min'))
+        df_noises_with_init_dates = df_noises.reindex(pd.date_range(self.start, self.end, freq=f'{60//self.time_step_per_hour}min'))
         df_noises_with_init_dates[df_noises_with_init_dates.index.hour.isin(USELESS_DATES['hour'])] = 0  # Set all the noise associated to useless hour (when subway is closed) to 0 
         tensor_noises = torch.from_numpy(df_noises_with_init_dates.values).float()
 
@@ -153,12 +154,13 @@ class DataAugmenter(object):
 
         return U_train_copy,Utarget_train_copy
     
+    '''
     def build_df_noises(self,raw_values,df_verif_train,time_step_per_hour,columns,period,min_count = 10):
         decomposition = fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,min_count = min_count, period = period)
         df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
         df_noises = df_noises[columns]
         self.df_noises = df_noises
-
+    '''
 
     def interpolation(self,U_train,Utarget_train,contextual_train):
         # Interpolation t-5 = (t-6 + t-4)/2
