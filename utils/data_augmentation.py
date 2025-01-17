@@ -56,23 +56,19 @@ class DataAugmenter(object):
 
 
 
-    def DA_augmentation(self,U_train,Utarget_train,contextual_train,ds = None,period = None,min_count = None,alpha = None, p = None):
+    def DA_augmentation(self,U_train,Utarget_train,contextual_train,ds = None,alpha = None, p = None):
 
         if self.DA_method == 'interpolation':
             U_train_copy,Utarget_train_copy,contextual_train_copy = self.interpolation(U_train,Utarget_train,contextual_train)
 
         if self.DA_method == 'noise':
-            if period is None:
-                weekly_period =  (24-len(USELESS_DATES['hour']))*(7-len(USELESS_DATES['weekday']))*ds.time_step_per_hour
-                daily_period =  (24-len(USELESS_DATES['hour']))*ds.time_step_per_hour
-                period = [weekly_period,daily_period]
-            U_train_copy,Utarget_train_copy,contextual_train_copy = self.noise_injection(U_train,Utarget_train,contextual_train,ds,period,min_count,alpha,p)
+            U_train_copy,Utarget_train_copy,contextual_train_copy = self.noise_injection(U_train,Utarget_train,contextual_train,ds,alpha,p)
 
         U_train_augmented,Utarget_train_augmented,contextual_train_augmented = self.focus_on_specific_index(U_train,U_train_copy,Utarget_train,Utarget_train_copy,contextual_train,contextual_train_copy)    
         return U_train_augmented,Utarget_train_augmented,contextual_train_augmented
                     
 
-    def noise_injection(self,U_train,Utarget_train,contextual_train,ds,period,min_count,alpha=1,p=1):
+    def noise_injection(self,U_train,Utarget_train,contextual_train,ds,alpha,p):
         ''' Data Augmentation by noise injection
 
         First apply a seasonal decomposition on the Time-Series.
@@ -97,12 +93,13 @@ class DataAugmenter(object):
         for name, tensor in contextual_train.items():
             tensor_copy_i = tensor.clone()
             # Same Noise injection for every-single station, and then go break the first loop 
-            if ('subway_out' in name) and not(subway_out_already_tackled):
-                noisy_tensor_copy_i,_ = self.compute_noise_injection(tensor_copy_i,None,ds,'subway_out',mask_inject,out_dim,alpha)
-                for name_i, _ in contextual_train.keys():
-                    if ('subway_out' in name_i) :
-                        contextual_train_copy[name_i] = noisy_tensor_copy_i
-                subway_out_already_tackled = True
+            if ('subway_out' in name):
+                if not(subway_out_already_tackled):
+                    noisy_tensor_copy_i,_ = self.compute_noise_injection(tensor_copy_i,None,ds,'subway_out',mask_inject,out_dim,alpha)
+                    for name_i in contextual_train.keys():
+                        if ('subway_out' in name_i) :
+                            contextual_train_copy[name_i] = noisy_tensor_copy_i
+                    subway_out_already_tackled = True
             elif ('netmob' in name):
                 print(name,'data augmented by dupplication but not modified')
                 contextual_train_copy[name] = tensor_copy_i
@@ -114,6 +111,7 @@ class DataAugmenter(object):
             
 
         return U_train_copy,Utarget_train_copy,contextual_train_copy
+
 
     def compute_noise_injection(self,U_train_copy,Utarget_train_copy,ds,dataset_name,mask_inject,out_dim,alpha):
         n, N, L = U_train_copy.shape
@@ -140,17 +138,20 @@ class DataAugmenter(object):
         amp_values_target = Utarget_noise[mask_U]
 
         # Gaussian Noise
-        noise = torch.randn(n, N, L+amp_values_target.size(-1))  # Gaussian Noise
+        init_noise = torch.randn(n, N, L+amp_values_target.size(-1))  # Gaussian Noise
+
+        # Uniform bounded noise: 
+        #init_noise = torch.FloatTensor(n, N,L+amp_values_target.size(-1)).uniform_(-1, 1)
 
         # Scaled with computed amplitude and an 'alpha' factor: 
-        raw_noise = noise * alpha * torch.cat([amp_values,amp_values_target],-1)  # shape [n, N, L+out_dim]
+        raw_noise = init_noise * alpha * torch.cat([amp_values,amp_values_target],-1)  # shape [n, N, L+out_dim]
         scaled_noise = self.normalizer.normalize_tensor(raw_noise,feature_vect=True)
 
         # Noise injection on some masked values 
-        U_train_copy += scaled_noise[...,:-out_dim] * self.mask_seq_3d[...,:-out_dim]
+        U_train_copy = U_train_copy + (scaled_noise[...,:-out_dim] * self.mask_seq_3d[...,:-out_dim])
 
         if Utarget_train_copy is not None:
-            Utarget_train_copy += scaled_noise[...,-out_dim:] * self.mask_seq_3d[...,-out_dim:]
+            Utarget_train_copy = Utarget_train_copy + (scaled_noise[...,-out_dim:] * self.mask_seq_3d[...,-out_dim:])
 
         return U_train_copy,Utarget_train_copy
     

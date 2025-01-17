@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 
 # Personnal inputs:
 from dataset import PersonnalInput,DataSet
-from constants.paths import DATA_TO_PREDICT,FOLDER_PATH
+from constants.paths import DATA_TO_PREDICT,FOLDER_PATH,USELESS_DATES
 from utils.utilities import filter_args
 from utils.seasonal_decomposition import fill_and_decompose_df
 
@@ -41,14 +41,23 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
 
 def add_noise(preprocesed_ds,args):
     if args.data_augmentation and args.DA_method == 'noise':
-        decomposition = fill_and_decompose_df(preprocesed_ds.raw_values,
-                                            preprocesed_ds.tensor_limits_keeper.df_verif_train,
-                                            preprocesed_ds.time_step_per_hour,
-                                            preprocesed_ds.spatial_unit,
-                                            min_count = args.DA_min_count, 
-                                            periods = preprocesed_ds.periods)
-        df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
-        df_noises = df_noises[preprocesed_ds.spatial_unit]
+        if args.DA_noise_from == 'MSTL':
+            decomposition = fill_and_decompose_df(preprocesed_ds.raw_values,
+                                                preprocesed_ds.tensor_limits_keeper.df_verif_train,
+                                                preprocesed_ds.time_step_per_hour,
+                                                preprocesed_ds.spatial_unit,
+                                                min_count = args.DA_min_count, 
+                                                periods = preprocesed_ds.periods)
+            df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
+            df_noises = df_noises[preprocesed_ds.spatial_unit]
+        elif args.DA_noise_from == 'Homogenous':
+            df_verif_train = preprocesed_ds.tensor_limits_keeper.df_verif_train
+            dates_used_in_train = pd.Series(pd.concat([df_verif_train[c] for c in df_verif_train.columns]).unique()).sort_values() 
+            reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/preprocesed_ds.time_step_per_hour}h")
+            reindex_dates = reindex_dates[~reindex_dates.hour.isin(USELESS_DATES['hour'])&~reindex_dates.hour.isin(USELESS_DATES['weekday'])]
+            df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in preprocesed_ds.spatial_unit},index =reindex_dates)
+        else :
+            raise NotImplementedError(f"Noise from {args.DA_noise_from} has not been implemented")
         preprocesed_ds.noises = {DATA_TO_PREDICT:df_noises}
     else:
         preprocesed_ds.noises = {}
@@ -92,8 +101,6 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     # Load the dataset and its associated caracteristics
     module_data = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
     importlib.reload(module_data) 
-    #args.n_vertex = module_data.n_vertex
-    #args.C = module_data.C
     dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intesect_coverage_period)
     # ...
     preprocesed_ds = preprocess_dataset(dataset,args,union_invalid_dates,normalize)

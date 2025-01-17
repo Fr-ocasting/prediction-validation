@@ -81,7 +81,10 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
         dims = [0]# [0]  -> We are normalizing each time-serie independantly 
         NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
         NetMob_POI.station_name = id_station
+        NetMob_POI.periods = None # dataset.periods
+        NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
         NetMob_ds.append(NetMob_POI)
+
 
         nb_pois_by_station.append(netmob_T.size(1))
 

@@ -77,6 +77,14 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
     # Data Augmentation:
     config['data_augmentation'] = False # If True then augment Data in Training DataSet
+    config['DA_moment_to_focus'] = None  #[{'hours':[0,23],'weekdays':[1,3]}], # None
+    config['DA_min_count'] = 5 #  int: Set the minimum of representant from a tuple (weekday,hour,minute) to consider its median for interpolation. If not >5, then take the median of (weekday,hour). If still not > 5, then take the median of (hour)
+  
+    config['DA_method'] = 'noise' # choices: ['noise','interpolation]. Set the method of Data Augmentation   
+    config['DA_alpha'] = 1 # 0.2 # float: >0.  Parameter if the method is 'noise'. Is a multiplicative factor of the noise. Help to set its amplitude. 
+    config['DA_prop'] = 1 #  SET = 1. SEEMS NOT WORKING  # float: between [0,1]: is the proportion of Data which will be augmented. 
+    config['DA_noise_from'] = 'MSTL' # choices: ['MSTL','Homogenous'] Set where the noise amplitude is based from. MSTL is computationaly expensive. Constant set a noise = 1 for every single time-step and spatial-unit.
+
 
     # Config DataSet:
     config['H'] = 6
@@ -95,11 +103,11 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['valid_prop'] = 0.2  
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
-    config['min_fold_size_proportion'] = 1 # choice: continuous variable in [0:1]. Set the size of the smallest fold (fold0) as maximum-size - minimum-size*K_fold*min_fold_size_proportion
     config['track_pi'] = False #True
 
     # Validation, K-fold
     config['validation_split_method'] = 'forward_chaining_cv'  # Choices =  ['custom_blocked_cv','forward_chaining_cv']. Design the way we split the data and compute the metrics.
+    config['min_fold_size_proportion'] = 0.75 # choice: continuous variable in [0:1]. Set the size of the smallest fold (fold0) as maximum-size - minimum-size*K_fold*min_fold_size_proportion
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0

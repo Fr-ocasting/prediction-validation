@@ -14,9 +14,10 @@ from K_fold_validation.K_fold_validation import KFoldSplitter
 from constants.paths import SAVE_DIRECTORY
 from trainer import Trainer
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 
-def load_configuration(trial_id,load_config,epochs):
+def load_configuration(trial_id,load_config):
     # If Load config: 
     if load_config:
         from examples.load_best_config import load_best_config
@@ -31,10 +32,6 @@ def load_configuration(trial_id,load_config,epochs):
     # If new config : 
     else:
         from examples.load_random_config import args,folds
-
-    #Change/Set epochs: 
-    if epochs is not None:
-        args.epochs = epochs
         
     return args,folds
 
@@ -51,16 +48,13 @@ def load_k_fold_dataset(args,folds):
 
     ## Specific case if we want to validate on the init entiere dataset:
     if (args.evaluate_complete_ds and args.validation_split_method == 'custom_blocked_cv'): 
-        #args.train_prop = 0.6
-        #args.valid_prop = 0.2
-        #args.test_prop = 0.2
         subway_ds,_,_ = K_fold_splitter.load_init_ds(normalize = True)
         ds_validation.append(subway_ds)
         del subway_ds
     return(ds_validation,args)
 
 
-def train_valid_K_models(args,folds,trial_id,save_folder):
+def train_valid_K_models(args,trial_id,save_folder,modification={}):
     '''
     args:
     ------
@@ -69,7 +63,13 @@ def train_valid_K_models(args,folds,trial_id,save_folder):
     '''
         
     # Return a list of K-fold Dataset:
-    ds_validation,args = load_k_fold_dataset(args,folds)
+    args,ds_validation = get_multi_ds(args.model_name,
+                                    args.dataset_names,
+                                    args.dataset_for_coverage,
+                                    modification = modification,
+                                    args_init = args, 
+                                    fold_to_evaluate = np.arange(args.K_fold))
+    
 
     ## Train on the K-1 folds:
 
@@ -134,17 +134,17 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     
     return df_results,df_metrics
     
-def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
+def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id,add_name_id=''):
     df_results,df_metrics =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
 
-    df_results.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
-    df_loss.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
-    df_metrics.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+    df_results.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}{add_name_id}.csv")
+    df_loss.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}{add_name_id}.csv")
+    df_metrics.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}{add_name_id}.csv")
 
     print('df metrics: ',df_metrics)
 
 
-def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=None):
+def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modification={},add_name_id=''):
     '''
     1. Load the best config according to our HP-Tuning
     2. Apply the K-fold validation to split inputs
@@ -153,12 +153,13 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs=Non
     5. Save them.
     '''
     # 1. Load the best config according to our HP-Tuning / Or Load random config :
-    args,folds = load_configuration(trial_id,load_config,epochs)
+    args,folds = load_configuration(trial_id,load_config)
+
 
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,folds,trial_id,save_folder)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,trial_id,save_folder,modification)
     # 5.
-    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
+    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id,add_name_id)
 
 
 # ========================================================

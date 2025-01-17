@@ -35,7 +35,7 @@ C = 1
 n_vertex = 40
 COVERAGE = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -45,8 +45,10 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df.index : coverage period of the dataset 
     invalid_dates : list of invalid dates 
     '''
+    if filename==None:
+        filename = FILE_NAME
 
-    df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.csv",index_col = 0)
+    df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{filename}.csv",index_col = 0)
     df.columns.name = 'Station'
     df.index = pd.to_datetime(df.index)
 

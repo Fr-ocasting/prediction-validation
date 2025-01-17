@@ -10,7 +10,6 @@ if parent_dir not in sys.path:
 import pandas as pd
 import numpy as np 
 from constants.config import get_args,update_modif, modification_contextual_args
-from utils.save_results import get_date_id
 from K_fold_validation.K_fold_validation import KFoldSplitter
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
 from utils.save_results import get_trial_id
@@ -51,6 +50,17 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
 def get_inputs(args,folds):
     K_fold_splitter = KFoldSplitter(args,folds)
     K_subway_ds,args = K_fold_splitter.split_k_fold()
+
+    # Keep the first fold or not : 
+    if args.hp_tuning_on_first_fold :
+        K_subway_ds = K_subway_ds[1:]
+
+    ## Specific case if we want to validate on the init entiere dataset:
+    if (args.evaluate_complete_ds and args.validation_split_method == 'custom_blocked_cv'): 
+        subway_ds,_,_ = K_fold_splitter.load_init_ds(normalize = True)
+        K_subway_ds.append(subway_ds)
+
+    
     return(K_fold_splitter,K_subway_ds,args)
 
 def train_on_ds(ds,args,trial_id,save_folder,df_loss):

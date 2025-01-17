@@ -40,7 +40,7 @@ def load_data(dataset,args,ROOT,FOLDER_PATH,intesect_coverage_period,normalize,i
     contextual_subway_out = []
 
     dims = [0]
-    subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intesect_coverage_period)
+    subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intesect_coverage_period,filename = FILE_NAME)
     for id_station in id_stations:
         T_subway_out = torch.Tensor(subway_out.raw_values)
 
@@ -51,6 +51,6 @@ def load_data(dataset,args,ROOT,FOLDER_PATH,intesect_coverage_period,normalize,i
         preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset)
         preprocessed_personal_input.station_name = id_station
         preprocessed_personal_input.periods = subway_out.periods
-        
+        preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
         contextual_subway_out.append(preprocessed_personal_input)
     return contextual_subway_out

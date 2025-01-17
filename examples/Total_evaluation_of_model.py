@@ -13,9 +13,8 @@ if working_dir not in sys.path:
 
 # Personnal import 
 from examples.HP_parameter_choice import hyperparameter_tuning
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
-
-
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
+import numpy as np 
 
 def HP_and_valid_one_config(args,epochs_validation,num_samples):
     # HP Tuning on the first fold
@@ -23,7 +22,85 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
 
     # K-fold validation with best config: 
     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation)
+    return trial_id
 
+
+def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
+
+    # HP tuning and return the trial-id : 
+    trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
+
+
+
+    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
+
+    if False:
+        modification ={'keep_best_weights':True,
+                        'epochs':epochs_validation,
+                        'DA_moment_to_focus' : None
+                        }
+
+
+        config_diff = {'DA_MSTL_02':{'data_augmentation': True, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'DA_min_count': 5,
+                        'DA_alpha' : 0.2,
+                        'DA_prop' : 1, # 1 #0.005
+                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
+                        },
+                    'DA_MSTL_1':{'data_augmentation': True, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'DA_min_count': 5,
+                        'DA_alpha' : 1,
+                        'DA_prop' : 1, # 1 #0.005
+                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
+                        },
+                    'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'DA_min_count': 5,
+                        'DA_alpha' : 1,
+                        'DA_prop' : 1, # 1 #0.005
+                        'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
+                        },
+                    'DA_Homogenous_0.2':{'data_augmentation': True, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'DA_min_count': 5,
+                        'DA_alpha' : 0.2,
+                        'DA_prop' : 1, # 1 #0.005
+                        'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
+                        },
+                    'No_DA':{'data_augmentation': False, #True,  #False
+                        },
+                    'DA_interpolation':{'data_augmentation': True, #True,  #False
+                        'DA_method':'interpolation', # 'noise' # 'interpolation
+                        }
+                    }
+    if True:
+        modification ={'keep_best_weights':True,
+                        'epochs':1,
+                        'DA_moment_to_focus' : None
+                        }
+
+
+        config_diff = {'lr1':{'data_augmentation': False, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'lr':0.1},
+                    'lr2':{'data_augmentation': False, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'lr':0.01},
+                    'lr3':{'data_augmentation': False, #True,  #False
+                                            'DA_method':'noise', # 'noise' # 'interpolation
+                                            'lr':0.001}
+                    }
+
+                  
+    for add_name_id,config_diff in config_diff.items():
+        config_diff.update(modification)
+        train_model_on_k_fold_validation(trial_id,load_config =True,
+                                         save_folder=save_folder,
+                                         epochs=epochs_validation,
+                                         modification=config_diff,
+                                         add_name_id=add_name_id)
 
 
 if __name__ == '__main__':
@@ -35,7 +112,28 @@ if __name__ == '__main__':
 
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
+
     if True:
+        model_name = 'STGCN' #'CNN'
+        dataset_for_coverage = ['subway_in','netmob_POIs'] 
+        dataset_names = ['subway_in']
+        vision_model_name = None
+        args = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=dataset_names,
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = {'ray':True,
+                                                'grace_period':1,
+                                                'HP_max_epochs':2,
+                                                'evaluate_complete_ds' : True,
+                                                'vision_model_name': vision_model_name
+                                                })
+
+        # Init 
+        epochs_validation = 2
+        num_samples = 4
+        set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
+    if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in']

@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
     
 from examples.benchmark import local_get_args,get_inputs,train_on_ds
 from utils.save_results import get_trial_id
-from constants.config import modification_contextual_args
+from constants.config import modification_contextual_args,update_modif
 from plotting.TS_analysis import drag_selection_box,plot_single_point_prediction,plot_prediction_error,plot_loss_from_trainer,plot_TS
 from bokeh.plotting import show,output_notebook
 from bokeh.layouts import column,row
@@ -165,12 +165,28 @@ def get_ds(model_name,dataset_names,dataset_for_coverage,
            args_init = None, 
            fold_to_evaluate = None
             ):
+    args_with_contextual,K_subway_ds = get_multi_ds(model_name,
+                                                    dataset_names,
+                                                    dataset_for_coverage,
+                                                    modification,
+                                                    args_init,
+                                                    fold_to_evaluate)
+    ds = K_subway_ds[-1]
+    trial_id = get_trial_id(args_with_contextual)
+    save_folder = None
+    df_loss= pd.DataFrame()
 
+    return(ds,args_with_contextual,trial_id,save_folder,df_loss)
+
+def get_multi_ds(model_name,
+                 dataset_names,
+                 dataset_for_coverage,
+                 modification = {},
+                 args_init = None, 
+                 fold_to_evaluate = None):
     if args_init is not None:
         args_copy = Namespace(**vars(args_init))
 
-    save_folder = None
-    df_loss= pd.DataFrame()
     # Tricky but here we need to set 'netmob' so that we will use the same period for every combination
     if args_init is None:
         args_copy = local_get_args(model_name,
@@ -181,7 +197,7 @@ def get_ds(model_name,dataset_names,dataset_for_coverage,
     else:
         for key,values in modification.items():
             setattr(args_copy,key,values)
-
+        args_copy = update_modif(args_copy)
 
     # Define 'folds' for KFoldSplitter object (in K_fold_validation.K_fold_validation.py)
     if fold_to_evaluate is None:
@@ -192,21 +208,7 @@ def get_ds(model_name,dataset_names,dataset_for_coverage,
     else:
         folds = fold_to_evaluate
         
-    #if fold_to_evaluate is None: 
-    #    if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
-    #        folds = [0,1]
-    #    else:
-    #        folds = [0]
-    #else:
-    #    if (args_init is not None) and (args_init.hp_tuning_on_first_fold):
-    #        folds = [0] + fold_to_evaluate
-    #    else:
-    #        folds = fold_to_evaluate
-    # ...
-
-
     K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args_copy,folds)
     args_with_contextual = modification_contextual_args(args_with_contextual,modification)
-    trial_id = get_trial_id(args_with_contextual)
-    ds = K_subway_ds[-1]
-    return(ds,args_with_contextual,trial_id,save_folder,df_loss)
+
+    return args_with_contextual,K_subway_ds

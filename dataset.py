@@ -268,6 +268,7 @@ class DataSet(object):
                  DA_min_count= None,
                  DA_alpha = None,
                  DA_prop = None,
+                 DA_noise_from = None
                  ):
         
         if df is not None:
@@ -438,10 +439,12 @@ class DataSet(object):
 
         if self.data_augmentation:
             data_augmenter = DataAugmenter(self,self.DA_method,self.DA_moment_to_focus)
-            U_train_augmented,Utarget_train_augmented,contextual_train_augmented = data_augmenter.DA_augmentation(self.U_train,self.Utarget_train,contextual_train,ds = self,min_count = self.DA_min_count,alpha = self.DA_alpha, p = self.DA_prop)
+            U_train_augmented,Utarget_train_augmented,contextual_train_augmented = data_augmenter.DA_augmentation(self.U_train,self.Utarget_train,contextual_train,ds = self,alpha = self.DA_alpha, p = self.DA_prop)
             self.U_train = U_train_augmented
             self.Utarget_train = Utarget_train_augmented
-            
+
+            print('Train/Target size: ',self.U_train.size(),self.Utarget_train.size())
+            print('contextual_train_augmented size: ',[tensor.size() for station,tensor in contextual_train_augmented.items()])
             return contextual_train_augmented
 
         else:
@@ -457,6 +460,11 @@ class DataSet(object):
 
         # Data Augmentation if needed : 
         contextual_train = self.get_data_augmentation(contextual_train)
+
+
+        # To keep track on contextual train and see the impact of 'noise': 
+        if True:
+            self.contextual_train = contextual_train
 
         # Display usefull information: 
         self.display_info_on_inputs()

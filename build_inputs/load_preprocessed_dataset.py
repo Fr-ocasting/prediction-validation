@@ -61,6 +61,8 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              pos_netmob = [list(contextual_tensors.keys()).index(f'netmob_{NetMob_POI.station_name}') for NetMob_POI in contextual_ds]
 
              positions[dataset_name] = pos_netmob
+             if args.data_augmentation and args.DA_method == 'noise':
+                 raise NotImplementedError('Pas implémente" encore. Copier le build Noise de subway_out')
 
         elif dataset_name == 'subway_out':
              contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,
@@ -75,14 +77,25 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
 
              # build Noises :
              if args.data_augmentation and args.DA_method == 'noise':
-                decomposition = fill_and_decompose_df(contextual_ds[0].raw_values,
-                                                    contextual_ds[0].tensor_limits_keeper.df_verif_train,
-                                                    contextual_ds[0].time_step_per_hour,
-                                                    contextual_ds[0].spatial_unit,
-                                                    min_count = args.DA_min_count, 
-                                                    periods = contextual_ds[0].periods)
-                df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
-                df_noises = df_noises[contextual_ds[0].spatial_unit]
+                if args.DA_noise_from == 'MSTL':
+                    decomposition = fill_and_decompose_df(contextual_ds[0].raw_values,
+                                                        contextual_ds[0].tensor_limits_keeper.df_verif_train,
+                                                        contextual_ds[0].time_step_per_hour,
+                                                        contextual_ds[0].spatial_unit,
+                                                        min_count = args.DA_min_count, 
+                                                        periods = contextual_ds[0].periods)
+                    df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
+                    df_noises = df_noises[contextual_ds[0].spatial_unit]
+                elif args.DA_noise_from == 'Homogenous':
+                    df_verif_train = contextual_ds[0].tensor_limits_keeper.df_verif_train
+                    dates_used_in_train = pd.Series(pd.concat([df_verif_train[c] for c in df_verif_train.columns]).unique()).sort_values() 
+                    reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/contextual_ds[0].time_step_per_hour}h")
+                    reindex_dates = reindex_dates[~reindex_dates.hour.isin(USELESS_DATES['hour'])&~reindex_dates.hour.isin(USELESS_DATES['weekday'])]
+                    df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in contextual_ds[0].spatial_unit},index =reindex_dates )
+                else :
+                    raise NotImplementedError(f"Noise from {args.DA_noise_from} has not been implemented")
+
+
                 subway_ds.noises[dataset_name] = df_noises
 
         else:
