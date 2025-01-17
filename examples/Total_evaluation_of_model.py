@@ -21,7 +21,8 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
     analysis,trial_id = hyperparameter_tuning(args,num_samples)
 
     # K-fold validation with best config: 
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation)
+    modification = {'epochs':epochs_validation}
+    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
     return trial_id
 
 
@@ -34,7 +35,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
 
-    if False:
+    if True:
         modification ={'keep_best_weights':True,
                         'epochs':epochs_validation,
                         'DA_moment_to_focus' : None
@@ -75,7 +76,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
                         'DA_method':'interpolation', # 'noise' # 'interpolation
                         }
                     }
-    if True:
+    if False:
         modification ={'keep_best_weights':True,
                         'epochs':1,
                         'DA_moment_to_focus' : None
@@ -98,7 +99,6 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
         config_diff.update(modification)
         train_model_on_k_fold_validation(trial_id,load_config =True,
                                          save_folder=save_folder,
-                                         epochs=epochs_validation,
                                          modification=config_diff,
                                          add_name_id=add_name_id)
 
@@ -123,15 +123,15 @@ if __name__ == '__main__':
                                 dataset_names=dataset_names,
                                 dataset_for_coverage=dataset_for_coverage,
                                 modification = {'ray':True,
-                                                'grace_period':1,
-                                                'HP_max_epochs':2,
+                                                'grace_period':20,
+                                                'HP_max_epochs':100,
                                                 'evaluate_complete_ds' : True,
                                                 'vision_model_name': vision_model_name
                                                 })
 
         # Init 
-        epochs_validation = 2
-        num_samples = 4
+        epochs_validation = 100
+        num_samples = 500
         set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
     if False:
         model_name = 'STGCN' #'CNN'
