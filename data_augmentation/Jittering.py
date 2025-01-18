@@ -8,7 +8,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from constants.paths import USELESS_DATES
-from DL_class import FeatureVectorBuilder
+from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect
 
 
 class JitteringObject(object):
@@ -56,20 +56,8 @@ class JitteringObject(object):
             # 2) Build noise feature/target vectors
             U_noise, Utarget_noise = self._build_noise_feature_vectors(noise_tensor)
             
-            print('\nU_train_copy: ',U_train_copy.size())
-            print('mask_seq_3d: ',self.mask_seq_3d.size())
-            
-            print('\nInitial df_noises (full time-series): ',df_noises.shape)
-            print('Start/End from ds.tensor_limits_keeper.df_verif_train: ',self.start,self.end)
-            print('Size of noise Tensor after being reindexed: ',noise_tensor.size())
-
-            print('\nInit Noise Feature Vector: ',U_noise.size())
             # 3) Mask invalid dates
             amp_values, amp_values_target = self._apply_mask(U_noise, Utarget_noise, ds)
-
-
-            print('amp_values/amp_values_target: ',amp_values.size(),amp_values_target.size())
-
 
             # 4) Generate scaled noise
             scaled_noise = self._generate_scaled_noise(n, N, L, amp_values, amp_values_target, alpha,dataset_name)
@@ -88,7 +76,8 @@ class JitteringObject(object):
         and setting noise to 0 for closed-hour periods.
         '''
         time_freq = f'{60 // self.time_step_per_hour}min'
-        df_noises_reindexed = df_noises.reindex(pd.date_range(self.start, self.end, freq=time_freq))
+        self.df_noises_dates = pd.DataFrame(pd.date_range(self.start, self.end, freq=time_freq),columns=['date'])
+        df_noises_reindexed = df_noises.reindex(list(self.df_noises_dates['date']))
 
         df_noises_reindexed[df_noises_reindexed.index.hour.isin(USELESS_DATES['hour'])] = 0
         if len(USELESS_DATES['weekday']) > 0 and len(USELESS_DATES['hour']) < 1:
@@ -117,9 +106,11 @@ class JitteringObject(object):
         '''
         Filter out invalid indices so noise matches the valid training/target data.
         '''
-        mask_indices = [idx for idx in range(U_noise.shape[0]) if idx not in ds.forbidden_indice_U]
+        dates_verif_object = DatesVerifFeatureVect(self.df_noises_dates, Weeks = self.W, Days = self.D, historical_len = self.H, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour)
+        dates_verif_object.get_df_verif(ds.invalid_dates)
+        forbidden_indice_U_noise = dates_verif_object.forbidden_indice_U
 
-        print('size of selected indices: ',len(mask_indices))
+        mask_indices = [idx for idx in range(U_noise.shape[0]) if idx not in forbidden_indice_U_noise]
 
         return U_noise[mask_indices], Utarget_noise[mask_indices]
 

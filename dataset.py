@@ -372,7 +372,6 @@ class DataSet(object):
         self.Utarget = featurevectorbuilder.Utarget
         #  ...
 
-        print('\nInit U Feature Vector: ',self.U.size())
         # Get forbidden indices, and df_verif to check just in case 
         dates_verif_object = DatesVerifFeatureVect(self.df_dates, Weeks = self.W, Days = self.D, historical_len = self.H, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour)
         dates_verif_object.get_df_verif(invalid_dates)
@@ -381,8 +380,6 @@ class DataSet(object):
         self.df_verif  = dates_verif_object.df_verif
         # ...
         self.mask_tensor()
-
-        print('U Feature Vector after being masked: ',self.U.size())
 
 
     def get_dic_split_limits(self,train_prop,valid_prop,test_prop,
@@ -493,8 +490,6 @@ class DataSet(object):
 
         # Get all the splitted train/valid/test input tensors. Normalize Them 
         self.split_tensors(normalize = normalize)
-
-        print('U_train Feature Vector after being masked and splited: ',self.U_train.size())
 
 
     def set_train_valid_test_tensor_attribute(self,name,tensor):

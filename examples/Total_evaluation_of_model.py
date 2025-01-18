@@ -43,21 +43,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
                         }
 
 
-        config_diff = {'DA_MSTL_02':{'data_augmentation': True, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'DA_min_count': 5,
-                        'DA_alpha' : 0.2,
-                        'DA_prop' : 1, # 1 #0.005
-                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
-                        },
-                    'DA_MSTL_1':{'data_augmentation': True, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'DA_min_count': 5,
-                        'DA_alpha' : 1,
-                        'DA_prop' : 1, # 1 #0.005
-                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
-                        },
-                    'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
+        config_diff = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
                         'DA_method':'noise', # 'noise' # 'interpolation
                         'DA_min_count': 5,
                         'DA_alpha' : 1,
@@ -70,6 +56,20 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
                         'DA_alpha' : 0.2,
                         'DA_prop' : 1, # 1 #0.005
                         'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
+                        },
+                    'DA_MSTL_02':{'data_augmentation': True, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'DA_min_count': 5,
+                        'DA_alpha' : 0.2,
+                        'DA_prop' : 1, # 1 #0.005
+                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
+                        },
+                    'DA_MSTL_1':{'data_augmentation': True, #True,  #False
+                        'DA_method':'noise', # 'noise' # 'interpolation
+                        'DA_min_count': 5,
+                        'DA_alpha' : 1,
+                        'DA_prop' : 1, # 1 #0.005
+                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
                         },
                     'No_DA':{'data_augmentation': False, #True,  #False
                         },
@@ -114,7 +114,7 @@ if __name__ == '__main__':
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
 
-    if True:
+    if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in']
@@ -134,27 +134,29 @@ if __name__ == '__main__':
         epochs_validation = 100
         num_samples = 500
         set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
-    if False:
+    if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in']
-        vision_model_name = None
+        dataset_names = ['subway_in','subway_out']
+        vision_model_name = 'VariableSelectionNetwork'
 
         args = local_get_args(model_name,
                                 args_init = None,
                                 dataset_names=dataset_names,
                                 dataset_for_coverage=dataset_for_coverage,
                                 modification = {'ray':True,
-                                                'grace_period':5,
-                                                'HP_max_epochs':20,
+                                                'grace_period':20,#20,
+                                                'HP_max_epochs':100,#100,
                                                 'evaluate_complete_ds' : True,
                                                 #'set_spatial_units' : ['BON','SOI','GER','CHA'],
-                                                'vision_model_name': vision_model_name
+                                                'vision_model_name': vision_model_name,
+                                                'data_augmentation': True, #True,  #False
+                                                'DA_method':'interpolation', # 'noise' # 'interpolation
                                                 })
 
         # Init 
-        epochs_validation = 20
-        num_samples = 50
+        epochs_validation = 100#100
+        num_samples = 500#500
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:

@@ -199,14 +199,19 @@ def get_multi_ds(model_name,
             setattr(args_copy,key,values)
         args_copy = update_modif(args_copy)
 
-    # Define 'folds' for KFoldSplitter object (in K_fold_validation.K_fold_validation.py)
+    # Add [0] in folds according the presence of 'hp_tuning_on_first_fold' or not : 
+    # If we didn't precise, we try to evaluate the fold [0] (the shorter one)
     if fold_to_evaluate is None:
         if (args_copy.K_fold > 1) and (args_init.hp_tuning_on_first_fold):
-            folds = [1]
+            folds = [0,1]
         else:
-            folds = [0]
+            folds = [0,0]
+    # If we precise wich fold, we have to add fold [0] if args_init.hp_tuning_on_first_fold is set to True
     else:
         folds = fold_to_evaluate
+        if args_init.hp_tuning_on_first_fold:
+            folds = [0] + folds
+
         
     K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args_copy,folds)
     args_with_contextual = modification_contextual_args(args_with_contextual,modification)

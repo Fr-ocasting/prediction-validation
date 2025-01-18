@@ -131,7 +131,7 @@ class KFoldSplitter(object):
             else:
                 args_copy = Namespace(**vars(args))
                 new_nb_samples = nb_samples-int((self.args.K_fold-(k+1))*N1*args.min_fold_size_proportion)
-                coverage_period_tmps = coverage_period_init.iloc[:new_nb_samples]
+                coverage_period_tmps =pd.date_range(df_verif_init.min().min(), df_verif_init.iloc[:new_nb_samples].max().max(), freq=f'{60 // subway_ds_init.time_step_per_hour}min')# coverage_period_init.iloc[:new_nb_samples]
 
                 # Modify local 'args':
                 args_copy.train_prop = 1 - (N_valid+N_test)/new_nb_samples

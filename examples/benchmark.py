@@ -52,7 +52,7 @@ def get_inputs(args,folds):
     K_subway_ds,args = K_fold_splitter.split_k_fold()
 
     # Keep the first fold or not : 
-    if args.hp_tuning_on_first_fold :
+    if args.hp_tuning_on_first_fold:
         K_subway_ds = K_subway_ds[1:]
 
     ## Specific case if we want to validate on the init entiere dataset:
