@@ -88,7 +88,7 @@ class CustomDataLoder(object):
                                         drop_last=self.drop_last
                                         ) 
         except:
-            print("\n ===== ERROR ==== \nTry with torch >= 2.0.0 (works with 2.0.1) to allow 'prefetch_factor' \nValueError: prefetch_factor option could only be specified in multiprocessing.let num_workers > 0 to enable multiprocessing")
+
             self.dataloader = DataLoader(inputs, 
                             batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
                             shuffle = self.shuffle,  # if hasattr, then already shuffled 
@@ -98,6 +98,7 @@ class CustomDataLoder(object):
                             pin_memory=self.pin_memory,
                             drop_last=self.drop_last
                             ) 
+            self.exception = True
     
 
 
@@ -156,6 +157,9 @@ class DictDataLoader(object):
         train_loader,calib_loader = self.load_train()
         valid_loader = self.load_valid()
         test_loader = self.load_test()
+
+        if hasattr(train_loader,'exception') or hasattr(valid_loader,'exception') or hasattr(test_loader,'exception') :
+            print("\n ===== ERROR WITH prefetch_factor====  \nValueError: prefetch_factor option could only be specified in multiprocessing.let num_workers > 0 to enable multiprocessing")
 
         if self.calib_prop is not None:
             return dict(train = train_loader.dataloader,

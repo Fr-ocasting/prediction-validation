@@ -19,6 +19,7 @@ import pandas as pd
 
 def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
     # === Define DataLoader : 
+    subway_ds.normalizers = {DATA_TO_PREDICT:subway_ds.normalizer}
     contextual_tensors,positions = {},{}
 
     # Define contextual tensor for Calendar Information:
@@ -35,6 +36,9 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
 
     contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != DATA_TO_PREDICT]
 
+    if ('netmob_POIs' in contextual_dataset_names) and ('subway_out' in contextual_dataset_names):
+        raise NotImplementedError('Semblerait que contextual_ds est soit subway_out / soit NetMob Pois. ça à l air de merder si on a les deux ')
+
     for dataset_name in contextual_dataset_names:
         if dataset_name == 'calendar':
             #pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.args_embedding.calendar_class}')
@@ -50,6 +54,7 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
             
              pos_netmob = list(contextual_tensors.keys()).index('netmob')
              positions[dataset_name] = pos_netmob
+             subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
 
         elif dataset_name == 'netmob_POIs':
              contextual_tensors.update({f'netmob_{NetMob_POI.station_name}': {'train': NetMob_POI.U_train,
@@ -61,8 +66,10 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              pos_netmob = [list(contextual_tensors.keys()).index(f'netmob_{NetMob_POI.station_name}') for NetMob_POI in contextual_ds]
 
              positions[dataset_name] = pos_netmob
+             subway_ds.normalizers.update({dataset_name:contextual_ds[0].normalizer})
              if args.data_augmentation and args.DA_method == 'noise':
-                 raise NotImplementedError('Pas implémente" encore. Copier le build Noise de subway_out')
+                 raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')
+             
 
         elif dataset_name == 'subway_out':
              contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,
@@ -74,6 +81,8 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              pos_stations = [list(contextual_tensors.keys()).index(f'subway_out_{subway_out_station.station_name}') for subway_out_station in contextual_ds]
 
              positions[dataset_name] = pos_stations
+             subway_ds.normalizers.update({dataset_name:contextual_ds[0].normalizer})
+
 
              # build Noises :
              if args.data_augmentation and args.DA_method == 'noise':

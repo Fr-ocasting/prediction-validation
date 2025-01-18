@@ -29,8 +29,9 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
 def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
 
     # HP tuning and return the trial-id : 
-    trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
+    #trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
 
+    trial_id = 'subway_in_STGCN_MSELoss_2025_01_17_18_25_95152'
 
 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
