@@ -76,11 +76,11 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
     return(trainer,ds,ds_no_shuffle,args)
 
 def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'DL',type_POI = 'stadium', spatial_unit = 'Lou_rugby',POI_or_station='POI',expanded=''):
-
     gdf_obj = gdf_POI_2_tile_ids[(gdf_POI_2_tile_ids['tag'] == type_POI) &
                     (gdf_POI_2_tile_ids['name'] == spatial_unit ) & 
                     (gdf_POI_2_tile_ids['type'] == f"{POI_or_station}{expanded}")
     ]
+
     assert len(gdf_obj) == 1, f"Length of gdf = {len(gdf_obj)} while it should be = 1"
 
     osmid = gdf_obj['id'].values[0]
