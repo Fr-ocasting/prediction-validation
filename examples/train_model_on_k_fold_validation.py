@@ -74,14 +74,15 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
     ## Train on the K-1 folds:
 
     #___ Init
-    valid_losses = []
-    for training_mode in ['valid','test']:
-        for metric in ['mse','mae','mape']:
-            globals()[f'{training_mode}_{metric}'] = []
-
     training_mode_list = ['valid','test']
     metric_list = ['mse','mae','mape']
+    valid_losses = []
+    for training_mode in training_mode_list:
+        for metric in metric_list:
+            globals()[f'{training_mode}_{metric}'] = []
     df_loss = pd.DataFrame()
+    # ...
+
 
     #___ Through each fold : 
     for fold_i,ds in enumerate(ds_validation):
@@ -114,6 +115,7 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
             for metric in metric_list:          
                 l = trainer.performance[f'{training_mode}_metrics'][metric]   
                 globals()[f'{training_mode}_{metric}'].append(l)
+
     
     return trainer,args,valid_losses,training_mode_list,metric_list,df_loss
 
@@ -125,11 +127,15 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
         row.update({'complete_dataset': trainer.performance['valid_loss']})  # The associated validation is from the last trained model
     df_results = pd.DataFrame.from_dict(row)
 
-    dict_data_metric = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
+    dict_metrics_on_K_fold = {}
+    mean_on_K_fold = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
+    var_on_K_fold = {f"VAR_{metric}" : [np.var(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
+    dict_metrics_on_K_fold.update({mean_on_K_fold})
+    dict_metrics_on_K_fold.update({var_on_K_fold})
     if (args.evaluate_complete_ds):
-        dict_data_metric.update({f'{metric}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list ] for metric in metric_list})
+        dict_metrics_on_K_fold.update({f'{metric}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list ] for metric in metric_list})
     df_metrics = pd.DataFrame(index = training_mode_list, 
-                            data = dict_data_metric
+                            data = dict_metrics_on_K_fold
                             )   
     
     return df_results,df_metrics

@@ -31,7 +31,8 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
     # HP tuning and return the trial-id : 
     #trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
 
-    trial_id = 'subway_in_STGCN_MSELoss_2025_01_17_18_25_95152'
+    trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
+    #trial_id = 'subway_in_STGCN_MSELoss_2025_01_17_18_25_95152'  -> 
 
 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
@@ -39,44 +40,56 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
     if True:
         modification ={'keep_best_weights':True,
                         'epochs':epochs_validation,
-                        'DA_moment_to_focus' : None
                         }
 
-
-        config_diff = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'DA_min_count': 5,
-                        'DA_alpha' : 1,
-                        'DA_prop' : 1, # 1 #0.005
-                        'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
-                        },
-                    'DA_Homogenous_0.2':{'data_augmentation': True, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'DA_min_count': 5,
-                        'DA_alpha' : 0.2,
-                        'DA_prop' : 1, # 1 #0.005
-                        'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
-                        },
-                    'DA_MSTL_02':{'data_augmentation': True, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'DA_min_count': 5,
-                        'DA_alpha' : 0.2,
-                        'DA_prop' : 1, # 1 #0.005
-                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
-                        },
-                    'DA_MSTL_1':{'data_augmentation': True, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'DA_min_count': 5,
-                        'DA_alpha' : 1,
-                        'DA_prop' : 1, # 1 #0.005
-                        'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
-                        },
-                    'No_DA':{'data_augmentation': False, #True,  #False
-                        },
-                    'DA_interpolation':{'data_augmentation': True, #True,  #False
-                        'DA_method':'interpolation', # 'noise' # 'interpolation
-                        }
+        {'concat_early':{'vision_concatenation_early':True,
+                        'vision_concatenation_late':False,
+                          },
+        'concat_late':{'vision_concatenation_early':False,
+                        'vision_concatenation_late':True,
+                                 },
+        'concat_early_and_late':{'vision_concatenation_early':True,
+                                 'vision_concatenation_late':True,
+                                 }
                     }
+
+
+        if False:
+            config_diff = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
+                            'DA_method':'noise', # 'noise' # 'interpolation
+                            'DA_min_count': 5,
+                            'DA_alpha' : 1,
+                            'DA_prop' : 1, # 1 #0.005
+                            'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
+                            },
+                        'DA_Homogenous_0.2':{'data_augmentation': True, #True,  #False
+                            'DA_method':'noise', # 'noise' # 'interpolation
+                            'DA_min_count': 5,
+                            'DA_alpha' : 0.2,
+                            'DA_prop' : 1, # 1 #0.005
+                            'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
+                            },
+                        'DA_MSTL_02':{'data_augmentation': True, #True,  #False
+                            'DA_method':'noise', # 'noise' # 'interpolation
+                            'DA_min_count': 5,
+                            'DA_alpha' : 0.2,
+                            'DA_prop' : 1, # 1 #0.005
+                            'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
+                            },
+                        'DA_MSTL_1':{'data_augmentation': True, #True,  #False
+                            'DA_method':'noise', # 'noise' # 'interpolation
+                            'DA_min_count': 5,
+                            'DA_alpha' : 1,
+                            'DA_prop' : 1, # 1 #0.005
+                            'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
+                            },
+                        'No_DA':{'data_augmentation': False, #True,  #False
+                            },
+                        'DA_interpolation':{'data_augmentation': True, #True,  #False
+                            'DA_method':'interpolation', # 'noise' # 'interpolation
+                            }
+                        }
+ 
     if False:
         modification ={'keep_best_weights':True,
                         'epochs':1,
@@ -137,8 +150,8 @@ if __name__ == '__main__':
     if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in','subway_out']
-        vision_model_name = 'VariableSelectionNetwork'
+        dataset_names = ['subway_in']#['subway_in','subway_out']
+        vision_model_name = None #'VariableSelectionNetwork'
 
         args = local_get_args(model_name,
                                 args_init = None,

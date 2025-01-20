@@ -35,24 +35,24 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14)):
             already_ploted.append(invalid_date)
 
     for i,invalid_date in enumerate(invalid_dates):
-        if Datasets[0].Weeks is not None:
-            shift = int(Datasets[0].Weeks*24*7*Datasets[0].time_step_per_hour)
+        if Datasets[0].W is not None:
+            shift = int(Datasets[0].W*24*7*Datasets[0].time_step_per_hour)
             if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
 
-        if Datasets[0].Days is not None:
-            shift = int(Datasets[0].Days*24*Datasets[0].time_step_per_hour)
+        if Datasets[0].D is not None:
+            shift = int(Datasets[0].D*24*Datasets[0].time_step_per_hour)
             if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
 
-        if Datasets[0].historical_len is not None:
-            shift = int(Datasets[0].historical_len*Datasets[0].time_step_per_hour)
+        if Datasets[0].H is not None:
+            shift = int(Datasets[0].H*Datasets[0].time_step_per_hour)
             if (not invalid_date+shift*delta_t in already_ploted):
                 ax.axvspan(invalid_date+shift*delta_t, invalid_date+(shift+1)*delta_t, alpha=0.1, color='grey')
                 already_ploted.append(invalid_date+shift*delta_t)
-    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.3, color='grey',label = "Invalid dates and Impacted Time-Slots which couldn't be predicted")  #label = "Impacted Time-Slots which couldn't be predicted")
+    ax.axvspan(date_for_grey_label, date_for_grey_label, alpha=0.3, color='grey',label = "Invalid dates and Impacted Time-Slots\nwhich couldn't be predicted")  #label = "Impacted Time-Slots which couldn't be predicted")
     # ...
 
     # K-folds : 
