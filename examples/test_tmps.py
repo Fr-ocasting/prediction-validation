@@ -1,44 +1,35 @@
 # GET PARAMETERS
 import os 
 import sys
+import torch 
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from examples.train_and_visu_non_recurrent import evaluate_config
-from plotting.plotting import error_per_station_calendar_pattern
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
 
-dataset_names = ["subway_in","subway_out"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-dataset_for_coverage = ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STGCN'
 
-station = ['BEL','PAR','AMP','FLA']   # 'BON'  #'GER'
-# ...
+save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
+trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
+epochs_validation = 100
+args,folds = load_configuration(trial_id,True)
 
-modification = {'epochs' : 100, #100
-                'lr':4e-4,
-                #'set_spatial_units': station,#['CHA','GER','BON','SOI'],
-                #'TE_concatenation_late':False,
-                #'TE_concatenation_early':True,   
-                #'TE_embedding_dim' : 16, # 3
-                #'TE_multi_embedding' : True , 
-                'vision_model_name': 'VariableSelectionNetwork',
-                'vision_concatenation_early':True,   
-                'vision_concatenation_late':False,
-                           }
-training_mode_to_visualise = ['test']
-(trainer,ds,ds_no_shuffle,args) = evaluate_config(model_name,dataset_names,dataset_for_coverage,
-                                                   station = station,modification=modification,training_mode_to_visualise=training_mode_to_visualise)
+modification ={'keep_best_weights':True,
+                'epochs':epochs_validation,
+                'device':torch.device("cuda:1"),
+                }
 
-# Init
-if False: 
-    for training_mode in training_mode_to_visualise:
-        min_flow = 20  # Minimal Flow considered for MAPE, otherwise set error = 0
-        limit_percentage_error = 200 # 300% plus mauvais que quand on se sert du previous 
-        fig,axes = error_per_station_calendar_pattern(trainer,ds,training_mode,metrics = ['mse','mae','mape','previous_value'],
-                                                    freq='1h',
-                                                    min_flow=min_flow,
-                                                    figsize = (30,5*len(ds.spatial_unit)),
-                                                    limit_percentage_error = limit_percentage_error)
+
+config_diffs = {'NETMOB_POIS':{'dataset_names':['subway_in','netmob_POIs'],
+                               },
+            }
+
+                
+for add_name_id,config_diff in config_diffs.items():
+    config_diff.update(modification)
+    train_model_on_k_fold_validation(trial_id,load_config =True,
+                                        save_folder=save_folder,
+                                        modification=config_diff,
+                                        add_name_id=add_name_id)

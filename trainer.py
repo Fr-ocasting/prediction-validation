@@ -31,78 +31,10 @@ from PI.PI_calibration import Calibrator
 from constants.paths import SAVE_DIRECTORY
 
 
-'''
-class MultiModelTrainer(object):
-    def __init__(self,Datasets,model_list,dataloader_list,args,optimizer_list,loss_function,scheduler_list,dic_class2rpz,show_figure = True):
-        super(MultiModelTrainer).__init__()
-        trial_id1,trial_id2 = get_trial_id(args)
-        self.trial_id1 = trial_id1
-        self.trial_id2 = trial_id2
-        self.Trainers = [Trainer(dataset,model,dataloader,args,optimizer,loss_function,scheduler,dic_class2rpz,fold = k,trial_id1 = self.trial_id1,trial_id2=self.trial_id2,show_figure= show_figure) for k,(dataset,dataloader,model,optimizer,scheduler) in enumerate(zip(Datasets,dataloader_list,model_list,optimizer_list,scheduler_list))]
-        self.Loss_train =  torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}
-        self.Loss_valid = torch.Tensor().to(args.device) #{k:[] for k in range(len(dataloader_list))}    
-        self.alpha = args.alpha 
-        self.picp = []   
-        self.mpiw = []
-
-    def K_fold_validation(self,mod_plot = 50,station = 0):
-        results_by_fold = pd.DataFrame()
-        for k,trainer in enumerate(self.Trainers):
-            # Train valid model 
-            if k == 0:
-                print('\n')
-            print(f"K_fold {k}")
-            results_df = trainer.train_and_valid(mod = 10000,mod_plot = mod_plot,station = station)
-
-            # Add Loss 
-            self.Loss_train = torch.cat([self.Loss_train,torch.Tensor(trainer.train_loss).to(self.Loss_train).unsqueeze(0)],axis =  0) 
-            self.Loss_valid = torch.cat([self.Loss_valid,torch.Tensor(trainer.valid_loss).to(self.Loss_valid).unsqueeze(0)],axis =  0) 
-            # Testing
-            if self.alpha is not None:
-                Preds,Y_true,T_labels = trainer.test_prediction(training_mode = 'test')
-                pi = PI_object(Preds,Y_true,self.alpha,type_calib = 'classic')
-                self.picp.append(pi.picp)
-                self.mpiw.append(pi.mpiw)
-            
-
-            results_df['fold'] = k
-            results_df.to_csv(f"{SAVE_DIRECTORY}results/{trainer.trial_id}_results.csv")
-            results_by_fold = pd.concat([results_by_fold,results_df])
-
-        mean_picp = torch.Tensor(self.picp).mean()
-        mean_mpiw = torch.Tensor(self.mpiw).mean() 
-        assert len(self.Loss_train.mean(dim = 0)) == len(trainer.train_loss), 'Mean on the wrong axis'
-
-
-        # On recupère une loss moyenne sur les K-fold. On prend le minimum atteint par cette moyenne.
-        dict_scores,dict_last = {},{}
-        for L_loss,name in zip([self.Loss_train,self.Loss_valid],['train_loss','valid_loss']):
-
-            # Score: 
-            score, indices = L_loss.min(dim = -1)
-            score = score.mean()
-            std_score = torch.Tensor([L_loss[k,i] for k,i in enumerate(indices)]).std()
-            dict_scores.update({f"score_{name}": score.item(),
-                                f"std_{name}": std_score.item()})
-            # ...
-
-            # Last Score: 
-            last_score = L_loss.mean(dim = 0)[-1]
-            last_std = L_loss.std(dim = 0)[-1]
-            dict_last.update({f"last_{name}": last_score.item(),
-                                f"last_std_{name}": last_std.item()})
-
-
-        # ...
-
-        return(results_by_fold,mean_picp,mean_mpiw,dict_last,dict_scores)#,mean_on_best_train_loss_by_fold,mean_on_best_valid_loss_by_fold)       
-'''
-
-    
 
 class Trainer(object):
         ## Trainer Classique pour le moment, puis on verra pour faire des Early Stop 
-    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id = None,show_figure = True,save_folder =None):
+    def __init__(self,dataset,model,args,optimizer,loss_function,scheduler = None,dic_class2rpz = None, fold = None,trial_id = None,show_figure = False,save_folder =None):
         super().__init__()
         self.bool_contextual_data = len(dataset.contextual_tensors)>0
         self.nb_train_seq = len(dataset.tensor_limits_keeper.df_verif_train)

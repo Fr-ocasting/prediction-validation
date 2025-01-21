@@ -130,8 +130,8 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     dict_metrics_on_K_fold = {}
     mean_on_K_fold = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
     var_on_K_fold = {f"VAR_{metric}" : [np.var(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
-    dict_metrics_on_K_fold.update({mean_on_K_fold})
-    dict_metrics_on_K_fold.update({var_on_K_fold})
+    dict_metrics_on_K_fold.update(mean_on_K_fold)
+    dict_metrics_on_K_fold.update(var_on_K_fold)
     if (args.evaluate_complete_ds):
         dict_metrics_on_K_fold.update({f'{metric}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list ] for metric in metric_list})
     df_metrics = pd.DataFrame(index = training_mode_list, 

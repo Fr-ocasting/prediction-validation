@@ -14,4 +14,3 @@ def TE_transfer(model,n_vertex,args,model_dir =  'data/'):
         
     model.load_state_dict(embedding_weights, strict=False)
     return(model)
-    

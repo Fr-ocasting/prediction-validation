@@ -215,8 +215,6 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
 
 
 
-
-
 def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False,v_min=None,v_max=None):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
@@ -350,6 +348,50 @@ def get_gain_from_naiv_model(real,predict,previous,min_flow,limit_percentage_err
     mask = error > limit_percentage_error
     error[mask] = limit_percentage_error
     return error
+
+def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50,metrics = ['mse'],acceptable_error= 10):
+    '''
+
+    args:
+    -----
+    
+    '''
+    dic_error = {}
+    real = real.detach().clone().reshape(-1)
+    predict1 = predict1.detach().clone().reshape(-1)    
+    predict2 = predict2.detach().clone().reshape(-1)      
+
+    mask = real>min_flow
+
+    for metric in metrics:
+        if metric == 'mse':
+            error_pred1 = (real - predict1)**2
+            error_pred2 = (real - predict2)**2
+            local_acceptable_error = acceptable_error**2
+        if metric == 'mae':
+            error_pred1 = abs(real - predict1)
+            error_pred2 = abs(real - predict2)
+            local_acceptable_error = acceptable_error
+        if metric == 'mape':
+            error_pred1 = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
+            error_pred2 = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
+            error_pred1[mask] = 100 * (torch.abs(real[mask] - predict1[mask]) / real[mask]) 
+            error_pred2[mask] = 100 * (torch.abs(real[mask] - predict2[mask]) / real[mask]) 
+            local_acceptable_error = acceptable_error
+
+
+        # In case the reference error (model1), is too small, we use an 'acceptable error' 
+        cloned_error_pred1 = error_pred1.clone()
+        local_mask = error_pred1 <  acceptable_error
+        cloned_error_pred1[local_mask] = acceptable_error  
+        gain = 100*(error_pred2-error_pred1)/cloned_error_pred1
+
+        # Limit the maximum gain to let the visualisation usefull:
+        gain[gain > limit_percentage_error] = limit_percentage_error
+        dic_error[metric] = gain
+
+    return dic_error
+
 
 def error_per_station_calendar_pattern(trainer,ds,training_mode,
                                        metrics = ['mse','mae','mape','previous_value'],

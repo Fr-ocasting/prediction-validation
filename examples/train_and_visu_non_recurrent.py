@@ -43,25 +43,15 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
     '''
     args: 
     type_POIs : list of type of POIs.                         >>> ['stadium','nightclub']
-    spatial_units : list of name of spatial units to analyse. >>> ['Lou_rugby','Ninkasi_Kao']
+    spatial_units : list of name of spatial units to analyse. >>> ['Matmut Stadium Gerland']
     apps : list of apps to deal with.                         >>> ['Instagram']
     POI_or_stations : list of type of object to analyse contains occurence of 'POI' or 'station'.  >>> ['POI']
+    transfer_modes : list of considered transfer modes (downlink / uplink.   >>> ['DL','UL']
     expanded: '' if we look at the intensity of netmob consumption at the POI. '_expanded' if we look also one square around.
     '''
-    ds,args,trial_id,save_folder,df_loss = get_ds(model_name,dataset_names,dataset_for_coverage,modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
-    trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
-    # Allow us to have 'dataloader['train'] with no shuffle !!!!
-    # ======
-    modification.update({'shuffle':False,
-                         'data_augmentation':False })
-    ds_no_shuffle,args_no_shuffle,trial_id,save_folder,df_loss =  get_ds(model_name,dataset_names,
-                                                                            dataset_for_coverage, 
-                                                                            modification = modification,
-                                                                            args_init=args_init,
-                                                                            fold_to_evaluate=fold_to_evaluate)
+    trainer,ds,args,trial_id,df_loss = train_the_config(args_init,modification,fold_to_evaluate)
+    trainer,ds_no_shuffle = get_ds_without_shuffling_on_train_set(trainer,modification,args_init,fold_to_evaluate)
 
-    trainer.dataloader = ds_no_shuffle.dataloader
-    # ======
 
     for training_mode in training_mode_to_visualise:
         analysis_on_specific_training_mode(trainer,ds_no_shuffle,
@@ -74,6 +64,22 @@ def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes
                                            expanded=expanded,
                                            station=station)
     return(trainer,ds,ds_no_shuffle,args)
+
+def train_the_config(args_init,modification,fold_to_evaluate):
+    ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
+    trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
+
+    return trainer,ds,args,trial_id,df_loss
+
+def get_ds_without_shuffling_on_train_set(trainer,modification,args_init, fold_to_evaluate):
+    modification.update({'shuffle':False,
+                         'data_augmentation':False })
+    ds_no_shuffle,_,_,_,_ =  get_ds(modification = modification,
+                                        args_init=args_init,
+                                        fold_to_evaluate=fold_to_evaluate)
+    trainer.dataloader = ds_no_shuffle.dataloader
+    return trainer,ds_no_shuffle
+
 
 def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'DL',type_POI = 'stadium', spatial_unit = 'Lou_rugby',POI_or_station='POI',expanded=''):
     gdf_obj = gdf_POI_2_tile_ids[(gdf_POI_2_tile_ids['tag'] == type_POI) &
@@ -160,14 +166,14 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
 
     show(grid)
 
-def get_ds(model_name,dataset_names,dataset_for_coverage,
+def get_ds(model_name=None,dataset_names=None,dataset_for_coverage=None,
            modification = {},
            args_init = None, 
            fold_to_evaluate = None
             ):
-    args_with_contextual,K_subway_ds = get_multi_ds(model_name,
-                                                    dataset_names,
-                                                    dataset_for_coverage,
+    args_with_contextual,K_subway_ds = get_multi_ds(model_name if model_name is not None else args_init.model_name,
+                                                    dataset_names if dataset_names is not None else args_init.dataset_names,
+                                                    dataset_for_coverage if dataset_for_coverage is not None else args_init.dataset_for_coverage,
                                                     modification,
                                                     args_init,
                                                     fold_to_evaluate)

@@ -75,19 +75,16 @@ def get_intersect_of_coverage_periods(args,coverage_period):
         list_of_list_invalid_dates.append(data_module.INVALID_DATES)
 
     intesect_coverage_period = list(set.intersection(*map(set, list_of_list_coverage_period)))
-    print('\nlen intesect_coverage_period: ',len(intesect_coverage_period))
-    # ___Intersection between the expected coverage_period 
+    # ___Intersection between the expected coverage_period and the limits from datasets:
     if coverage_period is not None: 
         intesect_coverage_period = list(set(coverage_period)&set(intesect_coverage_period))
-        print('As coverage_period is not None, do the intersection between the possible dates and the expected coverage: ',len(intesect_coverage_period))
     # ...
        
     # Load the union of all the invalid_dates: 
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
-    print('union_invalid_dates: ',len(union_invalid_dates))
     # ___Restrain the invalid dates to the specific restained coverage period :
     union_invalid_dates = list(set(union_invalid_dates)&set(intesect_coverage_period))
-    print('union_invalid_dates after intersect with coverage: ',len(union_invalid_dates))
+    print('Invalid dates within this fold:',len(union_invalid_dates))
     return union_invalid_dates,intesect_coverage_period
 
 

@@ -444,7 +444,6 @@ class DataSet(object):
             self.Utarget_train = Utarget_train_augmented
 
             print('Train/Target size: ',self.U_train.size(),self.Utarget_train.size())
-            print('contextual_train_augmented size: ',[tensor.size() for station,tensor in contextual_train_augmented.items()])
             return contextual_train_augmented
 
         else:

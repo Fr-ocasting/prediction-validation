@@ -26,7 +26,7 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
     return trial_id
 
 
-def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
+def set_one_hp_tuning_and_evaluate_DA(args=None,epochs_validation=None,num_samples=None):
 
     # HP tuning and return the trial-id : 
     #trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
@@ -42,7 +42,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
                         'epochs':epochs_validation,
                         }
 
-        {'concat_early':{'vision_concatenation_early':True,
+        config_diffs = {'concat_early':{'vision_concatenation_early':True,
                         'vision_concatenation_late':False,
                           },
         'concat_late':{'vision_concatenation_early':False,
@@ -55,7 +55,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
 
 
         if False:
-            config_diff = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
+            config_diffs = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
                             'DA_method':'noise', # 'noise' # 'interpolation
                             'DA_min_count': 5,
                             'DA_alpha' : 1,
@@ -97,7 +97,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
                         }
 
 
-        config_diff = {'lr1':{'data_augmentation': False, #True,  #False
+        config_diffs = {'lr1':{'data_augmentation': False, #True,  #False
                         'DA_method':'noise', # 'noise' # 'interpolation
                         'lr':0.1},
                     'lr2':{'data_augmentation': False, #True,  #False
@@ -109,7 +109,7 @@ def set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples):
                     }
 
                   
-    for add_name_id,config_diff in config_diff.items():
+    for add_name_id,config_diff in config_diffs.items():
         config_diff.update(modification)
         train_model_on_k_fold_validation(trial_id,load_config =True,
                                          save_folder=save_folder,
@@ -127,7 +127,7 @@ if __name__ == '__main__':
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
 
-    if False:
+    if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in']
@@ -147,7 +147,7 @@ if __name__ == '__main__':
         epochs_validation = 100
         num_samples = 500
         set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
-    if True:
+    if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in']#['subway_in','subway_out']
