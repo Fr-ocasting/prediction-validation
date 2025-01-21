@@ -22,7 +22,7 @@ modification ={'keep_best_weights':True,
                 }
 
 
-config_diffs = {'NETMOB_POIS':{'dataset_names':['subway_in','netmob_POIs'],
+config_diffs = {'NETMOB_POIS_maps_deezer_insta':{'dataset_names':['subway_in','netmob_POIs'],
                                },
             }
 

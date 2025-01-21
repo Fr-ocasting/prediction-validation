@@ -31,10 +31,10 @@ USELESS_DATES = {'hour':[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
 CALENDAR_TYPE=['dayofweek','hour']#['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 
 ''' NetMob Parameters: '''
-SELECTED_APPS = ['Google_Maps'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+SELECTED_APPS = ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
 TRANSFER_MODE = ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-SELECTED_TAGS = ['station','iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-EXPANDED =  '_expanded' # '' # '_expanded'
+SELECTED_TAGS = ['station','iris','stadium','university']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+EXPANDED =  '' # '' # '_expanded'
  
 #
 # trafic_apps = ['Uber', 'Google_Maps','Waze'],

@@ -140,12 +140,12 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     
     return df_results,df_metrics
     
-def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id,add_name_id=''):
+def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
     df_results,df_metrics =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
 
-    df_results.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}{add_name_id}.csv")
-    df_loss.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}{add_name_id}.csv")
-    df_metrics.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}{add_name_id}.csv")
+    df_results.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
+    df_loss.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
+    df_metrics.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
 
     print('df metrics: ',df_metrics)
 
@@ -161,11 +161,11 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modificati
     # 1. Load the best config according to our HP-Tuning / Or Load random config :
     args,folds = load_configuration(trial_id,load_config)
 
-
+    trial_id = f"{trial_id}{add_name_id}"
     # 2. 3. 4. 
     trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,trial_id,save_folder,modification)
     # 5.
-    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id,add_name_id)
+    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
 
 
 # ========================================================

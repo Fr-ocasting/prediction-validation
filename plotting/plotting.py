@@ -326,7 +326,7 @@ def plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,
     else : 
         title = f"{metric} error on station {column}"       
     axes[station_c,ind_metric].set_title(title)
-
+"""
 def get_gain_from_naiv_model(real,predict,previous,min_flow,limit_percentage_error):
 
     real = real.detach().clone().reshape(-1)
@@ -348,8 +348,8 @@ def get_gain_from_naiv_model(real,predict,previous,min_flow,limit_percentage_err
     mask = error > limit_percentage_error
     error[mask] = limit_percentage_error
     return error
-
-def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50,metrics = ['mse'],acceptable_error= 10):
+"""
+def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50,metrics = ['mse'],acceptable_error= 10,mape_acceptable_error=3):
     '''
 
     args:
@@ -377,13 +377,13 @@ def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50
             error_pred2 = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
             error_pred1[mask] = 100 * (torch.abs(real[mask] - predict1[mask]) / real[mask]) 
             error_pred2[mask] = 100 * (torch.abs(real[mask] - predict2[mask]) / real[mask]) 
-            local_acceptable_error = acceptable_error
+            local_acceptable_error = mape_acceptable_error
 
 
         # In case the reference error (model1), is too small, we use an 'acceptable error' 
         cloned_error_pred1 = error_pred1.clone()
-        local_mask = error_pred1 <  acceptable_error
-        cloned_error_pred1[local_mask] = acceptable_error  
+        local_mask = error_pred1 <  local_acceptable_error
+        cloned_error_pred1[local_mask] = local_acceptable_error  
         gain = 100*(error_pred2-error_pred1)/cloned_error_pred1
 
         # Limit the maximum gain to let the visualisation usefull:
@@ -391,6 +391,75 @@ def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50
         dic_error[metric] = gain
 
     return dic_error
+
+def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
+                         metrics = ['mse','mae','mape'],
+                        freq='1h',
+                        index_matshow = 'day_date',
+                        columns_matshow = 'hour',
+                        min_flow = 20,
+                        figsize = (20,20),
+                        limit_percentage_error = 300,
+                        acceptable_error = 10,
+                        stations = None
+                         ):
+    '''
+
+    '''
+    # Init:
+    if stations is not None:
+        n_station = len(stations) 
+    else:
+        n_station = len(ds1.spatial_unit)
+    fig, axes = plt.subplots(n_station+1, len(metrics), figsize=figsize)
+
+    # Get Pred1,Pred2, TrueValues:
+    full_predict1,Y_true,_ = trainer1.testing(ds1.normalizer, training_mode =training_mode)
+    full_predict2,_,_ = trainer2.testing(ds2.normalizer, training_mode =training_mode)
+
+    # Set cmap:
+    cmap = 'RdYlBu'
+    bool_reversed = True
+    v_min,v_max = -limit_percentage_error,limit_percentage_error
+
+    # Evaluate Prediciton per stations:
+    for station_ind in range(n_station+1):
+        if station_ind<n_station:
+            if stations is not None:
+                station_c = list(ds1.spatial_unit).index(stations[station_ind])
+                column = stations[station_ind]
+
+            else:
+                station_c = station_ind
+                column = ds1.spatial_unit[station_c] 
+        else:
+            column = 'All'
+
+        if station_ind<n_station:
+            dict_error = get_gain_from_mod1(real = Y_true[:,station_c:station_c+1,:],
+                                        predict1 = full_predict1[:,station_c:station_c+1,:],
+                                        predict2 = full_predict2[:,station_c:station_c+1,:],
+                                        min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = metrics,acceptable_error= acceptable_error) 
+        else:    
+            T,N,C = Y_true.size()
+            dict_error = get_gain_from_mod1(real =Y_true,
+                                        predict1 = full_predict1,
+                                        predict2 = full_predict2,
+                                        min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = metrics,acceptable_error= acceptable_error)
+            dict_error = {metric_i:error_i.reshape(T,N).mean(axis=1) for metric_i,error_i in dict_error.items()}
+
+        for ind_metric,metric_i in enumerate(metrics) : 
+            cbar_label = f"Gain {metric_i}"
+            # Build Matshow matrix : 
+            df_agg = build_matrix_for_matshow(ds1,column,training_mode,dict_error[metric_i],freq,index_matshow,columns_matshow)
+
+            # Plotting : 
+            plot_matshow(df_agg,column,metric_i,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_ind,ind_metric)      
+
+    plt.tight_layout()
+    plt.show()
+    return fig,axes
+
 
 
 def error_per_station_calendar_pattern(trainer,ds,training_mode,
@@ -401,6 +470,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                                        min_flow = 20,
                                        figsize = (20,20),
                                        limit_percentage_error = 300,
+                                       acceptable_error = 10,
                                        stations = None
                                        ):
     '''
@@ -441,10 +511,20 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
             cbar_label = f"Percentage error" if metric == 'mape' else 'absolute error'
             if metric == 'previous_value':
                 if station_ind<n_station:
-                    error = get_gain_from_naiv_model(Y_true[:,station_c:station_c+1,:],Preds[:,station_c:station_c+1,:],X[:,station_c:station_c+1,-1],min_flow,limit_percentage_error)
+                    #error = get_gain_from_naiv_model(Y_true[:,station_c:station_c+1,:],Preds[:,station_c:station_c+1,:],X[:,station_c:station_c+1,-1],min_flow,limit_percentage_error)
+                    error = get_gain_from_mod1(real = Y_true[:,station_c:station_c+1,:],
+                                               predict1 = X[:,station_c:station_c+1,-1],
+                                               predict2 = Preds[:,station_c:station_c+1,:],
+                                               min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = ['mse'],acceptable_error= acceptable_error)
+                    error = error['mse']
                 else:
                     T,N,C = Y_true.size()
-                    error = get_gain_from_naiv_model(Y_true,Preds,X[:,:,-1],min_flow,limit_percentage_error)
+                    #error = get_gain_from_naiv_model(Y_true,Preds,X[:,:,-1],min_flow,limit_percentage_error)
+                    error = get_gain_from_mod1(real =Y_true,
+                                               predict1 = X[:,:,-1],
+                                               predict2 = Preds,
+                                               min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = ['mse'],acceptable_error= acceptable_error)
+                    error = error['mse']
                     error = error.reshape(T,N)     
                     error = error.mean(axis=1)
                 cmap = 'RdYlBu'

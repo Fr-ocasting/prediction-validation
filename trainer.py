@@ -86,7 +86,10 @@ class Trainer(object):
         else:
             self.keep_best_weights = False
 
-        self.trial_id = get_trial_id(args) 
+        if trial_id is None:
+            self.trial_id = get_trial_id(args) 
+        else:
+            self.trial_id = trial_id
         if fold is not None: 
             self.trial_id = f"{self.trial_id}_f{fold}"
         else:
