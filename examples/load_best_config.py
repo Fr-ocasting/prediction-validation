@@ -9,10 +9,19 @@ if working_dir not in sys.path:
 import pandas as pd
 import pickle
 from argparse import Namespace
+from constants.paths import SAVE_DIRECTORY
 
 from utils.utilities_DL import get_loss,load_model_and_optimizer
 from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from calendar_class import get_time_slots_labels
+
+def load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name):
+    dic_args = pickle.load(open(f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models/model_args.pkl",'rb'))
+    args_models = dic_args['model'][f"{trial_id}{add_name_id}_f{fold_name}"]['args']
+    args_models = Namespace(**args_models)
+    args_models.ray = False
+    return args_models
+
 
 def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model'):
     # Load HP-tuning results :
