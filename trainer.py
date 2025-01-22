@@ -92,11 +92,10 @@ class Trainer(object):
             self.trial_id = trial_id
         if fold is not None: 
             self.trial_id = f"{self.trial_id}_f{fold}"
+            self.args.current_fold = fold
         else:
             self.trial_id = f"{self.trial_id}_f{-1}"
-
-        if fold is not None:
-            self.args.current_fold = fold
+            
         
         if save_folder is not None:
             self.best_model_save_directory = f"{SAVE_DIRECTORY}/{save_folder}/best_models"
@@ -105,14 +104,16 @@ class Trainer(object):
             
 
 
-    def save_best_model(self,checkpoint,epoch,performance):
+    def save_best_model(self,checkpoint,epoch,performance,update_checkpoint = True):
         ''' Save best model in .pkl format'''
         #update checkpoint
         checkpoint.update(epoch=epoch, state_dict=self.model.state_dict())
 
         if self.keep_best_weights:
             self.best_weights = self.model.state_dict()
-        save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,save_dir = self.best_model_save_directory)
+        save_best_model_and_update_json(checkpoint,self.trial_id,performance,self.args,
+                                        save_dir = self.best_model_save_directory,
+                                        update_checkpoint = update_checkpoint)
 
     def plot_bokeh_and_save_results(self,normalizer,df_verif_test,results_df,epoch,station):
         Q = torch.zeros(1,next(iter(self.dataloader['test']))[0].size(1),1).to(self.args.device)  # Get Q null with shape [1,N,1]
@@ -267,6 +268,7 @@ class Trainer(object):
             # Keep track on cpu-usage 
             max_memory = get_cpu_usage(max_memory)
 
+        # Allow to keep track on the final metrics, and if the trial is 'terminated'
         if (not(self.args.ray)):
             self.chrono.save_model()
             self.performance = {'valid_loss': self.best_valid,
@@ -276,7 +278,7 @@ class Trainer(object):
                                 'training_over' : True, 
                                 'fold': self.args.current_fold
                                 }
-            self.save_best_model(checkpoint,epoch,self.performance)
+            self.save_best_model(checkpoint,epoch,self.performance,update_checkpoint = False)
             print(f"\nTraining Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
             self.chrono.save_model()
 
@@ -401,7 +403,9 @@ class Trainer(object):
         return(Preds,Y_true,T_labels,nb_samples,loss_epoch)
 
     def loop_epoch(self,track_loss=True):
-        if self.training_mode=='valid': self.chrono.validation()
+        if self.training_mode=='valid': 
+            if hasattr(self,'chrono'):
+                self.chrono.validation()
         #if self.training_mode=='cal': self.chrono.calibration()
         
 
@@ -417,7 +421,9 @@ class Trainer(object):
                 self.gradient_tracking()
 
 
-        if self.training_mode=='valid':self.chrono.validation()
+        if self.training_mode=='valid':
+            if hasattr(self,'chrono'):
+                self.chrono.validation()
         #if self.training_mode=='cal': self.chrono.calibration()
 
         if track_loss:
@@ -503,8 +509,9 @@ class Trainer(object):
 
         # Set feature_vect = True cause output last dimension = 2 if quantile_loss or = 1.
         '''normalizer = self.dataset.normalizer.unormalize_tensor'''
-        Preds = normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
-        Y_true = normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
+        if normalizer is not None:
+            Preds = normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
+            Y_true = normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
         return(Preds,Y_true,T_labels)
     
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):

@@ -99,7 +99,7 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
         trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
         trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
 
-        if condition1 and args.validation_split_method == 'forward_chaining_cv': 
+        if condition2: 
             df_loss[f"f{fold_i}_train_loss"] = trainer.train_loss
             df_loss[f"f{fold_i}_valid_loss"] = trainer.valid_loss
 
@@ -143,9 +143,9 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
 def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
     df_results,df_metrics =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
 
-    df_results.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
-    df_loss.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
-    df_metrics.to_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+    df_results.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
+    df_loss.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
+    df_metrics.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
 
     print('df metrics: ',df_metrics)
 

@@ -4,6 +4,14 @@ import warnings
 # cPickle préferable à pickle, mais pas partout disponible 
 import os 
 import torch 
+import sys
+import os
+
+# Get Parent folder : 
+current_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
 
 try:
     import cPickle as pickle
@@ -32,22 +40,23 @@ def get_trial_id(args):
     trial_id =  f"{dataset_names}_{model_names}_{args.loss_function_type}Loss_{date_id}_F{args.K_fold}"
     return trial_id
 
-def load_json_file(save_dir):
+def load_json_file(path_folder,json_save_path):
     ''' Load Json-file containing ID of DeepLearning trial and all the usefull arguments'''
     # if json_file doesn't exist, build it 
-    json_save_path = f"{save_dir}/model_args.pkl"
     if not os.path.exists(json_save_path):
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        if not os.path.exists(path_folder):
+            os.makedirs(path_folder)
         json_file = {'model':{}}
         pickle.dump(json_file,open(json_save_path,'wb'))
     else:
         # Load json_file
-        json_file = pickle.load(open(json_save_path,'rb'))
+        #json_file = pickle.load(open(json_save_path,'rb'))
+        with open(json_save_path, 'rb') as f:
+            json_file = pickle.load(f)
 
     return(json_file)
 
-def update_json(args,json_file,trial_id,performance,save_dir):
+def update_json(args,json_file,trial_id,performance,json_save_path):
     '''Add the trial and its metrics to the save file'''
     # Fill json_file
     dic_args = vars(args)
@@ -55,15 +64,21 @@ def update_json(args,json_file,trial_id,performance,save_dir):
     # update 
     json_file['model'][trial_id] = {'args': dic_args,'performance': performance}
 
-    # Save Json_file
-    pickle.dump(json_file,open(f"{save_dir}/model_args.pkl",'wb'))
+    # Save Json_file (write binary)
+    with open(json_save_path, 'wb') as f:
+        pickle.dump(json_file, f)
 
 
-def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir):
+def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir,update_checkpoint=True):
     ''' '''
-    json_file = load_json_file(save_dir)
-    update_json(args,json_file,trial_id,performance,save_dir)
-    torch.save(checkpoint, f"{save_dir}/{trial_id}.pkl")
+    path_folder = f"{parent_dir}/{save_dir}"
+    json_save_path = f"{path_folder}/model_args.pkl"
+    json_file = load_json_file(path_folder,json_save_path)
+    update_json(args,json_file,trial_id,performance,json_save_path)
+    if update_checkpoint: 
+        torch.save(checkpoint, f"{path_folder}/{trial_id}.pkl")
+    
+
     
 
 

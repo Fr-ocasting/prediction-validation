@@ -1,5 +1,12 @@
 import os 
+import sys
 import torch 
+
+# Get Parent folder : 
+current_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
 
 # Usual paths: 
 if torch.cuda.is_available():
@@ -19,7 +26,7 @@ else:
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
     
-SAVE_DIRECTORY = '../save'
+SAVE_DIRECTORY = 'save'
 
 ''' Training Parameters'''
 USELESS_DATES = {'hour':[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
@@ -46,6 +53,6 @@ EXPANDED =  '' # '' # '_expanded'
 # Load CRITER data : 
 #FILE_NAME = 'preprocessed_CRITER_6min.csv'
 
-results_folder = f"{SAVE_DIRECTORY}/results/"
+results_folder = f"{parent_dir}/{SAVE_DIRECTORY}/results/"
 if not(os.path.exists(results_folder)):
     os.makedirs(results_folder)
