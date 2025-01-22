@@ -13,7 +13,6 @@ from dataset import PersonnalInput
 import glob
 import pickle
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-from constants.paths import SELECTED_APPS
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -70,7 +69,7 @@ def load_netmob_per_subway_station(ROOT,FOLDER_PATH,args,intesect_coverage_perio
     apps=  pickle.load(open(f'{data_path}/apps.pkl','rb'))#glob.glob(f'{ROOT}/{FOLDER_PATH}/{FILE_NAME}/*.pt')  
 
     # Extract only some specific apps: 
-    trafic_pos = find_positions(SELECTED_APPS,apps)
+    trafic_pos = find_positions(args.NetMob_selected_apps,apps)
 
     # Extract only some specific date : 
     indices_dates = [k for k,date in enumerate(COVERAGE) if date in intesect_coverage_period]

@@ -61,6 +61,12 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['prefetch_all'] = False
     # ...
 
+    # === NetMob Config ===
+    config['NetMob_selected_apps'] =  ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+    config['NetMob_transfer_mode'] =  ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+    config['NetMob_selected_tags'] = ['station','iris','stadium','university']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+    config['NetMob_expanded'] = '' # '' # '_expanded'
+
     # === Ray config ===
     config['ray'] = False # True
     config['ray_scheduler'] = 'ASHA' #None

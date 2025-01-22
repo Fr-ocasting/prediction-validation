@@ -15,7 +15,6 @@ import numpy as np
 import pickle
 from utils.utilities import filter_args
 from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
-from constants.paths import SELECTED_APPS ,TRANSFER_MODE,SELECTED_TAGS,EXPANDED
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -55,7 +54,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     nb_pois_by_station = []
     for id_station in id_stations:
         # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
-        data_station = load_data_npy(id_station,ROOT,FOLDER_PATH)
+        data_station = load_data_npy(id_station,ROOT,FOLDER_PATH,args)
 
         # Reduce dimensionality : 
         data_station = data_station.transpose(3,0,1,2)
@@ -92,15 +91,14 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     return(NetMob_ds)
 
 
-
-def load_data_npy(id_station,ROOT,FOLDER_PATH):
-    save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{EXPANDED}/Inputs/{id_station}"
+def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
+    save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
     metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
 
-    pos_selected_apps = [k for k,app in enumerate(metadata['apps']) if app in SELECTED_APPS]
-    pos_selected_modes = [k for k,mode in enumerate(metadata['transfer_modes']) if mode in TRANSFER_MODE]
-    pos_selected_tags = [k for k,tag in enumerate(metadata['tags']) if tag in SELECTED_TAGS]
+    pos_selected_apps = [k for k,app in enumerate(metadata['apps']) if app in args.NetMob_selected_apps]
+    pos_selected_modes = [k for k,mode in enumerate(metadata['transfer_modes']) if mode in args.NetMob_transfer_mode]
+    pos_selected_tags = [k for k,tag in enumerate(metadata['tags']) if tag in args.NetMob_selected_tags]
 
     # Extract sub-dataset thanks to np.ix_ (kind of n-dimensional meshgrid)
     n1 = np.array(pos_selected_apps)
