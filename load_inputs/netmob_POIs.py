@@ -151,11 +151,14 @@ def reduce_dim_by_clustering(multi_ts,epsilon):
     '''
     labels = agg_clustering(multi_ts,epsilon = epsilon)
     unique_labels = list(set(labels))
-    df_reduced = pd.DataFrame()
-    for label in unique_labels:
-        columns= [k for k,lab in enumerate(labels) if lab == label]
-        ts_rpz_label = multi_ts[columns].max(axis=1)
-        df_reduced[label] = ts_rpz_label
+
+    #df_reduced = pd.DataFrame()
+    #for label in unique_labels:
+    #    columns= [k for k,lab in enumerate(labels) if lab == label]
+    #    ts_rpz_label = multi_ts[columns].max(axis=1)
+    #    df_reduced[label] = ts_rpz_label
+
+    df_reduced = pd.DataFrame({label: multi_ts[[k for k,lab in enumerate(labels) if lab == label]].max(axis=1) for label in unique_labels})
 
     return(df_reduced)
 
