@@ -284,8 +284,11 @@ def coverage_day_month(df_metro,freq= '24h',index = 'month_year',columns = 'day_
     return(df_agg_in,df_agg_out)
 
 
-def add_calendar_columns(df_metro,freq,key_columns,agg_func = 'sum'):
-    df_agg = df_metro.groupby([pd.Grouper(key = 'datetime',freq = freq)]).agg(agg_func).reset_index()[key_columns]
+def add_calendar_columns(df_agg,freq=None,key_columns=None,agg_func = 'sum'):
+    if freq is not None:
+        df_agg = df_agg.groupby([pd.Grouper(key = 'datetime',freq = freq)]).agg(agg_func).reset_index()
+    if key_columns is not None:
+        df_agg=df_agg[key_columns]
     df_agg['date']= df_agg.datetime.dt.date
     df_agg['day_date'] = df_agg.datetime.dt.day
     df_agg['month_year']= df_agg.datetime.dt.month.transform(lambda x : str(x)) + ' ' + df_agg.datetime.dt.year.transform(lambda x : str(x))
@@ -340,35 +343,43 @@ def plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,
 
 
 
-def get_gain_from_mod1(real,predict1,predict2,min_flow,metrics = ['mse'],acceptable_error= 10,mape_acceptable_error=3):
+
+def get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse'],acceptable_error= 0,mape_acceptable_error=0):
     '''
 
     args:
     -----
     
     '''
-    dic_error = {}
+    dic_gain,dic_error = {},{}
     real = real.detach().clone().reshape(-1)
+    previous = previous.detach().clone().reshape(-1)  
+
     predict1 = predict1.detach().clone().reshape(-1)    
-    predict2 = predict2.detach().clone().reshape(-1)      
+    predict2 = predict2.detach().clone().reshape(-1)   
 
     mask = real>min_flow
 
+    # Tackle metrics: 
     for metric in metrics:
         if metric == 'mse':
             error_pred1 = (real - predict1)**2
             error_pred2 = (real - predict2)**2
             local_acceptable_error = acceptable_error**2
-        if metric == 'mae':
+        elif metric == 'mae':
             error_pred1 = abs(real - predict1)
             error_pred2 = abs(real - predict2)
             local_acceptable_error = acceptable_error
-        if metric == 'mape':
+        elif metric == 'mape':
             error_pred1 = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
             error_pred2 = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
             error_pred1[mask] = 100 * (torch.abs(real[mask] - predict1[mask]) / real[mask]) 
             error_pred2[mask] = 100 * (torch.abs(real[mask] - predict2[mask]) / real[mask]) 
             local_acceptable_error = mape_acceptable_error
+        else:
+            raise NotImplementedError
+        dic_error[metric] = {'error_pred1':error_pred1,
+                             'error_pred2':error_pred2}
 
 
         # In case the reference error (model1), is too small, we use an 'acceptable error' 
@@ -377,9 +388,19 @@ def get_gain_from_mod1(real,predict1,predict2,min_flow,metrics = ['mse'],accepta
         cloned_error_pred1[local_mask] = local_acceptable_error  
         gain = 100*(error_pred2-error_pred1)/cloned_error_pred1
 
-        dic_error[metric] = gain
+        dic_gain[metric] = gain
 
-    return dic_error
+    # Tackle Naiv :
+    if 'mae' in metrics: 
+        error_naiv = abs(real-previous)
+        gain_naiv1 = dic_error['mae']['error_pred1']-error_naiv
+        gain_naiv2 = dic_error['mae']['error_pred2']-error_naiv
+        dic_error['mase'] = {'error_pred1':gain_naiv1,
+                            'error_pred2':gain_naiv2}
+        dic_error['mae_naiv'] = {'error_naiv':error_naiv}
+        # ....
+
+    return dic_gain,dic_error
 
 def get_fig_size(nb_station_to_plots,columns_matshow):
     y_size = nb_station_to_plots*5
@@ -391,14 +412,15 @@ def get_fig_size(nb_station_to_plots,columns_matshow):
     return figsize
 
 
-def plot_gains(ds1,column,station_ind,training_mode,dict_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes):
+def plot_gains(ds1,column,station_ind,training_mode,dic_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes):
     for ind_metric,metric_i in enumerate(metrics) : 
         cbar_label = f"Gain {metric_i}"
         # Build Matshow matrix : 
-        df_agg = build_matrix_for_matshow(ds1,column,training_mode,dict_error[metric_i],freq,index_matshow,columns_matshow)
+        df_agg = build_matrix_for_matshow(ds1,column,training_mode,dic_error[metric_i],freq,index_matshow,columns_matshow)
 
         # Plotting : 
         plot_matshow(df_agg,column,metric_i,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_ind,ind_metric)      
+   
 
 
 
@@ -431,6 +453,9 @@ def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
     # Get Pred1,Pred2, TrueValues:
     full_predict1,Y_true,_ = trainer1.testing(ds1.normalizer, training_mode =training_mode)
     full_predict2,_,_ = trainer2.testing(ds2.normalizer, training_mode =training_mode)
+    inputs = [[x,y,x_c] for  x,y,x_c in ds1.dataloader[training_mode]]
+    previous  = torch.cat([x for x,_,_ in inputs],0)
+    previous  = ds1.normalizer.unormalize_tensor(inputs = previous,feature_vect = True) # unormalize input cause prediction is unormalized 
 
     # Set cmap:
     cmap = 'RdYlBu'
@@ -443,22 +468,24 @@ def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
             station_c = list(ds1.spatial_unit).index(stations[station_ind])
             column = stations[station_ind]
 
-            dict_error = get_gain_from_mod1(real = Y_true[:,station_c:station_c+1,:],
+            dic_gain,dic_error = get_gain_from_mod1(real = Y_true[:,station_c:station_c+1,:],
                                         predict1 = full_predict1[:,station_c:station_c+1,:],
                                         predict2 = full_predict2[:,station_c:station_c+1,:],
+                                        previous = previous[:,station_c:station_c+1,-1],
                                         min_flow=min_flow,metrics = metrics,acceptable_error= acceptable_error) 
-            plot_gains(ds1,column,station_ind,training_mode,dict_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes)
+            plot_gains(ds1,column,station_ind,training_mode,dic_gain,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes)
 
     if plot_all_station:
         station_ind = n_station if plot_each_station else 1
         column = 'All'
         T,N,C = Y_true.size()
-        dict_error = get_gain_from_mod1(real =Y_true,
+        dic_gain,dic_error = get_gain_from_mod1(real =Y_true,
                                     predict1 = full_predict1,
                                     predict2 = full_predict2,
+                                    previous = previous[:,:,-1],
                                     min_flow=min_flow,metrics = metrics,acceptable_error= acceptable_error)
-        dict_error = {metric_i:error_i.reshape(T,N).mean(axis=1) for metric_i,error_i in dict_error.items()}
-        plot_gains(ds1,column,station_ind,training_mode,dict_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes)
+        dic_gain = {metric_i:error_i.reshape(T,N).mean(axis=1) for metric_i,error_i in dic_gain.items()}
+        plot_gains(ds1,column,station_ind,training_mode,dic_gain,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes)
 
 
 
@@ -673,6 +700,57 @@ def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temp
         plt.savefig(f'{save}.pdf',format = 'pdf',bbox_inches='tight')
     plt.show()
 
+
+
+def get_df_error(ds1,dic_error,metric,error_name,training_mode):
+    #Init
+    df_verif = getattr(ds1.tensor_limits_keeper,f"df_verif_{training_mode}")
+    dates = df_verif.iloc[:,-1]
+    n_units = len(ds1.spatial_unit)
+    # Get df of time-serie of a metric: 
+    error_per_stations = dic_error[metric][error_name].reshape(-1,n_units)
+    dict_for_df = {column: error_per_stations[:,i] for i,column in enumerate(ds1.spatial_unit)}
+    dict_for_df.update({'datetime':dates})
+    df_error_station = pd.DataFrame(dict_for_df)
+
+    # Add calendar information : 
+    df_error_station = add_calendar_columns(df_error_station)
+    return df_error_station
+
+def temporal_agg_for_matshow(df_error_station,column,index_matshow):
+    if index_matshow == 'hour':
+        df_error_station['new_hour'] = df_error_station['datetime'].dt.hour
+        df_agg = df_error_station[[column,'new_hour']].groupby(['new_hour']).mean()
+    elif index_matshow == 'date':
+        df_agg = df_error_station[[column,'date']].groupby(['date']).mean()
+    elif index_matshow == 'hour_minute':
+        df_agg = df_error_station[[column,'hour']].groupby(['hour']).mean()
+    elif index_matshow == 'weekday':
+        df_agg = df_error_station[[column,'weekday']].groupby(['weekday']).mean()
+    else:
+        raise NotImplementedError
+    return df_agg 
+
+def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations):
+    df_naiv_error = get_df_error(ds1,dic_error,metric = 'mae_naiv',error_name = 'error_naiv',training_mode=training_mode)
+    df_mae_error1 = get_df_error(ds1,dic_error,metric = 'mae',error_name = 'error_pred1',training_mode=training_mode)
+    df_mae_error2 = get_df_error(ds1,dic_error,metric = 'mae',error_name = 'error_pred2',training_mode=training_mode)
+
+    df_mase1,df_mase2,df_gain21 = {},{},{}
+
+    for column in stations: 
+        naiv_error_agg = temporal_agg_for_matshow(df_naiv_error,column,temporal_agg)
+        error_pred1_agg = temporal_agg_for_matshow(df_mae_error1,column,temporal_agg)
+        error_pred2_agg = temporal_agg_for_matshow(df_mae_error2,column,temporal_agg)   
+        mase1 = error_pred1_agg/naiv_error_agg
+        mase2 = error_pred2_agg/naiv_error_agg
+
+        gain_mase = 100*(mase2/mase1-1)
+
+        df_mase1.update({column:mase1[column]})
+        df_mase2.update({column:mase2[column]})
+        df_gain21.update({column:gain_mase[column]})
+    return df_mase1,df_mase2,df_gain21   
 
 
 if __name__ == '__main__':

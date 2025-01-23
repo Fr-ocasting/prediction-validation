@@ -25,29 +25,15 @@ modification ={'keep_best_weights':True,
 
 
 
-config_diffs = {'NETMOB_POIS_maps_deezer_insta_Twitter_concat_early':{'dataset_names':['subway_in','netmob_POIs'],
-                                                'vision_concatenation_early' : True,
-                                                'vision_concatenation_late' : False,
-                                                'NetMob_selected_apps':  ['Google_Maps','Deezer','Instagram','Twitter'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                'NetMob_selected_tags' : ['station','iris','stadium','university'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                'NetMob_expanded' : '' # '' # '_expanded'
-                },
-                'NETMOB_POIS_maps_deezer_insta_Twitter_concat_early_UL_DL':{'dataset_names':['subway_in','netmob_POIs'],
-                                                'vision_concatenation_early' : True,
-                                                'vision_concatenation_late' : False,
-                                                'NetMob_selected_apps':  ['Google_Maps','Deezer','Instagram','Twitter'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-                                                'NetMob_transfer_mode' :  ['DL','UL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                'NetMob_selected_tags' : ['station','iris','stadium','university'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                'NetMob_expanded' : '' # '' # '_expanded'
-                },
-                'NETMOB_POIS_maps_deezer_insta_Twitter_concat_early_late_UL_DL':{'dataset_names':['subway_in','netmob_POIs'],
+config_diffs = {'NETMOB_POIS_maps_deezer_insta_Twitter_concat_early_late_UL_DL_n_head8_grn_out_dim64':{'dataset_names':['subway_in','netmob_POIs'],
                                                 'vision_concatenation_early' : True,
                                                 'vision_concatenation_late' : True,
                                                 'NetMob_selected_apps':  ['Google_Maps','Deezer','Instagram','Twitter'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
                                                 'NetMob_transfer_mode' :  ['DL','UL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                'NetMob_selected_tags' : ['station','iris','stadium','university'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                'NetMob_expanded' : '' # '' # '_expanded'
+                                                'NetMob_selected_tags' : ['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                'vision_num_heads':8,
+                                                'vision_grn_out_dim':64
                 }
             }
 
