@@ -261,16 +261,6 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, c
     if save is not None: 
             plt.savefig(save, format="pdf")
 
-def add_calendar_columns(df_metro,freq,key_columns,agg_func = 'sum'):
-    df_agg = df_metro.groupby([pd.Grouper(key = 'datetime',freq = freq)]).agg(agg_func).reset_index()[key_columns]
-    df_agg['date']= df_agg.datetime.dt.date
-    df_agg['day_date'] = df_agg.datetime.dt.day
-    df_agg['month_year']= df_agg.datetime.dt.month.transform(lambda x : str(x)) + ' ' + df_agg.datetime.dt.year.transform(lambda x : str(x))
-    df_agg['month_year']= pd.to_datetime(df_agg['month_year'],format = '%m %Y')
-    #df_agg['hour']= df_agg.datetime.dt.hour.transform(lambda x : str(x)) + ':' + df_agg.datetime.dt.minute.transform(lambda x : str(x))
-    df_agg['hour']= df_agg.datetime.dt.hour + df_agg.datetime.dt.minute*0.01
-    return df_agg
-
 def coverage_day_month(df_metro,freq= '24h',index = 'month_year',columns = 'day_date',save = 'subway_id',folder_save = 'save/',key_columns = ['datetime','in','out']):
     
     df_agg = add_calendar_columns(df_metro,freq,key_columns)
@@ -294,6 +284,18 @@ def coverage_day_month(df_metro,freq= '24h',index = 'month_year',columns = 'day_
     return(df_agg_in,df_agg_out)
 
 
+def add_calendar_columns(df_metro,freq,key_columns,agg_func = 'sum'):
+    df_agg = df_metro.groupby([pd.Grouper(key = 'datetime',freq = freq)]).agg(agg_func).reset_index()[key_columns]
+    df_agg['date']= df_agg.datetime.dt.date
+    df_agg['day_date'] = df_agg.datetime.dt.day
+    df_agg['month_year']= df_agg.datetime.dt.month.transform(lambda x : str(x)) + ' ' + df_agg.datetime.dt.year.transform(lambda x : str(x))
+    df_agg['month_year']= pd.to_datetime(df_agg['month_year'],format = '%m %Y')
+    #df_agg['hour']= df_agg.datetime.dt.hour.transform(lambda x : str(x)) + ':' + df_agg.datetime.dt.minute.transform(lambda x : str(x))
+    df_agg['hour']= df_agg.datetime.dt.hour + df_agg.datetime.dt.minute*0.01
+    df_agg['weekday']= df_agg.datetime.dt.weekday
+    return df_agg
+
+
 def build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,columns_matshow):
     '''
     From a time-series of error (error) and associated dates, 
@@ -310,46 +312,35 @@ def build_matrix_for_matshow(ds,column,training_mode,error,freq,index_matshow,co
 
     # Plotting error by day/hour to display daily pattern : 
     df_agg = add_calendar_columns(df_error_station_i,freq=freq,key_columns=df_error_station_i.columns,agg_func = 'mean')
-    df_agg = df_agg.pivot(index = index_matshow,columns = columns_matshow,values = column).fillna(0)
-    
+    if columns_matshow is None:
+        df_agg['dummy'] = index_matshow
+        columns_matshow = 'dummy'
+    df_agg = df_agg.pivot_table(index = index_matshow,columns = columns_matshow,values = column,aggfunc='mean').fillna(0)
 
     return df_agg
 
 
 def plot_matshow(df_agg,column,metric,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_c,ind_metric):
     ''' Plotting function for 'error_per_station_calendar_pattern' '''
-    plt.sca(axes[station_c,ind_metric])
+    if len(axes.shape)==1:
+        plt.sca(axes[ind_metric])
+    else:
+        plt.sca(axes[station_c,ind_metric])       
     plot_coverage_matshow(df_agg, log=False, cmap=cmap, save=None, cbar_label=cbar_label,bool_reversed=bool_reversed,v_min=v_min,v_max=v_max)
 
     if metric == 'previous_value':
         title = f"Gain (%) of MSE error compared to using previous value as prediction"
     else : 
-        title = f"{metric} error on station {column}"       
-    axes[station_c,ind_metric].set_title(title)
-"""
-def get_gain_from_naiv_model(real,predict,previous,min_flow,limit_percentage_error):
+        title = f"{metric} error on station {column}"  
+    if len(axes.shape)==1:     
+        axes[ind_metric].set_title(title)
+    else:     
 
-    real = real.detach().clone().reshape(-1)
-    predict = predict.detach().clone().reshape(-1)    
-    previous = previous.detach().clone().reshape(-1)      
-    
-    error_pred = (real - predict)**2
-    error_previous = (real - previous)**2
+        axes[station_c,ind_metric].set_title(title)
 
-    # error est ici le gain en pourcent de MSE sur prédiction avec le model de DL complexe par à l'utilisation de la donnée précédente.  
-    error_previous_replaced = error_previous.clone()
 
-    # Si l'erreur de référence est trop faible, on se rapport au cas d'une 'erreur acceptable', qui serait de 20 flow (20**2 = 400)
-    mask = error_previous <  min_flow**2
-    error_previous_replaced[mask] = min_flow**2  # quadratic error
-    error = 100*(error_pred/error_previous_replaced - 1)
 
-    # Si > x% d'erreur par rapport au cas où on utilise la donnée précédente: 
-    mask = error > limit_percentage_error
-    error[mask] = limit_percentage_error
-    return error
-"""
-def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50,metrics = ['mse'],acceptable_error= 10,mape_acceptable_error=3):
+def get_gain_from_mod1(real,predict1,predict2,min_flow,metrics = ['mse'],acceptable_error= 10,mape_acceptable_error=3):
     '''
 
     args:
@@ -386,11 +377,30 @@ def get_gain_from_mod1(real,predict1,predict2,min_flow,limit_percentage_error=50
         cloned_error_pred1[local_mask] = local_acceptable_error  
         gain = 100*(error_pred2-error_pred1)/cloned_error_pred1
 
-        # Limit the maximum gain to let the visualisation usefull:
-        gain[gain > limit_percentage_error] = limit_percentage_error
         dic_error[metric] = gain
 
     return dic_error
+
+def get_fig_size(nb_station_to_plots,columns_matshow):
+    y_size = nb_station_to_plots*5
+    if columns_matshow is None:
+        x_size = 10
+    else:
+        x_size = 30
+    figsize = (x_size,y_size)
+    return figsize
+
+
+def plot_gains(ds1,column,station_ind,training_mode,dict_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes):
+    for ind_metric,metric_i in enumerate(metrics) : 
+        cbar_label = f"Gain {metric_i}"
+        # Build Matshow matrix : 
+        df_agg = build_matrix_for_matshow(ds1,column,training_mode,dict_error[metric_i],freq,index_matshow,columns_matshow)
+
+        # Plotting : 
+        plot_matshow(df_agg,column,metric_i,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_ind,ind_metric)      
+
+
 
 def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
                          metrics = ['mse','mae','mape'],
@@ -398,10 +408,12 @@ def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
                         index_matshow = 'day_date',
                         columns_matshow = 'hour',
                         min_flow = 20,
-                        figsize = (20,20),
                         limit_percentage_error = 300,
                         acceptable_error = 10,
-                        stations = None
+                        stations = None,
+                        plot_each_station = False,
+                        plot_all_station = True
+
                          ):
     '''
 
@@ -411,7 +423,10 @@ def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
         n_station = len(stations) 
     else:
         n_station = len(ds1.spatial_unit)
-    fig, axes = plt.subplots(n_station+1, len(metrics), figsize=figsize)
+        stations = list(ds1.spatial_unit)
+
+    nb_station_to_plots = plot_each_station*n_station + plot_all_station
+    fig, axes = plt.subplots(nb_station_to_plots, len(metrics), figsize=get_fig_size(nb_station_to_plots,columns_matshow))
 
     # Get Pred1,Pred2, TrueValues:
     full_predict1,Y_true,_ = trainer1.testing(ds1.normalizer, training_mode =training_mode)
@@ -423,42 +438,34 @@ def gain_between_models(trainer1,trainer2,ds1,ds2,training_mode,
     v_min,v_max = -limit_percentage_error,limit_percentage_error
 
     # Evaluate Prediciton per stations:
-    for station_ind in range(n_station+1):
-        if station_ind<n_station:
-            if stations is not None:
-                station_c = list(ds1.spatial_unit).index(stations[station_ind])
-                column = stations[station_ind]
+    if plot_each_station:
+        for station_ind in range(n_station):
+            station_c = list(ds1.spatial_unit).index(stations[station_ind])
+            column = stations[station_ind]
 
-            else:
-                station_c = station_ind
-                column = ds1.spatial_unit[station_c] 
-        else:
-            column = 'All'
-
-        if station_ind<n_station:
             dict_error = get_gain_from_mod1(real = Y_true[:,station_c:station_c+1,:],
                                         predict1 = full_predict1[:,station_c:station_c+1,:],
                                         predict2 = full_predict2[:,station_c:station_c+1,:],
-                                        min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = metrics,acceptable_error= acceptable_error) 
-        else:    
-            T,N,C = Y_true.size()
-            dict_error = get_gain_from_mod1(real =Y_true,
-                                        predict1 = full_predict1,
-                                        predict2 = full_predict2,
-                                        min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = metrics,acceptable_error= acceptable_error)
-            dict_error = {metric_i:error_i.reshape(T,N).mean(axis=1) for metric_i,error_i in dict_error.items()}
+                                        min_flow=min_flow,metrics = metrics,acceptable_error= acceptable_error) 
+            plot_gains(ds1,column,station_ind,training_mode,dict_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes)
 
-        for ind_metric,metric_i in enumerate(metrics) : 
-            cbar_label = f"Gain {metric_i}"
-            # Build Matshow matrix : 
-            df_agg = build_matrix_for_matshow(ds1,column,training_mode,dict_error[metric_i],freq,index_matshow,columns_matshow)
+    if plot_all_station:
+        station_ind = n_station if plot_each_station else 1
+        column = 'All'
+        T,N,C = Y_true.size()
+        dict_error = get_gain_from_mod1(real =Y_true,
+                                    predict1 = full_predict1,
+                                    predict2 = full_predict2,
+                                    min_flow=min_flow,metrics = metrics,acceptable_error= acceptable_error)
+        dict_error = {metric_i:error_i.reshape(T,N).mean(axis=1) for metric_i,error_i in dict_error.items()}
+        plot_gains(ds1,column,station_ind,training_mode,dict_error,freq,index_matshow,columns_matshow, metrics,v_min,v_max,cmap,bool_reversed,axes)
 
-            # Plotting : 
-            plot_matshow(df_agg,column,metric_i,v_min,v_max,cmap,cbar_label,bool_reversed,axes,station_ind,ind_metric)      
+
 
     plt.tight_layout()
     plt.show()
     return fig,axes
+
 
 
 
@@ -515,7 +522,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                     error = get_gain_from_mod1(real = Y_true[:,station_c:station_c+1,:],
                                                predict1 = X[:,station_c:station_c+1,-1],
                                                predict2 = Preds[:,station_c:station_c+1,:],
-                                               min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = ['mse'],acceptable_error= acceptable_error)
+                                               min_flow=min_flow,metrics = ['mse'],acceptable_error= acceptable_error)
                     error = error['mse']
                 else:
                     T,N,C = Y_true.size()
@@ -523,7 +530,7 @@ def error_per_station_calendar_pattern(trainer,ds,training_mode,
                     error = get_gain_from_mod1(real =Y_true,
                                                predict1 = X[:,:,-1],
                                                predict2 = Preds,
-                                               min_flow=min_flow,limit_percentage_error=limit_percentage_error,metrics = ['mse'],acceptable_error= acceptable_error)
+                                               min_flow=min_flow,metrics = ['mse'],acceptable_error= acceptable_error)
                     error = error['mse']
                     error = error.reshape(T,N)     
                     error = error.mean(axis=1)
