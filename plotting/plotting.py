@@ -635,9 +635,11 @@ def get_y_size_from_temporal_agg(temporal_agg):
         elif temporal_agg == 'weekday':
             y_size = 7    
         elif temporal_agg == 'weekday_hour':
-            y_size = 7*3
+            y_size = 7*6
         elif temporal_agg == 'weekday_hour_minute':
-            y_size = 7*8
+            y_size = 7*10*2
+        elif temporal_agg == 'date':
+            y_size = 12
         else:
             raise NotImplementedError(f'Temporal aggregation {temporal_agg} has not been implemented')
     else:
@@ -718,8 +720,8 @@ def get_df_error(ds1,dic_error,metric,error_name,training_mode):
     return df_error_station
 
 def temporal_agg_for_matshow(df_error_station,column,index_matshow):
+    df_error_station['new_hour'] = df_error_station['datetime'].dt.hour
     if index_matshow == 'hour':
-        df_error_station['new_hour'] = df_error_station['datetime'].dt.hour
         df_agg = df_error_station[[column,'new_hour']].groupby(['new_hour']).mean()
     elif index_matshow == 'date':
         df_agg = df_error_station[[column,'date']].groupby(['date']).mean()
@@ -727,6 +729,10 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow):
         df_agg = df_error_station[[column,'hour']].groupby(['hour']).mean()
     elif index_matshow == 'weekday':
         df_agg = df_error_station[[column,'weekday']].groupby(['weekday']).mean()
+    elif index_matshow == 'weekday_hour':
+        df_agg = df_error_station[[column,'weekday','new_hour']].groupby(['weekday','new_hour']).mean()
+    elif index_matshow == 'weekday_hour_minute':
+        df_agg = df_error_station[[column,'weekday','hour']].groupby(['weekday','hour']).mean()
     else:
         raise NotImplementedError
     return df_agg 
