@@ -11,6 +11,8 @@ if parent_dir not in sys.path:
 from constants.paths import USELESS_DATES,DATA_TO_PREDICT
 from DL_class import FeatureVectorBuilder
 from data_augmentation.Jittering import JitteringObject
+from data_augmentation.Interpolation import InterpolatorObject
+from data_augmentation.magnitude_warping import MagnitudeWarperObject
 
 class DataAugmenter(object):
     def __init__(self,ds,DA_method,DA_moment_to_focus):
@@ -31,7 +33,10 @@ class DataAugmenter(object):
 
 
         # Data Augmentation Parameters: 
-        self.DA_method = DA_method
+        if type(DA_method)==list:
+            self.DA_method = DA_method
+        else: 
+            self.DA_method = [DA_method]
         self.get_time_slots_to_augment(DA_moment_to_focus)
 
     def get_time_slots_to_augment(self,DA_moment_to_focus):
@@ -58,15 +63,41 @@ class DataAugmenter(object):
 
 
     def DA_augmentation(self,U_train,Utarget_train,contextual_train,ds = None,alpha = None, p = None):
+        List_U_train_copy,List_Utarget_train_copy,List_contextual_train_copy = [],[],[]
+        for da_method in self.DA_method:
+            if da_method == 'interpolation':
+                U_train_copy,Utarget_train_copy,contextual_train_copy = self.interpolation(U_train,Utarget_train,contextual_train)
+            
+            elif da_method == 'rich_interpolation':
+                U_train_copy,Utarget_train_copy,contextual_train_copy =self.rich_interpolation(U_train,  Utarget_train, contextual_train)
 
-        if self.DA_method == 'interpolation':
-            U_train_copy,Utarget_train_copy,contextual_train_copy = self.interpolation(U_train,Utarget_train,contextual_train)
+            elif da_method == 'magnitude_warping':
+                U_train_copy,Utarget_train_copy,contextual_train_copy = self.magnitude_warping(U_train, Utarget_train, contextual_train)
 
-        if self.DA_method == 'noise':
-            U_train_copy,Utarget_train_copy,contextual_train_copy = self.noise_injection(U_train,Utarget_train,contextual_train,ds,alpha,p)
+            elif da_method == 'noise':
+                U_train_copy,Utarget_train_copy,contextual_train_copy = self.noise_injection(U_train,Utarget_train,contextual_train,ds,alpha,p)
+            else:
+                raise NotImplementedError
+            List_U_train_copy.append(U_train_copy)
+            List_Utarget_train_copy.append(Utarget_train_copy)
+            List_contextual_train_copy.append(contextual_train_copy)
 
-        U_train_augmented,Utarget_train_augmented,contextual_train_augmented = self.focus_on_specific_index(U_train,U_train_copy,Utarget_train,Utarget_train_copy,contextual_train,contextual_train_copy)    
+
+
+        U_train_augmented,Utarget_train_augmented,contextual_train_augmented = self.focus_on_specific_index(U_train,List_U_train_copy,Utarget_train,List_Utarget_train_copy,contextual_train,List_contextual_train_copy)    
         return U_train_augmented,Utarget_train_augmented,contextual_train_augmented
+    
+    def magnitude_warping(self,U_train, Utarget_train, contextual_train):
+        magnitude_warping_object = MagnitudeWarperObject(self.H, self.D, self.W)
+        U_train_copy,Utarget_train_copy,contextual_train_copy = magnitude_warping_object.compute_magnitude_warping(U_train,  Utarget_train, contextual_train)
+
+        return U_train_copy,Utarget_train_copy,contextual_train_copy       
+
+    def rich_interpolation(self,U_train_copy,  Utarget_train_copy, contextual_train_copy):
+        interpolatorobject = InterpolatorObject(self.H, self.D, self.W)
+        U_train_copy,Utarget_train_copy,contextual_train_copy = interpolatorobject.compute_interpolation(U_train_copy,  Utarget_train_copy, contextual_train_copy)
+
+        return U_train_copy,Utarget_train_copy,contextual_train_copy
                     
 
     def noise_injection(self,U_train,Utarget_train,contextual_train,ds,alpha,p):
@@ -140,13 +171,13 @@ class DataAugmenter(object):
 
         return U_train_copy,Utarget_train_copy,contextual_train_copy
 
-    def focus_on_specific_index(self,U_train,U_train_copy,Utarget_train,Utarget_train_copy,contextual_train,contextual_train_copy):
+    def focus_on_specific_index(self,U_train,List_U_train_copy,Utarget_train,List_Utarget_train_copy,contextual_train,List_contextual_train_copy):
         # Concat with Data-Augmented Values:
-        U_train_augmented = torch.cat([U_train,U_train_copy[self.index_to_augment]],dim=0)
-        Utarget_train_augmented = torch.cat([Utarget_train,Utarget_train_copy[self.index_to_augment]],dim=0)
+        U_train_augmented = torch.cat([U_train]+[U_train_copy[self.index_to_augment] for U_train_copy in List_U_train_copy],dim=0)
+        Utarget_train_augmented = torch.cat([Utarget_train]+[Utarget_copy[self.index_to_augment] for Utarget_copy in List_Utarget_train_copy],dim=0)
 
         contextual_train_augmented = {}
         for name in contextual_train.keys():
-            contextual_train_augmented[name] = torch.cat([contextual_train[name],contextual_train_copy[name][self.index_to_augment]],dim=0)
+            contextual_train_augmented[name] = torch.cat([contextual_train[name]]+[contextual_train_copy[name][self.index_to_augment] for contextual_train_copy in List_contextual_train_copy],dim=0)
 
         return U_train_augmented,Utarget_train_augmented,contextual_train_augmented
