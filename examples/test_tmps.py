@@ -25,14 +25,21 @@ if True:
                     }
 
 
-    config_diffs = {'magnitude_warping':{'dataset_names':['subway_in'],
+    config_diffs = {'magnitude_warping_010':{'dataset_names':['subway_in'],
                                             'data_augmentation': True,
                                             'DA_method':'magnitude_warping',
+                                            'DA_magnitude_max_scale':0.10,
                                             },
-                    'rich_interpolation_and_magnitude_warping':{'dataset_names':['subway_in'],
+                    'magnitude_warping_0125':{'dataset_names':['subway_in'],
                                             'data_augmentation': True,
-                                            'DA_method':['rich_interpolation','magnitude_warping'],
-                                            }
+                                            'DA_method':'magnitude_warping',
+                                            'DA_magnitude_max_scale':0.125,
+                                            },
+                    'magnitude_warping_015':{'dataset_names':['subway_in'],
+                                            'data_augmentation': True,
+                                            'DA_method':'magnitude_warping',
+                                            'DA_magnitude_max_scale':0.15,
+                                            },
                 }
 
                         
@@ -45,7 +52,7 @@ if True:
 
 
 
-if True: 
+if False: 
 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
 

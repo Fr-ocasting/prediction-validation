@@ -15,7 +15,7 @@ from data_augmentation.Interpolation import InterpolatorObject
 from data_augmentation.magnitude_warping import MagnitudeWarperObject
 
 class DataAugmenter(object):
-    def __init__(self,ds,DA_method,DA_moment_to_focus):
+    def __init__(self,ds,DA_method,DA_moment_to_focus,DA_magnitude_max_scale=None):
         super(DataAugmenter,self).__init__()
         self.dates_train = ds.tensor_limits_keeper.df_verif_train.iloc[:,-1].reset_index(drop=True)
         self.start = ds.tensor_limits_keeper.df_verif_train.min().min()
@@ -30,6 +30,8 @@ class DataAugmenter(object):
         self.Week_nb_steps = ds.Week_nb_steps
         self.shift_from_first_elmt = ds.shift_from_first_elmt
         self.normalizers = ds.normalizers 
+        self.DA_magnitude_max_scale = DA_magnitude_max_scale
+
 
 
         # Data Augmentation Parameters: 
@@ -88,7 +90,7 @@ class DataAugmenter(object):
         return U_train_augmented,Utarget_train_augmented,contextual_train_augmented
     
     def magnitude_warping(self,U_train, Utarget_train, contextual_train):
-        magnitude_warping_object = MagnitudeWarperObject(self.H, self.D, self.W)
+        magnitude_warping_object = MagnitudeWarperObject(self.H, self.D, self.W,self.DA_magnitude_max_scale)
         U_train_copy,Utarget_train_copy,contextual_train_copy = magnitude_warping_object.compute_magnitude_warping(U_train,  Utarget_train, contextual_train)
 
         return U_train_copy,Utarget_train_copy,contextual_train_copy       
@@ -124,6 +126,7 @@ class DataAugmenter(object):
         # Noise Injection for the contextual data (subway-out ok, but not for NetMob)
         contextual_train_copy = {}
         subway_out_already_tackled = False
+        netmob_in_contextual,calendar_in_contextual = False,False
         for name, tensor in contextual_train.items():
             tensor_copy_i = tensor.clone()
             # Same Noise injection for every-single station, and then go break the first loop 
@@ -137,14 +140,18 @@ class DataAugmenter(object):
                             contextual_train_copy[name_i] = noisy_tensor_copy_i
                     subway_out_already_tackled = True
             elif ('netmob' in name):
-                print(name,'data augmented by dupplication but not modified')
+                netmob_in_contextual = True
                 contextual_train_copy[name] = tensor_copy_i
             elif ('calendar' in name):
-                print(name,'data augmented by dupplication but not modified')
+                calendar_in_contextual = True
                 contextual_train_copy[name] = tensor_copy_i
             else:
                 raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
-            
+        
+        if netmob_in_contextual:
+            print('netmob data augmented by dupplication but not modified')
+        if calendar_in_contextual:
+            print('calendar data augmented by dupplication but not modified')
 
         return U_train_copy,Utarget_train_copy,contextual_train_copy
     
@@ -157,17 +164,21 @@ class DataAugmenter(object):
 
         # Tackle contextual data:
         contextual_train_copy = {}
+        calendar_in_contextual = False
         for name, tensor in contextual_train.items():
             tensor_copy_i = tensor.clone()
             if ('subway_out' in name) or ('netmob' in name):
                 tensor_copy_i[:, :, self.W + self.D  + 1] = 0.5 * (
                     tensor[:, :, self.W + self.D ] + tensor[:, :, self.W + self.D + 2])
             elif ('calendar' in name):
-                print(name,'data augmented by dupplication but not modified')
+                calendar_in_contextual=True
             else:
                 raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
             
             contextual_train_copy[name] = tensor_copy_i
+
+        if calendar_in_contextual:
+            print('calendar data augmented by dupplication but not modified')
 
         return U_train_copy,Utarget_train_copy,contextual_train_copy
 

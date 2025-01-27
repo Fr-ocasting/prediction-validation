@@ -18,7 +18,7 @@ class MagnitudeWarperObject(object):
     selects and applies interpolation windows.
     """
 
-    def __init__(self, H, D, W, max_scale=0.2):
+    def __init__(self, H, D, W, DA_magnitude_max_scale=0.2):
         """
         Args:
             H, D, W (int): same notion as in InterpolatorObject
@@ -29,11 +29,13 @@ class MagnitudeWarperObject(object):
         self.H = H
         self.D = D
         self.W = W
-        self.max_scale = max_scale
+        self.DA_magnitude_max_scale = DA_magnitude_max_scale
 
         # Détermine la zone [start_min .. end_max] correspondant à la partie H
         self.start_min = self.W + self.D
         self.end_max   = self.W + self.D + self.H - 1
+
+        self.calendar_in_contextual = False
 
         self.get_all_possible_window_size_and_start()
 
@@ -94,6 +96,9 @@ class MagnitudeWarperObject(object):
             # Idem sur contextual
             contextual_train_copy = self.apply_magnitude_warping_on_contextual_dict(contextual_train_copy, sub_index, start_window)
 
+        if self.calendar_in_contextual:
+            print('calendar data augmented by dupplication but not modified')
+
         return U_train_copy, Utarget_train_copy, contextual_train_copy
 
     def apply_magnitude_warping(self, U,Utarget, sub_index, start_window):
@@ -117,7 +122,7 @@ class MagnitudeWarperObject(object):
             len(sub_index),
             device=U.device,
             dtype=U.dtype
-        ).uniform_(1 - self.max_scale, 1 + self.max_scale)
+        ).uniform_(1 - self.DA_magnitude_max_scale, 1 + self.DA_magnitude_max_scale)
 
         # Redimensionne pour broadcast
         # => (len(sub_index), 1, 1)
@@ -140,7 +145,7 @@ class MagnitudeWarperObject(object):
             if ('subway_out' in name) or ('netmob' in name):
                 tensor,_ = self.apply_magnitude_warping(tensor,None, sub_index, start_window)
             elif 'calendar' in name:
-                print(name, 'data augmented by duplication but not modified')
+                self.calendar_in_contextual = True
             else:
                 raise NotImplementedError(f'Name {name} has not been implemented for magnitude warping')
 

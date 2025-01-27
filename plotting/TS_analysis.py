@@ -193,8 +193,8 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return p
 
 
-def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False):
-       p = figure(x_axis_type="datetime",title=f"Time Serie Intensity of NetMob apps consumption",
+def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption"):
+       p = figure(x_axis_type="datetime",title=title,
                      width=width,height=height)
        legend_it = []
        colors = palette

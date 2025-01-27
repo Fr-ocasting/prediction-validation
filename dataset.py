@@ -268,7 +268,8 @@ class DataSet(object):
                  DA_min_count= None,
                  DA_alpha = None,
                  DA_prop = None,
-                 DA_noise_from = None
+                 DA_noise_from = None,
+                 DA_magnitude_max_scale = None
                  ):
         
         if df is not None:
@@ -327,6 +328,7 @@ class DataSet(object):
         self.DA_min_count=DA_min_count
         self.DA_alpha=DA_alpha
         self.DA_prop = DA_prop
+        self.DA_magnitude_max_scale = DA_magnitude_max_scale
         self.periods = periods
         
 
@@ -438,7 +440,7 @@ class DataSet(object):
         '''
 
         if self.data_augmentation:
-            data_augmenter = DataAugmenter(self,self.DA_method,self.DA_moment_to_focus)
+            data_augmenter = DataAugmenter(self,self.DA_method,self.DA_moment_to_focus,self.DA_magnitude_max_scale)
             U_train_augmented,Utarget_train_augmented,contextual_train_augmented = data_augmenter.DA_augmentation(self.U_train,self.Utarget_train,contextual_train,ds = self,alpha = self.DA_alpha, p = self.DA_prop)
             self.U_train = U_train_augmented
             self.Utarget_train = Utarget_train_augmented

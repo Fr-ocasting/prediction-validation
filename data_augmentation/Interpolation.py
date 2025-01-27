@@ -25,6 +25,9 @@ class InterpolatorObject(object):
         self.start_min = self.W + self.D 
         self.end_max   = self.W + self.D + self.H -1 
 
+
+        self.calendar_in_contextual = False
+
         self.get_all_possible_window_size_and_start()
 
     def get_all_possible_window_size_and_start(self):
@@ -69,6 +72,9 @@ class InterpolatorObject(object):
                 U_train_copy = self.apply_interplation(U_train_copy,sub_index,self.possible_start_window[k])    
                 contextual_train_copy = self.apply_interpolation_on_contextual_dict(contextual_train_copy,sub_index,self.possible_start_window[k])
             
+            if self.calendar_in_contextual:
+                 print('calendar data augmented by dupplication but not modified')
+            
             return U_train_copy,Utarget_train_copy,contextual_train_copy
 
     def apply_interplation(self,U,sub_index,start_window):
@@ -90,7 +96,7 @@ class InterpolatorObject(object):
                 # Use the same global window for the entire batch
                 tensor = self.apply_interplation(tensor,sub_index,start_window)
             elif 'calendar' in name:
-                print(name, 'data augmented by duplication but not modified')
+                self.calendar_in_contextual = True
             else:
                 raise NotImplementedError(f'Name {name} has not been implemented for Data Augmentation')
             
