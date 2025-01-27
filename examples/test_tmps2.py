@@ -37,7 +37,7 @@ if True:
                     }
 
 
-    config_diffs = {'rich_interpolation':{'dataset_names':['subway_in'],
+    config_diffs = {'rich_interpolation_identical':{'dataset_names':['subway_in'],
                                             'data_augmentation': True,
                                             'DA_method':'rich_interpolation',
                                             },                
