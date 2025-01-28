@@ -25,6 +25,7 @@ def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):
     index = torch.clamp(index, 0, conformity_scores.size(0) - 1)  # 0 <= index < len(conformity_scores) 
     return(sorted[index:index+1,:,:].to(device)) 
 
+
 def str2neg(x):
     # Convert string values into '-1'. Keep the nan values
     try:
