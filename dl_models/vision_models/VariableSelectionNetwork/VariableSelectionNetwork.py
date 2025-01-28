@@ -472,6 +472,7 @@ class model(nn.Module):
         if False: 
             self.model = nn.ModuleList([SimpleVariableSelection(input_size,nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout) 
                                         for input_size,nb_channels in zip(List_input_sizes,List_nb_channels)])
+            
     def forward(self,x,List_of_x,x_c=None):
         '''
         Inputs: 
@@ -488,3 +489,4 @@ class model(nn.Module):
         # self.model[k](List_of_x[k]) = (combined, attn_weight). We only keep 'combined'.
          
         return([self.model[k](x[:,:,k,:].squeeze(),List_of_x[k],x_c)[0] for k in range(len(List_of_x))])
+
