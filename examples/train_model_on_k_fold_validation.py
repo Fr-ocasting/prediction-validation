@@ -75,7 +75,10 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
 
     #___ Init
     training_mode_list = ['valid','test']
-    metric_list = ['mse','mae','mape']
+    if args.loss_function_type == 'quantile':
+        metric_list = ['MPIW','PICP']
+    else:
+        metric_list = ['mse','mae','mape']
     valid_losses = []
     for training_mode in training_mode_list:
         for metric in metric_list:

@@ -113,21 +113,23 @@ def choose_optimizer(model,args):
     else:
         specific_lr = None
 
+    model_parameters = filter(lambda p: p.requires_grad, model.parameters())
+
     if args.optimizer == 'adam':
         if specific_lr is not None: 
             return Adam(specific_lr,lr=args.lr,weight_decay= args.weight_decay)
         else:
-            return Adam(model.parameters(),lr=args.lr,weight_decay= args.weight_decay)
+            return Adam(model_parameters,lr=args.lr,weight_decay= args.weight_decay)
     elif args.optimizer == 'sgd':
         if specific_lr is not None: 
             return SGD(specific_lr,lr=args.lr,weight_decay=args.weight_decay, momentum = args.momentum)
         else:
-            return SGD(model.parameters(),lr=args.lr,weight_decay =args.weight_decay, momentum = args.momentum)
+            return SGD(model_parameters,lr=args.lr,weight_decay =args.weight_decay, momentum = args.momentum)
     elif args.optimizer == "adamw":
         if specific_lr is not None: 
             return AdamW(specific_lr,lr=args.lr,weight_decay= args.weight_decay)
         else:
-            return AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+            return AdamW(model_parameters, lr=args.lr, weight_decay=args.weight_decay)
     else :
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 

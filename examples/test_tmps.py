@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
 
 
-if True: 
+if False: 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
 
     trial_id = 'subway_in_STGCN_MSELoss_2025_01_20_14_27_20569'
@@ -52,10 +52,9 @@ if True:
 
 
 
-if False: 
+if True: 
 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
-
     trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
     epochs_validation = 100
     args,folds = load_configuration(trial_id,True)
@@ -63,22 +62,20 @@ if False:
     modification ={'keep_best_weights':True,
                     'epochs':epochs_validation,
                     'device':torch.device("cuda:0"),
+                    'loss_function_type':'quantile',
+                    'alpha':0.05,
+                    'track_pi':True,
+                    'type_calib':'classic',
                     }
 
 
 
-    config_diffs = {'magnitude_warping':{'dataset_names':['subway_in','subway_out'],
+    config_diffs = {'UQ_rich_interpolation':{'dataset_names':['subway_in','subway_out'],
                                             'vision_concatenation_early' : True,
                                             'vision_concatenation_late' : False,
                                             'data_augmentation': True,
-                                            'DA_method':'magnitude_warping',
+                                            'DA_method':'rich_interpolation',
                                             },
-                    'rich_interpolation_and_magnitude_warping':{'dataset_names':['subway_in','subway_out'],
-                                            'vision_concatenation_early' : True,
-                                            'vision_concatenation_late' : False,
-                                            'data_augmentation': True,
-                                            'DA_method':['rich_interpolation','magnitude_warping'],
-                                            }
                 }
 
                         

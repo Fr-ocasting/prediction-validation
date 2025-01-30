@@ -99,7 +99,7 @@ def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'D
 def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= None,
                                        type_POIs = ['stadium','nightclub'],
                                        spatial_units = ['Lou_rugby','Ninkasi_Kao'],
-                                       apps = ['Instagram'],
+                                       apps = None, #['Instagram'],
                                        POI_or_stations = ['POI'],
                                        expanded = '',
                                        station = 'BON'
@@ -109,7 +109,7 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         trainer.model.load_state_dict(trainer.best_weights, strict=True)
 
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)                                  
-    df_true,df_prediction = get_df_for_visualisation(ds,Preds,Y_true,training_mode)
+    df_true,df_predictions = get_df_for_visualisation(ds,Preds,Y_true,training_mode)
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
 
     if apps is not None : 
@@ -131,8 +131,7 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         netmob_consumption['Sum_of_apps'] = netmob_consumption.sum(axis=1)/len(netmob_consumption.columns)
     else:
         netmob_consumption = None
-
-    visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time,RANGE,WIDTH,HEIGHT,MIN_FLOW,training_mode = training_mode,netmob_consumption = netmob_consumption)
+    visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,WIDTH,HEIGHT,MIN_FLOW,training_mode = training_mode,netmob_consumption = netmob_consumption)
 
 # Get df_True Volume: 
 def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
@@ -144,22 +143,31 @@ def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
        '''
        df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")  
        df_true = pd.DataFrame(Y_true[:,:,0],columns = ds.spatial_unit,index = df_verif.iloc[:,-1])
-       df_prediction = pd.DataFrame(Preds[:,:,0],columns = ds.spatial_unit,index = df_verif.iloc[:,-1])
-       return(df_true,df_prediction)
-
+       df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
+       return(df_true,df_predictions)
 
 def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time,Range,width,height,min_flow,training_mode,netmob_consumption):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
     p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic Volume Prediction at each subway station ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
-    p3 = plot_prediction_error(df_true,df_prediction,station,metrics =['mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
+
+    if len(df_prediction)==1:
+        p3 = plot_prediction_error(df_true,df_prediction[0],station,metrics =['mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
+    else:
+        p3=None
 
     select = drag_selection_box(df_true,p1,p2,p3,width=width,height=height//3)
     output_notebook()
     if p2 is not None:
-        col1 = column(p1,p2,p3,select)
+        if p3 is not None:
+            col1 = column(p1,p2,p3,select)
+        else:
+            col1 = column(p1,p2,select)
     else: 
-        col1 = column(p1,p3,select)     
+        if p3 is not None:
+            col1 = column(p1,p3,select)   
+        else:
+            col1 = column(p1,select) 
 
     col2 = plot_loss_from_trainer(trainer,width=width//3,height=2*height,bool_show=False)
     grid = row(col1,col2)

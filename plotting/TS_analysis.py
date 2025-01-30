@@ -71,9 +71,6 @@ def drag_selection_box(df,p1,p2=None,p3=None, width=1500, height=150):
     return(select)
 
 
-
-
-
 def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False):
        '''
        args:
@@ -92,9 +89,13 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
               c = p.line(x=df_true.index, line_width = 2.5, y=df_true[station_i], alpha=0.8,color = Plasma256[int(k*255/len(station))])
               legend_it.append((f'True_{station_i}', [c]))
 
-              c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
-              legend_it.append((f'Prediction_{station_i}', [c]))
-
+              if type(df_prediction) == list:
+                     for q_i,df_pred in enumerate(df_prediction):
+                            c = p.line(x=df_pred.index, line_width = 2.5, y=df_pred[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
+                            legend_it.append((f'Prediction_{station_i}_q{q_i}', [c]))
+              else :
+                     c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
+                     legend_it.append((f'Prediction_{station_i}', [c]))
 
        # Add rugby matches :
        for kick_time in kick_off_time:
@@ -173,11 +174,16 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
 
              last_loss = str_valeur(loss_list[-1])
              best_loss = str_valeur(np.min(np.array(loss_list)))
-             test_mae = str_valeur(trainer.performance['test_metrics']['mae'])
-             test_mse = str_valeur(trainer.performance['test_metrics']['mse'])            
-
              displayed_legend = f"{name} \n   Last loss: {last_loss} \n   Best loss: {best_loss}"
+             
              if training_mode == 'valid':
+              if 'MPIW' in list(trainer.performance['test_metrics'].keys()):
+                    test_mpiw = str_valeur(trainer.performance['test_metrics']['MPIW'])
+                    test_picp =  "{:.2%}".format(trainer.performance['test_metrics']['PICP'])
+                    displayed_legend = f"{displayed_legend}\n   Test MPIW: {test_mpiw}\n   Test PICP: {test_picp}"
+              if 'mse' in list(trainer.performance['test_metrics'].keys()):
+                     test_mae = str_valeur(trainer.performance['test_metrics']['mae'])
+                     test_mse = str_valeur(trainer.performance['test_metrics']['mse'])
                      displayed_legend = f"{displayed_legend}\n   Test MSE: {test_mse}\n   Test MAE: {test_mae}"
 
              legend_it.append((displayed_legend, [c]))
