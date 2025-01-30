@@ -29,9 +29,9 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
 def set_one_hp_tuning_and_evaluate_DA(args=None,epochs_validation=None,num_samples=None):
 
     # HP tuning and return the trial-id : 
-    #trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
+    trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
 
-    trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
+    #trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
     #trial_id = 'subway_in_STGCN_MSELoss_2025_01_17_18_25_95152'  -> 
 
 
@@ -42,16 +42,18 @@ def set_one_hp_tuning_and_evaluate_DA(args=None,epochs_validation=None,num_sampl
                         'epochs':epochs_validation,
                         }
 
-        config_diffs = {'concat_early':{'vision_concatenation_early':True,
-                        'vision_concatenation_late':False,
-                          },
-        'concat_late':{'vision_concatenation_early':False,
-                        'vision_concatenation_late':True,
-                                 },
-        'concat_early_and_late':{'vision_concatenation_early':True,
-                                 'vision_concatenation_late':True,
-                                 }
-                    }
+        config_diffs = {'maps_deezer_insta_DL_iris_rich_interpolation':{'DA_method' : ['rich_interpolation'],
+                        'data_augmentation' : True
+                          },                                         
+                        'maps_deezer_insta_DL_iris_magnitude_warping0075':{'DA_method' : ['magnitude_warping'],
+                        'data_augmentation' : True,
+                        'DA_magnitude_max_scale':0.075
+                                                },
+                        'maps_deezer_insta_DL_iris_rich_interpolation_and_magnitude_warping0075':{'DA_method' : ['rich_interpolation','magnitude_warping'],
+                        'data_augmentation' : True,
+                        'DA_magnitude_max_scale':0.075
+                                                }
+                                    }
 
 
         if False:
@@ -124,14 +126,11 @@ if __name__ == '__main__':
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
     from examples.benchmark import local_get_args
 
-    model_name = 'STGCN' #'CNN'
-    dataset_for_coverage = ['subway_in','netmob_POIs'] 
-
     if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in']
-        vision_model_name = None
+        dataset_names = ['subway_in','netmob_POIs']
+        vision_model_name = 'VariableSelectionNetwork'  # None #'VariableSelectionNetwork'
         args = local_get_args(model_name,
                                 args_init = None,
                                 dataset_names=dataset_names,
@@ -140,12 +139,15 @@ if __name__ == '__main__':
                                                 'grace_period':20,
                                                 'HP_max_epochs':100,
                                                 'evaluate_complete_ds' : True,
-                                                'vision_model_name': vision_model_name
+                                                'vision_model_name': vision_model_name,
+                                                'DA_method' : ['rich_interpolation'],
+                                                'data_augmentation' : True,
                                                 })
 
         # Init 
         epochs_validation = 100
         num_samples = 500
+        #HP_and_valid_one_config(args,epochs_validation,num_samples)
         set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
     if False:
         model_name = 'STGCN' #'CNN'
@@ -173,6 +175,8 @@ if __name__ == '__main__':
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:
+        model_name = 'STGCN' #'CNN'
+        dataset_for_coverage = ['subway_in','netmob_POIs'] 
         for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']], #['subway_in','subway_out'] # ['subway_in']
                                                    ['VariableSelectionNetwork']): #'VariableSelectionNetwork' # None
             args = local_get_args(model_name,

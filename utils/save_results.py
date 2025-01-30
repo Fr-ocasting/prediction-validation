@@ -40,7 +40,8 @@ def get_trial_id(args):
     trial_id =  f"{dataset_names}_{model_names}_{args.loss_function_type}Loss_{date_id}_F{args.K_fold}"
     return trial_id
 
-def load_json_file(path_folder,json_save_path):
+def load_json_file(path_folder):
+    json_save_path = f'{path_folder}/model_args.pkl'
     ''' Load Json-file containing ID of DeepLearning trial and all the usefull arguments'''
     # if json_file doesn't exist, build it 
     if not os.path.exists(json_save_path):
@@ -72,9 +73,8 @@ def update_json(args,json_file,trial_id,performance,json_save_path):
 def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir,update_checkpoint=True):
     ''' '''
     path_folder = f"{parent_dir}/{save_dir}"
-    json_save_path = f"{path_folder}/model_args.pkl"
-    json_file = load_json_file(path_folder,json_save_path)
-    update_json(args,json_file,trial_id,performance,json_save_path)
+    json_file = load_json_file(path_folder)
+    update_json(args,json_file,trial_id,performance,json_save_path = f"{path_folder}/model_args.pkl")
     if update_checkpoint: 
         torch.save(checkpoint, f"{path_folder}/{trial_id}.pkl")
     
