@@ -18,6 +18,9 @@ from utils.utilities import filter_args
 '''
 
 FILE_NAME = 'subway_out/subway_out'  # 'subway_out/subway_out'  #  'subway_in/subway_in' 
+START = '03/16/2019'
+END = '06/01/2019'
+FREQ = '15min'
 
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
@@ -28,19 +31,16 @@ list_of_invalid_period.append([datetime(2019,6,26,11),datetime(2019,6,28,4)])
 list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
 list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
 
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
+
 C = 1
 n_vertex = 40
-COVERAGE = pd.date_range(start='03/16/2019', end='06/01/2019', freq='15min')[:-1]
 
-def load_data(dataset,args,ROOT,FOLDER_PATH,intesect_coverage_period,normalize,invalid_dates):
+def load_data(dataset,args,ROOT,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
     id_stations = dataset.spatial_unit
     contextual_subway_out = []
 
     dims = [0]
-    subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intesect_coverage_period,filename = FILE_NAME)
+    subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intersect_coverage_period,filename = FILE_NAME)
     for id_station in id_stations:
         T_subway_out = torch.Tensor(subway_out.raw_values)
 

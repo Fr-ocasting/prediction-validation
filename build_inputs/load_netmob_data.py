@@ -64,7 +64,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
     return NetMob_ds
 
-def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize):
+def tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,normalize):
     ''' Load the NetMob input data
 
     args : 
@@ -79,26 +79,26 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normal
     # if vision_input_type == 'unique_image_through_lyon':
         #NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
         from load_inputs.netmob_video_lyon import load_data
-        NetMob_ds = load_data(dataset,parent_dir,invalid_dates,intesect_coverage_period,args,restricted,normalize= True)
+        NetMob_ds = load_data(dataset,parent_dir,invalid_dates,intersect_coverage_period,args,restricted,normalize= True)
         args.vision_input_type = 'unique_image_through_lyon'
         netmob_dataset_name = 'netmob_video_lyon'
 
 
     elif 'netmob_image_per_station' in args.dataset_names:
         from load_inputs.netmob_image_per_station import load_data
-        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize = normalize) 
+        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize = normalize) 
         args.vision_input_type = 'image_per_stations'
         netmob_dataset_name = 'netmob_image_per_station'
         
     elif "netmob_POIs" in args.dataset_names:
         from load_inputs.netmob_POIs import load_data
-        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize= normalize)
+        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= normalize)
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'netmob_POIs'
 
     elif 'subway_out' in args.dataset_names:
         from load_inputs.subway_out import load_data      
-        NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intesect_coverage_period,normalize,invalid_dates)  
+        NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates)  
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'subway_out'
 
@@ -128,7 +128,7 @@ def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
     return args_vision
 
 
-def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize = True):
+def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize = True):
 
     # BOOLEAN VALUE : True IF NETMOB IS USED
     bool_netmob = (sum([True for d in args.dataset_names if 'netmob' in d])) > 0
@@ -137,7 +137,7 @@ def tackle_netmob(dataset,invalid_dates,intesect_coverage_period,args,normalize 
 
     if bool_netmob: 
         # TACKLE THE INPUT DATA 
-        NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize)
+        NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,normalize)
 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         print('vision_input_type', args.vision_input_type)

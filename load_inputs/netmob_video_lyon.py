@@ -20,19 +20,17 @@ from constants.paths import SELECTED_APPS
 '''
 
 FILE_NAME = 'netmob_video_lyon'
+START = '03/16/2019'
+END = '06/01/2019'
+FREQ = '15min'
+
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
 list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
 list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
 
-
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
-
 ## C = 1
 ## n_vertex = 
-COVERAGE = pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')
 
 
 def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,args,restricted,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
@@ -45,6 +43,9 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,args,restricted,normalize= 
 
     if torch.cuda.is_available():
         netmob_T = load_netmob_lyon_map(ROOT,FOLDER_PATH,restricted)
+        if args.freq != FREQ :
+            assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+            netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
 
     else:
         raise NotImplementedError

@@ -9,8 +9,9 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime 
-from utils.utilities import filter_args
+from utils.utilities import filter_args,get_time_step_per_hour
 from constants.paths import USELESS_DATES
+
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
@@ -18,61 +19,90 @@ from constants.paths import USELESS_DATES
 '''
 
 FILE_NAME = 'CRITER_3lanes/CRITER_3lanes'
-
+START = '03/01/2019'
+END = '06/01/2019'
+FREQ = '30min'
 list_of_invalid_period = []
-#ist_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
+#list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
 
+#C = 1
+#n_vertex = 
 
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'30min'))
-C = 1
-n_vertex = 40
-COVERAGE = pd.date_range(start='03/01/2019', end='06/01/2020', freq='30min')[:-1]
-
-coverage_period = None
-freq = '30min'
-time_step_per_hour = 2
-
-
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_csvs(args,ROOT,FOLDER_PATH,coverage_period,limit_max_nan=200):
+    # Load df: 
     df = pd.DataFrame()
+    idptm_list = []
     for month_name in ['Mars','Avril','Mai']:
         df_i = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}_{month_name}.csv",index_col = 0)
         df_i.HORODATE = pd.to_datetime(df_i.HORODATE)
-        df_i = df_i.groupby(['ID_POINT_MESURE',pd.Grouper(key = 'HORODATE',freq=freq)]).mean()
+        idptm_list.append(df_i.ID_POINT_MESURE.unique())
+        df_i = df_i.groupby(['ID_POINT_MESURE',pd.Grouper(key = 'HORODATE',freq=args.freq)]).mean()
         df = pd.concat([df,df_i])
-        df = df.reset_index()
-        if coverage_period is not None:
-            df = df[(df.HORODATE <= coverage_period.max())&(df.HORODATE >= coverage_period.min()) ]
-        df_loop_occupancy_rate = df.pivot_table(index = 'HORODATE',column = 'ID_POINT_MESURE',value = 'TAUX_HEURE')
-        df_flow = df.pivot_table(index = 'HORODATE',column = 'ID_POINT_MESURE',value = 'DEBIT_HEURE')
 
-        for df_i,name_i in zip([df_loop_occupancy_rate,df_flow],['loop_occupancy_rate','flow']):
-            df_i.columns.name = 'sensor'
-            
-            if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
-                print('Considered Spatial-Unit: ',args.set_spatial_units)
-                spatial_unit = args.set_spatial_units
-                indices_spatial_unit = [list(df_i.columns).index(station_i) for station_i in  spatial_unit]
-                df_i = df_i[spatial_unit]
-            else:
-                spatial_unit = df_i.columns
-                indices_spatial_unit = np.arange(len(df_i.columns))
+    df = df.reset_index()
+    idptm_list = list(set.intersection(*map(set, idptm_list)))
+    df = df[df.ID_POINT_MESURE.isin(idptm_list)]
+    df = restrain_df_to_specific_period(df,coverage_period)
+    df_loop_occupancy_rate = df.pivot_table(index = 'HORODATE',columns = 'ID_POINT_MESURE',values = 'TAUX_HEURE').sort_index()
+    df_flow = df.pivot_table(index = 'HORODATE',columns = 'ID_POINT_MESURE',values = 'DEBIT_HEURE').sort_index()
 
-            weekly_period =  int((24-len(USELESS_DATES['hour']))*(7-len(USELESS_DATES['weekday']))*time_step_per_hour)
-            daily_period =  int((24-len(USELESS_DATES['hour']))*time_step_per_hour)
-            periods = [weekly_period,daily_period]  
+    df_loop_occupancy_rate_full,df_occupancy_with_nan,nan_too_empty_occupancy,sparse_columns_occupancy = remove_sparse_sensor(df_loop_occupancy_rate,limit_max_nan)
+    df_flow_full,df_flow_with_nan,nan_too_empty_flow,sparse_columns_flow = remove_sparse_sensor(df_flow,limit_max_nan)
 
-            args_DataSet = filter_args(DataSet, args)
+    return df_loop_occupancy_rate_full,df_flow_full,idptm_list
 
-            globals()[f"ataset_{name_i}"] = DataSet(df_i,
-                            time_step_per_hour=time_step_per_hour, 
-                            spatial_unit = spatial_unit,
-                            indices_spatial_unit = indices_spatial_unit,
-                            dims = [0],
-                            city = 'Lyon',
-                            periods = periods,
-                            **args_DataSet)
-        return globals()[f"dataset_loop_occupancy_rate"],globals()[f"dataset_flow"]
+
+def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+    # Load df: 
+    df_loop_occupancy_rate,df_flow,idptm_list = load_csvs(args,ROOT,FOLDER_PATH,coverage_period=coverage_period,limit_max_nan = 200)
+
+    for df_feature_i,name_i in zip([df_loop_occupancy_rate,df_flow],['loop_occupancy_rate','flow']):
+        df_feature_i.columns.name = 'sensor'
+        
+        if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
+            print('Considered Spatial-Unit: ',args.set_spatial_units)
+            spatial_unit = args.set_spatial_units
+            indices_spatial_unit = [list(df_feature_i.columns).index(station_i) for station_i in  spatial_unit]
+            df_feature_i = df_feature_i[spatial_unit]
+        else:
+            spatial_unit = df_feature_i.columns
+            indices_spatial_unit = np.arange(len(df_feature_i.columns))
+
+        time_step_per_hour = get_time_step_per_hour(args.freq)
+        weekly_period =  int((24-len(USELESS_DATES['hour']))*(7-len(USELESS_DATES['weekday']))*time_step_per_hour)
+        daily_period =  int((24-len(USELESS_DATES['hour']))*time_step_per_hour)
+        periods = [weekly_period,daily_period]  
+
+        args_DataSet = filter_args(DataSet, args)
+
+        globals()[f"dataset_{name_i}"] = DataSet(df_feature_i,
+                        time_step_per_hour=time_step_per_hour, 
+                        spatial_unit = spatial_unit,
+                        indices_spatial_unit = indices_spatial_unit,
+                        dims = [0],
+                        city = 'Lyon',
+                        periods = periods,
+                        **args_DataSet)
+    #return globals()[f"dataset_loop_occupancy_rate"],globals()[f"dataset_flow"]
+    return globals()[f"dataset_loop_occupancy_rate"]
     
+
+def restrain_df_to_specific_period(df,coverage_period):
+    if coverage_period is not None:
+        df = df[df.HORODATE.isin(coverage_period)]
+    return df
+
+
+def remove_sparse_sensor(df,limit_max_nan = 200):
+    df_with_nan = pd.DataFrame()
+    for c in df.columns:
+        if df[c].isna().sum() > 0:
+            df_with_nan[c] = df[c]
+
+    s_nb_nan_per_columns = df_with_nan.isna().sum()
+    sparse_columns = s_nb_nan_per_columns[s_nb_nan_per_columns>limit_max_nan].index
+
+    df = df.drop(columns = df_with_nan.columns)
+    nan_too_empty = df_with_nan[sparse_columns]
+    df_with_nan = df_with_nan.drop(columns = sparse_columns)
+    return df,df_with_nan,nan_too_empty,sparse_columns

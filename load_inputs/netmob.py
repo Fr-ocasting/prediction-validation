@@ -7,6 +7,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 from datetime import datetime 
 from dataset import DataSet
+from utils.utilities import get_time_step_per_hour
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -15,19 +16,18 @@ from dataset import DataSet
 '''
 
 #FILE_NAME = 'netmob....' #.csv
+START = '03/16/2019'
+END = '06/01/2019'
+FREQ = '15min'
+
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
 list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
 list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
 
 
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
-
 C = 1
 n_vertex = 40
-COVERAGE = pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
 
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
@@ -46,7 +46,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df.index = pd.to_datetime(df.index)
 
     df = restrain_df_to_specific_period(df,coverage_period)
-    time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
+    time_step_per_hour = get_time_step_per_hour(args.freq)
 
     print("\n>>>>> iloc de 0: ",df.iloc[1].name)
     print(">>>>> iloc de 1: ",df.iloc[0].name)

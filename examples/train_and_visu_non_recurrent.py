@@ -198,8 +198,6 @@ def get_multi_ds(model_name,
                  modification = {},
                  args_init = None, 
                  fold_to_evaluate = None):
-    if args_init is not None:
-        args_copy = Namespace(**vars(args_init))
 
     # Tricky but here we need to set 'netmob' so that we will use the same period for every combination
     if args_init is None:
@@ -209,6 +207,7 @@ def get_multi_ds(model_name,
                                     dataset_for_coverage=dataset_for_coverage,
                                     modification = modification)
     else:
+        args_copy = Namespace(**vars(args_init))
         for key,values in modification.items():
             setattr(args_copy,key,values)
         args_copy = update_modif(args_copy)

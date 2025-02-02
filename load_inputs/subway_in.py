@@ -9,7 +9,8 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime 
-from utils.utilities import filter_args
+from utils.utilities import filter_args,get_time_step_per_hour
+
 from constants.paths import USELESS_DATES
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -18,6 +19,9 @@ from constants.paths import USELESS_DATES
 '''
 
 FILE_NAME = 'subway_in/subway_in'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
+START = '01/01/2019'
+END = '01/01/2020'
+FREQ = '15min'
 
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
@@ -28,12 +32,9 @@ list_of_invalid_period.append([datetime(2019,6,26,11),datetime(2019,6,28,4)])
 list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
 list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
 
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
+
 C = 1
 n_vertex = 40
-COVERAGE = pd.date_range(start='01/01/2019', end='01/01/2020', freq='15min')[:-1]
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
@@ -52,16 +53,22 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     df.columns.name = 'Station'
     df.index = pd.to_datetime(df.index)
 
-    df = restrain_df_to_specific_period(df,coverage_period)
-    time_step_per_hour = (60*60)/(df.iloc[1].name - df.iloc[0].name).seconds
-    assert time_step_per_hour == 4, 'TIME STEP PER HOUR = {time_step_per_hour} ALORS QU ON VEUT =4 '
+    # Remove ouliers
+    df = remove_outliers(df)
 
+    time_step_per_hour = get_time_step_per_hour(args.freq)
+
+    if args.freq != FREQ :
+        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+        df = df.resample(args.freq).sum()
+
+    
+    df = restrain_df_to_specific_period(df,coverage_period)
     df_correspondance = get_trigram_correspondance()
     df_correspondance.set_index('Station').reindex(df.columns)
     df.columns = df_correspondance.COD_TRG
 
-    # Remove ouliers
-    df = remove_outliers(df)
+
 
     if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
         print('Considered Spatial-Unit: ',args.set_spatial_units)

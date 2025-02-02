@@ -26,6 +26,28 @@ def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):
     return(sorted[index:index+1,:,:].to(device)) 
 
 
+def get_INVALID_DATES(list_of_invalid_period,freq):
+    INVALID_DATES = []
+    for start,end in list_of_invalid_period:
+        INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = freq))
+    return INVALID_DATES
+
+def get_time_step_per_hour(freq):
+    if 'min' in freq:
+        freq_i = int(freq.split('min')[0])
+        return 60/freq_i
+    elif ('h' in freq):
+        freq_i = int(freq.split('h')[0])
+        return 1/freq_i
+    elif ('H' in freq):
+        freq_i = int(freq.split('H')[0])
+        return 1/freq_i
+    elif ('d' in freq): 
+        freq_i = int(freq.split('d')[0])
+        return 1/(freq_i*24)      
+    elif ('D' in freq): 
+        freq_i = int(freq.split('D')[0])
+        return 1/(freq_i*24)         
 def str2neg(x):
     # Convert string values into '-1'. Keep the nan values
     try:

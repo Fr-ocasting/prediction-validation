@@ -6,19 +6,23 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 import pandas as pd
 from dataset import DataSet
+from utils.utilities import get_time_step_per_hour
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
- - 'time_step_per_hour' which has to be perfectly set
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
 FILE_NAME = 'data_bidon/data_bidon' #.csv
-INVALID_DATES = []
+START = '03/16/2019'
+END = '06/01/2019'
+FREQ = '15min'
+
+list_of_invalid_period = []
 C = 1
 n_vertex = 10
-COVERAGE =  pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1][:1000]
+
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
@@ -37,7 +41,11 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
 
     
     df = restrain_df_to_specific_period(df,coverage_period)
-    time_step_per_hour = (60*60)/(df.index[1] - df.index[0]).seconds
+    time_step_per_hour = get_time_step_per_hour(args.freq)
+
+    if args.freq != FREQ :
+        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+        df = df.resample(args.freq).sum()
 
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 

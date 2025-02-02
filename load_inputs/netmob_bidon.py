@@ -9,7 +9,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 from datetime import datetime 
 from dataset import DataSet
-
+from utils.utilities import get_time_step_per_hour
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
@@ -17,19 +17,19 @@ from dataset import DataSet
 '''
 
 FILE_NAME = 'netmob_bidon'
+START = '03/16/2019'
+END = '06/01/2019'
+FREQ = '15min'
+
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
 list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
 list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
 
 
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
-
 C = 1
 n_vertex = 10
-COVERAGE = pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:1000]
+
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
@@ -43,9 +43,13 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     '''
 
     tensor = torch.load(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.pt")
-    dates = COVERAGE
+    dates = pd.date_range(start=START, end=END, freq=args.freq)[:1000]
+
     tensor = restrain_tensor_to_specific_period(tensor,dates,coverage_period)
-    time_step_per_hour = (60*60)/(dates[1] - dates[0]).seconds
+    time_step_per_hour = get_time_step_per_hour(args.freq)
+    if args.freq != FREQ :
+        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+        tensor = tensor.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *tensor.shape[1:]).sum(dim=1)
 
     dataset = DataSet(tensor = tensor,
                       dates = dates,

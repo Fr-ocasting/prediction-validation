@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 # Personnal inputs:
 from dataset import PersonnalInput,DataSet
 from constants.paths import DATA_TO_PREDICT,FOLDER_PATH,USELESS_DATES
-from utils.utilities import filter_args
+from utils.utilities import filter_args,get_INVALID_DATES
 from utils.seasonal_decomposition import fill_and_decompose_df
 
 def preprocess_dataset(dataset,args,invalid_dates,normalize = True): 
@@ -71,21 +71,24 @@ def get_intersect_of_coverage_periods(args,coverage_period):
     for ds_name in args.dataset_for_coverage:
         data_module = importlib.import_module(f"load_inputs.{ds_name}")
         importlib.reload(data_module) 
-        list_of_list_coverage_period.append(data_module.COVERAGE)
-        list_of_list_invalid_dates.append(data_module.INVALID_DATES)
+        coverage_i = pd.date_range(start=data_module.START, end=data_module.END, freq=args.freq)[:-1]
+        list_of_list_coverage_period.append(coverage_i)
+        invalid_dates_i = get_INVALID_DATES(data_module.list_of_invalid_period,args.freq)
 
-    intesect_coverage_period = list(set.intersection(*map(set, list_of_list_coverage_period)))
+        list_of_list_invalid_dates.append(invalid_dates_i)
+
+    intersect_coverage_period = list(set.intersection(*map(set, list_of_list_coverage_period)))
     # ___Intersection between the expected coverage_period and the limits from datasets:
     if coverage_period is not None: 
-        intesect_coverage_period = list(set(coverage_period)&set(intesect_coverage_period))
+        intersect_coverage_period = list(set(coverage_period)&set(intersect_coverage_period))
     # ...
        
     # Load the union of all the invalid_dates: 
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
     # ___Restrain the invalid dates to the specific restained coverage period :
-    union_invalid_dates = list(set(union_invalid_dates)&set(intesect_coverage_period))
+    union_invalid_dates = list(set(union_invalid_dates)&set(intersect_coverage_period))
     print('Invalid dates within this fold:',len(union_invalid_dates))
-    return union_invalid_dates,intesect_coverage_period
+    return union_invalid_dates,intersect_coverage_period
 
 
 
@@ -97,12 +100,12 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     subway_ds : PersonnalInput object, containing dataset.raw_values
     invalid_dates : All the dates which have been removed 
     '''
-    union_invalid_dates,intesect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
+    union_invalid_dates,intersect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
 
     # Load the dataset and its associated caracteristics
     module_data = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
     importlib.reload(module_data) 
-    dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intesect_coverage_period)
+    dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intersect_coverage_period)
     # ...
     preprocesed_ds = preprocess_dataset(dataset,args,union_invalid_dates,normalize)
-    return(preprocesed_ds,dataset,union_invalid_dates,intesect_coverage_period)
+    return(preprocesed_ds,dataset,union_invalid_dates,intersect_coverage_period)

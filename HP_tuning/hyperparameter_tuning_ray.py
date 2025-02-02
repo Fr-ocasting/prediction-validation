@@ -160,7 +160,7 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
 
     # Keep track on other args:
     json_file = load_json_file(f'{working_dir}/{save_dir}')
-    update_json(args,json_file,trial_id,performance={},save_dir=f'{working_dir}/{save_dir}')
+    update_json(args,json_file,trial_id,performance={},json_save_path=f'{working_dir}/{save_dir}')
 
     return(analysis,trial_id)
 

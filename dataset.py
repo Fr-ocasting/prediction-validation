@@ -276,7 +276,9 @@ class DataSet(object):
             self.length = len(df)
             self.df = df
             self.spatial_unit = df.columns
-            self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)),columns = ['date'])
+            self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)))
+            self.df_dates.columns = ['date']
+
             self.raw_values = torch.tensor(self.df.values)
         if tensor is not None:
             # tensor should follow this shape: [T,N,...]

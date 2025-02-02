@@ -23,21 +23,21 @@ from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
 
 
 FILE_NAME = 'netmob_image_per_station'
+START = '03/16/2019'
+END = '06/01/2019'
+FREQ = '15min'
+
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,5,16,0,0),datetime(2019,5,16,18,15)])  # 16 mai 00:00 - 18:15
 list_of_invalid_period.append([datetime(2019,5,11,23,15),datetime(2019,5,12,0,0)])  # 11 mai 23:15 - 11 mai 23:59: down META (fb, whatsapp)
 list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])  # Anoamlies for every single apps  23-25 May
 
 
-INVALID_DATES = []
-for start,end in list_of_invalid_period:
-    INVALID_DATES = INVALID_DATES + list(pd.date_range(start,end,freq = f'15min'))
 
 ## C = 1
 ## n_vertex = 
-COVERAGE = pd.date_range(start='03/16/2019', end='06/1/2019', freq='15min')[:-1]
 
-def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -54,26 +54,31 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intesect_coverage_period,ar
     nb_pois_by_station = []
     for id_station in id_stations:
         # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
-        data_station = load_data_npy(id_station,ROOT,FOLDER_PATH,args)
+        netmob_T = torch.Tensor(load_data_npy(id_station,ROOT,FOLDER_PATH,args))
+        netmob_T = netmob_T.permute(3,0,1,2)
+
+        # Extract only usefull data, and replace "heure d'été"
+        netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+
+        # Temporal Aggregation if needed: 
+        if args.freq != FREQ :
+            assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+            netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
+        
+        # Extract only usefull data : [T,R] -> [T',R]
+        coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
+        indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
+        netmob_T = netmob_T[indices_dates]
 
         # Reduce dimensionality : 
-        data_station = data_station.transpose(3,0,1,2)
-        data_station = data_station.reshape(data_station.shape[0],-1)
-        multi_ts = pd.DataFrame(data_station)
-        data_station = reduce_dim_by_clustering(multi_ts,epsilon = args.epsilon_clustering)
-
-
-        netmob_T = torch.Tensor(data_station.values)
+        netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
+        netmob_T = reduce_dim_by_clustering(pd.DataFrame(netmob_T),epsilon = args.epsilon_clustering)
+        netmob_T = torch.Tensor(netmob_T.values)
         # netmob_T.shape : [T,len(apps),len(osmid_associated),len(transfer_modes)]
         #netmob_T = netmob_T.permute(3,0,1,2)
         # netmob_T.shape : [T,len(apps)*len(osmid_associated)*len(transfer_modes)] = [T,R]
         #netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
         
-        # Extract only usefull data, and replace "heure d'été"
-        indices_dates = [k for k,date in enumerate(COVERAGE) if date in intesect_coverage_period]
-        netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
-        # [T,R] -> [T,R']
-        netmob_T = netmob_T[indices_dates]
 
 
         # dimension on which we want to normalize: 

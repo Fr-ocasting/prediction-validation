@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 if torch.cuda.is_available():
     FOLDER_PATH = '../../../../data/rrochas/prediction_validation' 
     # Load the target data to predict: 
-    DATA_TO_PREDICT = 'subway_in' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
+    DATA_TO_PREDICT = 'CRITER_3lanes' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY' #'CRITER_3lanes'
     ABS_PATH_PACKAGE = '/home/rrochas/prediction-validation'
     #FILE_NAME = 'preprocessed_subway_15_min' #.csv
     #FILE_NAME = 'subway_IN_interpol_neg_15_min_16Mar2019_1Jun2020' #.csv
@@ -22,7 +22,7 @@ else:
     #package_path = os.path.abspath(os.path.join(current_path, '..'))
     #FOLDER_PATH = '../../../../Data/'
     FOLDER_PATH =  '../data'
-    DATA_TO_PREDICT = 'subway_in' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY'
+    DATA_TO_PREDICT = 'subway_in' # 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY' # 'CRITER_3lanes'
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
     
