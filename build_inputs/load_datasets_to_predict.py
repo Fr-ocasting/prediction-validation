@@ -106,6 +106,9 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     module_data = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
     importlib.reload(module_data) 
     dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intersect_coverage_period)
+    args.n_vertex = dataset.n_vertex
+    args.C = dataset.C
+
     # ...
     preprocesed_ds = preprocess_dataset(dataset,args,union_invalid_dates,normalize)
     return(preprocesed_ds,dataset,union_invalid_dates,intersect_coverage_period)

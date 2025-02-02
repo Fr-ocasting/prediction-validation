@@ -276,6 +276,8 @@ class DataSet(object):
             self.length = len(df)
             self.df = df
             self.spatial_unit = df.columns
+            self.n_vertex = len(self.spatial_unit)
+            self.C = 1
             self.df_dates = pd.DataFrame(self.df.index,index = np.arange(len(self.df)))
             self.df_dates.columns = ['date']
 
@@ -285,6 +287,11 @@ class DataSet(object):
             # >>>> [T,N,C,H,W] for an succession of T time-steps,  N spatial units, C channel by image (mobile app_1, .., mobile app_C), and H*W the image dimension
             # >>>> [T,N,C] for a succession of T time-steps, N spatial units, and C channel  (speed,flow, density)
             self.length = tensor.size(0)
+            self.n_vertex = tensor.size(1)
+            if tensor.dim()>2:
+                self.C = tensor.size(2)
+            else:
+                self.C = 1
             self.raw_values = tensor.to(torch.float32)
             self.df_dates = pd.DataFrame(dates,index = np.arange(self.length),columns = ['date'])
             self.spatial_unit = spatial_unit

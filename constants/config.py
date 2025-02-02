@@ -19,10 +19,10 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['dataset_names'] = dataset_names
     config['dataset_for_coverage'] = dataset_for_coverage
 
-    data_module = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
-    importlib.reload(data_module)
-    config['n_vertex'] = data_module.n_vertex
-    config['C'] =  data_module.C
+    #data_module = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
+    #importlib.reload(data_module)
+    #config['n_vertex'] = data_module.n_vertex
+    #config['C'] =  data_module.C
     
     # === Common config for everyone: ===
     config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
