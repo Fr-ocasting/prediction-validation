@@ -357,7 +357,7 @@ class AttentionGRU(nn.Module):
 
         #print('\n>>>>>>>>> input_length1,grn_h_dim,d_model,input_length2 :',input_length1,grn_h_dim,d_model,input_length2)
         self.gru  = GRN(input_length1,grn_h_dim,d_model,input_length2,dropout)
-        self.attention = ScaledDotProduct_i(query_dim=input_length1,key_dim=input_length2, d_model=d_model,num_heads=num_heads,dropout = dropout)
+        self.attention = MultiHeadAttention(query_dim=input_length1,key_dim=input_length2, d_model=d_model,num_heads=num_heads,dropout = dropout)
 
     def forward(self, x_trafic,x_dynamic,x_known):
         ''''
@@ -377,9 +377,9 @@ class AttentionGRU(nn.Module):
         return enhanced_x,attn_weights
     
 
-class ScaledDotProduct_i(nn.Module):
+class MultiHeadAttention(nn.Module):
     def __init__(self, query_dim, key_dim, d_model,num_heads,dropout):
-        super(ScaledDotProduct_i, self).__init__()
+        super(MultiHeadAttention, self).__init__()
 
         self.d_model = d_model
         assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
@@ -414,12 +414,35 @@ class ScaledDotProduct_i(nn.Module):
         B, num_heads, P, d_k = x.size()
         return x.transpose(1, 2).contiguous().view(B, P, self.d_model)
 
+    def compute_scaled_dot_product(self,Q,K,V):
+        '''
+        Compute the scaled dot product with Q,K,V :
+        Q : [B,n_heads,nb_units,d_k]    # nb_units = 1 if 'per_station'. Otherwise = len(spatial_units)
+        K : [B,n_heads,P,d_k]           # P: numer of nodes, d_k : embedding dimension
+        V : [B,n_heads,P,d_k]   
+        '''
+        
+        #[B,n_heads, P, d_k] -> [B,n_heads, d_k, P]
+        K = K.transpose(-2, -1)
+
+        #[B,n_heads, nb_units, d_k]x[B,n_heads, d_k, P] -> [B,n_heads, nb_units, P]
+        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
+
+        # Softmax  ([B,n_heads, nb_units, P]): 
+        attn_weights = self.dropout(self.softmax(scaled_compat))
+
+        #[B,n_heads, nb_units, P] x [B,n_heads, P, d] ->   [B,n_heads, nb_units, d]
+        context = torch.matmul(attn_weights,V)
+        return context,attn_weights
+        
+
     def forward(self, query,key,values):
         '''
-        query: From x_traffic    -> [B,L]
+        query: From x_traffic    -> [B,nb_units,L] or [B,L]
         key : From x_dynamic    -> [B,P,L]    --|
         values: From x_dynamic    -> [B,P,L]  --|---> Same object
         '''
+        batch_size = key.size(0)
         query,key,values = self.align_dims(query,key,values)
 
         #Proejction to a laten space of dimenison d: [B,n_heads, P, d_k]
@@ -427,23 +450,18 @@ class ScaledDotProduct_i(nn.Module):
         K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))
         V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
 
-        #[B,n_heads, P, d_k] -> [B,n_heads, d_k, P]
-        K = K.transpose(-2, -1)
 
-        #[B,n_heads, 1, d_k]x[B,n_heads, d_k, P] -> [B,n_heads, 1, P]
-        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
+        context,attn_weights = self.compute_scaled_dot_product(Q,K,V)
 
-        # Softmax  ([B,n_heads, 1, P]): 
-        attn_weights = self.dropout(self.softmax(scaled_compat))
-
-        #[B,n_heads, 1, P] x [B,n_heads, P, d] ->   [B,n_heads, 1, d]
-        context = torch.matmul(attn_weights,V)
-
-        #[B,n_heads, 1, d_k] -> [B, 1, d_models]     
+        #[B,n_heads, nb_units, d_k] -> [B, nb_units, d_models]     
         context = self.combine_heads(context)
 
-        #[B, 1, d_models] -> [B,d_models]
-        context = torch.sum(context, dim=-2)
+        #[B, nb_units, d_models] -> [B,d_models] if 'per_station'. Otherwise  do nothing
+        #context = torch.sum(context, dim=-2)
+        context = context.squeeze()
+        # tackle case where squeeze if B = 1
+        if batch_size==1:
+            context = context.unsqueeze(0)
 
         return context,attn_weights
 

@@ -14,22 +14,27 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 if False: 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
-    trial_id = 'subway_in_STGCN_MSELoss_2025_01_20_14_27_20569'
-    epochs_validation = 1
+    trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
+    epochs_validation = 100
     args,folds = load_configuration(trial_id,True)
 
     modification ={'keep_best_weights':True,
                     'epochs':epochs_validation,
                     'device':torch.device("cuda:1"),
-                    #'loss_function_type':'quantile',
-                    #'alpha':0.05,
-                    #'track_pi':True,
-                    #'type_calib':'classic',
                     }
 
-    config_diffs = {'USELESS_CRITER_3lanes':{'dataset_names':['CRITER_3lanes'],
-                                            'data_augmentation': False,
-                                            'freq':'30min'
+    config_diffs = {'large_attention':{'dataset_names':['subway_in','netmob_POIs'],
+                                            'data_augmentation': True,
+                                            'DA_method':'rich_interpolation',
+                                            'freq':'15min',
+                                            'vision_concatenation_early' : True,
+                                            'vision_concatenation_late' : False,
+                                            'NetMob_selected_apps':  ['Google_Maps','Instagram','Deezer'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                            'NetMob_selected_tags' : ['iris','station'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                            'NetMob_expanded' : '_expanded', # '' # '_expanded'
+                                            #'data_augmentation': True,
+                                            #'DA_method':'magnitude_warping',
                                             },
                 }
 
@@ -46,7 +51,7 @@ if False:
 if True: 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
     trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
-    epochs_validation = 1
+    epochs_validation = 100
     args,folds = load_configuration(trial_id,True)
 
     modification ={'keep_best_weights':True,
@@ -54,8 +59,9 @@ if True:
                     'device':torch.device("cuda:1"),
                     }
 
-    config_diffs = {'USELESS_CRITER_3lanes_netmob':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
-                                            'data_augmentation': False,
+    config_diffs = {'CRITER_3lanes_netmob_POIS_rich_interpolation_waze':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                            'data_augmentation': True,
+                                            'DA_method':'rich_interpolation',
                                             'freq':'30min',
                                             'vision_concatenation_early' : True,
                                             'vision_concatenation_late' : False,
@@ -66,7 +72,52 @@ if True:
                                             #'data_augmentation': True,
                                             #'DA_method':'magnitude_warping',
                                             },
+                    'CRITER_3lanes_netmob_POIS_magnitude_warping_Waze_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'magnitude_warping',
+                                                                'freq':'30min',
+                                                                'vision_concatenation_early' : True,
+                                                                'vision_concatenation_late' : False,
+                                                                'NetMob_selected_apps':  ['Waze'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                                },
+                    'CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'rich_interpolation',
+                                                                'freq':'30min',
+                                                                'vision_concatenation_early' : True,
+                                                                'vision_concatenation_late' : False,
+                                                                'NetMob_selected_apps':  ['Waze'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                                },
+                    'CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'rich_interpolation',
+                                                                'freq':'30min',
+                                                                'vision_concatenation_early' : True,
+                                                                'vision_concatenation_late' : False,
+                                                                'NetMob_selected_apps':  ['Waze','Deezer','Google_Maps'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                                },
+                    'CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL_UL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'rich_interpolation',
+                                                                'freq':'30min',
+                                                                'vision_concatenation_early' : True,
+                                                                'vision_concatenation_late' : False,
+                                                                'NetMob_selected_apps':  ['Waze','Deezer','Google_Maps'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                'NetMob_transfer_mode' :  ['DL','UL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                                },
                 }
+    
 
                         
     for add_name_id,config_diff in config_diffs.items():
@@ -76,6 +127,30 @@ if True:
                                             modification=config_diff,
                                             add_name_id=add_name_id)
 
+
+if True: 
+    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
+    trial_id = 'subway_in_STGCN_MSELoss_2025_01_20_14_27_20569'
+    epochs_validation = 100
+    args,folds = load_configuration(trial_id,True)
+
+    modification ={'keep_best_weights':True,
+                    'epochs':epochs_validation,
+                    'device':torch.device("cuda:1"),
+                    }
+
+    config_diffs = {'CRITER_3lanes_rich_interpolation':{'dataset_names':['CRITER_3lanes'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'rich_interpolation',
+                                                                'freq':'30min'},
+                }
+          
+    for add_name_id,config_diff in config_diffs.items():
+        config_diff.update(modification)
+        train_model_on_k_fold_validation(trial_id,load_config =True,
+                                            save_folder=save_folder,
+                                            modification=config_diff,
+                                            add_name_id=add_name_id)
 
 if False:
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'

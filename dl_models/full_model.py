@@ -125,10 +125,6 @@ class full_model(nn.Module):
                     extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1) 
                 else:
                     extracted_feature = self.netmob_vision(x,contextual[self.pos_netmob])
-                    print('extracted_feature: ',extracted_feature.size())
-                
-                 
-
 
             else:
                 raise NotImplementedError(f"The Vision input type '{self.vision_input_type}' has not been implemented")
@@ -136,6 +132,8 @@ class full_model(nn.Module):
             # Concatenation early: 
             if self.vision_concatenation_early:
                 # Concat: [B,C,N,L],[B,C,N,Z] -> [B,C,N,L+Z]
+                if x.dim() == 4 and extracted_feature.dim()==3:
+                    extracted_feature = extracted_feature.unsqueeze(1)
                 x = torch.cat([x,extracted_feature],dim = -1)
             
         else:
