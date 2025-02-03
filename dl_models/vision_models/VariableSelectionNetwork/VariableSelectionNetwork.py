@@ -458,7 +458,7 @@ class model(nn.Module):
             self.mini_att_models = True
         else:
             self.model = AttentionGRU(x_input_size,List_input_sizes, grn_out_dim,grn_h_dim,num_heads,dropout)      
-            self.unique_att_model = True
+            self.mini_att_models = False
         if False: 
             self.model = nn.ModuleList([ScaledDotProduct(input_size, grn_out_dim)
                                         for input_size,_ in zip(List_input_sizes,List_nb_channels)])
@@ -493,7 +493,7 @@ class model(nn.Module):
         # self.model[k](List_of_x[k]) = (combined, attn_weight). We only keep 'combined'.
         if self.mini_att_models:
             return([self.model[k](x[:,:,k,:].squeeze(),List_of_x[k],x_c)[0] for k in range(len(List_of_x))])
-        elif self.unique_att_model:
+        else:
             # List_of_x is here actually only a single tensor
             return(self.model(x.squeeze(),List_of_x,x_c)[0])
 

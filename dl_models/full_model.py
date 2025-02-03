@@ -119,9 +119,15 @@ class full_model(nn.Module):
 
             elif self.vision_input_type == 'POIs':
                 # contextual[pos]: [B,nb_POIs,L']  // after forward : List of [B,Z] // After unsqueeze : [B,C,Z] with C = 1
-                extracted_feature = self.netmob_vision(x,[contextual[pos]for pos in self.pos_netmob])
-                # list of N tensor [B,Z] -> [B,N,Z]  And then unsqueeze :  [B,N,Z] -> [B,C,N,Z]
-                extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1)  
+                if type(self.pos_netmob)== list:
+                    extracted_feature = self.netmob_vision(x,[contextual[pos]for pos in self.pos_netmob])
+                    # list of N tensor [B,Z] -> [B,N,Z]  And then unsqueeze :  [B,N,Z] -> [B,C,N,Z]
+                    extracted_feature = torch.stack(extracted_feature,dim = 1).unsqueeze(1) 
+                else:
+                    extracted_feature = self.netmob_vision(x,contextual[self.pos_netmob])
+                    print('extracted_feature: ',extracted_feature.size())
+                
+                 
 
 
             else:

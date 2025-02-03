@@ -36,7 +36,6 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 ## C = 1
 ## n_vertex = 
-
 def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
     '''
     args:
@@ -49,8 +48,10 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     PersonalInput object. Containing a 2-th order tensor [T,R]
     '''
 
-    # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
+    # data_app.shape :[len(apps)*len(osmid_associated)*len(transfer_modes),T]
     netmob_T = load_data_npy(ROOT,FOLDER_PATH,args)
+
+    # [T,len(apps)*len(osmid_associated)*len(transfer_modes)]
     netmob_T = netmob_T.permute(1,0)
 
     # Extract only usefull data, and replace "heure d'été"
@@ -65,13 +66,14 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
     indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
     netmob_T = netmob_T[indices_dates]
-
+    local_df_dates = pd.DataFrame(coverage_local[indices_dates])
+    local_df_dates.columns = ['date']
     # Reduce dimensionality : [T',R] -> [T',R']
     netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
     
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
+    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,df_dates = local_df_dates)
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
     
@@ -85,16 +87,20 @@ def load_data_npy(ROOT,FOLDER_PATH,args):
         for mode in args.NetMob_transfer_mode:
             for tag in args.NetMob_selected_tags:
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
-                list_of_data.append(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb")))
-    netmob_T = torch.Tensor(np.array(list_of_data))
+                list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))
+    netmob_T = torch.cat(list_of_data)
     return netmob_T
 
 
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
-    
+def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset,df_dates=None):
+    if df_dates is None:
+        df_dates = dataset.df_dates
     args_DataSet = filter_args(DataSet, args)
-
-    NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = dataset.df_dates,
+    #print('Netmb_T.size: ',netmob_T.size())
+    #print('df_dates: ',dataset.df_dates)
+    #print('Theoric df-dates length:',len(pd.date_range(start=START, end=END, freq=args.freq)[:-1]))
+    #blabla
+    NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = df_dates,
                            time_step_per_hour = dataset.time_step_per_hour,
                            minmaxnorm = True,
                            dims =dims,
@@ -119,10 +125,6 @@ def agg_clustering(multi_ts,epsilon):
     )
     # define distance matrix
     corr_matrix = torch.corrcoef(multi_ts.permute(1,0))
-    print(multi_ts.size())
-    print(corr_matrix.size())
-    blabla
-
     dist_matrix = 1-abs(corr_matrix)
 
     # Get labels

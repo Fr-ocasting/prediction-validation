@@ -20,6 +20,7 @@ def preprocess_dataset(dataset,args,invalid_dates,normalize = True):
     print(f"\nInit Dataset: '{dataset.raw_values.size()} with {dataset.raw_values.numel()} Total nb of elements and {torch.isnan(dataset.raw_values).sum()} Nan values")
 
     args_DataSet = filter_args(DataSet, args)
+    print(f'nb {DATA_TO_PREDICT} invalid dates: ',len(invalid_dates))
     preprocesed_ds = PersonnalInput(invalid_dates,args,
                                      tensor = dataset.raw_values, 
                                      dates = dataset.df_dates, 

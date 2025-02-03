@@ -386,7 +386,6 @@ class DataSet(object):
         # Get forbidden indices, and df_verif to check just in case 
         dates_verif_object = DatesVerifFeatureVect(self.df_dates, Weeks = self.W, Days = self.D, historical_len = self.H, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour)
         dates_verif_object.get_df_verif(invalid_dates)
-
         self.forbidden_indice_U = dates_verif_object.forbidden_indice_U
         self.df_verif  = dates_verif_object.df_verif
         # ...
@@ -433,7 +432,7 @@ class DataSet(object):
             tensor_limits_keeper.get_raw_values_indices(training_mode)
             tensor_limits_keeper.get_raw_tensor_input_by_training_mode(self,training_mode)
             tensor_limits_keeper.keep_track_on_feature_vect_limits(training_mode)
-        
+    
         self.tensor_limits_keeper = tensor_limits_keeper
 
     def get_data_augmentation(self,contextual_train):
@@ -494,6 +493,9 @@ class DataSet(object):
                                           ):
         self.get_shift_from_first_elmt()   # get shift indice and shift date from the first element / between each dataset 
         self.get_feature_vect(invalid_dates)  # Removed the forbidden dates, Build 'df_verif' and the Feature Vector Tensor masked by the forbidden indices.
+
+        #print('self.shift_from_first_elmt: ', self.shift_from_first_elmt)
+        #print('self.df_verif: ',self.df_verif)
 
         # Get Index to Split df, U, Utarget, time_slots_labels
         self.train_valid_test_split_indices(train_prop,valid_prop,test_prop,train_valid_test_split_method)  # Create df_train,df_valid,df_test, df_verif_train, df_verif_valid, df_verif_test, and dates limits for each df and each tensor U

@@ -45,12 +45,13 @@ class TensorLimitsKeeper(object):
             
             setattr(self,f"df_verif_{training_mode}",self.df_verif[(self.predicted_dates >= self.split_limits[f"first_predicted_{training_mode}_date"]) & 
                                                                    (self.predicted_dates < self.split_limits[f"last_predicted_{training_mode}_date"]) 
-                                                                   ]
-            )
+                                                                   ])
+
+            #print(f"\ndf_verif_{training_mode}")
+            #print(getattr(self,f"df_verif_{training_mode}"))
 
     def keep_track_on_df_limits(self,training_mode):
         '''Set attribute to keep track on Train/Valid/Test df limits : first_{training_mode}_date and last_{training_mode}_date  '''
-
         if getattr(self,f"{training_mode}_prop") > 1e-3:
             setattr(self,f"first_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[0,0])
             setattr(self,f"last_{training_mode}_date",getattr(self,f"df_verif_{training_mode}").iat[-1,-1])

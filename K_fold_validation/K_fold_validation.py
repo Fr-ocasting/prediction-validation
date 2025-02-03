@@ -113,7 +113,7 @@ class KFoldSplitter(object):
         '''
         K_subway_ds = []
         subway_ds_init,_,args = self.load_init_ds(normalize = True)  # Load 'U' and 'U_target'. # Define already feature vect for the K-th fold with proportion train/valid/test.
-        
+        print('Considered Spatial-Unit: ',args.set_spatial_units)
         # Get Init Coverage Period
         df_verif_init = subway_ds_init.tensor_limits_keeper.df_verif 
         nb_samples = len(df_verif_init)
@@ -134,7 +134,6 @@ class KFoldSplitter(object):
                 args_copy.set_spatial_units = subway_ds_init.spatial_unit
                 new_nb_samples = nb_samples-int((self.args.K_fold-(k+1))*N1*args.min_fold_size_proportion)
                 coverage_period_tmps =pd.date_range(df_verif_init.min().min(), df_verif_init.iloc[:new_nb_samples].max().max(), freq=f'{60 // subway_ds_init.time_step_per_hour}min')# coverage_period_init.iloc[:new_nb_samples]
-
                 # Modify local 'args':
                 args_copy.train_prop = 1 - (N_valid+N_test)/new_nb_samples
                 args_copy.valid_prop = N_valid/new_nb_samples
@@ -144,7 +143,6 @@ class KFoldSplitter(object):
                 subway_ds_tmps.init_invalid_dates = subway_ds_init.invalid_dates
 
                 K_subway_ds.append(subway_ds_tmps)
-
         return K_subway_ds,args
 
 

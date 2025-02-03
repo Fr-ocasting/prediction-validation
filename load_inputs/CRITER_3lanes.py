@@ -60,7 +60,6 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
         df_feature_i.columns.name = 'sensor'
         
         if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
-            print('Considered Spatial-Unit: ',args.set_spatial_units)
             spatial_unit = args.set_spatial_units
             indices_spatial_unit = [list(df_feature_i.columns).index(station_i) for station_i in  spatial_unit]
             df_feature_i = df_feature_i[spatial_unit]
