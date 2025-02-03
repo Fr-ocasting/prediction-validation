@@ -96,6 +96,12 @@ def tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,norma
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'netmob_POIs'
 
+    elif "netmob_POIs_per_station" in args.dataset_names:
+        from load_inputs.netmob_POIs_per_station import load_data
+        NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= normalize)
+        args.vision_input_type = 'POIs'
+        netmob_dataset_name = 'netmob_POIs_per_station'
+
     elif 'subway_out' in args.dataset_names:
         from load_inputs.subway_out import load_data      
         NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates)  
@@ -108,14 +114,21 @@ def tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,norma
     return(NetMob_ds,args,netmob_dataset_name)
 
 def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
-    if (args_vision.dataset_name == 'netmob_POIs') or (args_vision.dataset_name == 'subway_out') :
-        C_netmob = NetMob_ds[0].U_train.size(1) # [B,R]
+    if (args_vision.dataset_name == 'netmob_POIs_per_station') or (args_vision.dataset_name == 'subway_out') :
         List_input_sizes = [NetMob_ds[k].U_train.size(2) for k in range(len(NetMob_ds)) ]
         List_nb_channels = [NetMob_ds[k].U_train.size(1) for k in range(len(NetMob_ds)) ]
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
         importlib.reload(script) 
         config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+    elif (args_vision.dataset_name == 'netmob_POIs'):
+        input_size = NetMob_ds.U_train.size(2)
+        nb_channels = NetMob_ds.U_train.size(1)
+        script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+        importlib.reload(script) 
+        config_vision =script.get_config(input_size,nb_channels)# script.get_config(C_netmob)
+        args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+
     else: 
         raise NotImplementedError(f"args_vision.dataset_name '{args_vision.dataset_name}' n'est probabelment pas importé correctement. Modifier le code.")
         C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
@@ -147,13 +160,6 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
         args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
         args.args_vision = args_vision
 
-        # Get args_vision:
-        #parser = argparse.ArgumentParser(description='netmob')
-        #for key,value in args_vision.items():
-        #    parser.add_argument(f'--{key}', type=type(value), default=value)
-        #args_vision = parser.parse_args(args=[])
-        #args.args_vision = args_vision
-        # ...
     else:
         NetMob_ds = None
         args.args_vision = argparse.ArgumentParser(description='netmob').parse_args(args=[])

@@ -452,9 +452,13 @@ class model(nn.Module):
     def __init__(self,List_input_sizes,List_nb_channels,grn_h_dim,grn_out_dim,contextual_static_dim,dropout,x_input_size,num_heads = None):
         super(model,self).__init__()
         # Attention avec Scaled Dot Product pour chaque station:
-        if True: 
+        if type(List_input_sizes) == list:
             self.model = nn.ModuleList([AttentionGRU(x_input_size,input_size, grn_out_dim,grn_h_dim,num_heads,dropout)
                                         for input_size in List_input_sizes])      
+            self.mini_att_models = True
+        else:
+            self.model = AttentionGRU(x_input_size,List_input_sizes, grn_out_dim,grn_h_dim,num_heads,dropout)      
+            self.unique_att_model = True
         if False: 
             self.model = nn.ModuleList([ScaledDotProduct(input_size, grn_out_dim)
                                         for input_size,_ in zip(List_input_sizes,List_nb_channels)])
@@ -487,6 +491,10 @@ class model(nn.Module):
         '''
         # x = List_of_x[k]    Shape: [B,C_i,L]
         # self.model[k](List_of_x[k]) = (combined, attn_weight). We only keep 'combined'.
-         
-        return([self.model[k](x[:,:,k,:].squeeze(),List_of_x[k],x_c)[0] for k in range(len(List_of_x))])
+        if self.mini_att_models:
+            return([self.model[k](x[:,:,k,:].squeeze(),List_of_x[k],x_c)[0] for k in range(len(List_of_x))])
+        elif self.unique_att_model:
+            # List_of_x is here actually only a single tensor
+            return(self.model(x.squeeze(),List_of_x,x_c)[0])
+
 

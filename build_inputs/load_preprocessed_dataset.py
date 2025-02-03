@@ -56,7 +56,7 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              positions[dataset_name] = pos_netmob
              subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
 
-        elif dataset_name == 'netmob_POIs':
+        elif dataset_name == 'netmob_POIs_per_station':
              contextual_tensors.update({f'netmob_{NetMob_POI.station_name}': {'train': NetMob_POI.U_train,
                                             'valid': NetMob_POI.U_valid if hasattr(NetMob_POI,'U_valid') else None,
                                             'test': NetMob_POI.U_test  if hasattr(NetMob_POI,'U_test') else None}
@@ -69,7 +69,19 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              subway_ds.normalizers.update({dataset_name:contextual_ds[0].normalizer})
              if args.data_augmentation and args.DA_method == 'noise':
                  raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')
-             
+
+        elif dataset_name == 'netmob_POIs':
+             contextual_tensors.update({f'netmob': {'train': contextual_ds.U_train,
+                                            'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
+                                            'test': contextual_ds.U_test  if hasattr(contextual_ds,'U_test') else None}
+                                            }
+                                         )
+             pos_netmob = list(contextual_tensors.keys()).index(f'netmob')
+
+             positions[dataset_name] = pos_netmob
+             subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
+             if args.data_augmentation and args.DA_method == 'noise':
+                 raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')     
 
         elif dataset_name == 'subway_out':
              contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,

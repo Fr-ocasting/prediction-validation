@@ -46,75 +46,48 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
 
     outputs:
     --------
-    4-th order tensor [len(apps),len(osmid),len(transfer_modes),len(time-serie)]
+    PersonalInput object. Containing a 2-th order tensor [T,R]
     '''
 
-    id_stations = dataset.spatial_unit
-    NetMob_ds = []
-    nb_pois_by_station = []
-    for id_station in id_stations:
-        # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
-        netmob_T = torch.Tensor(load_data_npy(id_station,ROOT,FOLDER_PATH,args))
-        netmob_T = netmob_T.permute(3,0,1,2)
+    # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
+    netmob_T = load_data_npy(ROOT,FOLDER_PATH,args)
+    netmob_T = netmob_T.permute(1,0)
 
-        # Extract only usefull data, and replace "heure d'été"
-        netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+    # Extract only usefull data, and replace "heure d'été"
+    netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
 
-        # Temporal Aggregation if needed: 
-        if args.freq != FREQ :
-            assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
-            netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
-        
-        # Extract only usefull data : [T,R] -> [T',R]
-        coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
-        indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
-        netmob_T = netmob_T[indices_dates]
+    # Temporal Aggregation if needed: 
+    if args.freq != FREQ :
+        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+        netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
+    
+    # Extract only usefull data : [T,R] -> [T',R]
+    coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
+    indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
+    netmob_T = netmob_T[indices_dates]
 
-        # Reduce dimensionality : 
-        netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
-        netmob_T = reduce_dim_by_clustering(pd.DataFrame(netmob_T),epsilon = args.epsilon_clustering)
-        netmob_T = torch.Tensor(netmob_T.values)
-        # netmob_T.shape : [T,len(apps),len(osmid_associated),len(transfer_modes)]
-        #netmob_T = netmob_T.permute(3,0,1,2)
-        # netmob_T.shape : [T,len(apps)*len(osmid_associated)*len(transfer_modes)] = [T,R]
-        #netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
-        
+    # Reduce dimensionality : [T',R] -> [T',R']
+    netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
+    
+    # dimension on which we want to normalize: 
+    dims = [0]# [0]  -> We are normalizing each time-serie independantly 
+    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
+    NetMob_POI.periods = None # dataset.periods
+    NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
+    
+    return(NetMob_POI)
 
 
-        # dimension on which we want to normalize: 
-        dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-        NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
-        NetMob_POI.station_name = id_station
-        NetMob_POI.periods = None # dataset.periods
-        NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
-        NetMob_ds.append(NetMob_POI)
-
-
-        nb_pois_by_station.append(netmob_T.size(1))
-
-    print('Custom POIs associated by stations: ',[f"{id_station}: {nb_pois_by_station[k]}" for k,id_station in enumerate(id_stations)])
-    return(NetMob_ds)
-
-
-def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
-    save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
-    data_app = np.load(open(f"{save_folder}/data.npy","rb"))
-    metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
-
-    pos_selected_apps = [k for k,app in enumerate(metadata['apps']) if app in args.NetMob_selected_apps]
-    pos_selected_modes = [k for k,mode in enumerate(metadata['transfer_modes']) if mode in args.NetMob_transfer_mode]
-    pos_selected_tags = [k for k,tag in enumerate(metadata['tags']) if tag in args.NetMob_selected_tags]
-
-    # Extract sub-dataset thanks to np.ix_ (kind of n-dimensional meshgrid)
-    n1 = np.array(pos_selected_apps)
-    n2 = np.array(pos_selected_tags)
-    n3 = np.array(pos_selected_modes)
-    n4 = np.arange(data_app.shape[-1])
-    idxs = [n1,n2,n3,n4]
-    sub_indices = np.ix_(*idxs)
-    data_app = data_app[sub_indices]  # data_app[pos_selected_apps,pos_selected_tags,pos_selected_modes,:]
-
-    return(data_app)
+def load_data_npy(ROOT,FOLDER_PATH,args):
+    save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/agg_TS"
+    list_of_data = []
+    for app in args.NetMob_selected_apps:
+        for mode in args.NetMob_transfer_mode:
+            for tag in args.NetMob_selected_tags:
+                folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
+                list_of_data.append(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb")))
+    netmob_T = torch.Tensor(np.array(list_of_data))
+    return netmob_T
 
 
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
@@ -133,6 +106,11 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
 
 def agg_clustering(multi_ts,epsilon):
+    '''
+    multi_ts: torch.Tensor of dimension [T,P]. 
+    T: nb of time slots
+    P: nb of features
+    '''
     clustering = AgglomerativeClustering(
         n_clusters=None,  # 
         metric='precomputed',  # We are already using a disance matrix, so no need to compute it 
@@ -140,30 +118,46 @@ def agg_clustering(multi_ts,epsilon):
         distance_threshold=epsilon  # 'distance max' threshold
     )
     # define distance matrix
-    df_distance = 1-abs(multi_ts.corr())
+    corr_matrix = torch.corrcoef(multi_ts.permute(1,0))
+    print(multi_ts.size())
+    print(corr_matrix.size())
+    blabla
+
+    dist_matrix = 1-abs(corr_matrix)
 
     # Get labels
-    labels = clustering.fit_predict(df_distance.values)
+    labels = clustering.fit_predict(dist_matrix.cpu().numpy())
 
     return(labels)
 
-def reduce_dim_by_clustering(multi_ts,epsilon):
+def reduce_dim_by_clustering(multi_ts,epsilon,agg_function = 'median'):
     '''
     args:
     -----
-    multi_ts: DataFrame multi time-serie. 
+    multi_ts: torch.Tensor of dimension [T,P]. 
     epsilon: maximum accepted distance correlation as diameter within cluster (agglomerative clustering)
     '''
     labels = agg_clustering(multi_ts,epsilon = epsilon)
-    unique_labels = list(set(labels))
 
-    #df_reduced = pd.DataFrame()
-    #for label in unique_labels:
-    #    columns= [k for k,lab in enumerate(labels) if lab == label]
-    #    ts_rpz_label = multi_ts[columns].max(axis=1)
-    #    df_reduced[label] = ts_rpz_label
+    unique_labels = sorted(set(labels))
+    cluster_aggregates = []
+    for label in unique_labels:
+        col_indices = [idx for idx, lab in enumerate(labels) if lab == label]
 
-    df_reduced = pd.DataFrame({label: multi_ts[[k for k,lab in enumerate(labels) if lab == label]].max(axis=1) for label in unique_labels})
+        # [T, len(col_indices)]
+        cluster_data = multi_ts[:, col_indices]
 
-    return(df_reduced)
+        if agg_function == 'median':
+            agg_tensor = cluster_data.median(dim=1).values  
+        elif agg_function == 'mean':
+            agg_tensor = cluster_data.mean(dim=1)
+        elif agg_function == 'max':
+            agg_tensor = cluster_data.max(dim=1).values
+        else:
+            raise NotImplementedError(f"Not Supported Aggregation")
+        
+        cluster_aggregates.append(agg_tensor)
+    tensor_reduced = torch.stack(cluster_aggregates, dim=1)
+
+    return(tensor_reduced)
 
