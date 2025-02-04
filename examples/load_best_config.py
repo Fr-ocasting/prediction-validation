@@ -99,7 +99,7 @@ def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modific
 
 
     # Load Trained Weights 
-    model_param = torch.load(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
+    model_param = torch.load(f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
     model.load_state_dict(model_param['state_dict'],strict=True)
 
 
