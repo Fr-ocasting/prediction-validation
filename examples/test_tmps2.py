@@ -59,31 +59,7 @@ if True:
                     'device':torch.device("cuda:1"),
                     }
 
-    config_diffs = {'CRITER_3lanes_netmob_POIS_magnitude_warping_Waze_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
-                                                                'data_augmentation': True,
-                                                                'DA_method':'magnitude_warping',
-                                                                'DA_magnitude_max_scale':0.2,
-                                                                'freq':'30min',
-                                                                'vision_concatenation_early' : True,
-                                                                'vision_concatenation_late' : False,
-                                                                'NetMob_selected_apps':  ['Waze'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                },
-                    'CRITER_3lanes_netmob_POIS_magnitude_warping_Waze_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
-                                                                                    'data_augmentation': True,
-                                                                                    'DA_method':'magnitude_warping',
-                                                                                    'DA_magnitude_max_scale':0.1,
-                                                                                    'freq':'30min',
-                                                                                    'vision_concatenation_early' : True,
-                                                                                    'vision_concatenation_late' : False,
-                                                                                    'NetMob_selected_apps':  ['Waze'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-                                                                                    'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                    'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                    'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                    },
-                    'CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+    config_diffs = {'RE_CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
                                                                 'data_augmentation': True,
                                                                 'DA_method':'rich_interpolation',
                                                                 'freq':'30min',
@@ -94,7 +70,7 @@ if True:
                                                                 'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
                                                                 'NetMob_expanded' : '', # '' # '_expanded'
                                                                 },
-                    'CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                    'RE_CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
                                                                 'data_augmentation': True,
                                                                 'DA_method':'rich_interpolation',
                                                                 'freq':'30min',
@@ -105,12 +81,52 @@ if True:
                                                                 'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
                                                                 'NetMob_expanded' : '', # '' # '_expanded'
                                                                 },
-                    'CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL_UL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                    'RE_CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL_UL':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
                                                                 'data_augmentation': True,
                                                                 'DA_method':'rich_interpolation',
                                                                 'freq':'30min',
                                                                 'vision_concatenation_early' : True,
                                                                 'vision_concatenation_late' : False,
+                                                                'NetMob_selected_apps':  ['Waze','Deezer','Google_Maps'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                'NetMob_transfer_mode' :  ['DL','UL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                                },
+                    'RE_CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_DL_nh8_emb64':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                        'data_augmentation': True,
+                                                                        'DA_method':'rich_interpolation',
+                                                                        'freq':'30min',
+                                                                        'vision_concatenation_early' : True,
+                                                                        'vision_concatenation_late' : False,
+                                                                        'vision_grn_out_dim':64,
+                                                                        'vision_num_heads':8,
+                                                                        'NetMob_selected_apps':  ['Waze'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                        'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                        'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                        'NetMob_expanded' : '', # '' # '_expanded'
+                                                                        
+                                                                        },
+                    'RE_CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL_nh8_emb128':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'rich_interpolation',
+                                                                'freq':'30min',
+                                                                'vision_concatenation_early' : True,
+                                                                'vision_concatenation_late' : False,
+                                                                'vision_grn_out_dim':128,
+                                                                'vision_num_heads':8,
+                                                                'NetMob_selected_apps':  ['Waze','Deezer','Google_Maps'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                'NetMob_expanded' : '', # '' # '_expanded'
+                                                                },
+                    'RE_CRITER_3lanes_netmob_POIS_rich_interpolation_Waze_Deezer_Maps_DL_UL_nh8_emb128':{'dataset_names':['CRITER_3lanes','netmob_POIs'],
+                                                                'data_augmentation': True,
+                                                                'DA_method':'rich_interpolation',
+                                                                'freq':'30min',
+                                                                'vision_concatenation_early' : True,
+                                                                'vision_concatenation_late' : False,
+                                                                'vision_grn_out_dim':128,
+                                                                'vision_num_heads':8,
                                                                 'NetMob_selected_apps':  ['Waze','Deezer','Google_Maps'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
                                                                 'NetMob_transfer_mode' :  ['DL','UL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
                                                                 'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
@@ -139,7 +155,7 @@ if True:
                     'device':torch.device("cuda:1"),
                     }
 
-    config_diffs = {'CRITER_3lanes_rich_interpolation':{'dataset_names':['CRITER_3lanes'],
+    config_diffs = {'RE_CRITER_3lanes_rich_interpolation':{'dataset_names':['CRITER_3lanes'],
                                                                 'data_augmentation': True,
                                                                 'DA_method':'rich_interpolation',
                                                                 'freq':'30min'},

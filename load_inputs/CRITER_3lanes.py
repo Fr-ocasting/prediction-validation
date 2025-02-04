@@ -28,27 +28,33 @@ list_of_invalid_period = []
 #C = 1
 #n_vertex = 
 
-def load_csvs(args,ROOT,FOLDER_PATH,coverage_period,limit_max_nan=200):
+def load_csvs(args,ROOT,FOLDER_PATH,coverage_period,limit_max_nan=200,taux_heure_limit = 100):
     # Load df: 
     df = pd.DataFrame()
     idptm_list = []
     for month_name in ['Mars','Avril','Mai']:
         df_i = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}_{month_name}.csv",index_col = 0)
         df_i.HORODATE = pd.to_datetime(df_i.HORODATE)
-        idptm_list.append(df_i.ID_POINT_MESURE.unique())
+        forbidden_ids = df_i[df_i.TAUX_HEURE > taux_heure_limit].ID_POINT_MESURE.unique()
+        init_idptm = list(df_i.ID_POINT_MESURE.unique())
+        remaining_idptm = [idptm for idptm in init_idptm if not idptm in forbidden_ids]
+        idptm_list.append(remaining_idptm)
         df_i = df_i.groupby(['ID_POINT_MESURE',pd.Grouper(key = 'HORODATE',freq=args.freq)]).mean()
+
+        
         df = pd.concat([df,df_i])
 
     df = df.reset_index()
+
     idptm_list = list(set.intersection(*map(set, idptm_list)))
     df = df[df.ID_POINT_MESURE.isin(idptm_list)]
     df = restrain_df_to_specific_period(df,coverage_period)
     df_loop_occupancy_rate = df.pivot_table(index = 'HORODATE',columns = 'ID_POINT_MESURE',values = 'TAUX_HEURE').sort_index()
     df_flow = df.pivot_table(index = 'HORODATE',columns = 'ID_POINT_MESURE',values = 'DEBIT_HEURE').sort_index()
 
+
     df_loop_occupancy_rate_full,df_occupancy_with_nan,nan_too_empty_occupancy,sparse_columns_occupancy = remove_sparse_sensor(df_loop_occupancy_rate,limit_max_nan)
     df_flow_full,df_flow_with_nan,nan_too_empty_flow,sparse_columns_flow = remove_sparse_sensor(df_flow,limit_max_nan)
-
     return df_loop_occupancy_rate_full,df_flow_full,idptm_list
 
 
