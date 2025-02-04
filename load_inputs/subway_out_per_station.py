@@ -32,22 +32,25 @@ list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
 list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
 
 
-#C = 1
-#n_vertex = 40
+C = 1
+n_vertex = 40
 
 def load_data(dataset,args,ROOT,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
     id_stations = dataset.spatial_unit
+    contextual_subway_out = []
+
     dims = [0]
     subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intersect_coverage_period,filename = FILE_NAME)
-    T_subway_out = torch.Tensor(subway_out.raw_values)
+    for id_station in id_stations:
+        T_subway_out = torch.Tensor(subway_out.raw_values)
 
-    print('T_subway_out: ',T_subway_out.size())
+        # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:
+        #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
+        #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
 
-    # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:
-    #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
-    #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
-
-    preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset)
-    preprocessed_personal_input.periods = subway_out.periods
-    preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
-    return preprocessed_personal_input
+        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset)
+        preprocessed_personal_input.station_name = id_station
+        preprocessed_personal_input.periods = subway_out.periods
+        preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
+        contextual_subway_out.append(preprocessed_personal_input)
+    return contextual_subway_out

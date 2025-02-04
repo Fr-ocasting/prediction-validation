@@ -113,17 +113,17 @@ def tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,norma
     
     return(NetMob_ds,args,netmob_dataset_name)
 
-def tackle_config_of_feature_extractor_module(NetMob_ds,args_vision):
-    if (args_vision.dataset_name == 'netmob_POIs_per_station') or (args_vision.dataset_name == 'subway_out') :
-        List_input_sizes = [NetMob_ds[k].U_train.size(2) for k in range(len(NetMob_ds)) ]
-        List_nb_channels = [NetMob_ds[k].U_train.size(1) for k in range(len(NetMob_ds)) ]
+def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
+    if (args_vision.dataset_name == 'netmob_POIs_per_station') or (args_vision.dataset_name == 'subway_out_per_station') :
+        List_input_sizes = [contextual_ds[k].U_train.size(2) for k in range(len(contextual_ds)) ]
+        List_nb_channels = [contextual_ds[k].U_train.size(1) for k in range(len(contextual_ds)) ]
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
         importlib.reload(script) 
         config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
         args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
-    elif (args_vision.dataset_name == 'netmob_POIs'):
-        input_size = NetMob_ds.U_train.size(2)
-        nb_channels = NetMob_ds.U_train.size(1)
+    elif (args_vision.dataset_name == 'netmob_POIs')or (args_vision.dataset_name == 'subway_out') :
+        input_size = contextual_ds.U_train.size(2)
+        nb_channels = contextual_ds.U_train.size(1)
         script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
         importlib.reload(script) 
         config_vision =script.get_config(input_size,nb_channels)# script.get_config(C_netmob)

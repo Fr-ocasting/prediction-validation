@@ -15,7 +15,7 @@ from data_augmentation.Interpolation import InterpolatorObject
 from data_augmentation.magnitude_warping import MagnitudeWarperObject
 
 class DataAugmenter(object):
-    def __init__(self,ds,DA_method,DA_moment_to_focus,DA_magnitude_max_scale=None):
+    def __init__(self,ds,DA_method,DA_moment_to_focus,DA_magnitude_max_scale=0.2):
         super(DataAugmenter,self).__init__()
         self.dates_train = ds.tensor_limits_keeper.df_verif_train.iloc[:,-1].reset_index(drop=True)
         self.start = ds.tensor_limits_keeper.df_verif_train.min().min()

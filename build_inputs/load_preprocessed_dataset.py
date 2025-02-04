@@ -56,6 +56,45 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              positions[dataset_name] = pos_netmob
              subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
 
+
+        elif (dataset_name == 'netmob_POIs') or (dataset_name == 'subway_out'):
+             if dataset_name == 'netmob_POIs': name_contextual = 'netmob'
+             if dataset_name == 'subway_out': name_contextual = 'subway_out'
+             contextual_tensors.update({name_contextual: {'train': contextual_ds.U_train,
+                                            'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
+                                            'test': contextual_ds.U_test  if hasattr(contextual_ds,'U_test') else None}
+                                            }
+                                         )
+             pos_contextual = list(contextual_tensors.keys()).index(name_contextual)
+
+             positions[dataset_name] = pos_contextual
+
+             subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
+             if name_contextual == 'netmob':
+                if args.data_augmentation and args.DA_method == 'noise':
+                    raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out ?')     
+             if name_contextual == 'subway_out':
+                if args.data_augmentation and args.DA_method == 'noise':
+                    if args.DA_noise_from == 'MSTL':
+                        decomposition = fill_and_decompose_df(contextual_ds.raw_values,
+                                                            contextual_ds.tensor_limits_keeper.df_verif_train,
+                                                            contextual_ds.time_step_per_hour,
+                                                            contextual_ds.spatial_unit,
+                                                            min_count = args.DA_min_count, 
+                                                            periods = contextual_ds.periods)
+                        df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
+                        df_noises = df_noises[contextual_ds.spatial_unit]
+                    elif args.DA_noise_from == 'Homogenous':
+                        df_verif_train = contextual_ds.tensor_limits_keeper.df_verif_train
+                        dates_used_in_train = pd.Series(pd.concat([df_verif_train[c] for c in df_verif_train.columns]).unique()).sort_values() 
+                        reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/contextual_ds.time_step_per_hour}h")
+                        reindex_dates = reindex_dates[~reindex_dates.hour.isin(USELESS_DATES['hour'])&~reindex_dates.hour.isin(USELESS_DATES['weekday'])]
+                        df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in contextual_ds.spatial_unit},index =reindex_dates )
+                    else :
+                        raise NotImplementedError(f"Noise from {args.DA_noise_from} has not been implemented")
+                    
+                    subway_ds.noises[dataset_name] = df_noises
+                
         elif dataset_name == 'netmob_POIs_per_station':
              contextual_tensors.update({f'netmob_{NetMob_POI.station_name}': {'train': NetMob_POI.U_train,
                                             'valid': NetMob_POI.U_valid if hasattr(NetMob_POI,'U_valid') else None,
@@ -70,20 +109,8 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              if args.data_augmentation and args.DA_method == 'noise':
                  raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')
 
-        elif dataset_name == 'netmob_POIs':
-             contextual_tensors.update({f'netmob': {'train': contextual_ds.U_train,
-                                            'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
-                                            'test': contextual_ds.U_test  if hasattr(contextual_ds,'U_test') else None}
-                                            }
-                                         )
-             pos_netmob = list(contextual_tensors.keys()).index(f'netmob')
 
-             positions[dataset_name] = pos_netmob
-             subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
-             if args.data_augmentation and args.DA_method == 'noise':
-                 raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')     
-
-        elif dataset_name == 'subway_out':
+        elif dataset_name == 'subway_out_per_station':
              contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,
                                             'valid': subway_out_station.U_valid if hasattr(subway_out_station,'U_valid') else None,
                                             'test': subway_out_station.U_test  if hasattr(subway_out_station,'U_test') else None}
@@ -118,7 +145,6 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
 
 
                 subway_ds.noises[dataset_name] = df_noises
-
         else:
             raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')
 

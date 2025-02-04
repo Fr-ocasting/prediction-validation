@@ -9,7 +9,7 @@ parser.add_argument('--input_dim', type=int, default=1, help="Number of input fe
 parser.add_argument('--max_diffusion_step', type=int, default=3, choices = [1,2,3,4], help="Maximum diffusion steps. Might correspond to 'K' in the paper") 
 parser.add_argument('--filter_type', default='random_walk', choices = ['laplacian', 'random_walk', 'dual_random_walk'], help="Filter type")
 parser.add_argument('--num_rnn_layers', type=int, default=2, help="Number of RNN layers")
-parser.add_argument('--rnn_units', type=int, default=64, help="Number of units per RNN layer")
+parser.add_argument('--rnn_units', type=int, default=32, help="Number of units per RNN layer")
 parser.add_argument('--threshold', type=float, default=0.3,  # between 0.0 and 1.
                     help="threshold to mask the Weighted Adjacency Matrix based on Gaussian Kernel Distance. < threshold become 0")
 args = parser.parse_args(args=[])

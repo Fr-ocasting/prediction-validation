@@ -1,22 +1,28 @@
 import sys
 import os
+import pandas as pd
+import pickle
+from argparse import Namespace
+import torch
 
 current_path = os.path.dirname(__file__)
 working_dir = os.path.abspath(os.path.join(current_path, '..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
-import pandas as pd
-import pickle
-from argparse import Namespace
-from constants.paths import SAVE_DIRECTORY
 
+from constants.paths import SAVE_DIRECTORY
 from utils.utilities_DL import get_loss,load_model_and_optimizer
 from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from calendar_class import get_time_slots_labels
+from examples.train_and_visu_non_recurrent import get_ds
+from constants.paths import SAVE_DIRECTORY
+from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from trainer import Trainer
 
 def load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name):
-    dic_args = pickle.load(open(f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models/model_args.pkl",'rb'))
+    path_to_model_args = f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models"
+    dic_args = pickle.load(open(f"{path_to_model_args}/model_args.pkl",'rb'))
     args_models = dic_args['model'][f"{trial_id}{add_name_id}_f{fold_name}"]['args']
     args_models = Namespace(**args_models)
     args_models.ray = False
@@ -72,6 +78,37 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
 
     # Load covergae : 
     return(args)
+
+
+def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modification,fold_to_evaluate = None):
+    # Load Data and Init Model:
+    if fold_to_evaluate is None:
+        fold_name = 'complete_dataset'
+    else:
+        fold_name = fold_to_evaluate[0]
+
+    #args,_ = load_configuration(trial_id1,load_config=True)
+    args = load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name)
+
+    if fold_to_evaluate is None:  fold_to_evaluate = [args.K_fold-1]
+
+    
+           
+    ds,_,_,_,_ =  get_ds(args_init=args,modification = modification,fold_to_evaluate=fold_to_evaluate)
+    model = load_model(ds, args)
+
+
+    # Load Trained Weights 
+    model_param = torch.load(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
+    model.load_state_dict(model_param['state_dict'],strict=True)
+
+
+    # Load Trainer : 
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler)
+
+    return trainer,ds,args
+
 
 if __name__ == '__main__':
     args = load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model')
