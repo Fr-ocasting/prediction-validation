@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np 
 from bokeh.plotting import output_notebook
 
-def plot_scatter_distribution_by_calendar_group(list_of_point_to_plots,x_ticks,station_name):
+def plot_scatter_distribution_by_calendar_group(list_of_point_to_plots,x_ticks,station_name,height=300, width=1600):
     data = {'x': [], 'values': []}
 
     for i, points in enumerate(list_of_point_to_plots):
@@ -17,7 +17,7 @@ def plot_scatter_distribution_by_calendar_group(list_of_point_to_plots,x_ticks,s
     source = ColumnDataSource(pd.DataFrame(data))
 
     # Scatter plot
-    scatter_fig = figure(x_range=x_ticks, title=f"Scatter Plot of Distributions for station {station_name}", height=300, width=1600)
+    scatter_fig = figure(x_range=x_ticks, title=f"Scatter Plot of Distributions for station {station_name}", height=height, width=width)
     scatter_fig.scatter(x='x', y='values', source=source, size=5, alpha=0.6)
     scatter_fig.xaxis.major_label_orientation = 0.8
 
@@ -70,7 +70,7 @@ def plot_distribution_by_calendar_group(list_of_point_to_plots,x_ticks,station_n
     box_fig.xaxis.major_label_orientation = 0.8
     return box_fig
 
-def get_usefull_params(ds,t_minus_1,agg,posible_weekdays,posible_hours,posible_minutes,s_weekdays,s_hours,s_minutes):
+def get_usefull_params(ds,t_minus_1,agg,posible_weekdays,posible_hours,posible_minutes,s_weekdays,s_hours,s_minutes,training_mode):
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     x_ticks = []
     if agg is None : 
@@ -82,7 +82,7 @@ def get_usefull_params(ds,t_minus_1,agg,posible_weekdays,posible_hours,posible_m
             list_of_point_to_plots = []
             for weekday,hour,minute in tuples:
                 indexes = t_minus_1[s_hours.isin([hour])&s_weekdays.isin([weekday])&s_minutes.isin([minute])].index
-                clustered_volume = ds.U_train[indexes,station_ind,-1].numpy()
+                clustered_volume = getattr(ds,f"U_{training_mode}")[indexes,station_ind,-1].numpy()
                 list_of_point_to_plots.append(clustered_volume)
             return list_of_point_to_plots
 
@@ -96,7 +96,7 @@ def get_usefull_params(ds,t_minus_1,agg,posible_weekdays,posible_hours,posible_m
             list_of_point_to_plots = []
             for weekday,hour in tuples:
                 indexes = t_minus_1[s_hours.isin([hour])&s_weekdays.isin([weekday])].index
-                clustered_volume = ds.U_train[indexes,station_ind,-1].numpy()
+                clustered_volume = getattr(ds,f"U_{training_mode}")[indexes,station_ind,-1].numpy()
                 list_of_point_to_plots.append(clustered_volume)
             return list_of_point_to_plots
     
@@ -109,7 +109,7 @@ def get_usefull_params(ds,t_minus_1,agg,posible_weekdays,posible_hours,posible_m
             list_of_point_to_plots = []
             for hour in tuples:
                 indexes = t_minus_1[s_hours.isin([hour])].index
-                clustered_volume = ds.U_train[indexes,station_ind,-1].numpy()
+                clustered_volume = getattr(ds,f"U_{training_mode}")[indexes,station_ind,-1].numpy()
                 list_of_point_to_plots.append(clustered_volume)
             return list_of_point_to_plots
     else: 
