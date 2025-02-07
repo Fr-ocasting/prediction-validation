@@ -86,7 +86,7 @@ def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'D
                     (gdf_POI_2_tile_ids['name'] == spatial_unit ) & 
                     (gdf_POI_2_tile_ids['type'] == f"{POI_or_station}{expanded}")
     ]
-
+    print('type_POI: ',type_POI,'spatial_unit: ', spatial_unit, 'POI_or_station: ',POI_or_station)
     assert len(gdf_obj) == 1, f"Length of gdf = {len(gdf_obj)} while it should be = 1"
 
     osmid = gdf_obj['id'].values[0]
@@ -117,8 +117,10 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         gdf_POI_2_tile_ids = gpd.read_file(f"{FOLDER_PATH}/POIs/gdf_POI_2_tile_ids.geojson")
         netmob_consumption = pd.DataFrame(index = df_true.index)
         for app in apps:
-            for type_POI,spatial_unit,POI_or_station in zip(type_POIs,spatial_units,POI_or_stations):
-                for transfer_mode in transfer_modes:
+            for transfer_mode in transfer_modes:
+                netmob_consumption_app_i = pd.DataFrame(index = df_true.index)
+                for type_POI,spatial_unit,POI_or_station in zip(type_POIs,spatial_units,POI_or_stations):
+                
                     serie_netmob = netmob_volume_on_POI(gdf_POI_2_tile_ids,app,transfer_mode,type_POI,spatial_unit,POI_or_station,expanded)
                     serie_netmob = serie_netmob.loc[df_true.index]
 
@@ -127,8 +129,10 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
                     
                     name_netmob_serie = f"{app}_{transfer_mode} at {spatial_unit}"
 
-                    netmob_consumption[name_netmob_serie] = serie_netmob
-        netmob_consumption['Sum_of_apps'] = netmob_consumption.sum(axis=1)/len(netmob_consumption.columns)
+                    #netmob_consumption[name_netmob_serie] = serie_netmob
+                    netmob_consumption_app_i[name_netmob_serie] = serie_netmob
+                netmob_consumption[f'{app}_{transfer_mode}_sum_POIs'] = netmob_consumption_app_i.sum(axis=1)
+        #netmob_consumption['Sum_of_apps'] = netmob_consumption.sum(axis=1)/len(netmob_consumption.columns)
     else:
         netmob_consumption = None
     visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,WIDTH,HEIGHT,MIN_FLOW,training_mode = training_mode,netmob_consumption = netmob_consumption)
@@ -168,7 +172,6 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
             col1 = column(p1,p3,select)   
         else:
             col1 = column(p1,select) 
-
     col2 = plot_loss_from_trainer(trainer,width=width//3,height=2*height,bool_show=False)
     grid = row(col1,col2)
 

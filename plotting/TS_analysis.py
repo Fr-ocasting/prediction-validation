@@ -167,30 +167,32 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
                      width=width,height=height)
        legend_it = []
        colors = ['blue','red']
-       for k,training_mode in enumerate(['train','valid']):
-             name= f"{training_mode}_loss"
-             loss_list = getattr(trainer,name)
-             c = p.line(x=np.arange(len(loss_list)), y=loss_list, alpha=0.8,color = colors[k])
 
-             last_loss = str_valeur(loss_list[-1])
-             best_loss = str_valeur(np.min(np.array(loss_list)))
-             displayed_legend = f"{name} \n   Last loss: {last_loss} \n   Best loss: {best_loss}"
-             
-             if training_mode == 'valid':
-              if 'MPIW' in list(trainer.performance['test_metrics'].keys()):
-                    test_mpiw = str_valeur(trainer.performance['test_metrics']['MPIW'])
-                    test_picp =  "{:.2%}".format(trainer.performance['test_metrics']['PICP'])
-                    displayed_legend = f"{displayed_legend}\n   Test MPIW: {test_mpiw}\n   Test PICP: {test_picp}"
-              if 'mse' in list(trainer.performance['test_metrics'].keys()):
-                     test_mae = str_valeur(trainer.performance['test_metrics']['mae'])
-                     test_mse = str_valeur(trainer.performance['test_metrics']['mse'])
-                     displayed_legend = f"{displayed_legend}\n   Test MSE: {test_mse}\n   Test MAE: {test_mae}"
+       if len(trainer.train_loss) > 0:
+              for k,training_mode in enumerate(['train','valid']):
+                     name= f"{training_mode}_loss"
+                     loss_list = getattr(trainer,name)
+                     c = p.line(x=np.arange(len(loss_list)), y=loss_list, alpha=0.8,color = colors[k])
 
-             legend_it.append((displayed_legend, [c]))
+                     last_loss = str_valeur(loss_list[-1])
+                     best_loss = str_valeur(np.min(np.array(loss_list)))
+                     displayed_legend = f"{name} \n   Last loss: {last_loss} \n   Best loss: {best_loss}"
+                     
+                     if training_mode == 'valid':
+                            if 'MPIW' in list(trainer.performance['test_metrics'].keys()):
+                                   test_mpiw = str_valeur(trainer.performance['test_metrics']['MPIW'])
+                                   test_picp =  "{:.2%}".format(trainer.performance['test_metrics']['PICP'])
+                                   displayed_legend = f"{displayed_legend}\n   Test MPIW: {test_mpiw}\n   Test PICP: {test_picp}"
+                            if 'mse' in list(trainer.performance['test_metrics'].keys()):
+                                   test_mae = str_valeur(trainer.performance['test_metrics']['mae'])
+                                   test_mse = str_valeur(trainer.performance['test_metrics']['mse'])
+                                   displayed_legend = f"{displayed_legend}\n   Test MSE: {test_mse}\n   Test MAE: {test_mae}"
 
-       p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
-       legend = Legend(items=legend_it)
-       p.add_layout(legend, 'below')
+                     legend_it.append((displayed_legend, [c]))
+
+              p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
+              legend = Legend(items=legend_it)
+              p.add_layout(legend, 'below')
 
        if bool_show:
               output_notebook()
