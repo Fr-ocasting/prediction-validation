@@ -310,14 +310,14 @@ class OutputBlock(nn.Module):
 
         self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
         if temporal_graph_transformer_encoder:
-            self.temporal_agg = TransformerGraphEncoder(dim_in=Ko,
-                                                        node_ids = n_vertex,
-                                                        num_layers = 2,
+            self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
+                                                        num_layers = 4,
                                                         num_heads = 4,
-                                                        dim_model = 32,
-                                                        dim_feedforward = 16,
+                                                        dim_model = last_block_channel,
+                                                        dim_feedforward = 4*last_block_channel,
                                                         dropout =dropout
                                                         )
+            self.avgpool = nn.AvgPool3d((Ko,1,1))
         else:
             self.temporal_agg = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
                                               
@@ -332,7 +332,12 @@ class OutputBlock(nn.Module):
         self.vision_concatenation_late = vision_concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
         # ...
-        self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
+
+        if temporal_graph_transformer_encoder:
+            # FC1: [last_block_channel,channels[1]]. Here 'channels[0] never used. Cause we don't change the C dim with TransformerGraphEncoder. 
+            self.fc1 = nn.Linear(in_features=last_block_channel, out_features=channels[1], bias=bias)
+        else:
+            self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
         self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
         self.relu = nn.ReLU()
@@ -347,14 +352,19 @@ class OutputBlock(nn.Module):
         >>> after permute: [B,C',N,1] --> [B,1,N,C']
         outputs:[B,1,N,C']
         '''
-        print('x before temporal agg: ',x.size())
+        #print('x before temporal agg: ',x.size())
         if not(x.numel() == 0):
+            # [B,C,N,L] - > [B,L,N,C]
             x = self.temporal_agg(x)
-            print('x after temporal agg: ',x.size())
-            if not(self.temporal_graph_transformer_encoder):
+            #print('x after temporal agg: ',x.size())
+            # Need to AggPool on temporal dim:
+            if self.temporal_graph_transformer_encoder:
+                # [B,L,N,C] ->  [B,1,N,C]
+                x = self.avgpool(x)
+            else:
                 x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
             
-        print('x after permute: ',x.size())
+        #print('x after permute: ',x.size())
         return x
 
 
@@ -366,10 +376,10 @@ class OutputBlock(nn.Module):
         #print('x.size after temporal conv + permute: ',x.size())
 
         if self.vision_concatenation_late:
-            # Concat [B,C,N,Z] + [B,C,N,L'] -> [B,C,N,Z+L']
+            # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
             x = torch.concat([x,x_vision],axis=-1)
         if self.TE_concatenation_late:
-            # Concat [B,C,N,Z] + [B,C,N,L_calendar]-> [B,C,N,Z+L_calendar]
+            # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,C,N,Z+L_calendar]
             x = torch.concat([x,x_calendar],axis=-1) 
 
         #print('x.size after concatenation late if exists: ',x.size())

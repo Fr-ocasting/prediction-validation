@@ -28,24 +28,24 @@ class Residual(nn.Module):
         return x
 
 class AttentionHead(nn.Module):
-    def __init__(self, dim_in: int, dim_v: int, dim_k: int,kernel_size: int = 1 , stride :int =1):
+    def __init__(self, dim_model: int, dim_v: int, dim_k: int,kernel_size: int = 1 , stride :int =1):
         super().__init__()
         self.d_k=dim_k
         self.d_v=dim_v
         self.q_conv=nn.Conv2d(
-                dim_in,
+                dim_model,
                 dim_k,
                 kernel_size=(kernel_size, 1),
                 padding=(int((kernel_size - 1) / 2), 0),
                 stride=(stride, 1),dtype=torch.float)
         self.k_conv=nn.Conv2d(
-                dim_in,
+                dim_model,
                 dim_k,
                 kernel_size=(kernel_size, 1),
                 padding=(int((kernel_size - 1) / 2), 0),
                 stride=(stride, 1),dtype=torch.float)
         self.v_conv=nn.Conv2d(
-                dim_in,
+                dim_model,
                 dim_v,
                 kernel_size=(kernel_size, 1),
                 padding=(int((kernel_size - 1) / 2), 0),
@@ -65,29 +65,34 @@ class AttentionHead(nn.Module):
         # x=x.transpose(1,2)
         #Q, K, V=torch.split(self.qkv_conv(x), [self.d_k , self.d_k, self.d_v],
         #                            dim=1)
+        #print('\nHead')
+        #print('Input x ',x.size())
         Q=self.q_conv(x).permute(0,3,2,1)
         K=self.k_conv(x).permute(0,3,2,1)
         V=self.v_conv(x).permute(0,3,2,1)
 
-
+        #print('Q,K,V:',Q.size(),K.size(),V.size())
 
         x=self.attention(Q,K,V).transpose(1,2).contiguous().view(batch_size,seq_length,graph_size, self.d_k)
         
         return x
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, num_heads: int, dim_in: int,dim_k,dim_q,dim_v):
+    def __init__(self, dim_model: int, num_heads: int,dim_k,dim_q,dim_v):
         super().__init__()
         self.heads = nn.ModuleList(
-            [AttentionHead(dim_in, dim_v, dim_k) for _ in range(num_heads)]
+            [AttentionHead(dim_model, dim_v, dim_k) for _ in range(num_heads)]
         )
-        self.linear = nn.Linear(num_heads * dim_k, dim_in,dtype=torch.float)
+        self.linear = nn.Linear(num_heads * dim_k, dim_model,dtype=torch.float)
 
     def forward(self, x) -> Tensor:
         outs=[]
+        #print('Input MHA: ',x.size())
         for h in self.heads:
             outs.append(h(x))
         outs=torch.cat(outs, dim=-1)
+        #print('Outs before linear: ',outs.size())
+        #print('Linear: ',self.linear)
         outs=self.linear(
             outs
         )
@@ -97,16 +102,15 @@ class MultiHeadAttention(nn.Module):
 class TransformerGraphEncoderLayer(nn.Module):
     def __init__(
         self,
-        dim_in: int = 32,
-        dim_model: int = 128,
-        num_heads: int = 8,
+        dim_model: int = 64,
+        num_heads: int = 4,
         dim_feedforward: int = 512,
         dropout: float = 0.1,
     ):
         super().__init__()
         dim_v=dim_q = dim_k = max(dim_model // num_heads, 1)
         self.attention = Residual(
-            MultiHeadAttention(num_heads, dim_in,dim_v,dim_q,dim_k),
+            MultiHeadAttention(dim_model,num_heads,dim_v,dim_q,dim_k),
             dimension=dim_model,
             dropout=dropout,
         )
@@ -117,35 +121,39 @@ class TransformerGraphEncoderLayer(nn.Module):
         )
         self.norm = nn.LayerNorm(dim_model,dtype=torch.float)
     def forward(self, src: Tensor) -> Tensor:
-
+        #print('\nStart Attention: ')
+        #print('src before attention: ',src.size())
         src = self.attention(self.norm(src))
-
+        #print('src after attention: ',src.size())
+        src = self.feed_forward(src)
+        #print('src after feedforward: ',src.size())
         return self.feed_forward(src)
 
 class PositionalEncoder(nn.Module):
-    def __init__(self, d_model,node_ids = 22, max_seq_len = 200):
+    def __init__(self, dim_model,node_ids = 22, max_seq_len = 200):
         '''
-        d_model: embedding dim of the tranformer 
+        dim_model: nb channels of the inputs of the TransformerGraphEncoder (i.e output of the traffic core-model)
+                    but also the total dimension of embedding for the TransformerGraphEncoder
         node_ids: nb of graph Nodes ???
         '''
         
         super().__init__()
-        self.d_model = d_model
+        self.dim_model = dim_model
         
         # create constant 'pe' matrix with values dependant on z
         # pos and i
-        pe = torch.zeros(max_seq_len,node_ids , d_model)
+        pe = torch.zeros(max_seq_len,node_ids , dim_model)
         for pos in range(max_seq_len):
           for node_id in range(0,node_ids) :
-            for i in range(0, d_model, 2):
+            for i in range(0, dim_model, 2):
                 pe[pos, node_id, i] = \
-                math.sin(pos / (10000 ** ((2 * i)/d_model)))
+                math.sin(pos / (10000 ** ((2 * i)/dim_model)))
                 pe[pos, node_id, i + 1] = \
-                math.cos(pos / (10000 ** ((2 * (i + 1))/d_model)))
+                math.cos(pos / (10000 ** ((2 * (i + 1))/dim_model)))
                 
         pe = pe.unsqueeze(0)
         #self.learnable_pe=nn.Linear(d_model, d_model,dtype=torch.float)
-        self.norm=nn.LayerNorm(d_model,dtype=torch.float)
+        self.norm=nn.LayerNorm(dim_model,dtype=torch.float)
         self.register_buffer('pe', pe)
 
     
@@ -154,16 +162,19 @@ class PositionalEncoder(nn.Module):
         # x = x * math.sqrt(self.d_model)
         #add constant to embedding
         seq_len = x.size(1)
-        
-        x = self.norm(x + Variable(self.pe[:,:seq_len,:,:], \
-        requires_grad=False).cuda())
+        #print('\nStart positional Encoder: ')
+        #print('x.size: ', x.size())
+        #print('self.pe[:,:seq_len,:,:]: ', self.pe[:,:seq_len,:,:].size())
+        if torch.cuda.is_available():
+            x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False).cuda())
+        else:
+            x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False))
         
         return x
 
 class TransformerGraphEncoder(nn.Module):
     def __init__(
         self,
-        dim_in: int = 32,
         node_ids: int = 22,
         num_layers: int = 6,
         dim_model: int = 128,
@@ -174,15 +185,22 @@ class TransformerGraphEncoder(nn.Module):
         super().__init__()
         self.layers = nn.ModuleList(
             [
-            TransformerGraphEncoderLayer(dim_in,dim_model, num_heads, dim_feedforward, dropout)      
+            TransformerGraphEncoderLayer(dim_model, num_heads, dim_feedforward, dropout)      
             for _ in range(num_layers)
             ]
         )
         self.positional_encoder=PositionalEncoder(dim_model,node_ids)
     def forward(self, x: Tensor) -> Tensor:
+        """
+        inputs: x [B,C,L,N]
+        """
+
+        #print('\nStart TransformerGraphEncoder: ')
+        x = x.permute(0,2,3,1)
         x += self.positional_encoder(x)
         for layer in self.layers:
             x = layer(x)
+            #print('x.size after layer: ', x.size())
 
         return x
     
