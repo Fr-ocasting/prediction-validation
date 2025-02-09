@@ -78,7 +78,7 @@ class full_model(nn.Module):
             self.pos_node_attributes = args.pos_node_attributes
 
         else:
-            if hasattr(args,'stacked_contextual'):
+            if hasattr(args,'stacked_contextual') and args.stacked_contextual:
                 raise ValueError("No attribute 'pos_node_attributes' while model supposed to stack contextual tensors as Node related information")
             self.pos_node_attributes = None
             
@@ -298,7 +298,7 @@ def load_model(dataset, args):
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
         Ko = get_output_kernel_size(args)
         blocks = get_block_dims(args,Ko)
-        
+
         gso,_ = get_gso_from_adj(dataset, args)
         model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
 

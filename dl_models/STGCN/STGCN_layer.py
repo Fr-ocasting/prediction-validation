@@ -1,8 +1,18 @@
+
 import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
+
+import sys 
+import os 
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+
+from dl_models.TransformerGraphEncoder import TransformerGraphEncoder
 
 class Align(nn.Module):
     def __init__(self, c_in, c_out):
@@ -96,16 +106,19 @@ class TemporalConvLayer(nn.Module):
         # =========
         # MODIFICATION EFFECTUEE ICI AVEC LE SELF.ENABLE_PADDING QUI N EXISTAIT PAS 
         # =========
-        print('Entry TemporalConvLayer')
-        print('x: ',x.size())
-        if self.enable_padding:
-            x_in = self.align(x)
-        else: 
-            x_in = self.align(x)[:, :, self.Kt - 1:, :]  
-        print('x after align: ',x_in.size()) 
+        #print('Entry TemporalConvLayer')
+        #print('x: ',x.size())
+
+        # Align Residual : 
+        x_in = self.align(x)
+
+        if not(self.enable_padding):
+            x_in = x_in[:, :, self.Kt - 1:, :]  
+
+        #print('x after align: ',x_in.size()) 
         x_causal_conv = self.causal_conv(x)
-        print('x after causal conv: ',x_causal_conv.size())
-        blabla 
+        #print('x after causal conv: ',x_causal_conv.size())
+        #blabla 
 
         if self.act_func == 'glu' or self.act_func == 'gtu':
             x_p = x_causal_conv[:, : self.c_out, :, :]
@@ -291,10 +304,23 @@ class OutputBlock(nn.Module):
 
     def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout,
                  vision_concatenation_late,extracted_feature_dim,
-                 TE_concatenation_late,embedding_dim
+                 TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder
                  ):
         super(OutputBlock, self).__init__()
-        self.tmp_conv1 = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
+
+        self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
+        if temporal_graph_transformer_encoder:
+            self.temporal_agg = TransformerGraphEncoder(dim_in=Ko,
+                                                        node_ids = n_vertex,
+                                                        num_layers = 2,
+                                                        num_heads = 4,
+                                                        dim_model = 32,
+                                                        dim_feedforward = 16,
+                                                        dropout =dropout
+                                                        )
+        else:
+            self.temporal_agg = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
+                                              
 
         # Design Input Dimension according to contextual data integration or not: 
         in_channel_fc1 = channels[0]  #blocks[-2][0]
@@ -312,13 +338,32 @@ class OutputBlock(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
 
+    def forward_temporal_agg(self,x):
+        '''
+        Reduce the temporal dimension to 1. 
+
+        inputs: x [B,C,N,L]
+        >>> after TemporalConvLayer or TemporalGraphTransformerEncoder: x [B,C,N,L] -- >[B,C',N,1]
+        >>> after permute: [B,C',N,1] --> [B,1,N,C']
+        outputs:[B,1,N,C']
+        '''
+        print('x before temporal agg: ',x.size())
+        if not(x.numel() == 0):
+            x = self.temporal_agg(x)
+            print('x after temporal agg: ',x.size())
+            if not(self.temporal_graph_transformer_encoder):
+                x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
+            
+        print('x after permute: ',x.size())
+        return x
+
 
     def forward(self, x,x_vision = None,x_calendar = None):
-        if not(x.numel() == 0):
-            #print('\nstart output block')
-            #print('x.size(): ',x.size())
-            x = self.tmp_conv1(x)
-            x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
+        #print("\nEntry Output Block:")
+        #print('x.size(): ',x.size())
+        x = self.forward_temporal_agg(x)
+
+        #print('x.size after temporal conv + permute: ',x.size())
 
         if self.vision_concatenation_late:
             # Concat [B,C,N,Z] + [B,C,N,L'] -> [B,C,N,Z+L']
@@ -326,11 +371,17 @@ class OutputBlock(nn.Module):
         if self.TE_concatenation_late:
             # Concat [B,C,N,Z] + [B,C,N,L_calendar]-> [B,C,N,Z+L_calendar]
             x = torch.concat([x,x_calendar],axis=-1) 
-        
+
+        #print('x.size after concatenation late if exists: ',x.size())
+        #print("\nforward output module:")
         x = self.fc1(x)
+        #print('x.size after fc1: ',x.size())
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)
+        #print('x.size after fc2: ',x.size())
         x = x.permute(0, 3, 1, 2)
+        #print('output (after permute): ',x.size())
+        #blabla
 
         return x
