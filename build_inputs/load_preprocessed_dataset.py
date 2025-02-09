@@ -68,12 +68,14 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              pos_contextual = list(contextual_tensors.keys()).index(name_contextual)
 
              positions[dataset_name] = pos_contextual
-
              subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
              if name_contextual == 'netmob':
                 if args.data_augmentation and args.DA_method == 'noise':
                     raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out ?')     
              if name_contextual == 'subway_out':
+                if args.stacked_contextual:
+                    args.pos_node_attributes = pos_contextual
+
                 if args.data_augmentation and args.DA_method == 'noise':
                     if args.DA_noise_from == 'MSTL':
                         decomposition = fill_and_decompose_df(contextual_ds.raw_values,

@@ -17,7 +17,7 @@ from high_level_DL_method import load_model,load_optimizer_and_scheduler
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 
-def load_configuration(trial_id,load_config):
+def load_configuration(trial_id,load_config,modification = None):
     # If Load config: 
     if load_config:
         from examples.load_best_config import load_best_config
@@ -31,7 +31,8 @@ def load_configuration(trial_id,load_config):
 
     # If new config : 
     else:
-        from examples.load_random_config import args,folds
+        from examples.load_random_config import get_default_args
+        args,folds = get_default_args(modification)
         
     return args,folds
 

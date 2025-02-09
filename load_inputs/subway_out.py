@@ -32,7 +32,7 @@ list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,16)])
 list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
 
 
-#C = 1
+C = 1
 #n_vertex = 40
 
 def load_data(dataset,args,ROOT,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
@@ -50,4 +50,5 @@ def load_data(dataset,args,ROOT,FOLDER_PATH,intersect_coverage_period,normalize,
     preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset)
     preprocessed_personal_input.periods = subway_out.periods
     preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
+    preprocessed_personal_input.C = C
     return preprocessed_personal_input

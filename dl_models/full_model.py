@@ -56,6 +56,9 @@ class full_model(nn.Module):
         # === Vision NetMob ===
         self.tackle_netmob(args)
 
+        # === Tackle Node Graphe Attributes):
+        self.tackle_node_attributes(args)
+
         # === TE ===
         self.te = TE_module(args) if len(vars(args.args_embedding))>0 else None
         if self.te is not None :
@@ -70,6 +73,15 @@ class full_model(nn.Module):
 
         self.n_vertex = args.n_vertex
 
+    def tackle_node_attributes(self,args):
+        if hasattr(args,'pos_node_attributes'):
+            self.pos_node_attributes = args.pos_node_attributes
+
+        else:
+            if hasattr(args,'stacked_contextual'):
+                raise ValueError("No attribute 'pos_node_attributes' while model supposed to stack contextual tensors as Node related information")
+            self.pos_node_attributes = None
+            
     def tackle_netmob(self,args):
         # If 'netmob' is used as contextual data:
         if len(vars(args.args_vision))>0:
@@ -79,9 +91,9 @@ class full_model(nn.Module):
             args.args_vision.dropout = args.dropout
             args.args_vision.x_input_size = args.L
             self.netmob_vision = load_vision_model(args.args_vision)
+            self.pos_netmob = args.contextual_positions[args.args_vision.dataset_name]
             self.vision_input_type = args.vision_input_type
             self.vision_concatenation_early = args.args_vision.concatenation_early
-            self.pos_netmob = args.contextual_positions[args.args_vision.dataset_name]
             print('number of Parameters in Vision Module: {}'.format(sum([p.numel() for p in self.netmob_vision.parameters()])))
             if (not(args.args_vision.concatenation_early) and not(args.args_vision.concatenation_late)):
                  raise ValueError('NetMob input but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
@@ -135,10 +147,8 @@ class full_model(nn.Module):
                 if x.dim() == 4 and extracted_feature.dim()==3:
                     extracted_feature = extracted_feature.unsqueeze(1)
                 x = torch.cat([x,extracted_feature],dim = -1)
-            
         else:
             extracted_feature = None
-
         return x,extracted_feature
     
     def reshaping(self,x):
@@ -153,6 +163,14 @@ class full_model(nn.Module):
         if x.dim()==1: 
             x = x.unsqueeze(-1)           
             x = x.unsqueeze(-1) 
+        return x
+    
+    def stack_node_attribute(self,x,contextual):
+        if getattr(self,'pos_node_attributes') is not None:
+            node_attr = contextual[self.pos_node_attributes]
+            if node_attr.dim() == 3:
+                node_attr = node_attr.unsqueeze(1)
+            x = torch.cat([x,node_attr], dim=1)
         return x
 
     def forward(self,x,contextual = None):
@@ -171,6 +189,7 @@ class full_model(nn.Module):
             if x.dim() == 3:
                 x = x.unsqueeze(1)
 
+        x = self.stack_node_attribute(x,contextual)
         #print('x size after reshaping or reduction to 0: ',x.size())
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
         #print('x after NetMob model: ',x.size())
@@ -279,6 +298,7 @@ def load_model(dataset, args):
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
         Ko = get_output_kernel_size(args)
         blocks = get_block_dims(args,Ko)
+        
         gso,_ = get_gso_from_adj(dataset, args)
         model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
 

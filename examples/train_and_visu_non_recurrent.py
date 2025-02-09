@@ -27,17 +27,17 @@ MIN_FLOW = 40
 
 
 
-def evaluate_config(model_name,dataset_names,dataset_for_coverage,transfer_modes= None,
+def evaluate_config(args_init = None,
+                    modification = {},
+                    fold_to_evaluate = None,
+                    training_mode_to_visualise = ['test','valid','train'],
+                    station=['GER'],
+                    transfer_modes= None,
                     type_POIs = None,
                     spatial_units = None,
                     apps = None,
                     POI_or_stations = None,
                     expanded =None,
-                    modification = {},
-                    station=['GER'],
-                    training_mode_to_visualise = ['test','valid','train'],
-                    args_init = None,
-                    fold_to_evaluate = None
                     ):
     
     '''
@@ -161,7 +161,6 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
         p3=None
 
     select = drag_selection_box(df_true,p1,p2,p3,width=width,height=height//3)
-    output_notebook()
     if p2 is not None:
         if p3 is not None:
             col1 = column(p1,p2,p3,select)
@@ -175,6 +174,7 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
     col2 = plot_loss_from_trainer(trainer,width=width//3,height=2*height,bool_show=False)
     grid = row(col1,col2)
 
+    output_notebook()
     show(grid)
 
 def get_ds(model_name=None,dataset_names=None,dataset_for_coverage=None,

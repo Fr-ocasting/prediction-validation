@@ -108,45 +108,49 @@ def tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,norma
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'subway_out'
 
+    elif 'subway_out_per_station' in args.dataset_names:
+        from load_inputs.subway_out_per_station import load_data      
+        NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates)  
+        args.vision_input_type = 'POIs'
+        netmob_dataset_name = 'subway_out_per_station'
     else :
         raise NotImplementedError(f'load data has not been implemented for the netmob file here {args.dataset_names}')
     
     return(NetMob_ds,args,netmob_dataset_name)
 
 def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
-    if (args_vision.dataset_name == 'netmob_POIs_per_station') or (args_vision.dataset_name == 'subway_out_per_station') :
-        List_input_sizes = [contextual_ds[k].U_train.size(2) for k in range(len(contextual_ds)) ]
-        List_nb_channels = [contextual_ds[k].U_train.size(1) for k in range(len(contextual_ds)) ]
-        script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
-        importlib.reload(script) 
-        config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
-        args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
-    elif (args_vision.dataset_name == 'netmob_POIs')or (args_vision.dataset_name == 'subway_out') :
-        input_size = contextual_ds.U_train.size(2)
-        nb_channels = contextual_ds.U_train.size(1)
-        script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
-        importlib.reload(script) 
-        config_vision =script.get_config(input_size,nb_channels)# script.get_config(C_netmob)
-        args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+    if len(vars(args_vision))>0:
+        if (args_vision.dataset_name == 'netmob_POIs_per_station') or (args_vision.dataset_name == 'subway_out_per_station') :
+            List_input_sizes = [contextual_ds[k].U_train.size(2) for k in range(len(contextual_ds)) ]
+            List_nb_channels = [contextual_ds[k].U_train.size(1) for k in range(len(contextual_ds)) ]
+            script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+            importlib.reload(script) 
+            config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
+            args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+        elif (args_vision.dataset_name == 'netmob_POIs')or (args_vision.dataset_name == 'subway_out') :
+            input_size = contextual_ds.U_train.size(2)
+            nb_channels = contextual_ds.U_train.size(1)
+            script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+            importlib.reload(script) 
+            config_vision =script.get_config(input_size,nb_channels)# script.get_config(C_netmob)
+            args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
 
-    else: 
-        raise NotImplementedError(f"args_vision.dataset_name '{args_vision.dataset_name}' n'est probabelment pas importé correctement. Modifier le code.")
-        C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
-        H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
-        script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
-        importlib.reload(script) 
-        config_vision = script.get_config(H,W,L)
-        args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
+        else: 
+            raise NotImplementedError(f"args_vision.dataset_name '{args_vision.dataset_name}' n'est probabelment pas importé correctement. Modifier le code.")
+            C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
+            H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
+            script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.load_config")
+            importlib.reload(script) 
+            config_vision = script.get_config(H,W,L)
+            args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
 
     return args_vision
 
 
 def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize = True):
 
-    # BOOLEAN VALUE : True IF NETMOB IS USED
-    bool_netmob = (sum([True for d in args.dataset_names if 'netmob' in d])) > 0
-    if 'subway_out' in args.dataset_names:
-        bool_netmob = True 
+    # BOOLEAN VALUE : True IF NETMOB or SUBWAY_OUT IS USED as contextual data
+    bool_netmob = (sum([True for d in args.dataset_names if (('netmob' in d) or ('subway_out' in d)) ])) > 0
 
     if bool_netmob: 
         # TACKLE THE INPUT DATA 
@@ -155,13 +159,26 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         print('vision_input_type', args.vision_input_type)
         print('vision_model_name', args.vision_model_name)
-        if args.vision_model_name is None: raise ValueError("You are using 'NetMob' data but you did not defined 'args.vision_model_name'. It needs to be set ")
-        args_vision = Namespace(**{'dataset_name': netmob_dataset_name, 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
-        args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
-        args.args_vision = args_vision
+        if args.vision_model_name is None: 
+            if not args.stacked_contextual:
+                raise ValueError("You are using 'NetMob' data but you did not defined 'args.vision_model_name'. It needs to be set ")
+            else:
+                args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
+                args.C = args.C + NetMob_ds.C
+
+        else:
+            if args.stacked_contextual:
+                raise ValueError("You defined a feature extractor model from your contextual data but you plan to stack the contextual in a channel.\n\
+                                  It's not consistent as with 'stacked_contextual' you are not supposed to extract feature information before the core model.\n\
+                                 Otherwise, set 'stacked_contextual' to False\
+                                 ")
+            else:
+                args_vision = Namespace(**{'dataset_name': netmob_dataset_name, 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
+                args_vision = tackle_config_of_feature_extractor_module(NetMob_ds,args_vision)
+                args.args_vision = args_vision
 
     else:
         NetMob_ds = None
-        args.args_vision = argparse.ArgumentParser(description='netmob').parse_args(args=[])
+        args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
 
     return args,NetMob_ds

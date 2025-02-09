@@ -58,6 +58,9 @@ def get_block_dims(args,Ko):
     number_of_st_conv_blocks = len(blocks) - 3
 
     assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
+
+    # C-in:
+    args.blocks[0][0] = args.C
     return(blocks)
 
 def get_gso_from_adj(dataset, args):

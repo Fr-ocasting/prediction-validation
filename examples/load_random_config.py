@@ -7,30 +7,36 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-
 from examples.benchmark import local_get_args
 
-model_name = 'STGCN' #'CNN'
-dataset_for_coverage = ['subway_in','netmob_POIs'] 
-dataset_names = ['subway_in']
-vision_model_name = [None]
-args = local_get_args(model_name,
-                        args_init = None,
-                        dataset_names=dataset_names,
-                        dataset_for_coverage=dataset_for_coverage,
-                        modification = {'evaluate_complete_ds' : True,
-                                        'vision_model_name': vision_model_name,
-                                        
-                                        'lr':1e-3,
-                                        'weight_decay':0.05,
-                                        'dropout':0.8,
-                                        'scheduler':True,
-                                        'torch_scheduler_milestone':5,
-                                        'torch_scheduler_gamma':0.997,
-                                        'torch_scheduler_lr_start_factor':1,
-                                        #'vision_concatenation_early':True,   
-                                        #'vision_concatenation_late':True,
-                                        #'vision_num_heads':4
-                                        }
-                            )
-folds = list(np.arange(args.K_fold))
+default_args = dict(model_name='STGCN',
+                    args_init = None,
+                    dataset_names=['subway_in'],
+                    dataset_for_coverage=['subway_in','netmob_POIs'],
+                    modification = {},
+                    vision_model_name = None
+                    )
+                            
+
+def get_default_args(modification):
+    if modification is not None:
+        kwargs = {}
+        for attr in ['model_name','dataset_for_coverage','dataset_names']:
+            if attr in modification.keys():
+                kwargs[attr] =  modification[attr]
+                del modification[attr]
+            else:
+                kwargs[attr] =  default_args[attr]     
+        kwargs['modification'] = modification['modification']
+    else:
+        kwargs = default_args
+        
+    kwargs['args_init'] = None 
+    
+    args = local_get_args(**kwargs)
+
+    if hasattr(kwargs['modification'],'fold_to_evaluate'):
+        folds = kwargs['modification']['fold_to_evaluate']
+    else:
+        folds = list(np.arange(args.K_fold))
+    return args,folds

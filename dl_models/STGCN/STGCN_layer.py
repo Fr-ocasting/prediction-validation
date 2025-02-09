@@ -96,11 +96,16 @@ class TemporalConvLayer(nn.Module):
         # =========
         # MODIFICATION EFFECTUEE ICI AVEC LE SELF.ENABLE_PADDING QUI N EXISTAIT PAS 
         # =========
+        print('Entry TemporalConvLayer')
+        print('x: ',x.size())
         if self.enable_padding:
             x_in = self.align(x)
         else: 
-            x_in = self.align(x)[:, :, self.Kt - 1:, :]     
+            x_in = self.align(x)[:, :, self.Kt - 1:, :]  
+        print('x after align: ',x_in.size()) 
         x_causal_conv = self.causal_conv(x)
+        print('x after causal conv: ',x_causal_conv.size())
+        blabla 
 
         if self.act_func == 'glu' or self.act_func == 'gtu':
             x_p = x_causal_conv[:, : self.c_out, :, :]
@@ -262,17 +267,18 @@ class STConvBlock(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
-        #print('\nShape avant de rentrer dans tmp_conv1: ',x.shape)
+        #print('\nShape avant de rentrer dans tmp_conv1: ',x.size())
         x = self.tmp_conv1(x)
-        #print('\nShape après tmp_conv1: ',x.shape)
+        #print('\nShape après tmp_conv1: ',x.size())
         x = self.graph_conv(x)
-        #print('\nShape après graph conv: ',x.shape)
+        #print('\nShape après graph conv: ',x.size())
         x = self.relu(x)
         x = self.tmp_conv2(x)
-        #print('\nShape après tmp_conv2 conv: ',x.shape)
+        #print('\nShape après tmp_conv2 conv: ',x.size())
         x = self.tc2_ln(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
         x = self.dropout(x)
-        #print('\nShape en sortie du STConvBlock: ',x.shape,'\n')
+        #print('\nShape en sortie du STConvBlock: ',x.size(),'\n')
+        #blabla
 
         return x
 
