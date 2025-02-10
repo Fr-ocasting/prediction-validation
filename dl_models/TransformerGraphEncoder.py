@@ -169,6 +169,8 @@ class PositionalEncoder(nn.Module):
         if torch.cuda.is_available():
             x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False).cuda())
         else:
+            print('x.size(): ',x.size())
+            print('self.pe.size(): ',self.pe.size())
             x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False))
         
         return x
@@ -182,6 +184,7 @@ class TransformerGraphEncoder(nn.Module):
         num_heads: int = 8,
         dim_feedforward: int = 512,
         dropout: float = 0.1,
+        bool_positional_encoder: bool = True,
     ):
         super().__init__()
         self.layers = nn.ModuleList(
@@ -190,7 +193,9 @@ class TransformerGraphEncoder(nn.Module):
             for _ in range(num_layers)
             ]
         )
-        self.positional_encoder=PositionalEncoder(dim_model,node_ids)
+        self.bool_positional_encoder = bool_positional_encoder
+        if bool_positional_encoder:
+            self.positional_encoder=PositionalEncoder(dim_model,node_ids)
     def forward(self, x: Tensor) -> Tensor:
         """
         inputs: x [B,C,L,N] ???
@@ -200,7 +205,8 @@ class TransformerGraphEncoder(nn.Module):
 
         #print('\nStart TransformerGraphEncoder: ')
         x = x.permute(0,2,3,1)
-        x += self.positional_encoder(x)
+        if self.bool_positional_encoder:
+            x += self.positional_encoder(x)
         for layer in self.layers:
             x = layer(x)
             #print('x.size after layer: ', x.size())

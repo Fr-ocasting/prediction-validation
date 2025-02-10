@@ -1,7 +1,7 @@
 import numpy as np 
 import torch
-import torch.nn as nn
-
+import torch.nn as nn   
+from torch import Tensor
 # 
 # Relative path:
 import sys 
@@ -13,45 +13,55 @@ if parent_dir not in sys.path:
 # ...
 
 
-from torch.autograd import Variable
-from torch import Tensor
-import math
-import torch.nn.functional as F
 
-from dl_models.TransformerGraphEncoder import TransformerGraphEncoder
+from dl_models.TransformerGraphEncoder import TransformerGraphEncoder,feed_forward
+from dl_models.vision_models.VariableSelectionNetwork.VariableSelectionNetwork import MultiHeadAttention
+
+
+
+
+
 
 
 class model(nn.Module):
     def __init__(
         self,
-        node_ids: int = 22,
-        num_layers: int = 6,
-        dim_model: int = 128,
-        num_heads: int = 8,
-        dim_feedforward: int = 512,
+        L: int = 7,
+        node_ids: int= 40,
+        #num_layers: int = 2,
+        dim_model: int = 24,
+        num_heads: int = 3,
+        dim_feedforward: int = 32,
         dropout: float = 0.1,
     ):
         super().__init__()
-        self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)      
-        self.avgpool = nn.AvgPool3d((node_ids,1,1))
+        #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
+        self.embedding = nn.Linear(L,dim_model)
+        #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
+        query_dim = key_dim = dim_model
+        #self.outputs = feed_forward(dim_model,dim_feedforward)
+        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout)
+
+        #self.avgpool = nn.AvgPool3d((node_ids,1,1))
+        self.avgpool = nn.AvgPool2d((node_ids,1))
     def forward(self, x: Tensor) -> Tensor:
         """
         inputs: 
-        >>> x [B,P,1,L]     
+        >>> x [B,P,L]     
         Apply Spatial Attention on axis 'P', the spatial dim
-        -> x : [B,P,1,L]
+        -> x : [B,P,L]
 
-        outputs: x [B,1,1,L]   # AvgPool on spatial dim 
+        outputs: x [B,1,L]   # AvgPool on spatial dim 
         """
-        # [B,P,L] -> [B,1,P,L]
-        if x.dim()==3:
-            x.unsqueeze(1)
+        # [B,P,L]
+        print('\nEntry SpatialAttn: ',x.size())
+        print('x.size: ',x.size())
+        x_emb = self.embedding(x)
+        print('x.size after embedding: ',x.size())
+        x_mha,attn_weight = self.mha(x_emb,x_emb,x_emb)
+        print('after mha: ',x.size())
 
-        # [B,1,P,L] -> [B,P,1,L]
-        x = x.permute(0,2,1,3)
-
-        print(x.size())
-        x = self.spatial_attn(x)
+        
         print('after spatial attn: ',x.size())
 
         x = self.avgpool(x)

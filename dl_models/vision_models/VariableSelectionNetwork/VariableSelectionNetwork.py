@@ -431,6 +431,9 @@ class MultiHeadAttention(nn.Module):
         # Softmax  ([B,n_heads, nb_units, P]): 
         attn_weights = self.dropout(self.softmax(scaled_compat))
 
+        print('attn_weights: ',attn_weights.size())
+        print(attn_weights[:,0,:,:].sum(0)[0,0],attn_weights[:,0,:,:].sum(1)[0,0],attn_weights[:,0,:,:].sum(2)[0,0])
+
         #[B,n_heads, nb_units, P] x [B,n_heads, P, d] ->   [B,n_heads, nb_units, d]
         context = torch.matmul(attn_weights,V)
         return context,attn_weights
@@ -443,8 +446,12 @@ class MultiHeadAttention(nn.Module):
         values: From x_dynamic    -> [B,P,L]  --|---> Same object
         '''
         batch_size = key.size(0)
-        query,key,values = self.align_dims(query,key,values)
 
+        print('query,key,values: ',query.size(),key.size(),values.size())
+        query,key,values = self.align_dims(query,key,values)
+        print('query,key,values after align: ',query.size(),key.size(),values.size())
+
+        print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
         #Proejction to a laten space of dimenison d: [B,n_heads, P, d_k]
         Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
         K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))

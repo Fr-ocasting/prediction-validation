@@ -39,9 +39,14 @@ def load_vision_model(args_vision):
 
 def load_spatial_attn_model(args):
     script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
-    args_ds_i = importlib.import_module(f"dl_models.SpatialAttn.load_config")
+    scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
+    importlib.reload(scrip_args)
+    args_ds_i = scrip_args.args
+
     args_ds_i.dropout = args.dropout
-    args_ds_i.node_ids = args.L  # SPATIAL ATTENTION ET NON TEMPORAL
+    args_ds_i.node_ids = args.n_vertex  # SPATIAL ATTENTION ET NON TEMPORAL
+    args_ds_i.L = args.L  # SPATIAL ATTENTION ET NON TEMPORAL
+    args_ds_i.bool_positional_encoder = False
 
     importlib.reload(script)
     func = script.model
@@ -200,8 +205,8 @@ class full_model(nn.Module):
             for k,pos_i in enumerate(pos_ds):
                 extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(tensors_i[k]))
                 print('extracted_feature_for_station_i size: ',extracted_feature_for_station_i[-1].size())
-            extracted_feature_for_station_i = torch.cat(extracted_feature_for_station_i,dim=2)
-            print('total extracted feature size: ',extracted_feature_for_station_i[-1].size())
+            extracted_feature_for_station_i = torch.cat(extracted_feature_for_station_i,dim=1).unsqueeze(1) 
+            print('total extracted feature size: ',extracted_feature_for_station_i.size())
 
             list_of_agg_contextual.append(extracted_feature_for_station_i)
         return list_of_agg_contextual

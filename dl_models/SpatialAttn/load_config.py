@@ -6,7 +6,7 @@ parser.add_argument('--dim_model', type=int, default=16, choices=[16,32,64,128],
                     help='Number of embedding dimension of attn')
 
 parser.add_argument('--num_layers', type=int, default=2, choices=[1,2,3,4,5,6],  # 16
-                    help='Number of embedding dimension of attn')
+                    help='Number of attn layer')
 
 parser.add_argument('--num_heads', type=bool, default=2, 
                     choices = [1,2,3,4,8],
