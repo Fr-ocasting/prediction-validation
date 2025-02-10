@@ -50,10 +50,11 @@ class AttentionHead(nn.Module):
                 kernel_size=(kernel_size, 1),
                 padding=(int((kernel_size - 1) / 2), 0),
                 stride=(stride, 1),dtype=torch.float)
-
+        
+        self.softmax = nn.Softmax(-1)
     def attention(self,Q,K,V):
         sqrt_dk=torch.sqrt(torch.tensor(self.d_k))
-        attention_weights=F.softmax((Q @ K.transpose(-2,-1))/sqrt_dk)
+        attention_weights=self.softmax((Q @ K.transpose(-2,-1))/sqrt_dk) # F.softmax((Q @ K.transpose(-2,-1))/sqrt_dk))
         attention_vectors=attention_weights @ V
 
         return attention_vectors            
@@ -192,7 +193,9 @@ class TransformerGraphEncoder(nn.Module):
         self.positional_encoder=PositionalEncoder(dim_model,node_ids)
     def forward(self, x: Tensor) -> Tensor:
         """
-        inputs: x [B,C,L,N]
+        inputs: x [B,C,L,N] ???
+
+        Apply Temporal Attention on axis 'L'.
         """
 
         #print('\nStart TransformerGraphEncoder: ')
@@ -203,6 +206,3 @@ class TransformerGraphEncoder(nn.Module):
             #print('x.size after layer: ', x.size())
 
         return x
-    
-
-    

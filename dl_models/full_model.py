@@ -37,6 +37,18 @@ def load_vision_model(args_vision):
     return func(**filered_args) 
 
 
+def load_spatial_attn_model(args):
+    script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
+    args_ds_i = importlib.import_module(f"dl_models.SpatialAttn.load_config")
+    args_ds_i.dropout = args.dropout
+    args_ds_i.node_ids = args.L  # SPATIAL ATTENTION ET NON TEMPORAL
+
+    importlib.reload(script)
+    func = script.model
+    filered_args = filter_args(func, args_ds_i)
+
+    return func(**filered_args)   
+
 class full_model(nn.Module):
     def __init__(self,dataset, args):
         super(full_model,self).__init__()
@@ -52,12 +64,15 @@ class full_model(nn.Module):
             print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
         # ...
 
-        
         # === Vision NetMob ===
+        args = self.update_vision_args(args)
         self.tackle_netmob(args)
 
         # === Tackle Node Graphe Attributes):
         self.tackle_node_attributes(args)
+
+        # === Tackle module for spatial selection of contextual data: 
+        self.build_spatial_attn_modules(args)
 
         # === TE ===
         self.te = TE_module(args) if len(vars(args.args_embedding))>0 else None
@@ -73,23 +88,18 @@ class full_model(nn.Module):
 
         self.n_vertex = args.n_vertex
 
-    def tackle_node_attributes(self,args):
-        if hasattr(args,'pos_node_attributes'):
-            self.pos_node_attributes = args.pos_node_attributes
-
-        else:
-            if hasattr(args,'stacked_contextual') and args.stacked_contextual:
-                raise ValueError("No attribute 'pos_node_attributes' while model supposed to stack contextual tensors as Node related information")
-            self.pos_node_attributes = None
-            
-    def tackle_netmob(self,args):
-        # If 'netmob' is used as contextual data:
+    def update_vision_args(self,args):
         if len(vars(args.args_vision))>0:
             args.args_vision.n_vertex = args.n_vertex
             args.args_vision.H = args.H
             args.args_vision.W = args.W
             args.args_vision.dropout = args.dropout
             args.args_vision.x_input_size = args.L
+        return args
+    
+    def tackle_netmob(self,args):
+        # If 'netmob' is used as contextual data:
+        if len(vars(args.args_vision))>0:
             self.netmob_vision = load_vision_model(args.args_vision)
             self.pos_netmob = args.contextual_positions[args.args_vision.dataset_name]
             self.vision_input_type = args.vision_input_type
@@ -98,6 +108,7 @@ class full_model(nn.Module):
             if (not(args.args_vision.concatenation_early) and not(args.args_vision.concatenation_late)):
                  raise ValueError('NetMob input but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         else:
+            print('\nNetMob Vision is NONE')
             self.netmob_vision =  None
             self.vision_input_type = None
             self.vision_concatenation_early = False
@@ -151,27 +162,62 @@ class full_model(nn.Module):
             extracted_feature = None
         return x,extracted_feature
     
-    def reshaping(self,x):
-        if x.dim()==4:
-            x = x.squeeze()
+    def tackle_node_attributes(self,args):
+        self.ds_which_need_spatial_attn = args.ds_which_need_spatial_attn
+        self.pos_node_attributes = args.pos_node_attributes
+        for dataset_name in self.ds_which_need_spatial_attn:
+            position_i = getattr(args,f"pos_{dataset_name}")
+            setattr(self,f"pos_{dataset_name}",position_i) 
+            #print(f'Positions added for dataset {dataset_name}: ',position_i)
 
-        # Tackle the case when C=1 and output_dim = 1  
-        if x.dim()==2:
-            x = x.unsqueeze(-1)
-
-        # Tackle the case when n_vertex = 1
-        if x.dim()==1: 
-            x = x.unsqueeze(-1)           
-            x = x.unsqueeze(-1) 
+    def build_spatial_attn_modules(self,args):
+        for dataset_name in self.ds_which_need_spatial_attn:
+            if 'netmob' in dataset_name:
+                for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
+                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args))
+            if 'subway_out' in dataset_name:
+                for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
+                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args))
+            else:
+                raise NotImplementedError(f"Dataset {dataset_name} has not been implemented for spatial selection / spatial attention")
+            
+    def stack_node_attribute(self,x,list_node_attributes):
+        ''' Concat node attributed to the channel dim of x'''
+        x = torch.cat([x]+list_node_attributes, dim=1)
         return x
     
-    def stack_node_attribute(self,x,contextual):
-        if getattr(self,'pos_node_attributes') is not None:
-            node_attr = contextual[self.pos_node_attributes]
+    def spatial_attention(self,x,contextual):
+        '''
+        Some DataSet are not directly available as node attribute. 
+        As example abbout POIs, we need spatial attention to reduce the channel dim to 1. 
+        '''
+        list_of_agg_contextual = []
+        print('ds_which_need_spatial_attn: ',self.ds_which_need_spatial_attn)
+        for dataset_name in self.ds_which_need_spatial_attn:
+            pos_ds = getattr(self,f"pos_{dataset_name}")
+            tensors_i = [contextual[pos_i] for pos_i in pos_ds]
+            extracted_feature_for_station_i = []
+            for k,pos_i in enumerate(pos_ds):
+                extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(tensors_i[k]))
+                print('extracted_feature_for_station_i size: ',extracted_feature_for_station_i[-1].size())
+            extracted_feature_for_station_i = torch.cat(extracted_feature_for_station_i,dim=2)
+            print('total extracted feature size: ',extracted_feature_for_station_i[-1].size())
+
+            list_of_agg_contextual.append(extracted_feature_for_station_i)
+        return list_of_agg_contextual
+    
+    def add_other_node_attributes(self,list_node_attributes,contextual):
+        '''
+        Some 'Node attribute' doesnot need any spatial attention. 
+        It is as example the case for 'subway-out' as contextual data for 'subway-in'. 
+        We directly can attribute an attribute  
+        '''
+        for pos_node_attr in self.pos_node_attributes:
+            node_attr = contextual[pos_node_attr]
             if node_attr.dim() == 3:
                 node_attr = node_attr.unsqueeze(1)
-            x = torch.cat([x,node_attr], dim=1)
-        return x
+            list_node_attributes.append(node_attr)
+        return list_node_attributes
 
     def forward(self,x,contextual = None):
         ''' 
@@ -189,10 +235,25 @@ class full_model(nn.Module):
             if x.dim() == 3:
                 x = x.unsqueeze(1)
 
-        x = self.stack_node_attribute(x,contextual)
-        #print('x size after reshaping or reduction to 0: ',x.size())
+        
+        list_node_attributes = self.spatial_attention(x,contextual)
+        print('After spatial attention, len(list_node_attributes): ',len(list_node_attributes))
+        if len(list_node_attributes) > 0:
+            print('size of tensors in list_node_attributes: ',[t.size() for t in list_node_attributes])
+
+        list_node_attributes = self.add_other_node_attributes(list_node_attributes,contextual)
+
+        print('After node attribution, len(list_node_attributes): ',len(list_node_attributes))
+        if len(list_node_attributes) > 0:
+            print('size of tensors in list_node_attributes: ',[t.size() for t in list_node_attributes])
+
+        print('x size before stacking: ',x.size())
+        x = self.stack_node_attribute(x,list_node_attributes)
+        print('x size after stacking: ',x.size())
+        #blabla
+
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
-        #print('x after NetMob model: ',x.size())
+        print('x after NetMob model: ',x.size())
         x,time_elt = self.forward_te_model(x,contextual)         # Tackle Calendar Data (if exists)
         #print('x after Calendar model: ',x.size())
         #print('CalendarEmbedded Vector: ',time_elt.size())
@@ -200,10 +261,11 @@ class full_model(nn.Module):
         # Core model 
         if self.core_model is not None:
             x= self.core_model(x,extracted_feature,time_elt)
-            #print('x after Core Model: ',x.size())
+            print('x after Core Model: ',x.size())
         # ...
-        x = self.reshaping(x)
-        #print('x after reshaping: ',x.size())
+        x = reshaping(x)
+        print('x after reshaping: ',x.size())
+        blabla
         return(x)
     
     # =========================================================================== #
@@ -239,9 +301,22 @@ class full_model(nn.Module):
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
         return extracted_feature
+    
     ## ==========================================================================
     # =========================================================================== #
+def reshaping(x):
+    if x.dim()==4:
+        x = x.squeeze()
 
+    # Tackle the case when C=1 and output_dim = 1  
+    if x.dim()==2:
+        x = x.unsqueeze(-1)
+
+    # Tackle the case when n_vertex = 1
+    if x.dim()==1: 
+        x = x.unsqueeze(-1)           
+        x = x.unsqueeze(-1) 
+    return x
 
 def load_model(dataset, args):
 

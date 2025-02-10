@@ -164,7 +164,11 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
                 raise ValueError("You are using 'NetMob' data but you did not defined 'args.vision_model_name'. It needs to be set ")
             else:
                 args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
-                args.C = args.C + NetMob_ds.C
+                if type(NetMob_ds)==list:
+                    add_C = NetMob_ds[0].C
+                else:
+                    add_C = NetMob_ds.C
+                args.C = args.C + add_C
 
         else:
             if args.stacked_contextual:
