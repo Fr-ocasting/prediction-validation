@@ -37,16 +37,15 @@ def load_vision_model(args_vision):
     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args):
+def load_spatial_attn_model(args,init_spatial_dim):
     script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
     scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
     importlib.reload(scrip_args)
     args_ds_i = scrip_args.args
-
     args_ds_i.dropout = args.dropout
-    args_ds_i.node_ids = args.n_vertex  # SPATIAL ATTENTION ET NON TEMPORAL
-    args_ds_i.query_dim = args.L  # input dim of Query 
-    args_ds_i.key_dim = args.L  # input dim of Key 
+    args_ds_i.query_dim = init_spatial_dim  # input dim of Query 
+    args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
+
     importlib.reload(script)
     func = script.model
     filered_args = filter_args(func, args_ds_i)
@@ -212,10 +211,11 @@ class full_model(nn.Module):
                 #print('x size: ',x.size())
                 #print('x[:,k,:] size: ',x[:,k,:].size())
                 #print('tensors_i[k].size: ',tensors_i[k].size())
-                # Spatial MultiHead-CrossAttention between x[k] ([B,L]) and contextual_tensor[k] ([B,P,L]) -> Return [B,L]
-                extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(x[:,k,:],tensors_i[k]))
-            # Stack n*[B,L] to [B,N,L]
-            extracted_feature_for_station_i = torch.stack(extracted_feature_for_station_i,dim=1).unsqueeze(1) 
+                # MultiHead-CrossAttention on Spatial Channel  between x[k] ([B,L]) and contextual_tensor[k] ([B,P,L]) -> Return [B,L]
+                # Spatial channel then need to unsqueeze and permute.
+                extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(x[:,k,:].unsqueeze(-1),tensors_i[k].permute(0,2,1)))
+            # Stack n*[B,L,Z] to [B,Z,N,L]
+            extracted_feature_for_station_i = torch.stack(extracted_feature_for_station_i,dim=-1).permute(0,2,3,1)
             #print('total extracted feature size: ',extracted_feature_for_station_i.size())
 
             list_of_agg_contextual.append(extracted_feature_for_station_i)
@@ -233,7 +233,8 @@ class full_model(nn.Module):
             # If Attention is Needed. Example: Full NetMob POI with P >>> N. Or 
             dataset_name_i = self.dict_node_attr2dataset[pos_node_attr]
             if dataset_name_i in self.node_attr_which_need_attn: 
-                node_attr = getattr(self,f"spatial_attn_{dataset_name_i}")(x,node_attr)
+                # Permute to get Spatial Dim as the last dimension
+                node_attr = getattr(self,f"spatial_attn_{dataset_name_i}")(x.permute(0,2,1),node_attr.permute(0,2,1))
             # ...
 
             if node_attr.dim() == 3:

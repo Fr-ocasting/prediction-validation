@@ -25,8 +25,8 @@ class model(nn.Module):
         #node_ids: int= 40,
         #num_layers: int = 2,
         dim_model: int = 24,
-        query_dim: int = 7,
-        key_dim: int = 7,
+        query_dim: int = 1,
+        key_dim: int = 1,
         num_heads: int = 3,
         dim_feedforward: int = 32,
         dropout: float = 0.1,
@@ -43,16 +43,14 @@ class model(nn.Module):
     def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
         """
         inputs: 
-        >>> x_flow_station [B,L]   (= Query)  
-        >>> x_contextual [B,P,L]   (= Key = Values)  
+        >>> x_flow_station [B,L,1] or [B,L,N]   (= Query)  
+        >>> x_contextual [B,L,CP] (= Key = Values)  
 
         Apply Spatial Attention on values 'x_contextual' and is spatial axis of dimension 'P'
-        >>> x_mha : [B,d]  # multi-head attention   (B,N,d works also)
-        >>> x_fc : [B,P,L]   # go back to dimension L 
-        >>> x_agg : [B,1,L]  # Average Pooling on spatial dim 
+        >>> x_mha : [B,L,d]  # multi-head attention   
+        >>> x_fc : [B,L,z]   # Reduce to dimension z (expect z << d)
 
-
-        outputs: x_contextual [B,1,L]   # AvgPool on spatial dim 
+        outputs: x_fc [B,L,z]  
         """
         x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         x_fc = self.feedforward(x_mha)
