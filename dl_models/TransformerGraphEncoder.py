@@ -5,11 +5,13 @@ from torch import Tensor
 import math
 import torch.nn.functional as F
 
-def feed_forward(dim_input: int = 128, dim_feedforward: int = 512) -> nn.Module:
+def feed_forward(dim_input: int = 128, dim_feedforward: int = 512,dim_output: int=None) -> nn.Module:
+    if dim_output is None:
+        dim_output = dim_input
     return nn.Sequential(
         nn.Linear(dim_input, dim_feedforward,dtype=torch.float),
         nn.Mish(),
-        nn.Linear(dim_feedforward, dim_input,dtype=torch.float),
+        nn.Linear(dim_feedforward, dim_output,dtype=torch.float),
     )
     
 class Residual(nn.Module):
@@ -169,8 +171,8 @@ class PositionalEncoder(nn.Module):
         if torch.cuda.is_available():
             x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False).cuda())
         else:
-            print('x.size(): ',x.size())
-            print('self.pe.size(): ',self.pe.size())
+            #print('x.size(): ',x.size())
+            #print('self.pe.size(): ',self.pe.size())
             x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False))
         
         return x

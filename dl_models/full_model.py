@@ -45,9 +45,8 @@ def load_spatial_attn_model(args):
 
     args_ds_i.dropout = args.dropout
     args_ds_i.node_ids = args.n_vertex  # SPATIAL ATTENTION ET NON TEMPORAL
-    args_ds_i.L = args.L  # SPATIAL ATTENTION ET NON TEMPORAL
-    args_ds_i.bool_positional_encoder = False
-
+    args_ds_i.query_dim = args.L  # input dim of Query 
+    args_ds_i.key_dim = args.L  # input dim of Key 
     importlib.reload(script)
     func = script.model
     filered_args = filter_args(func, args_ds_i)
@@ -196,17 +195,23 @@ class full_model(nn.Module):
         Some DataSet are not directly available as node attribute. 
         As example abbout POIs, we need spatial attention to reduce the channel dim to 1. 
         '''
+        # [B,1,N,L] -> [B,N,L]
+        x = x.squeeze()
         list_of_agg_contextual = []
-        print('ds_which_need_spatial_attn: ',self.ds_which_need_spatial_attn)
+        #print('ds_which_need_spatial_attn: ',self.ds_which_need_spatial_attn)
         for dataset_name in self.ds_which_need_spatial_attn:
             pos_ds = getattr(self,f"pos_{dataset_name}")
             tensors_i = [contextual[pos_i] for pos_i in pos_ds]
             extracted_feature_for_station_i = []
             for k,pos_i in enumerate(pos_ds):
-                extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(tensors_i[k]))
-                print('extracted_feature_for_station_i size: ',extracted_feature_for_station_i[-1].size())
-            extracted_feature_for_station_i = torch.cat(extracted_feature_for_station_i,dim=1).unsqueeze(1) 
-            print('total extracted feature size: ',extracted_feature_for_station_i.size())
+                #print('x size: ',x.size())
+                #print('x[:,k,:] size: ',x[:,k,:].size())
+                #print('tensors_i[k].size: ',tensors_i[k].size())
+                # Spatial MultiHead-CrossAttention between x[k] ([B,L]) and contextual_tensor[k] ([B,P,L]) -> Return [B,L]
+                extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(x[:,k,:],tensors_i[k]))
+            # Stack n*[B,L] to [B,N,L]
+            extracted_feature_for_station_i = torch.stack(extracted_feature_for_station_i,dim=1).unsqueeze(1) 
+            #print('total extracted feature size: ',extracted_feature_for_station_i.size())
 
             list_of_agg_contextual.append(extracted_feature_for_station_i)
         return list_of_agg_contextual
@@ -240,25 +245,15 @@ class full_model(nn.Module):
             if x.dim() == 3:
                 x = x.unsqueeze(1)
 
-        
+        # Spatial Attention and attributing node information: 
         list_node_attributes = self.spatial_attention(x,contextual)
-        print('After spatial attention, len(list_node_attributes): ',len(list_node_attributes))
-        if len(list_node_attributes) > 0:
-            print('size of tensors in list_node_attributes: ',[t.size() for t in list_node_attributes])
-
         list_node_attributes = self.add_other_node_attributes(list_node_attributes,contextual)
-
-        print('After node attribution, len(list_node_attributes): ',len(list_node_attributes))
-        if len(list_node_attributes) > 0:
-            print('size of tensors in list_node_attributes: ',[t.size() for t in list_node_attributes])
-
-        print('x size before stacking: ',x.size())
         x = self.stack_node_attribute(x,list_node_attributes)
-        print('x size after stacking: ',x.size())
-        #blabla
+        # ...
 
+        #print('x after attributing node information: ',x.size())
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
-        print('x after NetMob model: ',x.size())
+        #print('x after NetMob model: ',x.size())
         x,time_elt = self.forward_te_model(x,contextual)         # Tackle Calendar Data (if exists)
         #print('x after Calendar model: ',x.size())
         #print('CalendarEmbedded Vector: ',time_elt.size())
@@ -266,11 +261,10 @@ class full_model(nn.Module):
         # Core model 
         if self.core_model is not None:
             x= self.core_model(x,extracted_feature,time_elt)
-            print('x after Core Model: ',x.size())
+            #print('x after Core Model: ',x.size())
         # ...
         x = reshaping(x)
-        print('x after reshaping: ',x.size())
-        blabla
+        #print('x after reshaping: ',x.size())
         return(x)
     
     # =========================================================================== #

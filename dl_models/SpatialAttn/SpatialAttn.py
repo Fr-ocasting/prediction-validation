@@ -19,52 +19,48 @@ from dl_models.vision_models.VariableSelectionNetwork.VariableSelectionNetwork i
 
 
 
-
-
-
-
 class model(nn.Module):
     def __init__(
         self,
-        L: int = 7,
-        node_ids: int= 40,
+        #node_ids: int= 40,
         #num_layers: int = 2,
         dim_model: int = 24,
+        query_dim: int = 7,
+        key_dim: int = 7,
         num_heads: int = 3,
         dim_feedforward: int = 32,
         dropout: float = 0.1,
     ):
         super().__init__()
         #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
-        self.embedding = nn.Linear(L,dim_model)
+        self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim)
         #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
-        query_dim = key_dim = dim_model
         #self.outputs = feed_forward(dim_model,dim_feedforward)
         self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout)
 
         #self.avgpool = nn.AvgPool3d((node_ids,1,1))
-        self.avgpool = nn.AvgPool2d((node_ids,1))
-    def forward(self, x: Tensor) -> Tensor:
+        #self.avgpool = nn.AvgPool2d((node_ids,1))
+    def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
         """
         inputs: 
-        >>> x [B,P,L]     
-        Apply Spatial Attention on axis 'P', the spatial dim
-        -> x : [B,P,L]
+        >>> x_flow_station [B,L]   (= Query)  
+        >>> x_contextual [B,P,L]   (= Key = Values)  
 
-        outputs: x [B,1,L]   # AvgPool on spatial dim 
+        Apply Spatial Attention on values 'x_contextual' and is spatial axis of dimension 'P'
+        >>> x_mha : [B,d]  # multi-head attention   (B,N,d works also)
+        >>> x_fc : [B,P,L]   # go back to dimension L 
+        >>> x_agg : [B,1,L]  # Average Pooling on spatial dim 
+
+
+        outputs: x_contextual [B,1,L]   # AvgPool on spatial dim 
         """
-        # [B,P,L]
-        print('\nEntry SpatialAttn: ',x.size())
-        print('x.size: ',x.size())
-        x_emb = self.embedding(x)
-        print('x.size after embedding: ',x.size())
-        x_mha,attn_weight = self.mha(x_emb,x_emb,x_emb)
-        print('after mha: ',x.size())
+        #print('\nEntry SpatialAttn: ')
+        #print('x_flow_station.size(): ',x_flow_station.size(),'x_contextual: ',x_contextual.size())
+        x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
+        #print('after mha: ',x_mha.size())
+        x_fc = self.feedforward(x_mha)
+        #print('after feedforward: ',x_fc.size())
+        #if x_fc.dim()==3:
+        #    x_fc = self.avgpool(x_fc)
 
-        
-        print('after spatial attn: ',x.size())
-
-        x = self.avgpool(x)
-        print('after avgpool: ',x.size())
-
-        return x
+        return x_fc

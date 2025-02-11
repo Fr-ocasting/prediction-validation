@@ -399,7 +399,7 @@ class MultiHeadAttention(nn.Module):
 
         self.layer_norm = nn.LayerNorm(self.d_k)
 
-    def align_dims(self,query,key,values):
+    def align_axis(self,query,key,values):
         # Case where only 1 traffic time-serie for P contextual data
         if query.dim() == 2: query = query.unsqueeze(1)
         if key.dim() == 2: key = key.unsqueeze(1)
@@ -420,19 +420,20 @@ class MultiHeadAttention(nn.Module):
         Q : [B,n_heads,nb_units,d_k]    # nb_units = 1 if 'per_station'. Otherwise = len(spatial_units)
         K : [B,n_heads,P,d_k]           # P: numer of nodes, d_k : embedding dimension
         V : [B,n_heads,P,d_k]   
+
+
+        Output: 
         '''
-        
-        #[B,n_heads, P, d_k] -> [B,n_heads, d_k, P]
         K = K.transpose(-2, -1)
 
         #[B,n_heads, nb_units, d_k]x[B,n_heads, d_k, P] -> [B,n_heads, nb_units, P]
         scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
 
-        # Softmax  ([B,n_heads, nb_units, P]): 
+        # Softmax  ([B,n_heads, nb_units, P]) -> [B,n_heads,nb_units,P]: 
         attn_weights = self.dropout(self.softmax(scaled_compat))
-
-        print('attn_weights: ',attn_weights.size())
-        print(attn_weights[:,0,:,:].sum(0)[0,0],attn_weights[:,0,:,:].sum(1)[0,0],attn_weights[:,0,:,:].sum(2)[0,0])
+        #print('scaled_compat.size: ',scaled_compat.size())
+        #print('attn_weights: ',attn_weights.size())
+        #print('attn_weights sum on each head: ',[attn_weights[:,h,nb_unit,:].sum(-1)[0] for h in range(Q.size(1)) for nb_unit in range(Q.size(2))])
 
         #[B,n_heads, nb_units, P] x [B,n_heads, P, d] ->   [B,n_heads, nb_units, d]
         context = torch.matmul(attn_weights,V)
@@ -446,13 +447,13 @@ class MultiHeadAttention(nn.Module):
         values: From x_dynamic    -> [B,P,L]  --|---> Same object
         '''
         batch_size = key.size(0)
+        query,key,values = self.align_axis(query,key,values)
+        #print('query,key,values after align: ',query.size(),key.size(),values.size())
+        #print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
 
-        print('query,key,values: ',query.size(),key.size(),values.size())
-        query,key,values = self.align_dims(query,key,values)
-        print('query,key,values after align: ',query.size(),key.size(),values.size())
-
-        print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
-        #Proejction to a laten space of dimenison d: [B,n_heads, P, d_k]
+        #Projection to a laten space of dimenison d: [B,n_heads, P, d_k]
+        #   query x    self.W_q   -->     QxW_q     
+        # [B,1,L] x [B,L,d_model] --> [B,1,d_model] --split_head--> [B,n_heads,1,d_model//n_heads] 
         Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
         K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))
         V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
