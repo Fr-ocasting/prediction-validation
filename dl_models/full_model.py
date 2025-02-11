@@ -171,6 +171,7 @@ class full_model(nn.Module):
         self.pos_node_attributes = args.pos_node_attributes
         self.dict_node_attr2dataset = args.dict_node_attr2dataset
         self.node_attr_which_need_attn = args.node_attr_which_need_attn
+        self.stacked_contextual = args.stacked_contextual
         for dataset_name in self.ds_which_need_spatial_attn:
             position_i = getattr(args,f"pos_{dataset_name}")
             setattr(self,f"pos_{dataset_name}",position_i) 
@@ -254,15 +255,16 @@ class full_model(nn.Module):
             x = torch.Tensor().to(x)
 
         # Spatial Attention and attributing node information: 
-        list_node_attributes = self.spatial_attention(x,contextual)
-        list_node_attributes = self.add_other_node_attributes(list_node_attributes,x,contextual)
+        if self.stacked_contextual: 
+            list_node_attributes = self.spatial_attention(x,contextual)
+            list_node_attributes = self.add_other_node_attributes(list_node_attributes,x,contextual)
 
-        # [B,N,L] -> [B,1,N,L]
-        if x.dim() == 3:
-            x = x.unsqueeze(1)
+            # [B,N,L] -> [B,1,N,L]
+            if x.dim() == 3:
+                x = x.unsqueeze(1)
 
-        # [B,1,N,L] -> [B,C,N,L]
-        x = self.stack_node_attribute(x,list_node_attributes)
+            # [B,1,N,L] -> [B,C,N,L]
+            x = self.stack_node_attribute(x,list_node_attributes)
 
 
         #print('x after attributing node information: ',x.size())

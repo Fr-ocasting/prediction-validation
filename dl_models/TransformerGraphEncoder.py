@@ -190,8 +190,7 @@ class TransformerGraphEncoder(nn.Module):
     ):
         super().__init__()
         self.layers = nn.ModuleList(
-            [
-            TransformerGraphEncoderLayer(dim_model, num_heads, dim_feedforward, dropout)      
+            [TransformerGraphEncoderLayer(dim_model, num_heads, dim_feedforward, dropout)      
             for _ in range(num_layers)
             ]
         )
