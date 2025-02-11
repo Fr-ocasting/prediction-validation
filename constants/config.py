@@ -139,7 +139,8 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['vision_model_name'] =  None  # -> Define the type of model used to extract contextual information from NetMob
     config['vision_input_type'] =  None  # 'image_per_stations' # 'unique_image_through_lyon'  
     config['stacked_contextual'] = False # If True then stack contextual information to the channel dim. Does not consider anymore contextual tensors but an input tensor.
-    config['temporal_graph_transformer_encoder'] = False
+    config['temporal_graph_transformer_encoder'] = False # if 'True' then change the temporal-conv of the output module to a TemporalGraph Transformer Encoder
+    config['compute_node_attr_with_attn'] = False # If 'True' then compute an attention layer for the full dataset (subway-out or NetMob POIs) without spatial assignment before 
 
     return(config)
 

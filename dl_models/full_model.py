@@ -169,6 +169,8 @@ class full_model(nn.Module):
     def tackle_node_attributes(self,args):
         self.ds_which_need_spatial_attn = args.ds_which_need_spatial_attn
         self.pos_node_attributes = args.pos_node_attributes
+        self.dict_node_attr2dataset = args.dict_node_attr2dataset
+        self.node_attr_which_need_attn = args.node_attr_which_need_attn
         for dataset_name in self.ds_which_need_spatial_attn:
             position_i = getattr(args,f"pos_{dataset_name}")
             setattr(self,f"pos_{dataset_name}",position_i) 
@@ -185,6 +187,9 @@ class full_model(nn.Module):
             else:
                 raise NotImplementedError(f"Dataset {dataset_name} has not been implemented for spatial selection / spatial attention")
             
+        for dataset_name in self.node_attr_which_need_attn: 
+           setattr(self,f"spatial_attn_{dataset_name}",load_spatial_attn_model(args))
+            
     def stack_node_attribute(self,x,list_node_attributes):
         ''' Concat node attributed to the channel dim of x'''
         x = torch.cat([x]+list_node_attributes, dim=1)
@@ -192,11 +197,10 @@ class full_model(nn.Module):
     
     def spatial_attention(self,x,contextual):
         '''
+        x:  [B,N,L]
         Some DataSet are not directly available as node attribute. 
         As example abbout POIs, we need spatial attention to reduce the channel dim to 1. 
         '''
-        # [B,1,N,L] -> [B,N,L]
-        x = x.squeeze()
         list_of_agg_contextual = []
         #print('ds_which_need_spatial_attn: ',self.ds_which_need_spatial_attn)
         for dataset_name in self.ds_which_need_spatial_attn:
@@ -216,7 +220,7 @@ class full_model(nn.Module):
             list_of_agg_contextual.append(extracted_feature_for_station_i)
         return list_of_agg_contextual
     
-    def add_other_node_attributes(self,list_node_attributes,contextual):
+    def add_other_node_attributes(self,list_node_attributes,x,contextual):
         '''
         Some 'Node attribute' doesnot need any spatial attention. 
         It is as example the case for 'subway-out' as contextual data for 'subway-in'. 
@@ -224,6 +228,13 @@ class full_model(nn.Module):
         '''
         for pos_node_attr in self.pos_node_attributes:
             node_attr = contextual[pos_node_attr]
+
+            # If Attention is Needed. Example: Full NetMob POI with P >>> N. Or 
+            dataset_name_i = self.dict_node_attr2dataset[pos_node_attr]
+            if dataset_name_i in self.node_attr_which_need_attn: 
+                node_attr = getattr(self,f"spatial_attn_{dataset_name_i}")(x,node_attr)
+            # ...
+
             if node_attr.dim() == 3:
                 node_attr = node_attr.unsqueeze(1)
             list_node_attributes.append(node_attr)
@@ -241,15 +252,18 @@ class full_model(nn.Module):
         #print('\nx size before forward: ',x.size())
         if self.remove_trafic_inputs:
             x = torch.Tensor().to(x)
-        else:
-            if x.dim() == 3:
-                x = x.unsqueeze(1)
 
         # Spatial Attention and attributing node information: 
         list_node_attributes = self.spatial_attention(x,contextual)
-        list_node_attributes = self.add_other_node_attributes(list_node_attributes,contextual)
+        list_node_attributes = self.add_other_node_attributes(list_node_attributes,x,contextual)
+
+        # [B,N,L] -> [B,1,N,L]
+        if x.dim() == 3:
+            x = x.unsqueeze(1)
+
+        # [B,1,N,L] -> [B,C,N,L]
         x = self.stack_node_attribute(x,list_node_attributes)
-        # ...
+
 
         #print('x after attributing node information: ',x.size())
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):

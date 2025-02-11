@@ -451,6 +451,7 @@ class MultiHeadAttention(nn.Module):
         #print('query,key,values after align: ',query.size(),key.size(),values.size())
         #print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
 
+
         #Projection to a laten space of dimenison d: [B,n_heads, P, d_k]
         #   query x    self.W_q   -->     QxW_q     
         # [B,1,L] x [B,L,d_model] --> [B,1,d_model] --split_head--> [B,n_heads,1,d_model//n_heads] 

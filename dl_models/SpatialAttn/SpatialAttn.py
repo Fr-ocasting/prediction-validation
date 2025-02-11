@@ -54,13 +54,7 @@ class model(nn.Module):
 
         outputs: x_contextual [B,1,L]   # AvgPool on spatial dim 
         """
-        #print('\nEntry SpatialAttn: ')
-        #print('x_flow_station.size(): ',x_flow_station.size(),'x_contextual: ',x_contextual.size())
         x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
-        #print('after mha: ',x_mha.size())
         x_fc = self.feedforward(x_mha)
-        #print('after feedforward: ',x_fc.size())
-        #if x_fc.dim()==3:
-        #    x_fc = self.avgpool(x_fc)
 
         return x_fc
