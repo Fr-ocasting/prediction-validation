@@ -164,10 +164,16 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
                 raise ValueError("You are using 'NetMob' data but you did not defined 'args.vision_model_name'. It needs to be set ")
             else:
                 args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
-                if type(NetMob_ds)==list:
-                    add_C = NetMob_ds[0].C
+                if (args.compute_node_attr_with_attn) or ('per_station' in netmob_dataset_name): 
+                    scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
+                    importlib.reload(scrip_args)
+                    latent_dim = scrip_args.args.latent_dim 
                 else:
-                    add_C = NetMob_ds.C
+                    latent_dim = 1
+                if type(NetMob_ds)==list:
+                    add_C = latent_dim*NetMob_ds[0].C
+                else:
+                    add_C = latent_dim*NetMob_ds.C
                 args.C = args.C + add_C
 
         else:

@@ -173,22 +173,29 @@ class full_model(nn.Module):
         self.stacked_contextual = args.stacked_contextual
         for dataset_name in self.ds_which_need_spatial_attn:
             position_i = getattr(args,f"pos_{dataset_name}")
-            setattr(self,f"pos_{dataset_name}",position_i) 
-            #print(f'Positions added for dataset {dataset_name}: ',position_i)
+            setattr(self,f"pos_{dataset_name}",position_i)
+            for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
+                setattr(self,f"n_units_{dataset_name}_{k}",getattr(args,f"n_units_{dataset_name}_{k}"))
+
+        for dataset_name_i in self.node_attr_which_need_attn: 
+            setattr(self,f"n_units_{dataset_name_i}", getattr(args,f"n_units_{dataset_name_i}"))
 
     def build_spatial_attn_modules(self,args):
         for dataset_name in self.ds_which_need_spatial_attn:
             if 'netmob' in dataset_name:
                 for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
-                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args))
+                    init_spatial_dim = getattr(self,f"n_units_{dataset_name}_{k}")
+                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args,init_spatial_dim))
             if 'subway_out' in dataset_name:
                 for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
-                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args))
+                    init_spatial_dim = getattr(self,f"n_units_{dataset_name}_{k}")
+                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args,init_spatial_dim))
             else:
                 raise NotImplementedError(f"Dataset {dataset_name} has not been implemented for spatial selection / spatial attention")
             
         for dataset_name in self.node_attr_which_need_attn: 
-           setattr(self,f"spatial_attn_{dataset_name}",load_spatial_attn_model(args))
+           init_spatial_dim = getattr(args,f"n_units_{dataset_name}")
+           setattr(self,f"spatial_attn_{dataset_name}",load_spatial_attn_model(args,init_spatial_dim))
             
     def stack_node_attribute(self,x,list_node_attributes):
         ''' Concat node attributed to the channel dim of x'''
@@ -211,7 +218,7 @@ class full_model(nn.Module):
                 #print('x size: ',x.size())
                 #print('x[:,k,:] size: ',x[:,k,:].size())
                 #print('tensors_i[k].size: ',tensors_i[k].size())
-                # MultiHead-CrossAttention on Spatial Channel  between x[k] ([B,L]) and contextual_tensor[k] ([B,P,L]) -> Return [B,L]
+                # MultiHead-CrossAttention on Spatial Channel  between x[k] ([B,L]) and contextual_tensor[k] ([B,P,L]) -> Return [B,L,Z]
                 # Spatial channel then need to unsqueeze and permute.
                 extracted_feature_for_station_i.append(getattr(self,f"spatial_attn_{dataset_name}_{k}")(x[:,k,:].unsqueeze(-1),tensors_i[k].permute(0,2,1)))
             # Stack n*[B,L,Z] to [B,Z,N,L]
@@ -234,7 +241,12 @@ class full_model(nn.Module):
             dataset_name_i = self.dict_node_attr2dataset[pos_node_attr]
             if dataset_name_i in self.node_attr_which_need_attn: 
                 # Permute to get Spatial Dim as the last dimension
+                 # MultiHead-CrossAttention on Spatial Channel  between x ([B,N,L]) and contextual_tensor ([B,P,L]) -> Return [B,L,Z*N]
                 node_attr = getattr(self,f"spatial_attn_{dataset_name_i}")(x.permute(0,2,1),node_attr.permute(0,2,1))
+                init_spatial_dim = getattr(self,f"n_units_{dataset_name_i}")
+                node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),init_spatial_dim,node_attr.size(2)//init_spatial_dim)   # Unstack: [B,L,Z*N] -> [B,L,N,Z]
+                node_attr = node_attr.permute(0,3,2,1)
+                #print('Node attributes to be concatenated: ',node_attr.size())
             # ...
 
             if node_attr.dim() == 3:
@@ -258,7 +270,9 @@ class full_model(nn.Module):
         # Spatial Attention and attributing node information: 
         if self.stacked_contextual: 
             list_node_attributes = self.spatial_attention(x,contextual)
+            #print('list_node_attributes after spatial attn: ',[xb.size() for xb in list_node_attributes])
             list_node_attributes = self.add_other_node_attributes(list_node_attributes,x,contextual)
+            #print('list_node_attributes after add_other_node_attributes: ',[xb.size() for xb in list_node_attributes])
 
             # [B,N,L] -> [B,1,N,L]
             if x.dim() == 3:

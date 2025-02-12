@@ -15,4 +15,7 @@ parser.add_argument('--num_heads', type=bool, default=2,
 parser.add_argument('--dim_feedforward', type=int, default=32, choices=[8,16,32,64,128,256,512],  #  16
                     help='Hidden Dim of the 2FC Layer module at output of each MHA')
 
+parser.add_argument('--latent_dim', type=int, default=3, choices=[1,2,3,4,8,16],  #  16
+                    help='Latent dimension of contextual channel dimension')
+
 args = parser.parse_args(args=[])

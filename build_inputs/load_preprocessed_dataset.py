@@ -27,6 +27,9 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
                                     )
         pos_contextual_i = [list(contextual_tensors.keys()).index(f'{dataset_name}_{ds_i.station_name}') for ds_i in contextual_ds]
         ds_to_predict.normalizers.update({dataset_name:contextual_ds[0].normalizer})
+        for ds_i in contextual_ds:
+            setattr(args,f"n_units_{dataset_name}_{ds_i.station_name}",ds_i.U_train.size(1))
+            setattr(args,f"input_dim_{dataset_name}_{ds_i.station_name}",ds_i.U_train.size(2))
     else:
         contextual_tensors.update({dataset_name: {'train': contextual_ds.U_train,
                             'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
@@ -35,6 +38,8 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
                             )
         pos_contextual_i = list(contextual_tensors.keys()).index(dataset_name)
         ds_to_predict.normalizers.update({dataset_name:contextual_ds.normalizer})
+        setattr(args,f"n_units_{dataset_name}",contextual_ds.U_train.size(1))
+        setattr(args,f"input_dim_{dataset_name}",contextual_ds.U_train.size(2))
 
     
     positions[dataset_name] = pos_contextual_i
