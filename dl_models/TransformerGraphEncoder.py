@@ -61,23 +61,37 @@ class AttentionHead(nn.Module):
 
         return attention_vectors            
     def forward(self, x: Tensor) -> Tensor:
+        '''
+        x : [B,L,N,C]
+
+        >>> permute(0,3,2,1) [B,L,N,C]--> [B,C,N,L]
+        >>> q_conv(): [B,C,N,L] --> [B,C',N,L]              # C' = C//n_head
+        >>> permute(0,3,2,1): [B,C',N,L]--> [B,L,N,C']
+        >>> scaled dot product: [B,L,N,C']--> [B,L,N,C']
+        '''
+        print('\nHead')
+        print('Input q,k,v before conv and permute: ',x.size())
         batch_size = x.size(0)
         seq_length = x.size(1)
         graph_size=x.size(2)
+
         x=x.permute(0,3,2,1)
+        print('Input q,k,v after permute: ',x.size())
         # x=x.transpose(1,2)
         #Q, K, V=torch.split(self.qkv_conv(x), [self.d_k , self.d_k, self.d_v],
         #                            dim=1)
-        #print('\nHead')
-        #print('Input x ',x.size())
+
+
         Q=self.q_conv(x).permute(0,3,2,1)
         K=self.k_conv(x).permute(0,3,2,1)
         V=self.v_conv(x).permute(0,3,2,1)
 
-        #print('Q,K,V:',Q.size(),K.size(),V.size())
+        print('Input q,k,v after conv and permuted again: ',Q.size(),K.size(),V.size())
 
         x=self.attention(Q,K,V).transpose(1,2).contiguous().view(batch_size,seq_length,graph_size, self.d_k)
         
+        print('x after attention: ',x.size())
+        blabla
         return x
 
 class MultiHeadAttention(nn.Module):
@@ -94,8 +108,8 @@ class MultiHeadAttention(nn.Module):
         for h in self.heads:
             outs.append(h(x))
         outs=torch.cat(outs, dim=-1)
-        #print('Outs before linear: ',outs.size())
-        #print('Linear: ',self.linear)
+
+        print('Outs n_head concatenated: ',outs.size())
         outs=self.linear(
             outs
         )
@@ -165,9 +179,10 @@ class PositionalEncoder(nn.Module):
         # x = x * math.sqrt(self.d_model)
         #add constant to embedding
         seq_len = x.size(1)
-        #print('\nStart positional Encoder: ')
-        #print('x.size: ', x.size())
-        #print('self.pe[:,:seq_len,:,:]: ', self.pe[:,:seq_len,:,:].size())
+        print('\nStart positional Encoder: ')
+        print('x.size: ', x.size())
+        print('self.pe[:,:seq_len,:,:]: ', self.pe[:,:seq_len,:,:].size())
+
         if torch.cuda.is_available():
             x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False).cuda())
         else:
@@ -199,17 +214,23 @@ class TransformerGraphEncoder(nn.Module):
             self.positional_encoder=PositionalEncoder(dim_model,node_ids)
     def forward(self, x: Tensor) -> Tensor:
         """
-        inputs: x [B,C,L,N] ???
-
         Apply Temporal Attention on axis 'L'.
+        inputs: x [B,L,N,C]  
+
+        // x --PointWise Temporal Convolution-->[B,L',N,C]-->permute(0,3,2,1)-->[B,C,N,L']-->MHA-->[B,C,N,L']
+        // >>> q_conv=nn.Conv2d(dim_model,dim_model//n_heads,kernel_size=(1, 1)))
+        // >>>  Q=self.q_conv(x).permute(0,3,2,1)
+        // >>> Attn_coeff: [B,C,N,N]
+
         """
 
-        #print('\nStart TransformerGraphEncoder: ')
-        x = x.permute(0,2,3,1)
+        print('\nentry of the Temporal MHA: ',x.size())
         if self.bool_positional_encoder:
             x += self.positional_encoder(x)
         for layer in self.layers:
             x = layer(x)
             #print('x.size after layer: ', x.size())
+
+        print('output from the temporal MHA (before output FC layer): ',x.size())
 
         return x

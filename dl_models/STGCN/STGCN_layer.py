@@ -317,6 +317,7 @@ class OutputBlock(nn.Module):
                                                         dim_feedforward = 4*last_block_channel,
                                                         dropout =dropout
                                                         )
+            #self.avgpool = nn.AvgPool2d((1,Ko))
             self.avgpool = nn.AvgPool3d((Ko,1,1))
         else:
             self.temporal_agg = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
@@ -347,21 +348,29 @@ class OutputBlock(nn.Module):
         '''
         Reduce the temporal dimension to 1. 
 
-        inputs: x [B,C,N,L]
-        >>> after TemporalConvLayer or TemporalGraphTransformerEncoder: x [B,C,N,L] -- >[B,C',N,1]
+        inputs: x [B,C,L,N]
+        >>> Permute for Temporal MHA: x [B,C,L,N] -> [B,N,L,C]
+        >>> after TemporalConvLayer or TemporalGraphTransformerEncoder: x [B,C,L,N] -- >[B,C',N,1]
         >>> after permute: [B,C',N,1] --> [B,1,N,C']
         outputs:[B,1,N,C']
         '''
-        #print('x before temporal agg: ',x.size())
+        print('x before temporal agg: ',x.size())
         if not(x.numel() == 0):
-            # [B,C,N,L] - > [B,L,N,C]
-            x = self.temporal_agg(x)
-            #print('x after temporal agg: ',x.size())
-            # Need to AggPool on temporal dim:
             if self.temporal_graph_transformer_encoder:
-                # [B,L,N,C] ->  [B,1,N,C]
-                x = self.avgpool(x)
+                # [B,C,L,N] --permute--> [B,L,N,C] 
+                x = x.permute(0,2,3,1)
+
+                # [B,L,N,C]--Temporal PointWise Convolution--> [B,L',N,C]-->permute(0,3,2,1)-->[B,C,N,L'] --ScaledDotProduct--> [B,C,N,L']
+                x = self.temporal_agg(x)  ### self.temporal_agg(x.permute(0,3,2,1))
+                print('x after temporal agg: ',x.size())
+
+                x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]   ### [B,N,L,C] ->  [B,N,1,C]
+                print('x after avgpool: ',x.size())
+
+                #x = x.permute(0,2,1,3) #[B,N,1,C]->[B,1,N,C]
+                #print('x after permute: ',x.size())
             else:
+                x = self.temporal_agg(x)
                 x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
             
         #print('x after permute: ',x.size())
@@ -370,7 +379,7 @@ class OutputBlock(nn.Module):
 
     def forward(self, x,x_vision = None,x_calendar = None):
         #print("\nEntry Output Block:")
-        #print('x.size(): ',x.size())
+        #print('x.size(): ',x.size())   ->  [B,C,N,1]
         x = self.forward_temporal_agg(x)
 
         #print('x.size after temporal conv + permute: ',x.size())
@@ -384,7 +393,9 @@ class OutputBlock(nn.Module):
 
         #print('x.size after concatenation late if exists: ',x.size())
         #print("\nforward output module:")
+        print('fc1: ',self.fc1)
         x = self.fc1(x)
+        print('x after fc1: ',x.size())
         #print('x.size after fc1: ',x.size())
         x = self.relu(x)
         x = self.dropout(x)
