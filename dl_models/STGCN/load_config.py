@@ -49,6 +49,19 @@ parser.add_argument('--output_h_dim', type=int, default=64, #128
                     choices = [8,16,32,64,128,256],
                     help="Dimension of hidden layers in output module")
 
+parser.add_argument('--TGE_num_layers', type=int, default=2, 
+                    choices = [1,2,3,4,8],
+                    help="Number of Temporal Graph Encoder Layers if exist")
+
+parser.add_argument('--TGE_num_heads', type=int, default=2, 
+                    choices = [1,2,3,4,8],
+                    help="Number of head in the Multi-Head Self-Attention module of each Temporal Graph Encoder Layers if exist. Have to devide 'temporal_h_dim'. dim_k = temporal_h_dim//n_heads")
+parser.add_argument('--TGE_FC_hdim', type=int, default=32, 
+                    choices = [1,2,3,4,8],
+                    help="h-dim in the 2FC layer output in the TemporalGraphEncoder -->FC1(temporal_h_dim,TGE_FC_hdim) -- FC2FC1(TGE_FC_hdim,temporal_h_dim)")
+
+                    
+
 args = parser.parse_args(args=[])
 
 # Def STGCN dim

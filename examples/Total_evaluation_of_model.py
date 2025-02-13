@@ -126,7 +126,7 @@ if __name__ == '__main__':
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
     from examples.benchmark import local_get_args
 
-    if True:
+    if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','netmob_POIs']
@@ -149,25 +149,30 @@ if __name__ == '__main__':
         num_samples = 500
         #HP_and_valid_one_config(args,epochs_validation,num_samples)
         set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
-    if False:
+    if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in']#['subway_in','subway_out']
+        dataset_names = ['subway_in','netmob_POIs']#['subway_in','subway_out']
         vision_model_name = None #'VariableSelectionNetwork'
 
         args = local_get_args(model_name,
-                                args_init = None,
-                                dataset_names=dataset_names,
-                                dataset_for_coverage=dataset_for_coverage,
-                                modification = {'ray':True,
-                                                'grace_period':20,#20,
-                                                'HP_max_epochs':100,#100,
-                                                'evaluate_complete_ds' : True,
-                                                #'set_spatial_units' : ['BON','SOI','GER','CHA'],
-                                                'vision_model_name': vision_model_name,
-                                                'data_augmentation': True, #True,  #False
-                                                'DA_method':'interpolation', # 'noise' # 'interpolation
-                                                })
+                            args_init = None,
+                            dataset_names=dataset_names,
+                            dataset_for_coverage=dataset_for_coverage,
+                            modification = {'ray':True,
+                                            'grace_period':20,#20,
+                                            'HP_max_epochs':100,#100,
+                                            'evaluate_complete_ds' : True,
+                                            #'set_spatial_units' : ['BON','SOI','GER','CHA'],
+                                            'stacked_contextual': True, # True # False
+                                            'temporal_graph_transformer_encoder': True,
+                                            'compute_node_attr_with_attn' : True,
+
+                                            'vision_model_name': None,
+
+                                            'data_augmentation': True, #True,  #False
+                                            'DA_method':'interpolation', # 'noise' # 'interpolation
+                                            })
 
         # Init 
         epochs_validation = 100#100

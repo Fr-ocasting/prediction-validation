@@ -10,4 +10,8 @@ config = {#"Kt" : tune.choice([3]),  # [2,3,4]
         'temporal_h_dim':tune.choice([8,16,32,64,128,256]),
         'spatial_h_dim': tune.choice([8,16,32,64,128,256]),
         'output_h_dim' : tune.choice([8,16,32,64,128,256]),
+
+        'TGE_num_layers' : tune.choice([1,2,3,4,8]),
+        'TGE_num_heads' : tune.choice([1,2,4,8]),
+        'TGE_FC_hdim' : tune.choice([8,16,32,64,128,256]),
         }

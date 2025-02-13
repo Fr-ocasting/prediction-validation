@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
 
 
-if True: 
+if False: 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
     trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
     epochs_validation = 100

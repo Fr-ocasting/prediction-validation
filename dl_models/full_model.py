@@ -43,7 +43,7 @@ def load_spatial_attn_model(args,init_spatial_dim):
     importlib.reload(scrip_args)
     args_ds_i = scrip_args.args
     args_ds_i.dropout = args.dropout
-    args_ds_i.query_dim = init_spatial_dim  # input dim of Query 
+    args_ds_i.query_dim = args.n_vertex  # input dim of Query 
     args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
 
     importlib.reload(script)
@@ -171,6 +171,7 @@ class full_model(nn.Module):
         self.dict_node_attr2dataset = args.dict_node_attr2dataset
         self.node_attr_which_need_attn = args.node_attr_which_need_attn
         self.stacked_contextual = args.stacked_contextual
+        self.n_vertex = args.n_vertex
         for dataset_name in self.ds_which_need_spatial_attn:
             position_i = getattr(args,f"pos_{dataset_name}")
             setattr(self,f"pos_{dataset_name}",position_i)
@@ -195,6 +196,8 @@ class full_model(nn.Module):
             
         for dataset_name in self.node_attr_which_need_attn: 
            init_spatial_dim = getattr(args,f"n_units_{dataset_name}")
+           #print('dataset_name: ',dataset_name, 'and n_units: ',init_spatial_dim)
+
            setattr(self,f"spatial_attn_{dataset_name}",load_spatial_attn_model(args,init_spatial_dim))
             
     def stack_node_attribute(self,x,list_node_attributes):
@@ -243,8 +246,8 @@ class full_model(nn.Module):
                 # Permute to get Spatial Dim as the last dimension
                  # MultiHead-CrossAttention on Spatial Channel  between x ([B,N,L]) and contextual_tensor ([B,P,L]) -> Return [B,L,Z*N]
                 node_attr = getattr(self,f"spatial_attn_{dataset_name_i}")(x.permute(0,2,1),node_attr.permute(0,2,1))
-                init_spatial_dim = getattr(self,f"n_units_{dataset_name_i}")
-                node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),init_spatial_dim,node_attr.size(2)//init_spatial_dim)   # Unstack: [B,L,Z*N] -> [B,L,N,Z]
+                #init_spatial_dim = getattr(self,f"n_units_{dataset_name_i}")
+                node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.n_vertex,node_attr.size(2)//self.n_vertex)   # Unstack: [B,L,Z*N] -> [B,L,N,Z]
                 node_attr = node_attr.permute(0,3,2,1)
                 #print('Node attributes to be concatenated: ',node_attr.size())
             # ...

@@ -304,17 +304,18 @@ class OutputBlock(nn.Module):
 
     def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout,
                  vision_concatenation_late,extracted_feature_dim,
-                 TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder
+                 TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
+                 TGE_num_layers, TGE_num_heads,TGE_FC_hdim
                  ):
         super(OutputBlock, self).__init__()
 
         self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
         if temporal_graph_transformer_encoder:
             self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
-                                                        num_layers = 4,
-                                                        num_heads = 4,
+                                                        num_layers = TGE_num_layers,
+                                                        num_heads = TGE_num_heads,
                                                         dim_model = last_block_channel,
-                                                        dim_feedforward = 4*last_block_channel,
+                                                        dim_feedforward = TGE_FC_hdim,
                                                         dropout =dropout
                                                         )
             #self.avgpool = nn.AvgPool2d((1,Ko))
@@ -354,7 +355,7 @@ class OutputBlock(nn.Module):
         >>> after permute: [B,C',N,1] --> [B,1,N,C']
         outputs:[B,1,N,C']
         '''
-        print('x before temporal agg: ',x.size())
+        #print('x before temporal agg: ',x.size())
         if not(x.numel() == 0):
             if self.temporal_graph_transformer_encoder:
                 # [B,C,L,N] --permute--> [B,L,N,C] 
@@ -362,10 +363,10 @@ class OutputBlock(nn.Module):
 
                 # [B,L,N,C]--Temporal PointWise Convolution--> [B,L',N,C]-->permute(0,3,2,1)-->[B,C,N,L'] --ScaledDotProduct--> [B,C,N,L']
                 x = self.temporal_agg(x)  ### self.temporal_agg(x.permute(0,3,2,1))
-                print('x after temporal agg: ',x.size())
+                #print('x after temporal agg: ',x.size())
 
                 x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]   ### [B,N,L,C] ->  [B,N,1,C]
-                print('x after avgpool: ',x.size())
+                #print('x after avgpool: ',x.size())
 
                 #x = x.permute(0,2,1,3) #[B,N,1,C]->[B,1,N,C]
                 #print('x after permute: ',x.size())
@@ -393,9 +394,9 @@ class OutputBlock(nn.Module):
 
         #print('x.size after concatenation late if exists: ',x.size())
         #print("\nforward output module:")
-        print('fc1: ',self.fc1)
+        #print('fc1: ',self.fc1)
         x = self.fc1(x)
-        print('x after fc1: ',x.size())
+        #print('x after fc1: ',x.size())
         #print('x.size after fc1: ',x.size())
         x = self.relu(x)
         x = self.dropout(x)

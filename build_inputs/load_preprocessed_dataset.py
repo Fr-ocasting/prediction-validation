@@ -19,17 +19,17 @@ import pandas as pd
 def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn):
     
     if type(contextual_ds) == list:
-        contextual_tensors.update({f'{dataset_name}_{ds_i.station_name}': {'train': ds_i.U_train,
+        contextual_tensors.update({f'{dataset_name}_{k}': {'train': ds_i.U_train,
                                     'valid': ds_i.U_valid if hasattr(ds_i,'U_valid') else None,
                                     'test': ds_i.U_test  if hasattr(ds_i,'U_test') else None}
-                                    for ds_i in contextual_ds
+                                    for k,ds_i in enumerate(contextual_ds)
                                     }
                                     )
-        pos_contextual_i = [list(contextual_tensors.keys()).index(f'{dataset_name}_{ds_i.station_name}') for ds_i in contextual_ds]
+        pos_contextual_i = [list(contextual_tensors.keys()).index(f'{dataset_name}_{k}') for k,ds_i in enumerate(contextual_ds)]
         ds_to_predict.normalizers.update({dataset_name:contextual_ds[0].normalizer})
-        for ds_i in contextual_ds:
-            setattr(args,f"n_units_{dataset_name}_{ds_i.station_name}",ds_i.U_train.size(1))
-            setattr(args,f"input_dim_{dataset_name}_{ds_i.station_name}",ds_i.U_train.size(2))
+        for k,ds_i in enumerate(contextual_ds):
+            setattr(args,f"n_units_{dataset_name}_{k}",ds_i.U_train.size(1))
+            setattr(args,f"input_dim_{dataset_name}_{k}",ds_i.U_train.size(2))
     else:
         contextual_tensors.update({dataset_name: {'train': contextual_ds.U_train,
                             'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
