@@ -150,19 +150,6 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
                                                                                                                              subway_ds,contextual_tensors,contextual_ds,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
-            
-            """
-             if dataset_name == 'netmob_POIs': name_contextual = 'netmob'
-             if dataset_name == 'subway_out': name_contextual = 'subway_out'
-             contextual_tensors.update({name_contextual: {'train': contextual_ds.U_train,
-                                            'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
-                                            'test': contextual_ds.U_test  if hasattr(contextual_ds,'U_test') else None}
-                                            }
-                                         )
-             pos_contextual = list(contextual_tensors.keys()).index(name_contextual)
-             positions[dataset_name] = pos_contextual
-             subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
-             """
             if args.data_augmentation and args.DA_method == 'noise':
                 raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out ?')     
 
@@ -173,19 +160,6 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
                                                                                                                              subway_ds,contextual_tensors,contextual_ds,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
-            """
-            contextual_tensors.update({f'netmob_{NetMob_POI.station_name}': {'train': NetMob_POI.U_train,
-                                            'valid': NetMob_POI.U_valid if hasattr(NetMob_POI,'U_valid') else None,
-                                            'test': NetMob_POI.U_test  if hasattr(NetMob_POI,'U_test') else None}
-                                            for NetMob_POI in contextual_ds
-                                            }
-                                         )
-             pos_netmob = [list(contextual_tensors.keys()).index(f'netmob_{NetMob_POI.station_name}') for NetMob_POI in contextual_ds]
-             positions[dataset_name] = pos_netmob
-             ds_which_need_spatial_attn.append(dataset_name)
-             setattr(args,f"pos_{dataset_name}",pos_netmob)
-             subway_ds.normalizers.update({dataset_name:contextual_ds[0].normalizer})
-             """
             if args.data_augmentation and args.DA_method == 'noise':
                  raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')
 
@@ -196,20 +170,6 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
                                                                                                                              subway_ds,contextual_tensors,contextual_ds,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
-
-            """
-            contextual_tensors.update({f'subway_out_{subway_out_station.station_name}': {'train': subway_out_station.U_train,
-                                            'valid': subway_out_station.U_valid if hasattr(subway_out_station,'U_valid') else None,
-                                            'test': subway_out_station.U_test  if hasattr(subway_out_station,'U_test') else None}
-                                            for subway_out_station in contextual_ds
-                                            }
-                                         )
-             pos_stations = [list(contextual_tensors.keys()).index(f'subway_out_{subway_out_station.station_name}') for subway_out_station in contextual_ds]
-             ds_which_need_spatial_attn.append(dataset_name)
-             setattr(args,f"pos_{dataset_name}",pos_stations)
-             positions[dataset_name] = pos_stations
-             subway_ds.normalizers.update({dataset_name:contextual_ds[0].normalizer})
-             """
 
 
              # build Noises :

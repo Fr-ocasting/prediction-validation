@@ -141,12 +141,12 @@ class TransformerGraphEncoderLayer(nn.Module):
         )
         self.norm = nn.LayerNorm(dim_model,dtype=torch.float)
     def forward(self, src: Tensor) -> Tensor:
-        #print('\nStart Attention: ')
+        #print('\nStart Transformer Graph Encoder Layer: ')
         #print('src before attention: ',src.size())
         src = self.attention(self.norm(src))
         #print('src after attention: ',src.size())
         src = self.feed_forward(src)
-        #print('src after feedforward: ',src.size())
+        #print('src after 2FC: ',src.size())
         return self.feed_forward(src)
 
 class PositionalEncoder(nn.Module):
@@ -230,10 +230,12 @@ class TransformerGraphEncoder(nn.Module):
         #print('\nentry of the Temporal MHA: ',x.size())
         if self.bool_positional_encoder:
             x += self.positional_encoder(x)
+        #print('x after add PE + norm: ',x.size())
         for layer in self.layers:
             x = layer(x)
             #print('x.size after layer: ', x.size())
 
         #print('output from the temporal MHA (before output FC layer): ',x.size())
+        #blabla
 
         return x

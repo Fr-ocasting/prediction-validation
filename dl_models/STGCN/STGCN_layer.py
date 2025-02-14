@@ -365,7 +365,7 @@ class OutputBlock(nn.Module):
                 x = self.temporal_agg(x)  ### self.temporal_agg(x.permute(0,3,2,1))
                 #print('x after temporal agg: ',x.size())
 
-                x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]   ### [B,N,L,C] ->  [B,N,1,C]
+                x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]
                 #print('x after avgpool: ',x.size())
 
                 #x = x.permute(0,2,1,3) #[B,N,1,C]->[B,1,N,C]
@@ -397,7 +397,6 @@ class OutputBlock(nn.Module):
         #print('fc1: ',self.fc1)
         x = self.fc1(x)
         #print('x after fc1: ',x.size())
-        #print('x.size after fc1: ',x.size())
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)

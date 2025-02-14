@@ -53,6 +53,7 @@ class model(nn.Module):
 
         outputs: x_fc [B,L,z]  
         """
+        #print('\nFoward Spatial Attention: ')
         #print('Query (x_flow_station):',x_flow_station.size())
         #print('Key/Values (x_contextual):',x_contextual.size())
         x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)

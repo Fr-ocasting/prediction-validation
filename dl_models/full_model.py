@@ -37,14 +37,16 @@ def load_vision_model(args_vision):
     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,init_spatial_dim):
+def load_spatial_attn_model(args,query_dim,init_spatial_dim):
     script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
     scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
     importlib.reload(scrip_args)
     args_ds_i = scrip_args.args
     args_ds_i.dropout = args.dropout
-    args_ds_i.query_dim = args.n_vertex  # input dim of Query 
+    args_ds_i.query_dim = query_dim  # input dim of Query 
     args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
+
+    #print('\nquery/key dim : ',args_ds_i.query_dim,args_ds_i.key_dim)
 
     importlib.reload(script)
     func = script.model
@@ -183,14 +185,10 @@ class full_model(nn.Module):
 
     def build_spatial_attn_modules(self,args):
         for dataset_name in self.ds_which_need_spatial_attn:
-            if 'netmob' in dataset_name:
+            if ('netmob' in dataset_name) or ('subway_out' in dataset_name):
                 for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
                     init_spatial_dim = getattr(self,f"n_units_{dataset_name}_{k}")
-                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args,init_spatial_dim))
-            if 'subway_out' in dataset_name:
-                for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
-                    init_spatial_dim = getattr(self,f"n_units_{dataset_name}_{k}")
-                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args,init_spatial_dim))
+                    setattr(self,f"spatial_attn_{dataset_name}_{k}",load_spatial_attn_model(args,query_dim=1,init_spatial_dim=init_spatial_dim))
             else:
                 raise NotImplementedError(f"Dataset {dataset_name} has not been implemented for spatial selection / spatial attention")
             
@@ -198,7 +196,7 @@ class full_model(nn.Module):
            init_spatial_dim = getattr(args,f"n_units_{dataset_name}")
            #print('dataset_name: ',dataset_name, 'and n_units: ',init_spatial_dim)
 
-           setattr(self,f"spatial_attn_{dataset_name}",load_spatial_attn_model(args,init_spatial_dim))
+           setattr(self,f"spatial_attn_{dataset_name}",load_spatial_attn_model(args,query_dim=args.n_vertex,init_spatial_dim=init_spatial_dim))
             
     def stack_node_attribute(self,x,list_node_attributes):
         ''' Concat node attributed to the channel dim of x'''
@@ -270,6 +268,7 @@ class full_model(nn.Module):
         if self.remove_trafic_inputs:
             x = torch.Tensor().to(x)
 
+        #print('x before stacking new channels:',x.size())
         # Spatial Attention and attributing node information: 
         if self.stacked_contextual: 
             list_node_attributes = self.spatial_attention(x,contextual)
