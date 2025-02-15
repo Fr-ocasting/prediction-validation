@@ -38,6 +38,8 @@ def evaluate_config(args_init = None,
                     apps = None,
                     POI_or_stations = None,
                     expanded =None,
+                    individual_poi = True,
+                    sum_ts_pois = True
                     ):
     
     '''
@@ -62,7 +64,9 @@ def evaluate_config(args_init = None,
                                            apps=apps,
                                            POI_or_stations = POI_or_stations,
                                            expanded=expanded,
-                                           station=station)
+                                           station=station,
+                                           individual_poi = individual_poi, 
+                                           sum_ts_pois =sum_ts_pois )
     return(trainer,ds,ds_no_shuffle,args)
 
 def train_the_config(args_init,modification,fold_to_evaluate):
@@ -86,7 +90,7 @@ def netmob_volume_on_POI(gdf_POI_2_tile_ids,app = 'Instagram',transfer_mode = 'D
                     (gdf_POI_2_tile_ids['name'] == spatial_unit ) & 
                     (gdf_POI_2_tile_ids['type'] == f"{POI_or_station}{expanded}")
     ]
-    print('type_POI: ',type_POI,'spatial_unit: ', spatial_unit, 'POI_or_station: ',POI_or_station)
+    #print('type_POI: ',type_POI,'spatial_unit: ', spatial_unit, 'POI_or_station: ',POI_or_station)
     assert len(gdf_obj) == 1, f"Length of gdf = {len(gdf_obj)} while it should be = 1"
 
     osmid = gdf_obj['id'].values[0]
@@ -102,8 +106,14 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
                                        apps = None, #['Instagram'],
                                        POI_or_stations = ['POI'],
                                        expanded = '',
-                                       station = 'BON'
+                                       station = 'BON',
+                                       individual_poi = True,
+                                       sum_ts_pois = True
                                        ):
+    '''
+    individual_poi: if True then each Time-Serie of each POIs is visualised
+    sum_ts_pois: if True then for each app and each transfer mode, the sum of all the POIs are represented
+    '''
 
     if hasattr(trainer,'best_weights'):
         trainer.model.load_state_dict(trainer.best_weights, strict=True)
@@ -113,29 +123,34 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
 
     if apps is not None : 
-        # Load gdf for POIs:
-        gdf_POI_2_tile_ids = gpd.read_file(f"{FOLDER_PATH}/POIs/gdf_POI_2_tile_ids.geojson")
-        netmob_consumption = pd.DataFrame(index = df_true.index)
-        for app in apps:
-            for transfer_mode in transfer_modes:
-                netmob_consumption_app_i = pd.DataFrame(index = df_true.index)
-                for type_POI,spatial_unit,POI_or_station in zip(type_POIs,spatial_units,POI_or_stations):
-                
-                    serie_netmob = netmob_volume_on_POI(gdf_POI_2_tile_ids,app,transfer_mode,type_POI,spatial_unit,POI_or_station,expanded)
-                    serie_netmob = serie_netmob.loc[df_true.index]
-
-                    # norm_series :
-                    serie_netmob = (serie_netmob-serie_netmob.min())/(serie_netmob.max()-serie_netmob.min())
-                    
-                    name_netmob_serie = f"{app}_{transfer_mode} at {spatial_unit}"
-
-                    #netmob_consumption[name_netmob_serie] = serie_netmob
-                    netmob_consumption_app_i[name_netmob_serie] = serie_netmob
-                netmob_consumption[f'{app}_{transfer_mode}_sum_POIs'] = netmob_consumption_app_i.sum(axis=1)
-        #netmob_consumption['Sum_of_apps'] = netmob_consumption.sum(axis=1)/len(netmob_consumption.columns)
+        netmob_consumption = get_netmob_consumption_on_specifics_tags_apps(df_true.index,apps,type_POIs,spatial_units,POI_or_stations,transfer_modes,expanded, individual_poi, sum_ts_pois)
     else:
         netmob_consumption = None
     visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,WIDTH,HEIGHT,MIN_FLOW,training_mode = training_mode,netmob_consumption = netmob_consumption)
+
+def get_netmob_consumption_on_specifics_tags_apps(s_dates,apps,type_POIs,spatial_units,POI_or_stations,transfer_modes,expanded, individual_poi = True, sum_ts_pois = True):
+    # Load gdf for POIs:
+    gdf_POI_2_tile_ids = gpd.read_file(f"{FOLDER_PATH}/POIs/gdf_POI_2_tile_ids.geojson")
+    netmob_consumption = pd.DataFrame(index = s_dates)
+    for app in apps:
+        for transfer_mode in transfer_modes:
+            netmob_consumption_app_i = pd.DataFrame(index = s_dates)
+            for type_POI,spatial_unit,POI_or_station in zip(type_POIs,spatial_units,POI_or_stations):
+            
+                serie_netmob = netmob_volume_on_POI(gdf_POI_2_tile_ids,app,transfer_mode,type_POI,spatial_unit,POI_or_station,expanded)
+                serie_netmob = serie_netmob.loc[s_dates]
+
+                # norm_series :
+                serie_netmob = (serie_netmob-serie_netmob.min())/(serie_netmob.max()-serie_netmob.min())
+                
+                name_netmob_serie = f"{app}_{transfer_mode} at {spatial_unit}"
+                if individual_poi:
+                    netmob_consumption[name_netmob_serie] = serie_netmob
+                netmob_consumption_app_i[name_netmob_serie] = serie_netmob
+            if sum_ts_pois:
+                netmob_consumption[f'{app}_{transfer_mode}_sum_POIs'] = netmob_consumption_app_i.sum(axis=1)
+    #netmob_consumption['Sum_of_apps'] = netmob_consumption.sum(axis=1)/len(netmob_consumption.columns)
+    return netmob_consumption
 
 # Get df_True Volume: 
 def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
@@ -150,12 +165,12 @@ def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
        df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
        return(df_true,df_predictions)
 
-def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time,Range,width,height,min_flow,training_mode,netmob_consumption):
+def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time=[],Range=None,width=1200,height=300,min_flow=None,training_mode='test',netmob_consumption=None):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
     p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic Volume Prediction at each subway station ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
 
-    if len(df_prediction)==1:
+    if (df_prediction is not None) and (len(df_prediction)==1):
         p3 = plot_prediction_error(df_true,df_prediction[0],station,metrics =['mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
     else:
         p3=None

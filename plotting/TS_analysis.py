@@ -89,13 +89,14 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
               c = p.line(x=df_true.index, line_width = 2.5, y=df_true[station_i], alpha=0.8,color = Plasma256[int(k*255/len(station))])
               legend_it.append((f'True_{station_i}', [c]))
 
-              if type(df_prediction) == list:
-                     for q_i,df_pred in enumerate(df_prediction):
-                            c = p.line(x=df_pred.index, line_width = 2.5, y=df_pred[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
-                            legend_it.append((f'Prediction_{station_i}_q{q_i}', [c]))
-              else :
-                     c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
-                     legend_it.append((f'Prediction_{station_i}', [c]))
+              if df_prediction is not None: 
+                     if type(df_prediction) == list:
+                            for q_i,df_pred in enumerate(df_prediction):
+                                   c = p.line(x=df_pred.index, line_width = 2.5, y=df_pred[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
+                                   legend_it.append((f'Prediction_{station_i}_q{q_i}', [c]))
+                     else :
+                            c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
+                            legend_it.append((f'Prediction_{station_i}', [c]))
 
        # Add rugby matches :
        for kick_time in kick_off_time:

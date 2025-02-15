@@ -154,13 +154,13 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
 
     # Keep track only on successfull trials:
-
-    analysis.results_df.to_csv(f'{working_dir}/{save_dir}/{trial_id}.csv')
+    path_folder = f'{working_dir}/{save_dir}'
+    analysis.results_df.to_csv(f'{path_folder}/{trial_id}.csv')
     
 
     # Keep track on other args:
-    json_file = load_json_file(f'{working_dir}/{save_dir}')
-    update_json(args,json_file,trial_id,performance={},json_save_path=f'{working_dir}/{save_dir}')
+    json_file = load_json_file(path_folder)
+    update_json(args,json_file,trial_id,performance={},json_save_path=f'{path_folder}/model_args.pkl')
 
     return(analysis,trial_id)
 

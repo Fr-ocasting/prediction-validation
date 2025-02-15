@@ -173,7 +173,6 @@ if __name__ == '__main__':
                                             'data_augmentation': True, #True,  #False
                                             'DA_method':'interpolation', # 'noise' # 'interpolation
                                             })
-
         # Init 
         epochs_validation = 100#100
         num_samples = 500#500

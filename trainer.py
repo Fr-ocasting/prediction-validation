@@ -271,15 +271,17 @@ class Trainer(object):
         # Allow to keep track on the final metrics, and if the trial is 'terminated'
         if (not(self.args.ray)):
             self.chrono.save_model()
-            self.performance = {'valid_loss': self.best_valid,
-                                'valid_metrics':self.performance['valid_metrics'], 
-                                'test_metrics':self.performance['test_metrics'],
-                                'epoch':self.performance['epoch'], 
-                                'training_over' : True, 
-                                'fold': self.args.current_fold
-                                }
-            self.save_best_model(checkpoint,epoch,self.performance,update_checkpoint = False)
-            print(f"\nTraining Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+            if hasattr(self,'performance'):
+                self.performance = {'valid_loss': self.best_valid,
+                                    'valid_metrics':self.performance['valid_metrics'], 
+                                    'test_metrics':self.performance['test_metrics'],
+                                    'epoch':self.performance['epoch'], 
+                                    'training_over' : True, 
+                                    'fold': self.args.current_fold
+                                    }
+                                    
+                self.save_best_model(checkpoint,epoch,self.performance,update_checkpoint = False)
+                print(f"\nTraining Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
             self.chrono.save_model()
 
         self.chrono.stop()
