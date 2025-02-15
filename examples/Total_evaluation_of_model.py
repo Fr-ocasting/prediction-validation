@@ -152,7 +152,7 @@ if __name__ == '__main__':
     if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in','subway_out']#['subway_in','subway_out']
+        dataset_names = ['subway_in','netmob_POIs_per_station']#['subway_in','subway_out']
         vision_model_name = None #'VariableSelectionNetwork'
 
         args = local_get_args(model_name,
@@ -171,7 +171,7 @@ if __name__ == '__main__':
                                             'vision_model_name': None,
 
                                             'data_augmentation': True, #True,  #False
-                                            'DA_method':'interpolation', # 'noise' # 'interpolation
+                                            'DA_method':'rich_interpolation', # 'noise' # 'interpolation
                                             })
         # Init 
         epochs_validation = 100#100

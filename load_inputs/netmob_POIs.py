@@ -69,8 +69,12 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     local_df_dates = pd.DataFrame(coverage_local[indices_dates])
     local_df_dates.columns = ['date']
     # Reduce dimensionality : [T',R] -> [T',R']
-    netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
+
     
+    # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
+    netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
+    # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
+
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
     NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,df_dates = local_df_dates)

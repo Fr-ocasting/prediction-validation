@@ -72,8 +72,14 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
 
         # Reduce dimensionality : 
         netmob_T = netmob_T.reshape(netmob_T.size(0),-1)
-        netmob_T = reduce_dim_by_clustering(pd.DataFrame(netmob_T),epsilon = args.epsilon_clustering)
-        netmob_T = torch.Tensor(netmob_T.values)
+
+        # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
+        if False:
+            netmob_T = reduce_dim_by_clustering(pd.DataFrame(netmob_T),epsilon = args.epsilon_clustering)
+            netmob_T = torch.Tensor(netmob_T.values)
+         # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN    
+         #  
+         
         # netmob_T.shape : [T,len(apps),len(osmid_associated),len(transfer_modes)]
         #netmob_T = netmob_T.permute(3,0,1,2)
         # netmob_T.shape : [T,len(apps)*len(osmid_associated)*len(transfer_modes)] = [T,R]
