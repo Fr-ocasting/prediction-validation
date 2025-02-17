@@ -9,16 +9,18 @@ working_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
-from build_netmob_data import load_subway_shp,load_netmob_gdf,find_ids_within_epsilon
+from build_inputs.build_netmob_data import load_subway_shp,load_netmob_gdf,find_ids_within_epsilon
 
 if torch.cuda.is_available():
-    data_FOLDER_PATH = '../../../../data/'
-    netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
-    PATH_iris = f'{data_FOLDER_PATH}lyon_iris_shapefile/'
+    DATA_FOLDER_PATH = '../../../../data'
+    SUBWAY_SHP_FOLDER_PATH = '/rrochas/raw_data/keolis_data_2019-2020'
+    netmob_data_FOLDER_PATH = f"{DATA_FOLDER_PATH}/NetMob/NetMob_raw"
+    PATH_iris = f'{DATA_FOLDER_PATH}/lyon_iris_shapefile'
 else:
-    data_FOLDER_PATH = '../../../data/'
-    netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
-    PATH_iris = '../../../Data/lyon_iris_shapefile/'
+    DATA_FOLDER_PATH = '../../../data'
+    SUBWAY_SHP_FOLDER_PATH = blabla
+    netmob_data_FOLDER_PATH = f"{DATA_FOLDER_PATH}/NetMob"
+    PATH_iris = '../../../Data/lyon_iris_shapefile'
 
 def buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_FOLDER_PATH,PATH_iris):
     ''' 
@@ -28,7 +30,7 @@ def buffer_between_tile_ids_and_subway_station(epsilon,netmob_data_FOLDER_PATH,P
     
     '''
     # Load Ref Subway: 
-    ref_subway = load_subway_shp(FOLDER_PATH = data_FOLDER_PATH)
+    ref_subway = load_subway_shp(FOLDER_PATH = f"{DATA_FOLDER_PATH}/{SUBWAY_SHP_FOLDER_PATH}")
 
     # Load subway gdf adn NetMob gdf
     Netmob_gdf,_ = load_netmob_gdf(FOLDER_PATH = netmob_data_FOLDER_PATH,

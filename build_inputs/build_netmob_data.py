@@ -263,21 +263,17 @@ if __name__ == '__main__':
     import pickle
     import torch
 
+    from tile_ids_around_stations import DATA_FOLDER_PATH,netmob_data_FOLDER_PATH,PATH_iris
+
     # Init: 
     if torch.cuda.is_available():
-        data_FOLDER_PATH = '../../../../data/'
-        save_folder = f"{data_FOLDER_PATH}NetMob_tensor/"
-        netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
-        PATH_iris = f'{data_FOLDER_PATH}lyon_iris_shapefile/'
+        save_folder = f"{DATA_FOLDER_PATH}NetMob_tensor/"
     else:
-        data_FOLDER_PATH = '../../../data/'
-        save_folder = f"{data_FOLDER_PATH}NetMob_tensor/"
-        netmob_data_FOLDER_PATH = f"{data_FOLDER_PATH}NetMob/"
-        PATH_iris = '../Data/lyon_iris_shapefile/'
+        save_folder = f"{DATA_FOLDER_PATH}NetMob_tensor/"
 
 
     # Load Ref Subway: 
-    ref_subway = load_subway_shp(FOLDER_PATH = data_FOLDER_PATH)
+    ref_subway = load_subway_shp(FOLDER_PATH = DATA_FOLDER_PATH)
 
     # Parameters: size of netmob image 
     step_south_north = 287  # Incremente by 287-ids when passing from south to north. 
