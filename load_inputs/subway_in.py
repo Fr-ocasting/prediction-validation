@@ -49,26 +49,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     if filename==None:
         filename = FILE_NAME
 
-    df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{filename}.csv",index_col = 0)
-    df.columns.name = 'Station'
-    df.index = pd.to_datetime(df.index)
-
-    # Remove ouliers
-    df = remove_outliers(df)
-
-    time_step_per_hour = get_time_step_per_hour(args.freq)
-
-    if args.freq != FREQ :
-        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
-        df = df.resample(args.freq).sum()
-
-    
-    df = restrain_df_to_specific_period(df,coverage_period)
-    df_correspondance = get_trigram_correspondance()
-    df_correspondance.set_index('Station').reindex(df.columns)
-    df.columns = df_correspondance.COD_TRG
-
-
+    df = load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period)
 
     if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
         print('Considered Spatial-Unit: ',args.set_spatial_units)
@@ -79,6 +60,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
         spatial_unit = df.columns
         indices_spatial_unit = np.arange(len(df.columns))
 
+    time_step_per_hour = get_time_step_per_hour(args.freq)
     weekly_period =  int((24-len(USELESS_DATES['hour']))*(7-len(USELESS_DATES['weekday']))*time_step_per_hour)
     daily_period =  int((24-len(USELESS_DATES['hour']))*time_step_per_hour)
     periods = [weekly_period,daily_period]  
@@ -97,6 +79,25 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     return(dataset)
     
 
+def load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period):
+    df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{filename}.csv",index_col = 0)
+    df.columns.name = 'Station'
+    df.index = pd.to_datetime(df.index)
+
+    # Remove ouliers
+    df = remove_outliers(df)
+
+    if args.freq != FREQ :
+        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+        df = df.resample(args.freq).sum()
+
+    
+    df = restrain_df_to_specific_period(df,coverage_period)
+    df_correspondance = get_trigram_correspondance()
+    df_correspondance.set_index('Station').reindex(df.columns)
+    df.columns = df_correspondance.COD_TRG
+    return df
+  
 def remove_outliers(df):
     '''
     Replace the outliers by linear interpolation. Outliers are identified as MaxiMum flow recorded during the 'light festival' in Lyon. 
