@@ -62,7 +62,10 @@ class AttentionHead(nn.Module):
         return attention_vectors            
     def forward(self, x: Tensor) -> Tensor:
         '''
-        x : [B,L,N,C]
+        x : [B,L,N,C]   
+        PE : [B,L,N,C]
+
+        >>> x = x+ PE   
 
         ### Spatio-Temporal PointWise Convolution.  C' = C//n_head
         >>> permute(0,3,2,1) [B,L,N,C]--> [B,C,N,L]
@@ -83,8 +86,6 @@ class AttentionHead(nn.Module):
         # x=x.transpose(1,2)
         #Q, K, V=torch.split(self.qkv_conv(x), [self.d_k , self.d_k, self.d_v],
         #                            dim=1)
-
-
         Q=self.q_conv(x).permute(0,3,2,1)
         K=self.k_conv(x).permute(0,3,2,1)
         V=self.v_conv(x).permute(0,3,2,1)
@@ -126,7 +127,7 @@ class TransformerGraphEncoderLayer(nn.Module):
         num_heads: int = 4,
         dim_feedforward: int = 512,
         dropout: float = 0.1,
-    ):
+        ):
         super().__init__()
         dim_v=dim_q = dim_k = max(dim_model // num_heads, 1)
         self.attention = Residual(
@@ -162,7 +163,7 @@ class PositionalEncoder(nn.Module):
         
         # create constant 'pe' matrix with values dependant on z
         # pos and i
-        pe = torch.zeros(max_seq_len,node_ids , dim_model)
+        pe = torch.zeros(max_seq_len,node_ids , dim_model)  # [B,L,N,C]   x + PE = x'   [ B,L,N,C]
         for pos in range(max_seq_len):
           for node_id in range(0,node_ids) :
             for i in range(0, dim_model, 2):

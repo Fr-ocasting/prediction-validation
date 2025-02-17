@@ -365,12 +365,13 @@ class OutputBlock(nn.Module):
                 x = self.temporal_agg(x)  ### self.temporal_agg(x.permute(0,3,2,1))
                 #print('x after temporal agg: ',x.size())
 
-                x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]
+                x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]  ### [B,L,N,1]
                 #print('x after avgpool: ',x.size())
 
                 #x = x.permute(0,2,1,3) #[B,N,1,C]->[B,1,N,C]
                 #print('x after permute: ',x.size())
             else:
+                # [B,C,L,N]  -> [B,C,1,N]
                 x = self.temporal_agg(x)
                 x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
             

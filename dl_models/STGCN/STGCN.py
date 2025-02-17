@@ -17,6 +17,9 @@ import dl_models.STGCN.STGCN_layer as layers
 # Inspired by  https://github.com/hazdzz/STGCN/tree/main
 # ============================================================
 
+#  -- STGCN Layer x L -- > output Module -- > Prediction 
+#
+# output Module =  Convolution (Pooling sur un axe) -- FC1 -- ReLU -- FC2 
 
 class STGCN(nn.Module):
     # STGCN contains 'TGTND TGTND TNFF' structure
