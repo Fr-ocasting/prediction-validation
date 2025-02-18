@@ -202,13 +202,16 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return p
 
 
-def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption"):
+def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False):
        p = figure(x_axis_type="datetime",title=title,
                      width=width,height=height)
        legend_it = []
        colors = palette
        for k,column in enumerate(netmob_consumption.columns):
-              c = p.line(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[int(k*(255/len(netmob_consumption.columns)))])
+              if scatter: 
+                    c = p.scatter(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[int(k*(255/len(netmob_consumption.columns)))])
+              else:
+                    c = p.line(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[int(k*(255/len(netmob_consumption.columns)))])
               displayed_legend = str(column)
               legend_it.append((displayed_legend, [c]))
 
