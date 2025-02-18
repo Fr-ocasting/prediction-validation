@@ -152,7 +152,7 @@ if __name__ == '__main__':
     if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in','netmob_POIs_per_station']#['subway_in','subway_out']
+        dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
         vision_model_name = None #'VariableSelectionNetwork'
 
         args = local_get_args(model_name,
@@ -165,8 +165,8 @@ if __name__ == '__main__':
                                             'evaluate_complete_ds' : True,
                                             #'set_spatial_units' : ['BON','SOI','GER','CHA'],
                                             'stacked_contextual': True, # True # False
-                                            'temporal_graph_transformer_encoder': True,
-                                            'compute_node_attr_with_attn' : True,
+                                            'temporal_graph_transformer_encoder': False, # False # True
+                                            'compute_node_attr_with_attn' : False, # False # True
 
                                             'vision_model_name': None,
 
@@ -175,7 +175,7 @@ if __name__ == '__main__':
                                             })
         # Init 
         epochs_validation = 100#100
-        num_samples = 500#500
+        num_samples = 1000#500
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:

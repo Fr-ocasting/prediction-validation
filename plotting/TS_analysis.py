@@ -202,18 +202,26 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return p
 
 
-def plot_TS(netmob_consumption,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False):
+def plot_TS(list_df_ts,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False):
        p = figure(x_axis_type="datetime",title=title,
                      width=width,height=height)
        legend_it = []
        colors = palette
-       for k,column in enumerate(netmob_consumption.columns):
-              if scatter: 
-                    c = p.scatter(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[int(k*(255/len(netmob_consumption.columns)))])
-              else:
-                    c = p.line(x=netmob_consumption.index, y=netmob_consumption[column], alpha=0.8,color = colors[int(k*(255/len(netmob_consumption.columns)))])
-              displayed_legend = str(column)
-              legend_it.append((displayed_legend, [c]))
+
+       if not(type(list_df_ts)==list):
+              list_df_ts= [list_df_ts]
+       
+       nb_cols = [df_i.shape[1] for df_i in list_df_ts]
+       total_nb_ts = int(np.sum(np.array(nb_cols)))
+       for i,df_i in enumerate(list_df_ts):
+              for k,column in enumerate(df_i.columns):
+                     col_ind = np.sum(np.array(nb_cols[:i]))+k
+                     if scatter: 
+                            c = p.scatter(x=df_i.index, y=df_i[column], alpha=0.8,color = colors[int(col_ind*(255/total_nb_ts))])
+                     else:
+                            c = p.line(x=df_i.index, y=df_i[column], alpha=0.8,color = colors[int(col_ind*(255/total_nb_ts))])
+                     displayed_legend = str(column)
+                     legend_it.append((displayed_legend, [c]))
 
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
        legend = Legend(items=legend_it)
