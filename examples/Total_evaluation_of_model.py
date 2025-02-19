@@ -165,7 +165,7 @@ if __name__ == '__main__':
                                             'evaluate_complete_ds' : True,
                                             #'set_spatial_units' : ['BON','SOI','GER','CHA'],
                                             'stacked_contextual': True, # True # False
-                                            'temporal_graph_transformer_encoder': False, # False # True
+                                            'temporal_graph_transformer_encoder': True, # False # True
                                             'compute_node_attr_with_attn' : False, # False # True
 
                                             'vision_model_name': None,

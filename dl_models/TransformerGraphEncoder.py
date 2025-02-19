@@ -151,7 +151,7 @@ class TransformerGraphEncoderLayer(nn.Module):
         return self.feed_forward(src)
 
 class PositionalEncoder(nn.Module):
-    def __init__(self, dim_model,node_ids = 22, max_seq_len = 200):
+    def __init__(self, dim_model,node_ids = 22, max_seq_len = 256):
         '''
         dim_model: nb channels of the inputs of the TransformerGraphEncoder (i.e output of the traffic core-model)
                     but also the total dimension of embedding for the TransformerGraphEncoder

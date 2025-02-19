@@ -53,7 +53,7 @@ parser.add_argument('--TGE_num_layers', type=int, default=2,
                     choices = [1,2,3,4,8],
                     help="Number of Temporal Graph Encoder Layers if exist")
 
-parser.add_argument('--TGE_num_heads', type=int, default=2, 
+parser.add_argument('--TGE_num_heads', type=int, default=1, 
                     choices = [1,2,3,4,8],
                     help="Number of head in the Multi-Head Self-Attention module of each Temporal Graph Encoder Layers if exist. Have to devide 'temporal_h_dim'. dim_k = temporal_h_dim//n_heads")
 parser.add_argument('--TGE_FC_hdim', type=int, default=32, 
