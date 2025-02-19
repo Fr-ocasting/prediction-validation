@@ -115,9 +115,9 @@ class STGCN(nn.Module):
                     x = x.unsqueeze(1)
                 ### Core model :
                 if not x.numel() == 0:
-                    B,C,N,L = x.size()
+                    #[B,C,N,L] -> [B,C,L,N]
                     x = x.permute(0,1,3,2)
-                    # ....
+                    
                     # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
                     x = self.st_blocks(x)
 

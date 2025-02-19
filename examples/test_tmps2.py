@@ -2,6 +2,7 @@
 import os 
 import sys
 import torch 
+import pandas as pd
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
@@ -9,6 +10,42 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
+
+if True: 
+    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
+    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
+    epochs_validation = 100
+    args,folds = load_configuration(trial_id,True)
+
+    modification ={'keep_best_weights':True,
+                    'epochs':epochs_validation,
+                    'temporal_graph_transformer_encoder': True,
+                    'TGE_num_layers' : 4, #2
+                    'TGE_num_heads' :  1, #IMPOSSIBLE > 1 CAR DOIT DIVISER L = 7
+                    'TGE_FC_hdim' :  32, #32
+                    'dropout': 0.271795,
+                    'weight_decay': 0.018890,
+                    'scheduler': True,
+                    'torch_scheduler_milestone':28.0,
+                    'torch_scheduler_gamma': 0.995835,
+                    'torch_scheduler_lr_start_factor': 0.880994,
+                    'device':torch.device("cuda:1"),
+                    }
+
+    config_diffs = {'RE_TGE_l4_h1_fc32_lr00100':{'lr': 0.00100},
+                    'RE_TGE_l4_h1_fc32_lr0.00050':{'lr': 0.0005},
+                    'RE_TGE_l4_h1_fc32_lr0.00025':{'lr': 0.00025},
+                }
+    
+
+                        
+    for add_name_id,config_diff in config_diffs.items():
+        config_diff.update(modification)
+        train_model_on_k_fold_validation(trial_id,load_config =True,
+                                            save_folder=save_folder,
+                                            modification=config_diff,
+                                            add_name_id=add_name_id)
+
 
 
 
@@ -46,9 +83,7 @@ if False:
                                             modification=config_diff,
                                             add_name_id=add_name_id)
 
-
-
-if True: 
+if False: 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
     trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
     epochs_validation = 100
@@ -144,7 +179,7 @@ if True:
                                             add_name_id=add_name_id)
 
 
-if True: 
+if False: 
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
     trial_id = 'subway_in_STGCN_MSELoss_2025_01_20_14_27_20569'
     epochs_validation = 100

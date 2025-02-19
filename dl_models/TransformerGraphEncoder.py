@@ -169,8 +169,9 @@ class PositionalEncoder(nn.Module):
             for i in range(0, dim_model, 2):
                 pe[pos, node_id, i] = \
                 math.sin(pos / (10000 ** ((2 * i)/dim_model)))
-                pe[pos, node_id, i + 1] = \
-                math.cos(pos / (10000 ** ((2 * (i + 1))/dim_model)))
+                if i + 1 < dim_model:  # In case dim_model is not odd: 
+                    pe[pos, node_id, i + 1] = \
+                    math.cos(pos / (10000 ** ((2 * (i + 1))/dim_model)))
                 
         pe = pe.unsqueeze(0)
         #self.learnable_pe=nn.Linear(d_model, d_model,dtype=torch.float)
@@ -188,7 +189,7 @@ class PositionalEncoder(nn.Module):
         #print('self.pe[:,:seq_len,:,:]: ', self.pe[:,:seq_len,:,:].size())
 
         if torch.cuda.is_available():
-            x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False).cuda())
+            x = self.norm(x + Variable(self.pe[:,:seq_len,:,:],requires_grad=False).cuda(x.device))
         else:
             #print('x.size(): ',x.size())
             #print('self.pe.size(): ',self.pe.size())

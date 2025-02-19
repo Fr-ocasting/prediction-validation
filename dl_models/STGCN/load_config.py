@@ -1,10 +1,10 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='STGCN')
-parser.add_argument('--Kt', type=int, default=3, choices=[2,3,4],
+parser.add_argument('--Kt', type=int, default=2, choices=[2,3,4], # 3
                     help='Kernel Size on the Temporal Dimension')
 
-parser.add_argument('--stblock_num', type=int, default=2, choices=[2,3,4],
+parser.add_argument('--stblock_num', type=int, default=3, choices=[2,3,4], # 2
                     help='Number of STConv-blocks')
 
 parser.add_argument('--Ks', type=int, default=2, choices=[1,2,3],
@@ -14,7 +14,7 @@ parser.add_argument('--graph_conv_type', type=str, default='graph_conv',
                     choices = ['graph_conv','cheb_graph_conv'],
                     help='Type of graph convolution')
 
-parser.add_argument('--gso_type', type=str, default='sym_norm_lap', 
+parser.add_argument('--gso_type', type=str, default='sym_renorm_adj',  # 'sym_norm_lap'
                     choices = ['sym_norm_lap','rw_norm_lap','sym_renorm_adj','rw_renorm_adj'],
                     help='Type of calcul to compute the gso (Weighted Adjacency Matrix)')
 
@@ -37,15 +37,15 @@ parser.add_argument('--act_func', type=str, default='glu',
                     choices = ['glu','gtu','silu'],
                     help="Type of activation function on the output module (FC layers at the output of STGCN)")
 
-parser.add_argument('--temporal_h_dim', type=int, default=32, # 128 #64
+parser.add_argument('--temporal_h_dim', type=int, default=256, # 32
                     choices = [8,16,32,64,128,256],
                     help="Dimension of temporal convolution. Stblocks dims = [temporal_h_dim, spatial_h_dim, temporal_h_dim]")
 
-parser.add_argument('--spatial_h_dim', type=int, default=32, #32  #16 
+parser.add_argument('--spatial_h_dim', type=int, default=32, #32
                     choices = [8,16,32,64,128,256],
                     help="Dimension of spatial graph convolution. Stblocks dims = [temporal_h_dim, spatial_h_dim, temporal_h_dim]")
 
-parser.add_argument('--output_h_dim', type=int, default=64, #128
+parser.add_argument('--output_h_dim', type=int, default=16, #64
                     choices = [8,16,32,64,128,256],
                     help="Dimension of hidden layers in output module")
 

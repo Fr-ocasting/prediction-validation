@@ -102,6 +102,17 @@ class TemporalConvLayer(nn.Module):
         self.act_func = act_func
 
     def forward(self, x):   
+        '''
+        x : [B,C,L,N]
+        kernel-size : (Kt,1)
+
+        >>>  Apply 2D conv through the spatio-temporal space [L,N], with a temporal window Kt > 1 and spatial window = 1 
+
+        outputs:
+        ---------
+        x_out : [B,C',L-(Kt-1),N]
+        
+        '''
         # Enable padding permet d'avoir +2 après la causal_conv, mais il faut aussi ajouter +2 à x_in
         # =========
         # MODIFICATION EFFECTUEE ICI AVEC LE SELF.ENABLE_PADDING QUI N EXISTAIT PAS 
@@ -280,6 +291,20 @@ class STConvBlock(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, x):
+        '''Inputs: x: [B,C,L,N] 
+
+        # --------------------------------------------------------- *(stblock_num)
+        # Temporal Conv1: x [B,C,L,N]  --> [B,C,L,N]
+        # Spatial Conv  :
+        # Temporal Conv2:
+        # ---------------------------------------------------------
+
+
+        Outputs:
+        --------
+        x_out :  [B, C_out, L-4*nb_blocks, N]
+        
+        '''
         #print('\nShape avant de rentrer dans tmp_conv1: ',x.size())
         x = self.tmp_conv1(x)
         #print('\nShape après tmp_conv1: ',x.size())
@@ -311,17 +336,23 @@ class OutputBlock(nn.Module):
 
         self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
         if temporal_graph_transformer_encoder:
+            if False:
+                self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
+                                                            num_layers = TGE_num_layers,
+                                                            num_heads = TGE_num_heads,
+                                                            dim_model = last_block_channel,
+                                                            dim_feedforward = TGE_FC_hdim,
+                                                            dropout =dropout
+                                                            )
             self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
                                                         num_layers = TGE_num_layers,
                                                         num_heads = TGE_num_heads,
-                                                        dim_model = last_block_channel,
+                                                        dim_model = Ko,
                                                         dim_feedforward = TGE_FC_hdim,
                                                         dropout =dropout
                                                         )
-            #self.avgpool = nn.AvgPool2d((1,Ko))
-            self.avgpool = nn.AvgPool3d((Ko,1,1))
-        else:
-            self.temporal_agg = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
+            
+        self.temporal_conv_out = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
                                               
 
         # Design Input Dimension according to contextual data integration or not: 
@@ -335,9 +366,10 @@ class OutputBlock(nn.Module):
         self.TE_concatenation_late = TE_concatenation_late
         # ...
 
-        if temporal_graph_transformer_encoder:
-            # FC1: [last_block_channel,channels[1]]. Here 'channels[0] never used. Cause we don't change the C dim with TransformerGraphEncoder. 
-            self.fc1 = nn.Linear(in_features=last_block_channel, out_features=channels[1], bias=bias)
+        if False:
+            if temporal_graph_transformer_encoder:
+                # FC1: [last_block_channel,channels[1]]. Here 'channels[0] never used. Cause we don't change the C dim with TransformerGraphEncoder. 
+                self.fc1 = nn.Linear(in_features=last_block_channel, out_features=channels[1], bias=bias)
         else:
             self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
@@ -353,29 +385,49 @@ class OutputBlock(nn.Module):
         >>> Permute for Temporal MHA: x [B,C,L,N] -> [B,N,L,C]
         >>> after TemporalConvLayer or TemporalGraphTransformerEncoder: x [B,C,L,N] -- >[B,C',N,1]
         >>> after permute: [B,C',N,1] --> [B,1,N,C']
-        outputs:[B,1,N,C']
+
+        >>> If same than Rim paper: 
+            outputs MHA:[B,C,N,L]
+            after temporal agg: [B,1,N,C]
+
+        >>> If expected Temporal Graph Encoding: 
+            outputs MHA:[B,L,N,C]
+            after temporal agg: [B,1,N,C]
         '''
-        #print('x before temporal agg: ',x.size())
+        #print('x before temporal MHA: ',x.size())
         if not(x.numel() == 0):
             if self.temporal_graph_transformer_encoder:
-                # [B,C,L,N] --permute--> [B,L,N,C] 
-                x = x.permute(0,2,3,1)
+                ''' Temporal Graph Encoder where we project axis L into latent space: '''
+                # [B,C,L,N] --permute--> [B,C,N,L] 
+                x = x.permute(0,1,3,2)
+                # [B,C,N,L] --Temporal PointWise Convolution--> [B,C,N,L'] --ScaledDotProduct--> [B,C,N,L']
+                x = self.temporal_agg(x) 
+                #print('x after temporal MHA: ',x.size())
 
-                # [B,L,N,C]--Temporal PointWise Convolution--> [B,L',N,C]-->permute(0,3,2,1)-->[B,C,N,L'] --ScaledDotProduct--> [B,C,N,L']
-                x = self.temporal_agg(x)  ### self.temporal_agg(x.permute(0,3,2,1))
-                #print('x after temporal agg: ',x.size())
+                #[B,C,N,L'] -> [B,C,L',N]
+                x = x.permute(0,1,3,2)
 
-                x = self.avgpool(x) #[B,L,N,C] ->  [B,1,N,C]  ### [B,L,N,1]
-                #print('x after avgpool: ',x.size())
+                ''' Temporal Graph Encoder as implemented in Rim Paper '''
+                if False:
+                    # [B,C,L,N] --permute--> [B,L,N,C] 
+                    x = x.permute(0,2,3,1)
+                    # [B,L,N,C]--Temporal PointWise Convolution--> [B,L',N,C]-->permute(0,3,2,1)-->[B,C,N,L'] --ScaledDotProduct--> [B,C,N,L']
+                    x = self.temporal_agg(x) 
+                    #print('x after temporal agg: ',x.size())
 
-                #x = x.permute(0,2,1,3) #[B,N,1,C]->[B,1,N,C]
-                #print('x after permute: ',x.size())
-            else:
-                # [B,C,L,N]  -> [B,C,1,N]
-                x = self.temporal_agg(x)
-                x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
-            
-        #print('x after permute: ',x.size())
+                    #[B,C,N,L'] -> [B,C',L,N]
+                    x = x.permute(0,1,3,2)
+
+
+            # [B,C,L,N]  -> [B,C,1,N]
+            #print('x before temporal conv: ',x.size())
+            x = self.temporal_conv_out(x)
+
+            # Permute [B,C,1,N]  -> [B,1,N,C]
+            x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
+    
+        #print('x after norm and permute: ',x.size())
+        #blabla
         return x
 
 
