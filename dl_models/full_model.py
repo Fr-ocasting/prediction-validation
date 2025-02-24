@@ -182,6 +182,8 @@ class full_model(nn.Module):
 
         for dataset_name_i in self.node_attr_which_need_attn: 
             setattr(self,f"n_units_{dataset_name_i}", getattr(args,f"n_units_{dataset_name_i}"))
+        if ('netmob_POIs' in args.dataset_names) and (args.stacked_contextual) and (not args.compute_node_attr_with_attn):
+            self.nb_add_channel = len(args.NetMob_selected_apps)*len(args.NetMob_transfer_mode)*len(args.NetMob_selected_tags) 
 
     def build_spatial_attn_modules(self,args):
         for dataset_name in self.ds_which_need_spatial_attn:
@@ -200,6 +202,9 @@ class full_model(nn.Module):
             
     def stack_node_attribute(self,x,list_node_attributes):
         ''' Concat node attributed to the channel dim of x'''
+
+        #print('x.size: ',x.size())
+        #print('node attributes size: ',[c.size() for c in list_node_attributes])
         x = torch.cat([x]+list_node_attributes, dim=1)
         return x
     
@@ -250,8 +255,19 @@ class full_model(nn.Module):
                 #print('Node attributes to be concatenated: ',node_attr.size())
             # ...
 
+            if (dataset_name_i == 'netmob_POIs'):
+                #permute [B,P,L] ->  [B,L,P]  // reshape : [B,L,P] ->  [B,L,N,C]
+                node_attr = node_attr.permute(0,2,1)
+                node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),node_attr.size(2)//self.nb_add_channel,self.nb_add_channel)
+                #permute :  [B,L,N,C] ->  [B,C,N,L]
+                node_attr = node_attr.permute(0,3,2,1)
             if node_attr.dim() == 3:
                 node_attr = node_attr.unsqueeze(1)
+
+            #print('dataset_name_i: ',dataset_name_i)
+            #print('node_attr: ',node_attr.size())
+
+
             list_node_attributes.append(node_attr)
         return list_node_attributes
 
@@ -282,11 +298,10 @@ class full_model(nn.Module):
 
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attribute(x,list_node_attributes)
-
-
         #print('x after attributing node information: ',x.size())
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
         #print('x after NetMob model: ',x.size())
+        #print('extracted_feature: ',extracted_feature.size())
         x,time_elt = self.forward_te_model(x,contextual)         # Tackle Calendar Data (if exists)
         #print('x after Calendar model: ',x.size())
         #print('CalendarEmbedded Vector: ',time_elt.size())
@@ -358,11 +373,14 @@ def load_model(dataset, args):
         vision_concatenation_late = args.args_vision.concatenation_late
         vision_out_dim = args.args_vision.out_dim
         if args.args_vision.concatenation_early:
-            # Depend wether out_dim is implicit or defined by other parameters:
-            if hasattr(args.args_vision,'out_dim'):
-                L_add = args.args_vision.out_dim
-            else:
-                L_add = args.args_vision.L*args.args_vision.h_dim//2
+            if False:
+                # Depend wether out_dim is implicit or defined by other parameters:
+                if hasattr(args.args_vision,'out_dim'):
+                    L_add = args.args_vision.out_dim
+                else:
+                    L_add = args.args_vision.L*args.args_vision.h_dim//2
+            L_add = 7
+            print('ATTENTION CHANGER LES LIGNES 380 DANS full_model.load_model()')
     else:
         L_add = 0
         vision_concatenation_late = False

@@ -149,6 +149,9 @@ if __name__ == '__main__':
         num_samples = 500
         #HP_and_valid_one_config(args,epochs_validation,num_samples)
         set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
+
+
+
     if True:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
@@ -164,18 +167,20 @@ if __name__ == '__main__':
                                             'HP_max_epochs':100,#100,
                                             'evaluate_complete_ds' : True,
                                             #'set_spatial_units' : ['BON','SOI','GER','CHA'],
-                                            'stacked_contextual': True, # True # False
-                                            'temporal_graph_transformer_encoder': True, # False # True
+                                            'stacked_contextual': False, # True # False
+                                            'temporal_graph_transformer_encoder': False, # False # True
                                             'compute_node_attr_with_attn' : False, # False # True
 
-                                            'vision_model_name': None,
+                                            'vision_concatenation_early' : True,
+                                            'vision_concatenation_late' : False,
+                                            'vision_model_name': 'VariableSelectionNetwork',
 
                                             'data_augmentation': True, #True,  #False
                                             'DA_method':'rich_interpolation', # 'noise' # 'interpolation
                                             })
         # Init 
         epochs_validation = 100#100
-        num_samples = 500
+        num_samples = 1000 # 500
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:

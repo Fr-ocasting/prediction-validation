@@ -77,7 +77,6 @@ class STGCN(nn.Module):
         if self.Ko > 0:
             #print('blocks: ',blocks)
             #print('in_feature_fc1: ',in_feature_fc1)
-
             self.output = layers.OutputBlock(self.Ko, in_feature_fc1, blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout,
                                              self.vision_concatenation_late,extracted_feature_dim,
                                              self.TE_concatenation_late,embedding_dim,args.temporal_graph_transformer_encoder,
@@ -114,10 +113,10 @@ class STGCN(nn.Module):
                 if len(x.size())<4:
                     x = x.unsqueeze(1)
                 ### Core model :
+
                 if not x.numel() == 0:
                     #[B,C,N,L] -> [B,C,L,N]
                     x = x.permute(0,1,3,2)
-                    
                     # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
                     x = self.st_blocks(x)
 
@@ -151,6 +150,8 @@ class STGCN(nn.Module):
                 x = self.relu(x)
                 x = self.fc2(x)
                 x = x.permute(0, 3, 1, 2)
+            
+            #print('x.size: ' ,x.size())
             B = x.size(0)
             x = x.squeeze()
             if B ==1:
@@ -159,6 +160,8 @@ class STGCN(nn.Module):
                 x = x.unsqueeze(-1)
             if self.out_dim == 1:
                 x = x.unsqueeze(-2)
-            
+            #print('x.size: ' ,x.size())
+
             x = x.permute(0,2,1)
+
             return x

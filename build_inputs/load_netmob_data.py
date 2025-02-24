@@ -173,7 +173,10 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
                 if type(NetMob_ds)==list:
                     add_C = latent_dim*NetMob_ds[0].C
                 else:
-                    add_C = latent_dim*NetMob_ds.C
+                    if ('netmob_POIs' in args.dataset_names) and (args.stacked_contextual) and (not args.compute_node_attr_with_attn):
+                        add_C = len(args.NetMob_selected_apps)*len(args.NetMob_transfer_mode)*len(args.NetMob_selected_tags) 
+                    else:
+                        add_C = latent_dim*NetMob_ds.C
                 args.C = args.C + add_C
 
         else:

@@ -48,10 +48,10 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     PersonalInput object. Containing a 2-th order tensor [T,R]
     '''
 
-    # data_app.shape :[len(apps)*len(osmid_associated)*len(transfer_modes),T]
+    # data_app.shape :[nb-osmid*(apps*transfer_mode*tags), T]
     netmob_T = load_data_npy(ROOT,FOLDER_PATH,args)
 
-    # [T,len(apps)*len(osmid_associated)*len(transfer_modes)]
+    # [T,nb-osmid*(apps*transfer_mode*tags)]
     netmob_T = netmob_T.permute(1,0)
 
     # Extract only usefull data, and replace "heure d'été"
@@ -72,7 +72,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
 
     
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
-    netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
+    # netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
 
     # dimension on which we want to normalize: 
@@ -80,7 +80,9 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,df_dates = local_df_dates)
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
-    
+
+
+    print('Netmob_T.size(): ',netmob_T.size())
     return(NetMob_POI)
 
 
@@ -93,6 +95,9 @@ def load_data_npy(ROOT,FOLDER_PATH,args):
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
                 list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))  # [nb-osmid, T]
     netmob_T = torch.cat(list_of_data)    # [nb-osmid*(apps*transfer_mode*tags), T]
+
+    #print(args.NetMob_selected_apps,args.NetMob_transfer_mode,args.NetMob_selected_tags)
+    #print(netmob_T.size())
     return netmob_T
 
 

@@ -422,6 +422,7 @@ class OutputBlock(nn.Module):
             # [B,C,L,N]  -> [B,C,1,N]
             #print('x before temporal conv: ',x.size())
             x = self.temporal_conv_out(x)
+            #print('x after temporal conv: ',x.size())
 
             # Permute [B,C,1,N]  -> [B,1,N,C]
             x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
@@ -433,7 +434,7 @@ class OutputBlock(nn.Module):
 
     def forward(self, x,x_vision = None,x_calendar = None):
         #print("\nEntry Output Block:")
-        #print('x.size(): ',x.size())   ->  [B,C,N,1]
+        #print('x.size(): ',x.size())   #->  [B,C,N,1]
         x = self.forward_temporal_agg(x)
 
         #print('x.size after temporal conv + permute: ',x.size())

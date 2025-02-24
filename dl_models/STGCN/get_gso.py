@@ -40,11 +40,14 @@ def get_output_kernel_size(args):
     if  hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
         # Depend wether out_dim is implicit or defined by other parameters:
         if args.args_vision.concatenation_early:
-            if hasattr(args.args_vision,'out_dim'):
-                Ko = Ko + args.args_vision.out_dim
-            else:
-                vision_out_dim = args.args_vision.L*args.args_vision.h_dim//2
-                Ko = Ko + vision_out_dim
+            if False:
+                if hasattr(args.args_vision,'out_dim'):
+                    Ko = Ko + args.args_vision.out_dim
+                else:
+                    vision_out_dim = args.args_vision.L*args.args_vision.h_dim//2
+                    Ko = Ko + vision_out_dim
+            print('MODIFIER AUSSI ICI REMETTRE TRUE dl_models.STGCN.get_gso.py line 49')
+            Ko = 14
     
     return(Ko)
 
