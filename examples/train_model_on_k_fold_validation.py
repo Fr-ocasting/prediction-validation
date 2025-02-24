@@ -54,7 +54,40 @@ def load_k_fold_dataset(args,folds):
         del subway_ds
     return(ds_validation,args)
 
+def init_metrics(args):
+    #___ Init
+    training_mode_list = ['valid','test']
+    if args.loss_function_type == 'quantile':
+        metric_list = ['MPIW','PICP']
+    else:
+        metric_list = ['mse','mae','mape']
+    valid_losses = []
+    df_loss = pd.DataFrame()
+    # ...
+    return valid_losses,df_loss,training_mode_list,metric_list
 
+def train_valid_1_model(args,trial_id,save_folder,modification={}):
+    # Return a list of K-fold Dataset:
+    args,ds_validation = get_multi_ds(args.model_name,
+                                    args.dataset_names,
+                                    args.dataset_for_coverage,
+                                    modification = modification,
+                                    args_init = args, 
+                                    fold_to_evaluate = [args.K_fold-1])
+    
+
+    ## Train on the K-1 folds:
+    _,_,training_mode_list,metric_list = init_metrics(args)
+
+    ds = ds_validation[0]
+    model = load_model(ds, args)
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=args.K_fold-1,save_folder = save_folder)
+    trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
+
+    return trainer,args,training_mode_list,metric_list
+
+    
 def train_valid_K_models(args,trial_id,save_folder,modification={}):
     '''
     args:
@@ -73,20 +106,12 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
     
 
     ## Train on the K-1 folds:
-
     #___ Init
-    training_mode_list = ['valid','test']
-    if args.loss_function_type == 'quantile':
-        metric_list = ['MPIW','PICP']
-    else:
-        metric_list = ['mse','mae','mape']
-    valid_losses = []
+    valid_losses,df_loss,training_mode_list,metric_list = init_metrics(args)
     for training_mode in training_mode_list:
         for metric in metric_list:
             globals()[f'{training_mode}_{metric}'] = []
-    df_loss = pd.DataFrame()
     # ...
-
 
     #___ Through each fold : 
     for fold_i,ds in enumerate(ds_validation):

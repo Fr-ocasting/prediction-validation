@@ -91,8 +91,8 @@ def load_data_npy(ROOT,FOLDER_PATH,args):
         for mode in args.NetMob_transfer_mode:
             for tag in args.NetMob_selected_tags:
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
-                list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))
-    netmob_T = torch.cat(list_of_data)
+                list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))  # [nb-osmid, T]
+    netmob_T = torch.cat(list_of_data)    # [nb-osmid*(apps*transfer_mode*tags), T]
     return netmob_T
 
 

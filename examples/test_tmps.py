@@ -3,13 +3,64 @@
 import os 
 import sys
 import torch 
+import itertools
+import pandas as pd 
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration,train_valid_1_model
+
+if True: 
+    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
+    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
+    epochs_validation = 1
+    args,folds = load_configuration(trial_id,True)
+
+    modification ={'keep_best_weights':True,
+                    'epochs':epochs_validation,
+                    'device':torch.device("cuda:0"),
+                    }
+    
+    L_epsilon = ['station_epsilon100','station_epsilon300']
+    L_Apps = ['Google_Maps','Instagram','Deezer']
+
+    config_diffs = {}
+    Combination_Apps,CombinationTags = [],[]
+    for i in range(len(L_Apps)):
+        Combination_Apps = Combination_Apps+[list(x) for x in itertools.combinations(L_Apps,i+1)]
+    for i in range(len(L_epsilon)):
+        CombinationTags = CombinationTags +[list(x) for x in itertools.combinations(L_epsilon,i+1)]
+
+    for NetMob_selected_apps,NetMob_selected_tags in list(itertools.product(Combination_Apps,CombinationTags)):
+        name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}"
+        config_diffs.update({name_config:{'dataset_names':['subway_in','netmob_POIs'],
+                                            'data_augmentation': False,
+                                            'freq':'15min',
+                                            'NetMob_selected_apps':  NetMob_selected_apps,
+                                            'NetMob_transfer_mode' :  ['DL'],
+                                            'NetMob_selected_tags': NetMob_selected_tags,
+                                            'NetMob_expanded' : '',
+                                            'stacked_contextual': True,
+                                            'temporal_graph_transformer_encoder': False,
+                                            'compute_node_attr_with_attn': False,
+                                            }
+                                })
+                        
+
+    df_metrics_per_config = pd.DataFrame()
+    for add_name_id,config_diff_i in config_diffs.items():
+        config_diff_i.update(modification)
+        trainer,args,training_mode_list,metric_list = train_valid_1_model(args,trial_id,save_folder,modification=config_diff_i)
+
+        # Keep track on metrics :
+        df_metrics_per_config.index = [f'{training_mode}_{metric}' for training_mode in training_mode_list for metric in metric_list]
+        df_metrics_per_config[add_name_id] = [trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list for metric in metric_list]
+
+        df_metrics_per_config.to_csv('../save/results/NetMob_as_Channel.csv')
+
 
 
 if False: 

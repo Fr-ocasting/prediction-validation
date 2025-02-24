@@ -68,7 +68,7 @@ class AttentionHead(nn.Module):
         >>> x = x+ PE   
 
         ### Spatio-Temporal PointWise Convolution.  C' = C//n_head
-        >>> permute(0,3,2,1) [B,L,N,C]--> [B,C,N,L]
+        >>> permute(0,3,2,1) [B,L,N,C]--> [B,C,N,L]  
         >>> q_conv(): [B,C,N,L] --> [B,C',N,L]              
         >>> permute(0,3,2,1): [B,C',N,L]--> [B,L,N,C']
 

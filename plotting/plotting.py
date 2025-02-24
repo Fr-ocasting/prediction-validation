@@ -646,8 +646,16 @@ def get_y_size_from_temporal_agg(temporal_agg):
         y_size = 7*6
     return(y_size)
 
-def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temporal_agg = None,save=None,stations= None):
+def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temporal_agg = None,save=None,stations= None, teporal_mha = False,layer = None):
 
+    if teporal_mha:
+        attn_model = trainer.model.core_model.output.temporal_agg.layers[layer].attention.sublayer.heads
+        num_heads = len(attn_model)
+    else:
+        attn_model = trainer.model.netmob_vision.model
+        num_heads = attn_model[0].attention.num_heads
+
+    
     # Load Inputs : 
     X,Y,X_c,nb_contextual = trainer.load_all_inputs_from_training_mode(training_mode)
 
@@ -660,8 +668,6 @@ def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temp
         stations = list(ds.spatial_unit)
         nb_stations_to_plot = Y.size(1)
     num_cols = 4
-    num_heads = trainer.model.netmob_vision.model[0].attention.num_heads
-    
 
     nb_rows = (nb_stations_to_plot*num_heads + num_cols - 1) // num_cols  
     y_size = get_y_size_from_temporal_agg(temporal_agg)
@@ -673,7 +679,7 @@ def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temp
 
         station_ind  = spatial_units.index(stations[station_i])
 
-        enhanced_x,attn_weights = trainer.model.netmob_vision.model[station_ind](X[:,station_ind,:],X_c[station_ind+nb_calendar_data],x_known = None)
+        enhanced_x,attn_weights = attn_model[station_ind](X[:,station_ind,:],X_c[station_ind+nb_calendar_data],x_known = None)
         if attn_weights.dim()==4:
             for attn_head_i in range(num_heads):
                 attn_weights_reshaped = attn_weights[:,attn_head_i,:,:].squeeze(1).detach().cpu().numpy()  # Shape [B, P]
