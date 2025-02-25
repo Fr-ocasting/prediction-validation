@@ -53,13 +53,19 @@ if True:
     df_metrics_per_config = pd.DataFrame()
     for add_name_id,config_diff_i in config_diffs.items():
         config_diff_i.update(modification)
-        trainer,args,training_mode_list,metric_list = train_valid_1_model(args,trial_id,save_folder,modification=config_diff_i)
+        if False:
+            trainer,args,training_mode_list,metric_list = train_valid_1_model(args,trial_id,save_folder,modification=config_diff_i)
 
-        # Keep track on metrics :
-        df_metrics_per_config.index = [f'{training_mode}_{metric}' for training_mode in training_mode_list for metric in metric_list]
-        df_metrics_per_config[add_name_id] = [trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list for metric in metric_list]
+            # Keep track on metrics :
+            df_metrics_per_config.index = [f'{training_mode}_{metric}' for training_mode in training_mode_list for metric in metric_list]
+            df_metrics_per_config[add_name_id] = [trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list for metric in metric_list]
 
-        df_metrics_per_config.to_csv('../save/results/NetMob_as_Channel.csv')
+            df_metrics_per_config.to_csv('../save/results/NetMob_as_Channel.csv')
+        if True:
+            train_model_on_k_fold_validation(trial_id,load_config =True,
+                                    save_folder=save_folder,
+                                    modification=config_diff_i,
+                                    add_name_id=add_name_id)
 
 
 
