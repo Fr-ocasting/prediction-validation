@@ -66,24 +66,36 @@ def init_metrics(args):
     # ...
     return valid_losses,df_loss,training_mode_list,metric_list
 
-def train_valid_1_model(args,trial_id,save_folder,modification={}):
-    # Return a list of K-fold Dataset:
+def load_trainer(args,trial_id,save_folder=None,modification={},fold_to_evaluate = None):
+    if fold_to_evaluate is None : 
+        fold = args.K_fold-1
+        fold_to_evaluate = [fold]
+    else:
+        if len(fold_to_evaluate) == 1:
+            fold = fold_to_evaluate[0]
+        else:
+            raise NotImplementedError(f'fold_to_evaluate has to be None or a list of one single element. Here fold_to_evaluate= {fold_to_evaluate}')
+        
     args,ds_validation = get_multi_ds(args.model_name,
                                     args.dataset_names,
                                     args.dataset_for_coverage,
                                     modification = modification,
                                     args_init = args, 
-                                    fold_to_evaluate = [args.K_fold-1])
+                                    fold_to_evaluate = fold_to_evaluate)
     
-
-    ## Train on the K-1 folds:
-    _,_,training_mode_list,metric_list = init_metrics(args)
-
     ds = ds_validation[0]
     model = load_model(ds, args)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=args.K_fold-1,save_folder = save_folder)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
+    return trainer, args, ds
+
+def train_valid_1_model(args,trial_id,save_folder,modification={},fold_to_evaluate=None):
+    # Return a list of K-fold Dataset:
+    if fold_to_evaluate is None : fold_to_evaluate = [args.K_fold-1]
+    trainer, args, ds = load_trainer(args,trial_id,save_folder,modification,fold_to_evaluate)
     trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
+
+    _,_,training_mode_list,metric_list = init_metrics(args)
 
     return trainer,args,training_mode_list,metric_list
 

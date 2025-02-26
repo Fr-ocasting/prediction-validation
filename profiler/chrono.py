@@ -237,7 +237,7 @@ class Chronometer:
         if len(self.time_tracking_pi) > 0: print(">>> PI-tracking performance time: {} seconds (+/- {})".format(np.mean(self.time_tracking_pi[1:]), np.std(self.time_tracking_pi[1:])))
         if len(self.time_scheduler) > 0: print(">>> Scheduler-update performance time: {} seconds (+/- {})".format(np.mean(self.time_scheduler[1:]), np.std(self.time_scheduler[1:])))
 
-        if len(self.power) > 0: print(">>> Peak Power during training: {} W)".format(np.max(self.power)))
+        #if len(self.power) > 0: print(">>> Peak Power during training: {} W)".format(np.max(self.power)))
         if self.val_time: print(">>> Validation time: {}".format(self.val_time))
 
 

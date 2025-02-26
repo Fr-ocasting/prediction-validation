@@ -37,7 +37,8 @@ if True:
     for NetMob_selected_apps,NetMob_selected_tags in list(itertools.product(Combination_Apps,CombinationTags)):
         name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}"
         config_diffs.update({name_config:{'dataset_names':['subway_in','netmob_POIs'],
-                                            'data_augmentation': False,
+                                            'data_augmentation': True,
+                                            'DA_method': 'rich_interpolation',
                                             'freq':'15min',
                                             'NetMob_selected_apps':  NetMob_selected_apps,
                                             'NetMob_transfer_mode' :  ['DL'],
