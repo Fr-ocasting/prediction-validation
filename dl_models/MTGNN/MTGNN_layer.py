@@ -38,7 +38,7 @@ class graph_constructor(nn.Module):
         nodevec2 = torch.tanh(self.alpha*self.lin2(nodevec2))
 
         # [a: [Nd,Nd], avec Nd dimension de l'embedding des nodes 
-        a = torch.mm(nodevec1, nodevec2.transpose(1,0))-torch.mm(nodevec2, nodevec1.transpose(1,0))   #V1*V2^t - V2*V1^t  produit scalaire de V1,V2
+        a = torch.mm(nodevec1, nodevec2.transpose(1,0))-torch.mm(nodevec2, nodevec1.transpose(1,0))   #V1*V2^t - V2*V1^t  forme bilineaire asymetrique
         adj = F.relu(torch.tanh(self.alpha*a))
         mask = torch.zeros(idx.size(0), idx.size(0)).to(self.device)
         mask.fill_(float('0'))

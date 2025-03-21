@@ -31,6 +31,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
     config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
     config['freq'] = '15min'
+    config['learnable_adj_matrix'] = False
 
     config['contextual_positions'] = {}
     config['quick_vision'] = False #if True then load small NetMob tensor with torch.randn(), instead of big one with pickle.load() and torch concat
@@ -67,6 +68,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['NetMob_transfer_mode'] =  ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
     config['NetMob_selected_tags'] = ['iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
     config['NetMob_expanded'] = '' # '' # '_expanded'
+    config['NetMob_only_epsilon'] = False # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'  
 
     # === Ray config ===
     config['ray'] = False # True

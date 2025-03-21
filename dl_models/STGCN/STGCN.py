@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 
 # Personnal import:
 import dl_models.STGCN.STGCN_layer as layers
-
+from dl_models.MTGNN.MTGNN_layer import graph_constructor
 # ============================================================
 # Inspired by  https://github.com/hazdzz/STGCN/tree/main
 # ============================================================
@@ -52,8 +52,15 @@ class STGCN(nn.Module):
 
         self.out_dim = blocks[-1][-1]
         modules = []
+
+        if args.learnable_adj_matrix:
+            self.init_learnable_adjacency_matrix(args.n_vertex,k=10,node_embedding_dim=8,device = args.device,alpha=3)
+        else:
+            self.g_constructor = None
+
+
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, args.n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, args.n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding,self.g_constructor))
         self.st_blocks = nn.Sequential(*modules)
 
         self.vision_concatenation_late = args.args_vision.concatenation_late if hasattr(args.args_vision,'concatenation_late') else False
@@ -91,6 +98,10 @@ class STGCN(nn.Module):
             #self.leaky_relu = nn.LeakyReLU()
             #self.silu = nn.SiLU()
             #self.dropout = nn.Dropout(p=args.dropout)
+
+    def init_learnable_adjacency_matrix(self,n_vertex,k,node_embedding_dim,device,alpha):
+        self.g_constructor = graph_constructor(n_vertex, k, node_embedding_dim, device=device, alpha=alpha, static_feat=None)
+
 
     def forward(self, x,x_vision=None,x_calendar = None):
             

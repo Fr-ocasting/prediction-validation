@@ -144,38 +144,9 @@ if __name__ == '__main__':
                                                 'compute_node_attr_with_attn' : False, # False # True
                                                 'data_augmentation': True, #True,  #False
                                                 'DA_method':'rich_interpolation', # 'noise' # 'interpolation
-                                                'NetMob_selected_apps':  ['Deezer','Google_Maps'],
+                                                'NetMob_selected_apps':  ['Deezer'], # 'Google_Maps'
                                                 'NetMob_transfer_mode' :  ['DL'],
-                                                'NetMob_selected_tags': ['station_epsilon300'],
-                                                'NetMob_expanded' : '',
-                                                })
-
-        # Init 
-        epochs_validation = 100
-        num_samples = 100
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
-        #et_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
-
-        model_name = 'STGCN' #'CNN'
-        dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in','netmob_POIs']
-        args = local_get_args(model_name,
-                                args_init = None,
-                                dataset_names=dataset_names,
-                                dataset_for_coverage=dataset_for_coverage,
-                                modification = {'ray':True,
-                                                'grace_period':20,
-                                                'HP_max_epochs':100,
-                                                'evaluate_complete_ds' : True,
-                                                'vision_model_name': None,
-                                                'stacked_contextual': True, # True # False
-                                                'temporal_graph_transformer_encoder': False, # False # True
-                                                'compute_node_attr_with_attn' : False, # False # True
-                                                'data_augmentation': True, #True,  #False
-                                                'DA_method':'rich_interpolation', # 'noise' # 'interpolation
-                                                'NetMob_selected_apps':  ['Deezer','Google_Maps'],
-                                                'NetMob_transfer_mode' :  ['DL'],
-                                                'NetMob_selected_tags': ['station_epsilon100,station_epsilon300'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],  #'station_epsilon300'
                                                 'NetMob_expanded' : '',
                                                 })
 

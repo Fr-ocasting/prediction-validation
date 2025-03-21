@@ -163,12 +163,14 @@ class TemporalConvLayer(nn.Module):
         return x
 
 class ChebGraphConv(nn.Module):
-    def __init__(self, c_in, c_out, Ks, gso, bias):
+    def __init__(self, c_in, c_out, Ks, gso, bias,g_constructor):
         super(ChebGraphConv, self).__init__()
         self.c_in = c_in
         self.c_out = c_out
         self.Ks = Ks
         self.gso = gso
+        self.idx = torch.arange(gso.shape[0]) #self.n_vertex 
+        self.g_constructor = g_constructor
         self.weight = nn.Parameter(torch.cuda.FloatTensor(Ks, c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(Ks, c_in, c_out))
         if bias:
             self.bias = nn.Parameter(torch.cuda.FloatTensor(c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_out))
@@ -184,6 +186,16 @@ class ChebGraphConv(nn.Module):
             init.uniform_(self.bias, -bound, bound)
     
     def forward(self, x):
+
+        # If learnable adjacency matrix: 
+        if self.g_constructor is not None:    
+            # Load adjacency matrix (i.e gso ?)
+            #if idx is None:
+            #    gso = self.g_constructor(self.idx)
+            #else:
+            #    gso = self.g_constructor(idx)
+            gso = self.g_constructor(self.idx)
+
         #bs, c_in, ts, n_vertex = x.shape
         x = x.permute(0, 2, 3, 1)
 
@@ -215,11 +227,13 @@ class ChebGraphConv(nn.Module):
         return cheb_graph_conv
 
 class GraphConv(nn.Module):
-    def __init__(self, c_in, c_out, gso, bias):
+    def __init__(self, c_in, c_out, gso, bias,g_constructor):
         super(GraphConv, self).__init__()
         self.c_in = c_in
         self.c_out = c_out
         self.gso = gso
+        self.idx = torch.arange(gso.shape[0]) #self.n_vertex 
+        self.g_constructor = g_constructor
         self.weight = nn.Parameter(torch.cuda.FloatTensor(c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_in, c_out))
         if bias:
             self.bias = nn.Parameter(torch.cuda.FloatTensor(c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_out))
@@ -236,6 +250,16 @@ class GraphConv(nn.Module):
 
     def forward(self, x):
         #bs, c_in, ts, n_vertex = x.shape
+
+        # If learnable adjacency matrix: 
+        if self.g_constructor is not None:    
+            # Load adjacency matrix (i.e gso ?)
+            #if idx is None:
+            #    gso = self.g_constructor(self.idx)
+            #else:
+            #    gso = self.g_constructor(idx)
+            gso = self.g_constructor(self.idx)
+
         x = x.permute(0, 2, 3, 1)
 
         first_mul = torch.einsum('hi,btij->bthj', self.gso, x)
@@ -249,7 +273,7 @@ class GraphConv(nn.Module):
         return graph_conv
 
 class GraphConvLayer(nn.Module):
-    def __init__(self, graph_conv_type, c_in, c_out, Ks, gso, bias):
+    def __init__(self, graph_conv_type, c_in, c_out, Ks, gso, bias,g_constructor):
         super(GraphConvLayer, self).__init__()
         self.graph_conv_type = graph_conv_type
         self.c_in = c_in
@@ -258,9 +282,9 @@ class GraphConvLayer(nn.Module):
         self.Ks = Ks
         self.gso = gso
         if self.graph_conv_type == 'cheb_graph_conv':
-            self.cheb_graph_conv = ChebGraphConv(c_out, c_out, Ks, gso, bias)
+            self.cheb_graph_conv = ChebGraphConv(c_out, c_out, Ks, gso, bias,g_constructor)
         elif self.graph_conv_type == 'graph_conv':
-            self.graph_conv = GraphConv(c_out, c_out, gso, bias)
+            self.graph_conv = GraphConv(c_out, c_out, gso, bias,g_constructor)
 
     def forward(self, x):
         x_gc_in = self.align(x)
@@ -281,10 +305,11 @@ class STConvBlock(nn.Module):
     # N: Layer Normolization
     # D: Dropout
 
-    def __init__(self, Kt, Ks, n_vertex, last_block_channel, channels, act_func, graph_conv_type, gso, bias, dropout,enable_padding = False):
+    def __init__(self, Kt, Ks, n_vertex, last_block_channel, channels, act_func, graph_conv_type, gso, bias, dropout,enable_padding = False,g_constructor = None):
         super(STConvBlock, self).__init__()
+        # ...
         self.tmp_conv1 = TemporalConvLayer(Kt, last_block_channel, channels[0], n_vertex, act_func,enable_padding)
-        self.graph_conv = GraphConvLayer(graph_conv_type, channels[0], channels[1], Ks, gso, bias)
+        self.graph_conv = GraphConvLayer(graph_conv_type, channels[0], channels[1], Ks, gso, bias, g_constructor)
         self.tmp_conv2 = TemporalConvLayer(Kt, channels[1], channels[2], n_vertex, act_func,enable_padding)
         self.tc2_ln = nn.LayerNorm([n_vertex, channels[2]])
         self.relu = nn.ReLU()

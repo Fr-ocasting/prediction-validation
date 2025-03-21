@@ -103,7 +103,10 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
 
 
 def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
-    save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
+    if hasattr(args,'NetMob_only_epsilon') and getattr(args,'NetMob_only_epsilon'):
+        save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}"
+    else:
+        save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
     metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
 
