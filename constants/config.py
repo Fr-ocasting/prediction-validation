@@ -32,6 +32,8 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
     config['freq'] = '15min'
     config['learnable_adj_matrix'] = False
+    config['minmaxnorm'] = True
+    config['standardize'] = False
 
     config['contextual_positions'] = {}
     config['quick_vision'] = False #if True then load small NetMob tensor with torch.randn(), instead of big one with pickle.load() and torch concat
@@ -120,7 +122,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0
-
     # ===   ===
     config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
 

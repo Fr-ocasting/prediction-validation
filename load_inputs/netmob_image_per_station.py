@@ -116,7 +116,8 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
                            Days = args.D, 
                            historical_len = args.H,
                            step_ahead = args.step_ahead,
-                           minmaxnorm = True,
+                            minmaxnorm = args.minmaxnorm,
+                            standardize = args.standardize,
                            dims =dims,
                            data_augmentation= args.data_augmentation)
     NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)

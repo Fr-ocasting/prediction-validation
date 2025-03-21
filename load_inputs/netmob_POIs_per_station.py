@@ -132,7 +132,8 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
     NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = dataset.df_dates,
                            time_step_per_hour = dataset.time_step_per_hour,
-                           minmaxnorm = True,
+                            minmaxnorm = dataset.minmaxnorm,
+                            standardize = dataset.standardize,
                            dims =dims,
                            **args_DataSet)
     
