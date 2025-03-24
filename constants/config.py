@@ -31,9 +31,13 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
     config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
     config['freq'] = '15min'
+
+    config['minmaxnorm'] = True   # If True: apply MinMax Normalisation on each time-series
+    config['standardize'] = False  # If True: apply Zscore Normalisation on each time-series
+
     config['learnable_adj_matrix'] = False
-    config['minmaxnorm'] = True
-    config['standardize'] = False
+    config['learnable_adj_top_k'] = 8  # If learnable_adj_matrix is True, set the number of kept node links on the graph conv
+    config['learnable_adj_embd_dim'] = 8 # If learnable_adj_matrix is True, set the embedding dim of each nodes
 
     config['contextual_positions'] = {}
     config['quick_vision'] = False #if True then load small NetMob tensor with torch.randn(), instead of big one with pickle.load() and torch concat

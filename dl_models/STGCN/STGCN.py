@@ -52,12 +52,10 @@ class STGCN(nn.Module):
 
         self.out_dim = blocks[-1][-1]
         modules = []
-
-        
         self.init_learnable_adjacency_matrix(args.learnable_adj_matrix,
                                              args.n_vertex,
-                                             k=4,
-                                             node_embedding_dim=4,
+                                             k=args.learnable_adj_top_k if getattr(args,'learnable_adj_matrix') else None,
+                                             node_embedding_dim=args.learnable_adj_embd_dim if getattr(args,'learnable_adj_matrix') else None,
                                              device = args.device,
                                              alpha=3)
 

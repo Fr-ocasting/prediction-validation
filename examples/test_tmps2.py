@@ -20,27 +20,55 @@ if True:
 
     modification ={'keep_best_weights':True,
                     'epochs':epochs_validation,
+
+                    'data_augmentation': True,
+                    'DA_method': 'rich_interpolation',
+                    'freq':'15min',
+
+                    'standardize': True,
+                    'minmaxnorm':False,
+                    'learnable_adj_matrix' : False,
+                    'stacked_contextual': True,
+
+                    'temporal_graph_transformer_encoder': False,
+                    'compute_node_attr_with_attn': False,
+                    #'vision_concatenation_early' : True,
+                    #'vision_concatenation_late' : False,
+                    #'vision_model_name': 'VariableSelectionNetwork',
+
                     'device':torch.device("cuda:0"),
                     }
     
     config_diffs = {}
-    config_diffs.update({'TEST_concat_sans_spatial_attn':{'dataset_names':['subway_in','subway_out'],
-                                        'data_augmentation': False,
-                                        'freq':'15min',
-                                        'stacked_contextual': False,
-                                        'temporal_graph_transformer_encoder': False,
-                                        'compute_node_attr_with_attn': False,
-                                        'vision_concatenation_early' : True,
-                                        'vision_concatenation_late' : False,
-                                        'vision_model_name': 'VariableSelectionNetwork',
-                                        }
-                            })
-                        
-
+    config_diffs.update({'STANDARDIZE_subway_out':{'dataset_names':['subway_in','subway_out']},
+                          'STANDARDIZE_deezer': {'dataset_names':['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  ['Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],
+                                                'NetMob_expanded' : ''
+                                                },
+                         'STANDARDIZE_Web_Ads': {'dataset_names':['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  ['Web_Ads'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],
+                                                'NetMob_expanded' : ''
+                                                }
+                        })
     df_metrics_per_config = pd.DataFrame()
     for add_name_id,config_diff_i in config_diffs.items():
         config_diff_i.update(modification)
-        trainer,args,training_mode_list,metric_list = train_valid_1_model(args,trial_id,save_folder,modification=config_diff_i)
+        train_model_on_k_fold_validation(trial_id,load_config =True,
+                                save_folder=save_folder,
+                                modification=config_diff_i,
+                                add_name_id=add_name_id)
+    
+    if False:
+        df_metrics_per_config = pd.DataFrame()
+        for add_name_id,config_diff_i in config_diffs.items():
+            config_diff_i.update(modification)
+            trainer,args,training_mode_list,metric_list = train_valid_1_model(args,trial_id,save_folder,modification=config_diff_i)
 
 
 if False: 
