@@ -161,15 +161,15 @@ class TemporalConvLayer(nn.Module):
             raise NotImplementedError(f'ERROR: The activation function {self.act_func} is not implemented.')
         
         return x
-
+"""
 class ChebGraphConv(nn.Module):
     def __init__(self, c_in, c_out, Ks, gso, bias,g_constructor):
         super(ChebGraphConv, self).__init__()
         self.c_in = c_in
         self.c_out = c_out
-        self.Ks = Ks
+        self.Ks = Ks  
         self.gso = gso
-        self.idx = torch.arange(gso.shape[0]) #self.n_vertex 
+        self.idx = torch.arange(gso.shape[0]).to(gso) #self.n_vertex 
         self.g_constructor = g_constructor
         self.weight = nn.Parameter(torch.cuda.FloatTensor(Ks, c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(Ks, c_in, c_out))
         if bias:
@@ -186,16 +186,10 @@ class ChebGraphConv(nn.Module):
             init.uniform_(self.bias, -bound, bound)
     
     def forward(self, x):
-
         # If learnable adjacency matrix: 
         if self.g_constructor is not None:    
             # Load adjacency matrix (i.e gso ?)
-            #if idx is None:
-            #    gso = self.g_constructor(self.idx)
-            #else:
-            #    gso = self.g_constructor(idx)
-            gso = self.g_constructor(self.idx)
-
+            self.gso = self.g_constructor(self.idx)
         #bs, c_in, ts, n_vertex = x.shape
         x = x.permute(0, 2, 3, 1)
 
@@ -232,7 +226,7 @@ class GraphConv(nn.Module):
         self.c_in = c_in
         self.c_out = c_out
         self.gso = gso
-        self.idx = torch.arange(gso.shape[0]) #self.n_vertex 
+        self.idx = torch.arange(gso.shape[0]).to(gso) #self.n_vertex  #self.n_vertex 
         self.g_constructor = g_constructor
         self.weight = nn.Parameter(torch.cuda.FloatTensor(c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_in, c_out))
         if bias:
@@ -250,15 +244,10 @@ class GraphConv(nn.Module):
 
     def forward(self, x):
         #bs, c_in, ts, n_vertex = x.shape
-
         # If learnable adjacency matrix: 
         if self.g_constructor is not None:    
             # Load adjacency matrix (i.e gso ?)
-            #if idx is None:
-            #    gso = self.g_constructor(self.idx)
-            #else:
-            #    gso = self.g_constructor(idx)
-            gso = self.g_constructor(self.idx)
+            self.gso = self.g_constructor(self.idx.long())
 
         x = x.permute(0, 2, 3, 1)
 
@@ -271,6 +260,92 @@ class GraphConv(nn.Module):
             graph_conv = second_mul
         
         return graph_conv
+"""
+
+class GraphConv(nn.Module):
+    def __init__(self, c_in, c_out, gso, bias,g_constructor,graph_conv_type,Ks=None):
+        super(GraphConv, self).__init__()
+        self.c_in = c_in
+        self.c_out = c_out
+        self.gso = gso
+        self.idx = torch.arange(gso.shape[0]).to(gso) #self.n_vertex  #self.n_vertex 
+        self.g_constructor = g_constructor
+        #print('number of parameters in g_constructor: {}'.format(sum([p.numel() for p in g_constructor.parameters()])))
+        self.Ks = Ks
+
+        self.graph_conv_type = graph_conv_type
+        if graph_conv_type == 'cheb_graph_conv':
+            self.weight = nn.Parameter(torch.cuda.FloatTensor(Ks,c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(Ks,c_in, c_out))
+        elif graph_conv_type == 'graph_conv':
+            self.weight = nn.Parameter(torch.cuda.FloatTensor(c_in, c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_in, c_out))
+        else:
+            raise NotImplementedError(f"graph_conv_type {self.graph_conv_type} has not been implemented")
+
+        if bias:
+            self.bias = nn.Parameter(torch.cuda.FloatTensor(c_out)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(c_out))
+        else:
+            self.register_parameter('bias', None)
+        self.reset_parameters()
+
+    def reset_parameters(self):
+        init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+        if self.bias is not None:
+            fan_in, _ = init._calculate_fan_in_and_fan_out(self.weight)
+            bound = 1 / math.sqrt(fan_in) if fan_in > 0 else 0
+            init.uniform_(self.bias, -bound, bound)
+
+    def compute_graph_conv(self,x):
+        first_mul = torch.einsum('hi,btij->bthj', self.gso, x)
+        graph_conv = torch.einsum('bthi,ij->bthj', first_mul, self.weight)
+        return graph_conv
+
+    def compute_cheb_graph_conv(self,x):
+        if self.Ks - 1 < 0:
+            raise ValueError(f'ERROR: the graph convolution kernel size Ks has to be a strict positive integer, but received {self.Ks}.')  
+        elif self.Ks - 1 == 0:
+            x_0 = x
+            x_list = [x_0]
+        elif self.Ks - 1 == 1:
+            x_0 = x
+            x_1 = torch.einsum('hi,btij->bthj', self.gso, x)
+            x_list = [x_0, x_1]
+        elif self.Ks - 1 >= 2:
+            x_0 = x
+            x_1 = torch.einsum('hi,btij->bthj', self.gso, x)
+            x_list = [x_0, x_1]
+            for k in range(2, self.Ks):
+                x_list.append(torch.einsum('hi,btij->bthj', 2 * self.gso, x_list[k - 1]) - x_list[k - 2])
+        
+        x = torch.stack(x_list, dim=2)
+        graph_conv = torch.einsum('btkhi,kij->bthj', x, self.weight)
+        return graph_conv
+    
+    def add_bias(self,graph_conv):
+        if self.bias is not None:
+            graph_conv = torch.add(graph_conv, self.bias)
+        return graph_conv
+
+    def forward(self, x):
+        # If learnable adjacency matrix: 
+        if self.g_constructor is not None:    
+            self.gso = self.g_constructor(self.idx.long())
+        x = x.permute(0, 2, 3, 1)
+
+        if self.graph_conv_type == 'cheb_graph_conv':
+            graph_conv = self.compute_cheb_graph_conv(x)
+        elif self.graph_conv_type == 'graph_conv':
+            graph_conv = self.compute_graph_conv(x)
+        else:
+            raise NotImplementedError(f"graph_conv_type {self.graph_conv_type} has not been implemented")
+        
+        graph_conv = self.add_bias(graph_conv)
+            
+        return graph_conv
+
+
+
+
+
 
 class GraphConvLayer(nn.Module):
     def __init__(self, graph_conv_type, c_in, c_out, Ks, gso, bias,g_constructor):
@@ -281,17 +356,23 @@ class GraphConvLayer(nn.Module):
         self.align = Align(c_in, c_out)
         self.Ks = Ks
         self.gso = gso
+        """
         if self.graph_conv_type == 'cheb_graph_conv':
             self.cheb_graph_conv = ChebGraphConv(c_out, c_out, Ks, gso, bias,g_constructor)
         elif self.graph_conv_type == 'graph_conv':
-            self.graph_conv = GraphConv(c_out, c_out, gso, bias,g_constructor)
-
+            self.graph_conv = GraphConv(c_out, c_out, gso, bias,g_constructor)"
+        """
+        self.graph_conv = GraphConv(c_out, c_out, gso, bias,g_constructor,graph_conv_type,Ks)
     def forward(self, x):
         x_gc_in = self.align(x)
+        x_gc = self.graph_conv(x_gc_in)
+
+        """
         if self.graph_conv_type == 'cheb_graph_conv':
             x_gc = self.cheb_graph_conv(x_gc_in)
         elif self.graph_conv_type == 'graph_conv':
             x_gc = self.graph_conv(x_gc_in)
+        """
         x_gc = x_gc.permute(0, 3, 1, 2)
         x_gc_out = torch.add(x_gc, x_gc_in)
 

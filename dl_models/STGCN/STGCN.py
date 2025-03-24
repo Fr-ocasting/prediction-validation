@@ -53,10 +53,14 @@ class STGCN(nn.Module):
         self.out_dim = blocks[-1][-1]
         modules = []
 
-        if args.learnable_adj_matrix:
-            self.init_learnable_adjacency_matrix(args.n_vertex,k=10,node_embedding_dim=8,device = args.device,alpha=3)
-        else:
-            self.g_constructor = None
+        
+        self.init_learnable_adjacency_matrix(args.learnable_adj_matrix,
+                                             args.n_vertex,
+                                             k=4,
+                                             node_embedding_dim=4,
+                                             device = args.device,
+                                             alpha=3)
+
 
 
         for l in range(len(blocks) - 3):
@@ -99,8 +103,11 @@ class STGCN(nn.Module):
             #self.silu = nn.SiLU()
             #self.dropout = nn.Dropout(p=args.dropout)
 
-    def init_learnable_adjacency_matrix(self,n_vertex,k,node_embedding_dim,device,alpha):
-        self.g_constructor = graph_constructor(n_vertex, k, node_embedding_dim, device=device, alpha=alpha, static_feat=None)
+    def init_learnable_adjacency_matrix(self,bool_learnable_adj,n_vertex,k,node_embedding_dim,device,alpha):
+        if bool_learnable_adj:
+            self.g_constructor = graph_constructor(n_vertex, k, node_embedding_dim, device=device, alpha=alpha, static_feat=None).to(device)     
+        else:
+            self.g_constructor = None
 
 
     def forward(self, x,x_vision=None,x_calendar = None):

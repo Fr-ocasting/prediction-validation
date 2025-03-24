@@ -56,8 +56,6 @@ if True:
 
                                             'standardize': False,
                                             'minmaxnorm':True,
-
-                                            'learnable_adj_matrix' : False,
                                             
                                             'stacked_contextual': True,
                                             'temporal_graph_transformer_encoder': False,

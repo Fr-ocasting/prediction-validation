@@ -40,7 +40,7 @@ class graph_constructor(nn.Module):
         # [a: [Nd,Nd], avec Nd dimension de l'embedding des nodes 
         a = torch.mm(nodevec1, nodevec2.transpose(1,0))-torch.mm(nodevec2, nodevec1.transpose(1,0))   #V1*V2^t - V2*V1^t  forme bilineaire asymetrique
         adj = F.relu(torch.tanh(self.alpha*a))
-        mask = torch.zeros(idx.size(0), idx.size(0)).to(self.device)
+        mask = torch.zeros(idx.size(0), idx.size(0)).to(nodevec1) # .to(self.device)
         mask.fill_(float('0'))
 
         s1,t1 = (adj + torch.rand_like(adj)*0.01).topk(self.k,1)    # torch.rand_like génère une random matrice de même taille que A mais avec des valeurs entre 0 et 0.01  // .topk  extrait les 'k' plus grand éléments le long de la dimension 1 (N2) 
@@ -150,7 +150,27 @@ class nconv(nn.Module):
     
 
 class mixprop(nn.Module):
-    '''
+    """
+                 ┌────────────────────────────────────────────┐
+                 │                mixprop                     │
+                 │   (multiple graph conv + pondération)      │
+                 └────────────────────────────────────────────┘
+
+                    Inputs (x) ─────────────────────┐
+                                                    ▼
+                                    a = (adj + I)/d ---> Normalisation
+                                                    │
+                                ┌───────────────────▼──────────────────────────┐
+                                │      Loop over gdep times:                   │
+                                │  h_(l+1) =alpha*x + (1-alpha)*nconv(h_l, a)  │
+                                └───────────────────┬───────────────────────────┘
+                                                    │
+                                    h_out =  Concat ([h_L,h_(L-1),...,h_0])
+                                                    │
+                                                MLP(h_out)
+                                                    ▼
+                                                   Out
+
     Produit autant de graph convolution que nécessaire. Sachant que la graph convolution contient une couche résiduelle pondérée.
 
     Args: 
@@ -161,7 +181,7 @@ class mixprop(nn.Module):
     - alpha : pondération entre résiduelle et sortie de graph conv
     Ajoute l'identité à la matrice d'adjacence
 
-    '''
+    """
     def __init__(self,c_in,c_out,gdep,dropout,alpha):
         super(mixprop, self).__init__()
         self.nconv = nconv()
