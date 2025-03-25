@@ -25,8 +25,6 @@ if True:
                     'DA_method': 'rich_interpolation',
                     'freq':'15min',
 
-                    'standardize': True,
-                    'minmaxnorm':False,
                     'learnable_adj_matrix' : False,
                     'stacked_contextual': True,
 
@@ -40,21 +38,69 @@ if True:
                     }
     
     config_diffs = {}
-    config_diffs.update({'STANDARDIZE_subway_out':{'dataset_names':['subway_in','subway_out']},
-                          'STANDARDIZE_deezer': {'dataset_names':['subway_in','netmob_POIs'],
+    config_diffs.update({'STANDARDIZE_subway_out_2':{'dataset_names':['subway_in','subway_out'],
+                                                    'standardize': True,
+                                                    'minmaxnorm':False,},
+                          'STANDARDIZE_deezer_2': {'dataset_names':['subway_in','netmob_POIs'],
                                                 'NetMob_only_epsilon': True,    # True # False
                                                 'NetMob_selected_apps':  ['Deezer'],
                                                 'NetMob_transfer_mode' :  ['DL'],
                                                 'NetMob_selected_tags': ['station_epsilon100'],
-                                                'NetMob_expanded' : ''
+                                                'NetMob_expanded' : '',
+                                                'standardize': True,
+                                                'minmaxnorm':False,
                                                 },
-                         'STANDARDIZE_Web_Ads': {'dataset_names':['subway_in','netmob_POIs'],
+                         'STANDARDIZE_Web_Ads_2': {'dataset_names':['subway_in','netmob_POIs'],
                                                 'NetMob_only_epsilon': True,    # True # False
                                                 'NetMob_selected_apps':  ['Web_Ads'],
                                                 'NetMob_transfer_mode' :  ['DL'],
                                                 'NetMob_selected_tags': ['station_epsilon100'],
-                                                'NetMob_expanded' : ''
-                                                }
+                                                'NetMob_expanded' : '',
+                                                'standardize': True,
+                                                'minmaxnorm':False,
+                                                },
+                        'MINMAXNORM_subway_out_1':{'dataset_names':['subway_in','subway_out'],
+                                                                            'standardize': False,
+                                                                            'minmaxnorm':True,},
+                        'MINMAXNORM_subway_out_2':{'dataset_names':['subway_in','subway_out'],
+                                                                            'standardize': False,
+                                                                            'minmaxnorm':True,},
+                         'MINMAXNORM_deezer_1': {'dataset_names':['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  ['Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],
+                                                'NetMob_expanded' : '',
+                                                'standardize': False,
+                                                'minmaxnorm':True,
+                                                },
+                         'MINMAXNORM_deezer_2': {'dataset_names':['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  ['Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],
+                                                'NetMob_expanded' : '',
+                                                'standardize': False,
+                                                'minmaxnorm':True,
+                                                },
+                         'MINMAXNORM_Web_Ads_1': {'dataset_names':['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  ['Web_Ads'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],
+                                                'NetMob_expanded' : '',
+                                                'standardize': False,
+                                                'minmaxnorm':True,
+                                                },
+                         'MINMAXNORM_Web_Ads_2': {'dataset_names':['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  ['Web_Ads'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': ['station_epsilon100'],
+                                                'NetMob_expanded' : '',
+                                                'standardize': False,
+                                                'minmaxnorm':True,
+                                                },
                         })
     df_metrics_per_config = pd.DataFrame()
     for add_name_id,config_diff_i in config_diffs.items():
