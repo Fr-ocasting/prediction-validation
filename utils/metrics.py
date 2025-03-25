@@ -51,12 +51,9 @@ def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics):
             metric_name = metric.split(' ')[0]
             error = metrics_by_station(Preds,Y_true,metric_name)
         else:
-            print('metric: ',metric)
             fun = load_fun(metric)
             error = fun(Preds,Y_true).item()
         dic_metric[metric] = error
-    print(dic_metric)
-    blabla
     return dic_metric
 
 def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):
@@ -102,8 +99,8 @@ def personnal_MAPE(Preds,Y_true,inf_border=0):
     Y_true = Y_true.reshape(-1)
     Preds = Preds.reshape(-1)
     mask = Y_true>(inf_border+1e-3)
-    print('Y_true: ',pd.DataFrame(Y_true.view(-1)).describe())
-    print('Preds: ',pd.DataFrame(Preds.view(-1)).describe())
+    #print('Y_true: ',pd.DataFrame(Y_true.view(-1)).describe())
+    #print('Preds: ',pd.DataFrame(Preds.view(-1)).describe())
 
     error = 100*torch.mean(torch.abs(Y_true[mask] - Preds[mask])/Y_true[mask])
     return error

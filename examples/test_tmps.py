@@ -22,7 +22,7 @@ if True:
     args,folds = load_configuration(trial_id,True)
     modification ={'keep_best_weights':True,
                     'epochs':epochs_validation,
-                    'device':torch.device("cuda:1"),
+                    'device':torch.device("cuda:0"),
                     }
     
 
@@ -42,7 +42,7 @@ if True:
     CombinationTags =  [[epsi_i] for epsi_i in L_epsilon]
 
     for NetMob_selected_apps,NetMob_selected_tags in list(itertools.product(Combination_Apps,CombinationTags)):
-        name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}"
+        name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}_2"
         config_diffs.update({name_config:{'dataset_names':['subway_in','netmob_POIs'],
                                             'data_augmentation': True,
                                             'DA_method': 'rich_interpolation',
