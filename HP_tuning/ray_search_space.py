@@ -11,7 +11,7 @@ if parent_dir not in sys.path:
 
 def get_search_space_ray(args):
     # Common search space
-    config = {"lr": tune.qloguniform(5e-5, 5e-3, 5e-5),
+    config = {"lr": tune.qloguniform(1e-5, 5e-3, 1e-5), # tune.qloguniform(5e-5, 5e-3, 5e-5)
               "weight_decay" : tune.uniform(0.0005, 0.1),
               #"momentum" : tune.uniform(0.80, 0.99),
               "dropout" : tune.uniform(0,0.9),
