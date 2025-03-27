@@ -162,12 +162,29 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
 
 
 def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
+    # Metrics Valid 
     row = {f"fold{k}": [loss] for k,loss in enumerate(valid_losses)}
     row.update({'mean' : [np.mean(valid_losses)]})
     if (args.evaluate_complete_ds):
         row.update({'complete_dataset': trainer.performance['valid_loss']})  # The associated validation is from the last trained model
     df_results = pd.DataFrame.from_dict(row)
+    # ...
 
+    # Metrics Test :
+    model_metrics =  globals()[f'{training_mode_list[0]}_{metric_list[0]}']
+    nb_folds = len(model_metrics)
+    multi_cols =  pd.MultiIndex.from_product([metric_list, range(nb_folds)], 
+                                            names=["metric", "fold"])
+
+    df_metrics_by_folds = pd.DataFrame(index=training_mode_list, columns=multi_cols)
+
+    for training_mode in training_mode_list:
+        for metric in metric_list:
+            model_metrics = globals()[f"{training_mode}_{metric}"]
+            for fold_idx, value in enumerate(model_metrics):
+                df_metrics_by_folds.loc[training_mode, (metric, fold_idx)] = value
+
+    # Metrics K-folds: 
     dict_metrics_on_K_fold = {}
     mean_on_K_fold = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
     var_on_K_fold = {f"VAR_{metric}" : [np.var(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
@@ -178,15 +195,17 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     df_metrics = pd.DataFrame(index = training_mode_list, 
                             data = dict_metrics_on_K_fold
                             )   
+    # ...
     
-    return df_results,df_metrics
+    return df_results,df_metrics,df_metrics_by_folds
     
 def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
-    df_results,df_metrics =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
+    df_results,df_metrics,df_metrics_by_folds =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
 
     df_results.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
     df_loss.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
     df_metrics.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+    df_metrics_by_folds.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_BY_FOLD{trial_id}.csv")
 
     print('df metrics: ',df_metrics)
 

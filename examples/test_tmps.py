@@ -16,6 +16,40 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
 if True:
+    save_folder = 'K_fold_validation/training_with_HP_tuning/tmps'
+    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
+    epochs_validation = 1
+    args,folds = load_configuration(trial_id,True)
+    modification ={'keep_best_weights':True,
+                    'epochs':epochs_validation,
+                    'device':torch.device("cuda:0"),
+                    }
+    
+    config_diffs = {'large_attention_DA_rich_interpolation_nh3_emb48':{'dataset_names':['subway_in','subway_out'],
+                                        'data_augmentation': False,
+                                        'freq':'15min',
+
+                                        'standardize': False,
+                                        'minmaxnorm':True,
+
+                                        'learnable_adj_matrix' : False,
+                                        
+                                        'stacked_contextual': True,
+                                        'temporal_graph_transformer_encoder': False,
+                                        'compute_node_attr_with_attn': False,
+                                        },  
+                    }
+                        
+
+    for add_name_id,config_diff in config_diffs.items():
+        config_diff.update(modification)
+        train_model_on_k_fold_validation(trial_id,load_config =True,
+                                            save_folder=save_folder,
+                                            modification=config_diff,
+                                            add_name_id=add_name_id)
+
+"""Evaluation de qualité des série temporelle NetMob de manière individuelle."""
+if False:
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation_epsilon100'
     trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
     epochs_validation = 100
