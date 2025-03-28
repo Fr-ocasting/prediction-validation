@@ -169,7 +169,7 @@ if __name__ == '__main__':
                             dataset_for_coverage=dataset_for_coverage,
                             modification = {'ray':True,
                                             'grace_period':20,#20,
-                                            'HP_max_epochs':100,#100,
+                                            'HP_max_epochs':500,#100,
                                             'evaluate_complete_ds' : True,
                                             #'set_spatial_units' : ['BON','SOI','GER','CHA'],
 
@@ -181,15 +181,15 @@ if __name__ == '__main__':
                                             #'vision_concatenation_late' : False,
                                             #'vision_model_name': 'VariableSelectionNetwork',
 
-                                            'learnable_adj_matrix' : True,
-                                            'learnable_adj_top_k' : 8,  # If learnable_adj_matrix is True, set the number of kept node links on the graph conv
-                                            'learnable_adj_embd_dim' : 8 ,# If learnable_adj_matrix is True, set the embedding dim of each nodes
+                                            'learnable_adj_matrix' : False,
+                                            #'learnable_adj_top_k' : 8,  # If learnable_adj_matrix is True, set the number of kept node links on the graph conv
+                                            #'learnable_adj_embd_dim' : 8 ,# If learnable_adj_matrix is True, set the embedding dim of each nodes
 
                                             'data_augmentation': True, #True,  #False
                                             'DA_method':'rich_interpolation', # 'noise' # 'interpolation
                                             })
         # Init 
-        epochs_validation = 100#100
+        epochs_validation = 500#100
         num_samples = 200 # 500
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
