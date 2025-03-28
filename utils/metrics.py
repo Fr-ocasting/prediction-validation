@@ -77,6 +77,8 @@ def load_fun(metric):
         fun = nn.L1Loss()
     if metric == 'mape':
         fun = personnal_MAPE
+    if metric == 'mase':
+        fun = personnal_MASE
     return(fun)
 
 def metrics_by_station(Preds,Y_true,metric_name):
@@ -89,6 +91,21 @@ def metrics_by_station(Preds,Y_true,metric_name):
         errors.append(error.item())
     return(errors) 
 
+
+def personnal_MASE(Preds,Y_true):
+    '''
+    args
+    -------
+    '''
+    previous = Y_true[:-1]
+    Y_true = Y_true[1:]
+    Preds = Preds[1:]
+
+    MAE_naiv = torch.mean(torch.abs(Y_true-previous))
+    MAE = torch.mean(torch.abs(Y_true-Preds))
+
+    error = MAE/MAE_naiv
+    return error
 
 def personnal_MAPE(Preds,Y_true,inf_border=0):
     '''

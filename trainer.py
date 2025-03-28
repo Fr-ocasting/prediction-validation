@@ -515,7 +515,6 @@ class Trainer(object):
             Preds = normalizer.unormalize_tensor(inputs = Preds,feature_vect = True) #  device = self.args.device
             Y_true = normalizer.unormalize_tensor(inputs = Y_true,feature_vect = True) # device = self.args.device
         return(Preds,Y_true,T_labels)
-    
     def update_loss_list(self,loss_epoch,nb_samples,training_mode):
         if training_mode == 'train':
             self.train_loss.append(loss_epoch/nb_samples)
