@@ -15,13 +15,13 @@ def get_search_space_ray(args):
               "weight_decay" : tune.uniform(0.0005, 0.1),
               #"momentum" : tune.uniform(0.80, 0.99),
               "dropout" : tune.uniform(0,0.9),
-              #"scheduler" : tune.choice([{'scheduler':True,
-              #                              "torch_scheduler_milestone": tune.randint(1, 30),
-              #                              "torch_scheduler_gamma": tune.uniform(0.985, 0.999),
-              #                              "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1), 
-              #                          },
-              #                          {'scheduler':None
-              #                          }])
+              "scheduler" : tune.choice([{'scheduler':True,
+                                            "torch_scheduler_milestone": tune.randint(1, 30),
+                                            "torch_scheduler_gamma": tune.uniform(0.985, 0.999),
+                                            "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1), 
+                                        },
+                                        {'scheduler':None
+                                        }])
               }
 
     #if 'netmob_POIs' in args.dataset_name:

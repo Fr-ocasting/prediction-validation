@@ -202,9 +202,13 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return p
 
 
-def plot_TS(list_df_ts,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False):
-       p = figure(x_axis_type="datetime",title=title,
-                     width=width,height=height)
+def plot_TS(list_df_ts,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False,x_datetime = True):
+       if x_datetime:
+             p = figure(x_axis_type="datetime",title=title,
+                            width=width,height=height)
+       else:
+             p = figure(title=title,
+                            width=width,height=height)
        legend_it = []
        colors = palette
 
@@ -227,12 +231,13 @@ def plot_TS(list_df_ts,width=400,height=1500,bool_show=False,title=f"Time Serie 
        legend = Legend(items=legend_it)
        legend.click_policy="hide"
        p.add_layout(legend, 'right')
-       p.xaxis.formatter=DatetimeTickFormatter(
-            months="%b",
-            days="%a %d %b",
-            hours="%a %d %b %H:%M",
-            minutes="%a %d  %H:%M"
-                )
+       if x_datetime:
+              p.xaxis.formatter=DatetimeTickFormatter(
+              months="%b",
+              days="%a %d %b",
+              hours="%a %d %b %H:%M",
+              minutes="%a %d  %H:%M"
+                     )
 
        if bool_show:
               output_notebook()

@@ -190,7 +190,7 @@ if __name__ == '__main__':
                                             })
         # Init 
         epochs_validation = 500#100
-        num_samples = 200 # 500
+        num_samples = 400 # 500
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:

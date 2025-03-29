@@ -60,7 +60,7 @@ def init_metrics(args):
     if args.loss_function_type == 'quantile':
         metric_list = ['MPIW','PICP']
     else:
-        metric_list = ['mse','mae','mape']
+        metric_list = ['mse','mae','mape','mase']
     valid_losses = []
     df_loss = pd.DataFrame()
     # ...

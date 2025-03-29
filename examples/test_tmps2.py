@@ -12,6 +12,47 @@ if parent_dir not in sys.path:
 
 from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration,train_valid_1_model
 
+
+"""Evaluation de qualité des série temporelle NetMob de manière individuelle."""
+if True:
+    save_folder = 'K_fold_validation/training_with_HP_tuning/tmps'
+    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
+    #trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_03_29_00_17_68381'
+    epochs_validation = 100
+    args,folds = load_configuration(trial_id,True)
+    modification ={'keep_best_weights':True,
+                    'epochs':epochs_validation,
+                    'device':torch.device("cuda:1"),
+
+                    'standardize': False,
+                    'minmaxnorm':True,
+
+                    'learnable_adj_matrix' : False,
+                    'stacked_contextual': True,
+                    'temporal_graph_transformer_encoder': False,
+                    'compute_node_attr_with_attn': False,
+                    }
+    
+    config_diffs = {'_1':{},  
+                    '_2':{},  
+                    '_3':{},  
+                    '_4':{},  
+                    '_5':{},   
+                    '_6':{},  
+                    '_7':{},  
+                    '_8':{},  
+                    '_9':{},  
+                    '_10':{},
+                    }
+                        
+
+    for add_name_id,config_diff in config_diffs.items():
+        config_diff.update(modification)
+        train_model_on_k_fold_validation(trial_id,load_config =True,
+                                            save_folder=save_folder,
+                                            modification=config_diff,
+                                            add_name_id=add_name_id)
+        
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
 if False:
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'

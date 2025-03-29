@@ -45,7 +45,7 @@ class Trainer(object):
         self.optimizer = optimizer
         self.loss_function = loss_function
         if args.loss_function_type == 'MSE':
-            self.metrics = ['mse','mae','mape'] 
+            self.metrics = ['mse','mae','mape','mase'] 
             self.type_calib = None
             self.alpha = None
             args.track_pi = False
