@@ -15,7 +15,7 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
-if True:
+if False:
     save_folder = 'K_fold_validation/training_with_HP_tuning/tmps'
     #trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
     trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_03_29_00_17_68381'
@@ -47,7 +47,7 @@ if True:
                                             add_name_id=add_name_id)
 
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
-if False:
+if True:
     save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation_epsilon100'
     trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
     epochs_validation = 100
@@ -74,7 +74,7 @@ if False:
     CombinationTags =  [[epsi_i] for epsi_i in L_epsilon]
 
     for NetMob_selected_apps,NetMob_selected_tags in list(itertools.product(Combination_Apps,CombinationTags)):
-        name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}_2"
+        name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}_3"
         config_diffs.update({name_config:{'dataset_names':['subway_in','netmob_POIs'],
                                             'data_augmentation': True,
                                             'DA_method': 'rich_interpolation',

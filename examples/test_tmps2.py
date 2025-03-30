@@ -14,7 +14,7 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
-if True:
+if False:
     save_folder = 'K_fold_validation/training_with_HP_tuning/tmps'
     trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
     #trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_03_29_00_17_68381'
@@ -54,8 +54,8 @@ if True:
                                             add_name_id=add_name_id)
         
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
-if False:
-    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
+if True:
+    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation_epsilon100'
     trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
     epochs_validation = 100
     args,folds = load_configuration(trial_id,True)
@@ -65,7 +65,7 @@ if False:
                     }
     
 
-    L_epsilon = ['station_epsilon300'] #  ['station_epsilon100','station_epsilon300']
+    L_epsilon = ['station_epsilon100'] #  ['station_epsilon100','station_epsilon300']
     L_Apps = ['Apple_Video','Google_Play_Store','Google_Maps','Web_Clothes','Uber', 'Twitter',
             'Microsoft_Mail', 'Microsoft_Store', 'Apple_Music', 'Microsoft_Office', 'Pokemon_GO', 'Clash_of_Clans', 'Yahoo_Mail', 'PlayStation',
             'Wikipedia', 'Apple_Web_Services', 'Pinterest', 'Web_Ads', 'Google_Mail', 'Google_Meet',
@@ -79,31 +79,31 @@ if False:
     config_diffs = {}
     Combination_Apps = [[app_i] for app_i in L_Apps]
     CombinationTags =  [[epsi_i] for epsi_i in L_epsilon]
+    for iteration_i in [3,4,5]:
+        for NetMob_selected_apps,NetMob_selected_tags in list(itertools.product(Combination_Apps,CombinationTags)):
+            name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}_{iteration_i}"
+            config_diffs.update({name_config:{'dataset_names':['subway_in','netmob_POIs'],
+                                                'data_augmentation': True,
+                                                'DA_method': 'rich_interpolation',
+                                                'freq':'15min',
+                                                
+                                                'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps':  NetMob_selected_apps,
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags': NetMob_selected_tags,
+                                                'NetMob_expanded' : '',
 
-    for NetMob_selected_apps,NetMob_selected_tags in list(itertools.product(Combination_Apps,CombinationTags)):
-        name_config = f"NETMOB_eps{'_'.join([x.split('epsilon')[-1] for x in NetMob_selected_tags])}_{'_'.join(NetMob_selected_apps)}_1"
-        config_diffs.update({name_config:{'dataset_names':['subway_in','netmob_POIs'],
-                                            'data_augmentation': True,
-                                            'DA_method': 'rich_interpolation',
-                                            'freq':'15min',
-                                            
-                                            'NetMob_only_epsilon': True,    # True # False
-                                            'NetMob_selected_apps':  NetMob_selected_apps,
-                                            'NetMob_transfer_mode' :  ['DL'],
-                                            'NetMob_selected_tags': NetMob_selected_tags,
-                                            'NetMob_expanded' : '',
+                                                'standardize': False,
+                                                'minmaxnorm':True,
 
-                                            'standardize': False,
-                                            'minmaxnorm':True,
-
-                                            'learnable_adj_matrix' : False,
-                                            
-                                            'stacked_contextual': True,
-                                            'temporal_graph_transformer_encoder': False,
-                                            'compute_node_attr_with_attn': False,
-                                            }
-                                })
-                        
+                                                'learnable_adj_matrix' : False,
+                                                
+                                                'stacked_contextual': True,
+                                                'temporal_graph_transformer_encoder': False,
+                                                'compute_node_attr_with_attn': False,
+                                                }
+                                    })
+                            
 
     df_metrics_per_config = pd.DataFrame()
     for add_name_id,config_diff_i in config_diffs.items():
