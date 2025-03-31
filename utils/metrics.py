@@ -10,7 +10,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 from PI.PI_object import PI_object
 
-def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {}):
+def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None):
     '''
     Args:
     ------
@@ -39,19 +39,19 @@ def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_m
     if ('PICP' in metrics) or ('MPIW' in metrics): 
         dic_metric,metrics  = evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics)
 
-    dic_metric  = evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics)
+    dic_metric  = evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=previous)
     return(dic_metric)
 
-def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics):
+def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=None):
     '''
     Tackle the case of single point prediction
     '''
     for metric in metrics :
         if 'by station' in metric:
             metric_name = metric.split(' ')[0]
-            error = metrics_by_station(Preds,Y_true,metric_name)
+            error = metrics_by_station(Preds,Y_true,metric_name,previous=previous)
         else:
-            fun = load_fun(metric)
+            fun = load_fun(metric,previous=previous)
             error = fun(Preds,Y_true).item()
         dic_metric[metric] = error
     return dic_metric
@@ -70,7 +70,7 @@ def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):
 
     return(dic_metric,metrics)
 
-def load_fun(metric):
+def load_fun(metric,previous=None):
     if metric == 'mse':
         fun = nn.MSELoss()
     if metric == 'mae':
@@ -78,11 +78,12 @@ def load_fun(metric):
     if metric == 'mape':
         fun = personnal_MAPE
     if metric == 'mase':
-        fun = personnal_MASE
+        def fun(Preds,Y_true):
+            return personnal_MASE(Preds,Y_true,previous = previous)
     return(fun)
 
-def metrics_by_station(Preds,Y_true,metric_name):
-    fun = load_fun(metric_name)
+def metrics_by_station(Preds,Y_true,metric_name,previous=None):
+    fun = load_fun(metric_name,previous=previous)
     errors = []
     for station in range(Y_true.size(1)):
         P = Preds[:,station,:]
@@ -92,14 +93,15 @@ def metrics_by_station(Preds,Y_true,metric_name):
     return(errors) 
 
 
-def personnal_MASE(Preds,Y_true):
+def personnal_MASE(Preds,Y_true,previous = None):
     '''
     args
     -------
     '''
-    previous = Y_true[:-1]
-    Y_true = Y_true[1:]
-    Preds = Preds[1:]
+    if previous is None:
+        previous = Y_true[:-1]
+        Y_true = Y_true[1:]
+        Preds = Preds[1:]
 
     MAE_naiv = torch.mean(torch.abs(Y_true-previous))
     MAE = torch.mean(torch.abs(Y_true-Preds))
