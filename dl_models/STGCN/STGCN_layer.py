@@ -436,7 +436,7 @@ class OutputBlock(nn.Module):
     def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout,
                  vision_concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
-                 TGE_num_layers, TGE_num_heads,TGE_FC_hdim
+                 TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None
                  ):
         super(OutputBlock, self).__init__()
 

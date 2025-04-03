@@ -89,7 +89,9 @@ class STGCN(nn.Module):
             self.output = layers.OutputBlock(self.Ko, in_feature_fc1, blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout,
                                              self.vision_concatenation_late,extracted_feature_dim,
                                              self.TE_concatenation_late,embedding_dim,args.temporal_graph_transformer_encoder,
-                                             TGE_num_layers=args.TGE_num_layers, TGE_num_heads=args.TGE_num_heads, TGE_FC_hdim=args.TGE_FC_hdim
+                                             TGE_num_layers=args.TGE_num_layers if args.temporal_graph_transformer_encoder else None, 
+                                             TGE_num_heads=args.TGE_num_heads if args.temporal_graph_transformer_encoder else None,  
+                                             TGE_FC_hdim=args.TGE_FC_hdim if args.temporal_graph_transformer_encoder else None, 
                                              )
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=in_feature_fc1, out_features=blocks[-2][0], bias=args.enable_bias)

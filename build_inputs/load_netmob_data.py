@@ -15,8 +15,8 @@ if parent_dir not in sys.path:
 
 # Personnal inputs:
 from dataset import PersonnalInput
-from constants.paths import FOLDER_PATH
-
+from constants.paths import FOLDER_PATH,DATA_TO_PREDICT
+from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 def find_positions(applications, file_list):
     positions = []
     for app in applications:
@@ -109,6 +109,16 @@ def tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,norma
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'subway_out'
 
+    elif 'subway_in' in args.dataset_names:
+        from load_inputs.subway_in import load_data
+        if 'subway_in'  == DATA_TO_PREDICT:
+            NetMob_ds,_,_,_ = load_datasets_to_predict(args,coverage_period=intersect_coverage_period,normalize=True)
+        else:
+            raise NotImplementedError
+            NetMob_ds = load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None) 
+        args.vision_input_type = 'POIs'
+        netmob_dataset_name = 'subway_in'
+
     elif 'subway_out_per_station' in args.dataset_names:
         from load_inputs.subway_out_per_station import load_data      
         NetMob_ds = load_data(dataset,args,parent_dir,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates)  
@@ -152,6 +162,8 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
 
     # BOOLEAN VALUE : True IF NETMOB or SUBWAY_OUT IS USED as contextual data
     bool_netmob = (sum([True for d in args.dataset_names if (('netmob' in d) or ('subway_out' in d)) ])) > 0
+    if (DATA_TO_PREDICT == 'subway_in') and (len([d for d in args.dataset_names if d == 'subway_in'])>1):  # case where subway-in is a contextual data
+        bool_netmob  = True
 
     if bool_netmob: 
         # TACKLE THE INPUT DATA 

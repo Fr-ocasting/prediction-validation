@@ -32,8 +32,8 @@ L_Apps = ['Apple_Video','Google_Play_Store','Google_Maps','Web_Clothes','Uber', 
         'Instagram', 'Facebook_Live', 'Web_Streaming', 'Orange_TV', 'Periscope', 'Snapchat' ,'Web_Finance' ,'WhatsApp', 'Web_Weather','Google_Drive','LinkedIn','Yahoo','Fortnite']
 
 
-def get_df_results(trial_id,model_args,L_Apps,split_key = 'eps100_'):
-    df = pd.DataFrame(columns = ['mse','mae','mape','fold','id','trial_num'])
+def get_df_results(trial_id,model_args,L_Apps,metrics = ['mse','mae','mape','mase']):
+    df = pd.DataFrame(columns = metrics+['fold','id','trial_num'])
     for app in L_Apps:
         pattern = re.compile(rf"{trial_id}_{app}(_\d+)?_f")
         best_model_names = [name for name in model_args['model'].keys() if pattern.search(name)]
@@ -53,7 +53,7 @@ def get_df_results(trial_id,model_args,L_Apps,split_key = 'eps100_'):
             else:
                 raise NotImplementedError
             
-            df.loc[len(df)] = [model_metrics['mse'],model_metrics['mae'],model_metrics['mape'],k,app,trial_num]
+            df.loc[len(df)] = [model_metrics[metric_i] if metric_i in model_metrics.keys() else np.nan for metric_i in metrics]+[k,app,trial_num]
     return df
 
 

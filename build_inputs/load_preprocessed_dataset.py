@@ -89,8 +89,15 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
 
     contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != DATA_TO_PREDICT]
 
-    if ('netmob_POIs' in contextual_dataset_names) and ('subway_out' in contextual_dataset_names):
-        raise NotImplementedError('Semblerait que contextual_ds est soit subway_out / soit NetMob Pois. ça à l air de merder si on a les deux ')
+    # Particular case if we use a dataset as contextual data AND DATA_TO_PREDICT:
+    if len([ds_name for ds_name in args.dataset_names if DATA_TO_PREDICT == ds_name])>1: 
+        contextual_dataset_names.append(DATA_TO_PREDICT)
+
+
+    #if ('netmob_POIs' in contextual_dataset_names) and ('subway_out' in contextual_dataset_names):
+    if len(contextual_dataset_names)>2:
+        raise NotImplementedError('Semblerait que contextual_ds est soit subway_out / soit NetMob Pois. ça à l air de merder si on a les deux, en tout cas on a pas encore implémenter, donc à vérifier.')
+
 
     for dataset_name in contextual_dataset_names:
         if dataset_name == 'calendar':
@@ -118,7 +125,7 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
              subway_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
              """
 
-        elif (dataset_name == 'subway_out'):
+        elif (dataset_name == 'subway_out') or (dataset_name == 'subway_in'):
             need_local_spatial_attn = False
             contextual_tensors,subway_ds,contextual_tensors,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              subway_ds,contextual_tensors,contextual_ds,
@@ -212,7 +219,6 @@ def add_contextual_data(args,subway_ds,contextual_ds,dict_calendar_U_train,dict_
     return(subway_ds,args)
 
 
-
 def load_complete_ds(args,coverage_period = None,normalize = True):
     # Load subway-in DataSet:
     subway_ds,dataset,invalid_dates,intersect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
@@ -228,6 +234,8 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     '''
     # Netmob: 
     args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize = normalize)
+    print('subway_ds.U_valid',subway_ds.U_valid.size())
+    print('NetMob_ds.U_valid',NetMob_ds.U_valid.size())
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 

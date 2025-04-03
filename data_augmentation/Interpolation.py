@@ -89,7 +89,7 @@ class InterpolatorObject(object):
     def apply_interpolation_on_contextual_dict(self,contextual_train_copy,sub_index,start_window):
         # Interpolate in contextual data
         for name, tensor in contextual_train_copy.items():
-            if ('subway_out' in name) or ('netmob' in name):
+            if ('subway_out' in name) or ('netmob' in name) or  ('subway_in' in name):
                 # Use the same global window for the entire batch
                 tensor = self.apply_interplation(tensor,sub_index,start_window)
             elif 'calendar' in name:
