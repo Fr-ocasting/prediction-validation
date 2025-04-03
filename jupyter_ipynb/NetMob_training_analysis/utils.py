@@ -32,28 +32,64 @@ L_Apps = ['Apple_Video','Google_Play_Store','Google_Maps','Web_Clothes','Uber', 
         'Instagram', 'Facebook_Live', 'Web_Streaming', 'Orange_TV', 'Periscope', 'Snapchat' ,'Web_Finance' ,'WhatsApp', 'Web_Weather','Google_Drive','LinkedIn','Yahoo','Fortnite']
 
 
-def get_df_results(trial_id,model_args,L_Apps,metrics = ['mse','mae','mape','mase']):
+def get_df_results(trial_id,model_args,L_Apps,metrics = ['mse','mae','mape','mase'],name_id=None):
     df = pd.DataFrame(columns = metrics+['fold','id','trial_num'])
-    for app in L_Apps:
-        pattern = re.compile(rf"{trial_id}_{app}(_\d+)?_f")
+
+    def add_row_in_df(df,trial_app,app,model_args):
+        pattern = re.compile(rf"{trial_app}(_\d+)?_f")
         best_model_names = [name for name in model_args['model'].keys() if pattern.search(name)]
 
         for trial_fold in best_model_names:
             model_metrics = model_args['model'][trial_fold]['performance']['test_metrics']
-            pattern_1 = re.compile(rf"{trial_id}_{app}_f")
-            pattern_2 = re.compile(rf"{trial_id}_{app}_\d_f")
+            pattern_1 = re.compile(rf"{trial_app}_f")
+            pattern_2 = re.compile(rf"{trial_app}_\d_f")
             if pattern_1.search(trial_fold):
-                pattern_1_i = re.compile(rf"{trial_id}_{app}_f\d$")
+                pattern_1_i = re.compile(rf"{trial_app}_f\d$")
                 trial_num = 1
                 k = trial_fold.split('f')[-1] if pattern_1_i.search(trial_fold) else model_args['model'][trial_fold]['args']['K_fold']-1-model_args['model'][trial_fold]['args']['hp_tuning_on_first_fold']
             elif pattern_2.search(trial_fold):
-                pattern_2_i = re.compile(rf"{trial_id}_{app}_\d_f\d$")
+                pattern_2_i = re.compile(rf"{trial_app}_\d_f\d$")
                 trial_num = trial_fold.split('f')[-2].split('_')[-2]
                 k = trial_fold.split('f')[-1] if pattern_2_i.search(trial_fold) else model_args['model'][trial_fold]['args']['K_fold']-1-model_args['model'][trial_fold]['args']['hp_tuning_on_first_fold']
             else:
                 raise NotImplementedError
             
             df.loc[len(df)] = [model_metrics[metric_i] if metric_i in model_metrics.keys() else np.nan for metric_i in metrics]+[k,app,trial_num]
+        return df
+
+    if L_Apps == []:
+        trial_app = f"{trial_id}"
+        app = name_id
+        df = add_row_in_df(df,trial_app,app,model_args)
+    else:
+        for app in L_Apps:
+            trial_app = f"{trial_id}_{app}"
+            df = add_row_in_df(df,trial_app,app,model_args)
+
+    return df
+
+
+def get_df_results(trial_id,model_args,L_Apps,metrics = ['mse','mae','mape','mase']):
+    df = pd.DataFrame(columns = metrics+['fold','id','trial_num'])
+    pattern = re.compile(rf"{trial_id}(_\d+)?_f")
+    best_model_names = [name for name in list(model_args['model'].keys()) if pattern.search(name)]
+
+    for trial_fold in best_model_names:
+        model_metrics = model_args['model'][trial_fold]['performance']['test_metrics']
+        pattern_1 = re.compile(rf"{trial_id}_f")
+        pattern_2 = re.compile(rf"{trial_id}_\d_f")
+        if pattern_1.search(trial_fold):
+            pattern_1_i = re.compile(rf"{trial_id}_f\d$")
+            trial_num = 1
+            k = trial_fold.split('f')[-1] if pattern_1_i.search(trial_fold) else model_args['model'][trial_fold]['args']['K_fold']-1-model_args['model'][trial_fold]['args']['hp_tuning_on_first_fold']
+        elif pattern_2.search(trial_fold):
+            pattern_2_i = re.compile(rf"{trial_id}_\d_f\d$")
+            trial_num = trial_fold.split('f')[-2].split('_')[-2]
+            k = trial_fold.split('f')[-1] if pattern_2_i.search(trial_fold) else model_args['model'][trial_fold]['args']['K_fold']-1-model_args['model'][trial_fold]['args']['hp_tuning_on_first_fold']
+        else:
+            raise NotImplementedError
+        
+        df.loc[len(df)] = [model_metrics[metric_i] if metric_i in model_metrics.keys() else np.nan for metric_i in metrics]+[k,app,trial_num]
     return df
 
 
