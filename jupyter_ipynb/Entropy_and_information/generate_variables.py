@@ -1,143 +1,148 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from typing import Tuple
 
-#####################
-# 1) Système type Lorenz
-#####################
-def lorenz_system(state, sigma=10.0, rho=28.0, beta=8/3):
+
+    
+# ----------------------------------------------------
+# Lorenz
+# ----------------------------------------------------
+def lorenz_derivs(state, sigma=10.0, rho=28.0, beta=8/3):
     """
-    Équation de Lorenz :
-    dx/dt = sigma*(y - x)
-    dy/dt = x*(rho - z) - y
-    dz/dt = x*y - beta*z
+    Calcule dx/dt, dy/dt, dz/dt pour le système de Lorenz classique.
+    state: (x, y, z).
     """
     x, y, z = state
-    dx = sigma * (y - x)
-    dy = x * (rho - z) - y
-    dz = x * y - beta * z
-    return np.array([dx, dy, dz])
+    dxdt = sigma * (y - x)
+    dydt = x * (rho - z) - y
+    dzdt = x * y - beta * z
+    return np.array([dxdt, dydt, dzdt])
 
-def simulate_lorenz(initial_state: np.ndarray,
-                    dt: float = 0.01,
-                    steps: int = 10000) -> np.ndarray:
+def simulate_lorenz_noisy(initial_state, dt=0.01, steps=10000,
+                          sigma=10.0, rho=28.0, beta=8/3,
+                          noise_std=0.1):
     """
-    Intégration d'Euler simple pour le système de Lorenz.
-    Retourne un tableau (steps, 3) avec la trajectoire [x(t), y(t), z(t)].
+    Simule le système de Lorenz avec un terme de bruit additif à chaque pas.
+    Schéma d'Euler simple.
+    
+    :param initial_state: np.array([x0, y0, z0])
+    :param dt: pas de temps
+    :param steps: nombre d'itérations
+    :param sigma, rho, beta: paramètres du Lorenz
+    :param noise_std: écart-type du bruit Gaussien à chaque pas
+    :return: array shape (steps, 3) contenant la trajectoire
     """
     traj = np.zeros((steps, 3))
     traj[0] = initial_state
+    
     for i in range(1, steps):
-        deriv = lorenz_system(traj[i-1])
-        traj[i] = traj[i-1] + dt * deriv
+        x, y, z = traj[i-1]
+        # dérivées déterministes
+        dxdt, dydt, dzdt = lorenz_derivs([x, y, z], sigma, rho, beta)
+        
+        # Bruit Gaussien additif
+        noise = np.random.normal(0, noise_std, size=3)
+        
+        # Schéma d'Euler: state_{n+1} = state_n + deriv * dt + noiseTerm
+        # On ajoute le bruit comme s'il était un forcing (façon Euler-Maruyama simplifiée).
+        traj[i] = traj[i-1] + dt * np.array([dxdt, dydt, dzdt]) + noise
+
     return traj
 
-#####################
-# 2) Génération des données "Moutons, Loups, Herbe"
-#####################
-np.random.seed(42)
-initial_state = np.array([5.0, 5.0, 5.0])  # point de départ
-data_lorenz = simulate_lorenz(initial_state, dt=0.01, steps=6000)
-# Tronquons un peu le début pour éviter les transitoires
-data_lorenz = data_lorenz[1000:]  # shape (5000, 3)
 
-# On renomme : Moutons = X, Loups = Y, Herbe = Z
-Moutons = data_lorenz[:, 0]
-Loups = data_lorenz[:, 1]
-Herbe = data_lorenz[:, 2]
+def load_variables_lorenz(steps = 6000,skip = 2000,sigma_lorenz = 10.0,rho_lorenz = 28.0,beta_lorenz = 8.0/3.0,
+                   initial_state = np.array([5.0, 5.0, 5.0]),dt = 0.01,
+                   noise_std = 0.2 , seed=42):
+    np.random.seed(seed)
+    trajectory = simulate_lorenz_noisy(
+        initial_state=initial_state,
+        dt=dt,
+        steps=steps,
+        sigma=sigma_lorenz,
+        rho=rho_lorenz,
+        beta=beta_lorenz,
+        noise_std=noise_std
+    )
 
-#####################
-# 3) Affichage 3D : "Papillon"
-#####################
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
-ax.plot(Moutons, Loups, Herbe, lw=0.5)
-ax.set_xlabel("Moutons")
-ax.set_ylabel("Loups")
-ax.set_zlabel("Herbe")
-ax.set_title("Trajectoire pseudo-chaotique (Lorenz) rebaptisée Moutons–Loups–Herbe")
-plt.show()
+    # On coupe le début (transitoire)
+    
+    data_lorenz = trajectory[skip:]  # shape (10000, 3) environ
 
-#####################
-# 4) Petit test CCM
-#####################
+    # Séparation en x, y, z
+    x_noisy = data_lorenz[:, 0]
+    y_noisy = data_lorenz[:, 1]
+    z_noisy = data_lorenz[:, 2]
+    return x_noisy,y_noisy,z_noisy
+    
+def plot_lorenz(x_noisy,y_noisy,z_noisy):
+    fig = plt.figure(figsize=(12, 5))
 
-# (a) On échantillonne la fin de la trajectoire (par ex. 1000 points) pour avoir la série
-M = 1000
-Moutons_sample = Moutons[-M:]
-Loups_sample = Loups[-M:]
-Herbe_sample = Herbe[-M:]
+    # a) Courbes x(t), y(t), z(t)
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1.plot(x_noisy, label="x(t) [Moutons]", alpha=0.8)
+    ax1.plot(y_noisy, label="y(t) [Loups]", alpha=0.8)
+    ax1.plot(z_noisy, label="z(t) [Herbe]", alpha=0.8)
+    ax1.set_title("Évolution temporelle (Lorenz bruité)")
+    ax1.legend()
 
-# (b) On applique CCM => vous pouvez réutiliser votre fonction ccm_reconstruct_multivariate
-#     ou ccm_reconstruct mono-série. Ex. : Loups -> Moutons
-#     On donne juste un squelette illustratif (simplifié) :
+    # b) Tracé 3D du papillon "imparfait"
 
-from sklearn.neighbors import NearestNeighbors
+    ax2 = fig.add_subplot(1, 2, 2, projection='3d')
+    ax2.plot(x_noisy, y_noisy, z_noisy, lw=0.8)
+    ax2.set_title("Attracteur de Lorenz bruité (3D)")
+    ax2.set_xlabel("Moutons")
+    ax2.set_ylabel("loup")
+    ax2.set_zlabel("Herbe")
 
-def ccm_reconstruct(cause_series: np.ndarray,
-                    effect_series: np.ndarray,
-                    E: int = 3,
-                    tau: int = 1,
-                    k: int = 5) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    CCM simple, monovarié. Reconstruit effect_series à partir de l'attracteur de cause_series.
-    """
-    N = len(cause_series)
-    start_index = (E - 1) * tau
-    # Attracteur
-    M_points = []
-    valid_t = []
-    for t in range(start_index, N):
-        coords = [cause_series[t - i*tau] for i in range(E)]
-        M_points.append(coords)
-        valid_t.append(t)
-    M_points = np.array(M_points)
-    valid_t = np.array(valid_t)
+    plt.tight_layout()
+    plt.show()
 
-    # k-NN
-    nbrs = NearestNeighbors(n_neighbors=k).fit(M_points)
-    y_pred = []
-    y_true = []
-    for i, mp in enumerate(M_points):
-        dist, idxs = nbrs.kneighbors(mp.reshape(1, -1))
-        # Weighted average
-        d = dist[0]
-        d = np.where(d<1e-12, 1e-12, d)
-        w = 1/d
-        w /= w.sum()
-        neighbors_t = valid_t[idxs[0]]
-        val_neighbors = effect_series[neighbors_t]
-        val_est = np.sum(val_neighbors * w)
-        y_pred.append(val_est)
-        # Valeur réelle
-        t_i = valid_t[i]
-        y_true.append(effect_series[t_i])
-    return np.array(y_true), np.array(y_pred)
+# ----------------------------------------------------
+# TS with specific event which are related 
+# ----------------------------------------------------
+def load_variables_subway_bar(seed=123):
+    np.random.seed(seed)
 
-def corr(x, y):
-    return np.corrcoef(x, y)[0, 1]
+    # Paramètres
+    days = 30
+    hours_per_day = 24
+    N = days * hours_per_day  # 720
 
-# Test : CCM(Loups->Moutons)
-E_dim = 3
-tau_lag = 2
-k_nn = 6
-y_true, y_est = ccm_reconstruct(Loups_sample, Moutons_sample,
-                                E=E_dim, tau=tau_lag, k=k_nn)
-r_loups_moutons = corr(y_true, y_est)
-print(f"Corrélation CCM(Loups->Moutons) = {r_loups_moutons:.3f}")
+    # On crée deux séries
+    X_metro = np.random.rand(N) * 20  # baseline random
+    Y_alcool = np.random.rand(N) * 10
 
-# Test : CCM(Moutons->Loups)
-y_true2, y_est2 = ccm_reconstruct(Moutons_sample, Loups_sample,
-                                  E=E_dim, tau=tau_lag, k=k_nn)
-r_moutons_loups = corr(y_true2, y_est2)
-print(f"Corrélation CCM(Moutons->Loups) = {r_moutons_loups:.3f}")
+    # Chaque jour, on fait un pic dans X vers 18h, un pic dans Y vers 19h
+    for d in range(days):
+        # index jour = d * 24 à d*24+23
+        start = d * hours_per_day
+        # pic X à 18h
+        x_peak_idx = start + 18
+        X_metro[x_peak_idx] += 50.0  # gros pic
+        # pic Y à 19h
+        y_peak_idx = start + 19
+        Y_alcool[y_peak_idx] += 30.0
+    return X_metro,Y_alcool
 
-# Idem si vous voulez tester Herbe -> Moutons, etc.
 
-plt.figure()
-plt.plot(y_true[:200], label="Moutons (vrai)", alpha=0.7)
-plt.plot(y_est[:200], label="Moutons (estimé via CCM Loups->Moutons)", alpha=0.7)
-plt.title("Extrait reconstruction CCM(Loups->Moutons)")
-plt.legend()
-plt.show()
+
+def plot_subway_bar(X_metro,Y_alcool):
+    # Visualisation
+    plt.figure(figsize=(12,4))
+    plt.plot(X_metro, label="Passagers Métro (X)")
+    plt.plot(Y_alcool, label="Consommation Bar (Y)")
+    plt.title("Séries journalières : pic X à 18h -> pic Y à 19h")
+    plt.legend()
+    plt.show()
+
+
+# ----------------------------------------------------
+# Exemple d'utilisation
+# ----------------------------------------------------
+if __name__ == "__main__":
+    
+    x_noisy,y_noisy,z_noisy = load_variables(steps = 6000,skip = 2000,sigma_lorenz = 10.0,rho_lorenz = 28.0,beta_lorenz = 8.0/3.0,
+                    initial_state = np.array([5.0, 5.0, 5.0]),dt = 0.01,
+                    noise_std = 0.2 , seed=42)
+    plot_lorenz(x_noisy,y_noisy,z_noisy)
+

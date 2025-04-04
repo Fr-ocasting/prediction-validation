@@ -128,6 +128,39 @@ def ccm_reconstruct_multivariate(
 
     return np.array(y_true), np.array(y_pred)
 
+def get_embedding_and_reconstruct(data_dict,target_variable,lags,k=4,use_weighted_mean=True):
+    embedding, valid_time = build_multivariate_embedding(data_dict, lags)
+    y_true, y_est = ccm_reconstruct_multivariate(embedding=embedding,
+                                                    valid_time=valid_time,
+                                                    effect_series=data_dict[target_variable],
+                                                    k=k,
+                                                    use_weighted_mean=use_weighted_mean)
+    rho_x_y = correlation_coefficient(y_true, y_est)
+    print(f"[X-only attracteur] Corrélation CCM(X->Y) = {rho_x_y:.3f}")
+    return y_est,embedding
+
+def plot_reconstruction(embedding,lags={}):
+    fig1 = plt.figure()
+    if embedding.shape[1]>=3:
+        ax = fig1.add_subplot(projection='3d')
+        ax.scatter(embedding[:, 0], embedding[:, 1], embedding[:, 2])
+        if lags == {}:
+            title = "Original Space (X(t),Y(t),Z(t))"
+        else:
+            title = f"Attracteur 3D reconstruit à partir de {', '.join([k for k,v in lags.items() if len(v)>0])} (lags={', '.join([f'{k}: {v}' for k,v in lags.items() if len(v)>0])})"
+        ax.set_title(title)
+        ax.view_init(elev=20, azim=10, roll=0)
+    else:
+        ax = fig1.add_subplot()
+        ax.scatter(embedding[:, 0], embedding[:, 1])
+        if lags == {}:
+            title = "Original Space (X(t),Y(t))"
+        else:
+            title = f"Attracteur 2D reconstruit à partir de {', '.join([k for k,v in lags.items() if len(v)>0])} (lags={', '.join([f'{k}: {v}' for k,v in lags.items() if len(v)>0])})"
+        ax.set_title(title)
+    plt.show()
+
+
 
 ##############################
 # EXEMPLE D'UTILISATION
@@ -141,57 +174,20 @@ if __name__ == "__main__":
     Y = np.sin(t + np.pi/3) + 0.1*np.random.randn(len(t))  # "target" potentielle
     Z = np.cos(t) + 0.05*np.random.randn(len(t))
 
+    data_dict = {'x': X, 'y': Y, 'z': Z}
+    plot_reconstruction(np.array([x,y,z]).transpose())
+
     # 2) Premier cas : Attracteur à partir de X seul
     #    => disons qu'on veut X(t), X(t-1), X(t-2)
     #    => on va tester si X reconstruit Y
-    data_dict = {'x': X, 'y': Y, 'z': Z}
-    
-    lags_for_x_only = {
-        'x': [0, 1, 2],  # 3 composantes => embedding dimension=3
-        'y': [],         # pas de lags pour y => on ne l'utilise pas dans l'attracteur
-        'z': []          # pas de lags pour z
-    }
+    lags = {'x': [0, 1, 2]}
+    y_est,embedding = get_embedding_and_reconstruct(data_dict,target_variable='y',lags=lags,k=4,use_weighted_mean=True)
+    plot_reconstruction(embedding,lags)
 
-    emb_x, valid_t_x = build_multivariate_embedding(data_dict, lags_for_x_only)
-    # On va visualiser ce nuage 3D (embedding) => correspond à (X(t), X(t-1), X(t-2))
-    fig1 = plt.figure()
-    ax1 = fig1.add_subplot(projection='3d')
-    ax1.scatter(emb_x[:, 0], emb_x[:, 1], emb_x[:, 2])
-    ax1.set_title("Attracteur 3D reconstruit à partir de X (lags=0,1,2)")
-    plt.show()
-
-    # CCM : X -> Y
-    y_true, y_est = ccm_reconstruct_multivariate(embedding=emb_x,
-                                                 valid_time=valid_t_x,
-                                                 effect_series=Y,
-                                                 k=4,
-                                                 use_weighted_mean=True)
-    rho_x_y = correlation_coefficient(y_true, y_est)
-    print(f"[X-only attracteur] Corrélation CCM(X->Y) = {rho_x_y:.3f}")
 
     # 3) Second cas : Attracteur multivarié à partir de [X, Z]
     #    => X(t), X(t-1), Z(t) => dimension=3
     #    => on teste la reconstruction de Y
-    lags_for_xz = {
-        'x': [0, 1],
-        'z': [0],
-        'y': []  # on n'utilise pas y dans l'attracteur
-    }
-
-    emb_xz, valid_t_xz = build_multivariate_embedding(data_dict, lags_for_xz)
-
-    # Visualisation 3D => (X(t), X(t-1), Z(t))
-    fig2 = plt.figure()
-    ax2 = fig2.add_subplot(projection='3d')
-    ax2.scatter(emb_xz[:, 0], emb_xz[:, 1], emb_xz[:, 2])
-    ax2.set_title("Attracteur 3D reconstruit à partir de [X, Z]")
-    plt.show()
-
-    # CCM : [X, Z] -> Y
-    y_true_xz, y_est_xz = ccm_reconstruct_multivariate(embedding=emb_xz,
-                                                       valid_time=valid_t_xz,
-                                                       effect_series=Y,
-                                                       k=4,
-                                                       use_weighted_mean=True)
-    rho_xz_y = correlation_coefficient(y_true_xz, y_est_xz)
-    print(f"[X+Z attracteur] Corrélation CCM(X,Z->Y) = {rho_xz_y:.3f}")
+    lags = {'x': [0, 1], 'z': [0]}
+    y_est,embedding = get_embedding_and_reconstruct(data_dict,target_variable='y',lags=lags,k=4,use_weighted_mean=True)
+    plot_reconstruction(embedding,lags)
