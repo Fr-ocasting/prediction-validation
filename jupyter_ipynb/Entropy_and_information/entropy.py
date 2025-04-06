@@ -2,6 +2,32 @@ import numpy as np
 import pandas as pd
 from typing import List, Dict, Tuple
 
+class EntropyComputer(object):
+    """
+    Classe pour calculer l'entropie d'une série temporelle.
+    """
+
+    def __init__(self, nb_bins: int = 10):
+        """
+        :param nb_bins: Nombre de bins utilisés pour la discrétisation.
+        """
+        self.nb_bins = nb_bins
+
+    def compute_entropy(self, series: np.ndarray) -> float:
+        """
+        Calcule l'entropie d'une série temporelle.
+
+        :param series: Série temporelle (1D).
+        :return: Entropie en nats.
+        """
+        # Discrétisation de la série
+        hist, bin_edges = np.histogram(series, bins=self.nb_bins, density=True)
+        hist = hist[hist > 0]  # Élimine les bins vides
+
+        # Calcul de l'entropie
+        entropy = -np.sum(hist * np.log(hist))
+        return entropy
+
 class TimeSeriesInfo:
     """
     Cette classe regroupe des fonctions utiles pour :
@@ -351,24 +377,68 @@ class TimeSeriesInfo:
 # EXEMPLE D'UTILISATION
 ###########################
 if __name__ == "__main__":
+    from bokeh.plotting import figure, show, output_notebook
+    from bokeh.layouts import column
+    from bokeh.models import ColorBar, LinearColorMapper
+    from bokeh.transform import linear_cmap
+    from bokeh.io import push_notebook
     # Generation de données simples
+    # Activate Bokeh in Jupyter Notebook
+    output_notebook()
+
+    # Generate simple data
     np.random.seed(42)
-    t = np.linspace(0, 2*np.pi, 50)  # 50 points
+    t = np.linspace(0, 2 * np.pi, 50)  # 50 points
     x = np.sin(t)
-    y = np.sin(t + np.pi/3)  # décalage en phase
-    z = np.cos(t)            # autre série
-    
-    # Instanciation de la classe
+    y = np.sin(t + np.pi / 3)  # phase shift
+    z = np.cos(t)  # another series
+
+    # Instantiate the class
     tsi = TimeSeriesInfo(nb_bins=10)
-    
-    # Exemple 1 : I(X;Y) sur des fenêtres glissantes
+
+    # Example 1: Mutual Information (X->Y) on sliding windows
     mi_values = tsi.sliding_window_mutual_info(x, y, window_size=6)
-    print("Mutual Information (X->Y) sur fenêtres glissantes:", mi_values)
-    
-    # Exemple 2 : Transfer Entropy (X->Y) ~ I(X_t; Y_{t+1} | Y_t)
+
+    # Example 2: Transfer Entropy (X->Y) ~ I(X_t; Y_{t+1} | Y_t)
     te_values = tsi.sliding_window_transfer_entropy(x, y, window_size=6)
-    print("Transfer Entropy (X->Y) sur fenêtres glissantes:", te_values)
-    
-    # Exemple 3 : Transfer Entropy multi-séries {X, Z} -> Y
+
+    # Example 3: Multi-series Transfer Entropy {X, Z} -> Y
     multi_te_values = tsi.sliding_window_multi_transfer_entropy([x, z], y, window_size=6)
-    print("Multi Transfer Entropy ({X, Z} -> Y) sur fenêtres glissantes:", multi_te_values)
+
+    # Visualization with Bokeh
+    def plot_entropy_values(values, title, color_palette="Viridis256"):
+        """
+        Helper function to plot entropy values with a colorbar.
+        """
+        n = len(values)
+        mapper = LinearColorMapper(palette=color_palette, low=min(values), high=max(values))
+
+        p = figure(title=title, x_axis_label="Window Index", y_axis_label="Entropy Value",
+                   plot_width=800, plot_height=400)
+        p.circle(x=list(range(n)), y=values, size=10, color=linear_cmap('y', color_palette, min(values), max(values)),
+                 source={'x': list(range(n)), 'y': values}, legend_label="Entropy Values")
+        p.line(x=list(range(n)), y=values, line_width=2, color="blue", legend_label="Trend")
+
+        color_bar = ColorBar(color_mapper=mapper, location=(0, 0), title="Entropy")
+        p.add_layout(color_bar, 'right')
+        p.legend.location = "top_left"
+        return p
+
+    # Plot Mutual Information
+    p1 = plot_entropy_values(mi_values, "Mutual Information (X -> Y) on Sliding Windows")
+
+    # Plot Transfer Entropy (Single Variable)
+    p2 = plot_entropy_values(te_values, "Transfer Entropy (X -> Y) on Sliding Windows")
+
+    # Plot Multi-series Transfer Entropy
+    p3 = plot_entropy_values(multi_te_values, "Multi Transfer Entropy ({X, Z} -> Y) on Sliding Windows")
+
+    # Display all plots
+    show(column(p1, p2, p3), notebook_handle=True)
+
+    # Interpretation
+    print("Interpretation:")
+    print("- Mutual Information (MI): High MI values indicate a strong relationship between X and Y.")
+    print("- Transfer Entropy (TE): High TE values suggest that X has a causal influence on Y.")
+    print("- Multi Transfer Entropy: High values indicate that the combined influence of {X, Z} on Y is significant.")
+    print("Note: These metrics do not prove causality but provide evidence of potential causal relationships.")
