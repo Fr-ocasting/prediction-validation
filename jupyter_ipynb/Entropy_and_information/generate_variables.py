@@ -135,7 +135,36 @@ def plot_subway_bar(X_metro,Y_alcool):
     plt.legend()
     plt.show()
 
-
+# ----------------------------------------------------
+# TS Sinusoidales 
+# ----------------------------------------------------
+def load_variables_sinusoidales(n=100,T=2*np.pi,lag=np.pi/3,noise=True,seed=42,cos=True):
+    """
+    Génère 3 séries temporelles sinusoïdales avec un décalage de phase et du bruit.
+    :param n: nombre de points
+    :param T: longueur de la série
+    :param lag: décalage de phase
+    :param noise: si True, ajoute du bruit
+    :param seed: pour la reproductibilité
+    :param cos: si True, la série z est cos(t), sinon sin(t+2*lag)
+    :return: t, x, y, z
+    """
+    np.random.seed(seed)
+    t = np.linspace(0, T, n)  # n points from 0 to T
+    y = np.sin(t)       
+    if noise:
+        x = np.sin(t + lag) + 0.05 * np.random.randn(len(t)) # décalage en phase + bruit
+        if cos:
+            z = np.cos(t) + 0.05 * np.random.randn(len(t))
+        else:
+            z = np.sin(t+2*lag) + 0.05 * np.random.randn(len(t))  # autre série + bruit 
+    else:
+        x = np.sin(t + lag)
+        if cos:
+            z = np.cos(t)
+        else:
+            z = np.sin(t+2*lag)
+    return t,x,y,z
 # ----------------------------------------------------
 # Exemple d'utilisation
 # ----------------------------------------------------
