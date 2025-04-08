@@ -100,6 +100,51 @@ def plot_lorenz(x_noisy,y_noisy,z_noisy):
 # ----------------------------------------------------
 # TS with specific event which are related 
 # ----------------------------------------------------
+
+def load_variables_with_lagged_peak(seed=123,max_lag = 6, same_amplitude_through_lag = False,same_amplitude_per_lag=False,random_amplitude=False):
+    np.random.seed(seed)
+
+    # Paramètres
+    days = 30
+    hours_per_day = 24
+    N = days * hours_per_day  # 720
+
+    # On crée deux séries
+    X_lagged_peak = np.random.rand(N) * 20  # baseline random
+    Y_random_peak = np.random.rand(N) * 10
+
+    # On ajoute des pics dans Y et des pics correspondants dans X avec des décalages variés
+    amplitudes = np.arange(20,100)
+    np.random.shuffle(amplitudes)
+    for d in range(days):
+        # Index jour = d * 24 à d*24+23
+        start = d * hours_per_day
+
+        lag = np.random.randint(1, max_lag)  # Décalage de 1 à 5 heures
+        
+        # Pic dans Y (à un moment aléatoire de la journée)
+        y_peak_hour = np.random.randint(6, 22)  # Pic entre 6h et 22h
+        y_peak_idx = start + y_peak_hour
+        x_peak_idx = start + y_peak_hour - lag  # X a un pic avant Y
+
+        if same_amplitude_through_lag:
+            Y_random_peak[y_peak_idx] += 30.0  # Pic dans Y
+            if x_peak_idx >= start:
+                X_lagged_peak[x_peak_idx] += 50.0  # Pic plus fort dans X
+        if same_amplitude_per_lag:
+            Y_random_peak[y_peak_idx] += amplitudes[lag]
+            if x_peak_idx >= start:
+                X_lagged_peak[x_peak_idx] += amplitudes[lag]*5/3  # Pic plus fort dans X
+        if random_amplitude:
+            Y_random_peak[y_peak_idx] += np.random.randint(20, 100)
+            if x_peak_idx >= start:
+                X_lagged_peak[x_peak_idx] += np.random.randint(20, 100)  # Pic plus fort dans X
+
+        
+        # S'assurer que l'index est valide (ne pas dépasser le jour précédent)
+
+    return X_lagged_peak,Y_random_peak
+
 def load_variables_subway_bar(seed=123):
     np.random.seed(seed)
 
@@ -164,6 +209,35 @@ def load_variables_sinusoidales(n=100,T=2*np.pi,lag=np.pi/3,noise=True,seed=42,c
             z = np.cos(t)
         else:
             z = np.sin(t+2*lag)
+    return t,x,y,z
+
+def load_sinusoidales_sum(n=100,T=2*np.pi,lag=np.pi/3,noise=True,seed=42,alpha= [0.5,0.5,3]):
+    """
+    Génère 3 séries temporelles: x et z sont des sinusoïdes, 
+    y est la somme de x, z et d'une troisième sinusoïde.
+    :param n: nombre de points
+    :param T: longueur de la série
+    :param lag: décalage de phase
+    :param noise: si True, ajoute du bruit
+    :param seed: pour la reproductibilité
+    :return: t, x, y, z
+    """
+    np.random.seed(seed)
+    t = np.linspace(0, T, n)  # n points from 0 to T
+
+    x = np.sin(t + lag)
+    z = np.sin(2*t + 2*lag)
+    
+    third_sin = np.sin(3*t)
+    
+    # y est la somme de x, z et third_sin
+    y = alpha[0]*np.sin(t) + alpha[1]*np.sin(2*t) + alpha[2]*third_sin
+    
+    # Ajout du bruit si demandé
+    if noise:
+        x += 0.05 * np.random.randn(len(t))
+        z += 0.05 * np.random.randn(len(t))
+        y += 0.05 * np.random.randn(len(t))
     return t,x,y,z
 # ----------------------------------------------------
 # Exemple d'utilisation
