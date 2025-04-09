@@ -11,6 +11,7 @@ from utils import train_valid_test_split
 from loader import DictDataLoader
 from utils.save_results import save_object,read_object
 from data_augmentation.data_augmentation import DataAugmenter
+from utils.utilities import load_inputs_from_dataloader
 # ...
 
 class TrainValidTest_Split_Normalize(object):
@@ -486,6 +487,10 @@ class DataSet(object):
         DictDataLoader_object = DictDataLoader(train_tuple, valid_tuple, test_tuple,self.args)
         dict_dataloader = DictDataLoader_object.get_dictdataloader()
         self.dataloader = dict_dataloader
+
+    def load_all_inputs_from_training_mode(self,training_mode):
+        X,Y,X_c,nb_contextual = load_inputs_from_dataloader(self.dataloader[training_mode],self.args.device)
+        return X,Y,X_c,nb_contextual
 
 
     def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize = True

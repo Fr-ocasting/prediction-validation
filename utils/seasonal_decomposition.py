@@ -10,7 +10,10 @@ if parent_dir not in sys.path:
 import pandas as pd
 import numpy as np
 import math 
-from statsmodels.tsa.seasonal import seasonal_decompose, STL , MSTL
+try:
+    from statsmodels.tsa.seasonal import seasonal_decompose, STL , MSTL
+except ImportError:
+    print("statsmodels not installed or issue with version. Please install or update it to use seasonal decomposition.")
 from constants.paths import USELESS_DATES
 import matplotlib.pyplot as plt 
 

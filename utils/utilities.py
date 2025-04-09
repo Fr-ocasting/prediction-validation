@@ -11,6 +11,14 @@ import pickle
 import io 
 import inspect
 
+def load_inputs_from_dataloader(dataloader,device):
+        inputs_i = [[x,y,x_c] for  x,y,x_c  in dataloader]
+        X = torch.cat([x for x,_,_ in inputs_i]).to(device)
+        Y = torch.cat([y for _,y,_ in inputs_i]).to(device)
+        nb_contextual = len(next(iter(dataloader))[2])
+        X_c = [torch.cat([x_c[k] for _,_,x_c in inputs_i]).to(device) for k in range(nb_contextual)]
+        return X,Y,X_c,nb_contextual
+
 def filter_args(func, args):
     sig = inspect.signature(func)
     #valid_args = {k: v for k, v in args.items() if k in sig.parameters}

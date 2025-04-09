@@ -36,11 +36,6 @@ class GrangerCausalityAnalysis:
         self.optimal_lag = None
         self.diff_order = {}
         self.causality_results = {}
-        
-    def set_data(self, data):
-        """Set time series data for analysis."""
-        self.data = data
-        return self
     
     def check_stationarity(self, series=None, alpha=0.05, verbose=True):
         """
@@ -60,30 +55,12 @@ class GrangerCausalityAnalysis:
         dict : Results of stationarity tests
         """
         results = {}
-        
-        # If a specific series name is provided
-        if isinstance(series, str) and self.data is not None:
-            if series in self.data.columns:
-                series_data = self.data[series].dropna()
-                result = adfuller(series_data)
-                is_stationary = result[1] < alpha
-                results[series] = {
-                    'Test Statistic': result[0],
-                    'p-value': result[1],
-                    'Critical Values': result[4],
-                    'Stationary': is_stationary
-                }
-                
-                if verbose:
-                    print(f"Series '{series}': {'Stationary' if is_stationary else 'Non-stationary'} "
-                          f"(p-value: {result[1]:.4f}, ADF: {result[0]:.4f})")
-                return results
-        
-        # If a Series object is provided
-        elif isinstance(series, (pd.Series, np.ndarray)):
-            result = adfuller(series)
+
+        for column in self.data.columns:
+            series_data = self.data[column].dropna()
+            result = adfuller(series_data)
             is_stationary = result[1] < alpha
-            results['series'] = {
+            results[column] = {
                 'Test Statistic': result[0],
                 'p-value': result[1],
                 'Critical Values': result[4],
@@ -91,30 +68,12 @@ class GrangerCausalityAnalysis:
             }
             
             if verbose:
-                print(f"Series: {'Stationary' if is_stationary else 'Non-stationary'} "
-                      f"(p-value: {result[1]:.4f}, ADF: {result[0]:.4f})")
-            return results
-        
-        # Check all columns in the dataframe
-        if self.data is not None:
-            for column in self.data.columns:
-                series_data = self.data[column].dropna()
-                result = adfuller(series_data)
-                is_stationary = result[1] < alpha
-                results[column] = {
-                    'Test Statistic': result[0],
-                    'p-value': result[1],
-                    'Critical Values': result[4],
-                    'Stationary': is_stationary
-                }
-                
-                if verbose:
-                    print(f"Series '{column}': {'Stationary' if is_stationary else 'Non-stationary'} "
-                          f"(p-value: {result[1]:.4f}, ADF: {result[0]:.4f})")
+                print(f"Series '{column}': {'Stationary' if is_stationary else 'Non-stationary'} "
+                        f"(p-value: {result[1]:.4f}, ADF: {result[0]:.4f})")
                     
         return results
     
-    def make_stationary(self, max_diff=2, verbose=True):
+    def make_stationary(self, max_diff=2, verbose=True, regression='c', autolag='AIC'):
         """
         Transform non-stationary series to stationary by differencing.
         
@@ -124,14 +83,23 @@ class GrangerCausalityAnalysis:
             Maximum number of differences to apply
         verbose : bool, optional
             Whether to print information about the differencing process
+        regression : str, optional
+            Regression type for the ADF test. Options:
+            'c' : constant only (default)
+            'ct' : constant and trend
+            'ctt' : constant, linear and quadratic trend
+            'n' : no regression components
+        autolag : str or None, optional
+            Method for lag selection in ADF test. Options:
+            'AIC' : Akaike Information Criterion (default)
+            'BIC' : Bayesian Information Criterion
+            't-stat' : Based on t-statistic significance
+            None : No automatic lag selection
             
         Returns:
         --------
         pandas.DataFrame : Stationary data
         """
-        if self.data is None:
-            raise ValueError("No data available. Please set data first.")
-            
         stationary_data = self.data.copy()
         
         # Check and transform each column
@@ -151,7 +119,7 @@ class GrangerCausalityAnalysis:
                 d += 1
                 
                 # Check if stationary after differencing
-                test_result = adfuller(series.dropna())
+                test_result = adfuller(series.dropna(),regression = regression,autolag=autolag)
                 is_stationary = test_result[1] < 0.05
             
             # Store differencing order
@@ -186,32 +154,20 @@ class GrangerCausalityAnalysis:
         Returns:
         --------
         dict : Optimal lag orders according to different criteria
-        """
-        if self.stationary_data is None:
-            if self.data is not None:
-                self.make_stationary(verbose=False)
-            else:
-                raise ValueError("No data available. Please set data first.")
-                
+        """            
         model = VAR(self.stationary_data)
         results = model.select_order(maxlags=max_lag)
         
         # Get the optimal lags according to different criteria
-        optimal_lags = {
-            'AIC': results.aic,
-            'BIC': results.bic,
-            'FPE': results.fpe,
-            'HQIC': results.hqic
-        }
+        optimal_lags = { 'AIC': results.aic, 'BIC': results.bic, 'FPE': results.fpe,'HQIC': results.hqic}
         
         # Use BIC as default (tends to be more conservative)
-
         self.optimal_lag = optimal_lags[criterion]
             
         if verbose:
             print("Optimal lag selection by information criteria:")
-            for criterion, lag in optimal_lags.items():
-                print(f"  {criterion}: {lag}")
+            for criterion_i, lag_i in optimal_lags.items():
+                print(f"  {criterion_i}: {lag_i}")
             print(f"Selected lag ({criterion}): {self.optimal_lag}")
             
         return optimal_lags
@@ -231,15 +187,7 @@ class GrangerCausalityAnalysis:
         --------
         statsmodels.tsa.vector_ar.var_model.VARResults : VAR model results
         """
-        if self.stationary_data is None:
-            if self.data is not None:
-                self.make_stationary(verbose=False)
-            else:
-                raise ValueError("No data available. Please set data first.")
-                
         if lag is None:
-            if self.optimal_lag is None:
-                self.select_lag_order(verbose=False)
             lag = self.optimal_lag
             
         model = VAR(self.stationary_data)
@@ -311,21 +259,9 @@ class GrangerCausalityAnalysis:
         Returns:
         --------
         dict : Granger causality test results
-        """
-        if self.stationary_data is None:
-            if self.data is not None:
-                self.make_stationary(verbose=False)
-            else:
-                raise ValueError("No data available. Please set data first.")
-                
+        """       
         if max_lag is None:
-            if self.optimal_lag is None:
-                self.select_lag_order(verbose=False)
             max_lag = self.optimal_lag
-            
-        # If no specific variable pairs are provided, use promising combinations
-        if variables is None:
-            variables = self.select_promising_combinations()
             
         # If still None (e.g., no promising combinations), test all pairs
         if not variables:
@@ -363,7 +299,7 @@ class GrangerCausalityAnalysis:
         self.causality_results = results
         return results
     
-    def full_analysis(self, max_lag=10, max_diff=2, criterion='BIC'):
+    def full_analysis(self, max_lag=10, max_diff=2, criterion='BIC',make_stationnary_regression='c', make_stationnary_autolag='AIC'):
         """
         Perform complete Granger causality analysis pipeline.
         
@@ -393,7 +329,7 @@ class GrangerCausalityAnalysis:
         print("STEP 2: Making time series stationary")
         print("------------------------------------")
         if any(not result['Stationary'] for result in stationarity_results.values()):
-            self.make_stationary(max_diff=max_diff)
+            self.make_stationary(max_diff=max_diff,regression=make_stationnary_regression, autolag=make_stationnary_autolag)
         else:
             self.stationary_data = self.data.copy()
             print("All series are already stationary. No differencing applied.")

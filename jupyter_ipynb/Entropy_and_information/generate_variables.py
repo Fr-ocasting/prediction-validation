@@ -5,7 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import inspect
 import os, sys
 sys.path.append(os.path.abspath('../..'))
 from jupyter_ipynb.Entropy_and_information.granger import GrangerCausalityAnalysis
@@ -63,9 +63,8 @@ def generate_linear_causal_series(n=200, lags=[2, 4], coeffs=[0.6, 0.3], noise_l
                 y[i] += coeff * x[i-lag]
     
     # Expected result: X Granger-causes Y at the specified lags
-    print(f"Expected Granger causality: X -> Y at lags {lags}")
-    print(f"No Granger causality: Y -> X")
-    
+    print(f"Expected Granger causality:\nX -> Y at lags {lags}\n\nNo Granger causality:\nY -> X")
+
     return t, x, y
 
 def generate_bidirectional_causality(n=200, xy_lags=[2], xy_coeffs=[0.4], 
@@ -130,8 +129,7 @@ def generate_bidirectional_causality(n=200, xy_lags=[2], xy_coeffs=[0.4],
             y[i] += coeff * x[i-lag]
     
     # Expected results
-    print(f"Expected Granger causality: X -> Y at lags {xy_lags}")
-    print(f"Expected Granger causality: Y -> X at lags {yx_lags}")
+    print(f"Expected Granger causality:\nX -> Y at lags {xy_lags}\n Y -> X at lags {yx_lags}")
     print(f"Stronger causality: {'X -> Y' if max(xy_coeffs) > max(yx_coeffs) else 'Y -> X'}")
     
     return t, x, y
@@ -210,7 +208,7 @@ def generate_common_cause(n=200, xz_lags=[2], xz_coeffs=[0.6],
     print("Expected Granger causality:")
     print(f"Z -> X at lags {xz_lags}")
     print(f"Z -> Y at lags {yz_lags}")
-    print("No direct Granger causality between X and Y")
+    print("\nNo direct Granger causality:\nX and Y")
     print("However, false positive X -> Y or Y -> X may appear due to common cause")
     
     return t, x, y, z
@@ -262,8 +260,8 @@ def generate_nonlinear_causality(n=200, lag=2, noise_level=0.2, seed=None):
         if i >= lag:
             y[i] += 0.5 * np.sin(x[i-lag]) + 0.3 * x[i-lag]**2
     
-    print(f"Expected non-linear Granger causality: X -> Y at lag {lag}")
-    print("Standard linear Granger test might not fully capture this relationship")
+    print(f"Expected non-linear Granger causality:\nX -> Y at lag {lag}")
+    print("\nStandard linear Granger test might not fully capture this relationship")
     
     return t, x, y
 
@@ -323,8 +321,8 @@ def generate_seasonal_causality(n=300, period=24, lag=6, seasonal_strength=0.8,
         if i >= lag:
             y[i] += causal_strength * x[i-lag]
     
-    print(f"Expected Granger causality: X -> Y at lag {lag}")
-    print("Both X and Y have seasonality - needs differencing to be stationary")
+    print(f"Expected Granger causality:\nX -> Y at lag {lag}")
+    print("\nBoth X and Y have seasonality - needs differencing to be stationary")
     
     return t, x, y
 
@@ -397,7 +395,9 @@ def test_granger_with_generated_data(data_generator, params, max_lag=10):
     Generate data, visualize it, and run Granger causality test
     """
     # Generate data
-    result = data_generator(**params)
+    sig = inspect.signature(data_generator)
+    args_generator = {k: v for k, v in params.items() if k in sig.parameters}
+    result = data_generator(**args_generator)
     t = result[0]
     
     # Create DataFrame
@@ -412,7 +412,8 @@ def test_granger_with_generated_data(data_generator, params, max_lag=10):
     
     # Run Granger causality analysis
     gc = GrangerCausalityAnalysis(df)
-    results = gc.full_analysis(max_lag=max_lag)
+    criterion = params['criterion'] if 'criterion' in params else 'BIC'
+    results = gc.full_analysis(max_lag=max_lag,criterion=criterion)
     
     return df, results
 

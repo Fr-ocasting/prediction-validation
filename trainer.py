@@ -26,6 +26,7 @@ except :
 from profiler.profiler import print_memory_usage,get_cpu_usage
 from utils.save_results import results2dict, update_results_df, save_best_model_and_update_json,get_trial_id
 from utils.metrics import evaluate_metrics
+from utils.utilities import load_inputs_from_dataloader
 from PI.PI_object import PI_object
 from PI.PI_calibration import Calibrator
 from constants.paths import SAVE_DIRECTORY
@@ -478,11 +479,7 @@ class Trainer(object):
         return(loss)
     
     def load_all_inputs_from_training_mode(self,training_mode):
-        inputs_i = [[x,y,x_c] for  x,y,x_c  in self.dataloader[training_mode]]
-        X = torch.cat([x for x,_,_ in inputs_i]).to(self.args.device)
-        Y = torch.cat([y for _,y,_ in inputs_i]).to(self.args.device)
-        nb_contextual = len(next(iter(self.dataloader[training_mode]))[2])
-        X_c = [torch.cat([x_c[k] for _,_,x_c in inputs_i]).to(self.args.device) for k in range(nb_contextual)]
+        X,Y,X_c,nb_contextual = load_inputs_from_dataloader(self.dataloader[training_mode],self.args.device)
         return X,Y,X_c,nb_contextual
     
     def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None,track_loss = False,normalizer = None):
