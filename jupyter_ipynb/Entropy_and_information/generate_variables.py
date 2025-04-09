@@ -2,6 +2,420 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import os, sys
+sys.path.append(os.path.abspath('../..'))
+from jupyter_ipynb.Entropy_and_information.granger import GrangerCausalityAnalysis
+
+def generate_linear_causal_series(n=200, lags=[2, 4], coeffs=[0.6, 0.3], noise_level=0.2, seed=None):
+    """
+    Generate time series with a clear linear causal relationship: X -> Y
+    
+    Parameters:
+    -----------
+    n : int
+        Number of time points
+    lags : list
+        List of lags at which X influences Y
+    coeffs : list
+        Coefficients for each lag (strength of influence)
+    noise_level : float
+        Standard deviation of noise
+    seed : int, optional
+        Random seed
+        
+    Returns:
+    --------
+    t : array
+        Time points
+    x : array
+        Cause variable X
+    y : array
+        Effect variable Y (influenced by X)
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    
+    # Time points
+    t = np.arange(n)
+    
+    # Generate X as a stationary AR(1) process
+    x = np.zeros(n)
+    x[0] = np.random.randn()
+    for i in range(1, n):
+        x[i] = 0.5 * x[i-1] + np.random.randn() * noise_level
+    
+    # Generate Y influenced by lagged values of X
+    y = np.zeros(n)
+    y[0] = np.random.randn() * noise_level
+    
+    max_lag = max(lags)
+    for i in range(1, n):
+        # Autoregressive component for Y
+        y[i] = 0.2 * y[i-1] + np.random.randn() * noise_level
+        
+        # Add influence from X at specified lags
+        for lag, coeff in zip(lags, coeffs):
+            if i >= lag:
+                y[i] += coeff * x[i-lag]
+    
+    # Expected result: X Granger-causes Y at the specified lags
+    print(f"Expected Granger causality: X -> Y at lags {lags}")
+    print(f"No Granger causality: Y -> X")
+    
+    return t, x, y
+
+def generate_bidirectional_causality(n=200, xy_lags=[2], xy_coeffs=[0.4], 
+                                    yx_lags=[3], yx_coeffs=[0.2], 
+                                    noise_level=0.2, seed=None):
+    """
+    Generate time series with bidirectional causality: X <-> Y with different strengths
+    
+    Parameters:
+    -----------
+    n : int
+        Number of time points
+    xy_lags, yx_lags : list
+        Lags for X->Y and Y->X influences
+    xy_coeffs, yx_coeffs : list
+        Coefficients for each lag (typically xy_coeffs > yx_coeffs for X->Y stronger than Y->X)
+    noise_level : float
+        Standard deviation of noise
+    seed : int, optional
+        Random seed
+        
+    Returns:
+    --------
+    t : array
+        Time points
+    x : array
+        X variable
+    y : array
+        Y variable
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    
+    t = np.arange(n)
+    x = np.zeros(n)
+    y = np.zeros(n)
+    
+    # Initialize with random values
+    x[0] = np.random.randn() * noise_level
+    y[0] = np.random.randn() * noise_level
+    
+    # Maximum lags
+    max_xy_lag = max(xy_lags) if xy_lags else 0
+    max_yx_lag = max(yx_lags) if yx_lags else 0
+    max_lag = max(max_xy_lag, max_yx_lag)
+    
+    # Fill in first values where lags don't apply yet
+    for i in range(1, max_lag+1):
+        x[i] = 0.3 * x[i-1] + np.random.randn() * noise_level
+        y[i] = 0.3 * y[i-1] + np.random.randn() * noise_level
+    
+    # Generate series with bidirectional influences
+    for i in range(max_lag+1, n):
+        # X with influence from Y
+        x[i] = 0.3 * x[i-1] + np.random.randn() * noise_level
+        for lag, coeff in zip(yx_lags, yx_coeffs):
+            x[i] += coeff * y[i-lag]
+        
+        # Y with influence from X
+        y[i] = 0.3 * y[i-1] + np.random.randn() * noise_level
+        for lag, coeff in zip(xy_lags, xy_coeffs):
+            y[i] += coeff * x[i-lag]
+    
+    # Expected results
+    print(f"Expected Granger causality: X -> Y at lags {xy_lags}")
+    print(f"Expected Granger causality: Y -> X at lags {yx_lags}")
+    print(f"Stronger causality: {'X -> Y' if max(xy_coeffs) > max(yx_coeffs) else 'Y -> X'}")
+    
+    return t, x, y
+
+def generate_common_cause(n=200, xz_lags=[2], xz_coeffs=[0.6], 
+                          yz_lags=[3], yz_coeffs=[0.6],
+                          noise_level=0.2, seed=None):
+    """
+    Generate time series where Z is a common cause for both X and Y: Z -> X and Z -> Y
+    No direct causal link between X and Y.
+    
+    Parameters:
+    -----------
+    n : int
+        Number of time points
+    xz_lags, yz_lags : list
+        Lags for Z->X and Z->Y influences
+    xz_coeffs, yz_coeffs : list
+        Coefficients for each lag
+    noise_level : float
+        Standard deviation of noise
+    seed : int, optional
+        Random seed
+        
+    Returns:
+    --------
+    t : array
+        Time points
+    x : array
+        X variable (affected by Z)
+    y : array
+        Y variable (affected by Z)
+    z : array
+        Z variable (common cause)
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    
+    t = np.arange(n)
+    
+    # Generate Z as a stationary AR(1) process
+    z = np.zeros(n)
+    z[0] = np.random.randn()
+    for i in range(1, n):
+        z[i] = 0.5 * z[i-1] + np.random.randn() * noise_level
+    
+    # Initialize X and Y
+    x = np.zeros(n)
+    y = np.zeros(n)
+    x[0] = np.random.randn() * noise_level
+    y[0] = np.random.randn() * noise_level
+    
+    # Maximum lags
+    max_xz_lag = max(xz_lags) if xz_lags else 0
+    max_yz_lag = max(yz_lags) if yz_lags else 0
+    max_lag = max(max_xz_lag, max_yz_lag)
+    
+    # Fill in first values
+    for i in range(1, max_lag+1):
+        x[i] = 0.3 * x[i-1] + np.random.randn() * noise_level
+        y[i] = 0.3 * y[i-1] + np.random.randn() * noise_level
+    
+    # Generate X and Y influenced by Z
+    for i in range(max_lag+1, n):
+        # X influenced by Z
+        x[i] = 0.3 * x[i-1] + np.random.randn() * noise_level
+        for lag, coeff in zip(xz_lags, xz_coeffs):
+            x[i] += coeff * z[i-lag]
+        
+        # Y influenced by Z
+        y[i] = 0.3 * y[i-1] + np.random.randn() * noise_level
+        for lag, coeff in zip(yz_lags, yz_coeffs):
+            y[i] += coeff * z[i-lag]
+    
+    # Expected results
+    print("Expected Granger causality:")
+    print(f"Z -> X at lags {xz_lags}")
+    print(f"Z -> Y at lags {yz_lags}")
+    print("No direct Granger causality between X and Y")
+    print("However, false positive X -> Y or Y -> X may appear due to common cause")
+    
+    return t, x, y, z
+
+def generate_nonlinear_causality(n=200, lag=2, noise_level=0.2, seed=None):
+    """
+    Generate time series with a non-linear causal relationship: X -> Y
+    
+    Parameters:
+    -----------
+    n : int
+        Number of time points
+    lag : int
+        Lag at which X influences Y
+    noise_level : float
+        Standard deviation of noise
+    seed : int, optional
+        Random seed
+        
+    Returns:
+    --------
+    t : array
+        Time points
+    x : array
+        Cause variable X
+    y : array
+        Effect variable Y (non-linearly influenced by X)
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    
+    t = np.arange(n)
+    
+    # Generate X as a stationary AR(1) process
+    x = np.zeros(n)
+    x[0] = np.random.randn()
+    for i in range(1, n):
+        x[i] = 0.5 * x[i-1] + np.random.randn() * noise_level
+    
+    # Generate Y influenced by non-linear function of X
+    y = np.zeros(n)
+    y[0] = np.random.randn() * noise_level
+    
+    for i in range(1, n):
+        # Autoregressive component
+        y[i] = 0.3 * y[i-1] + np.random.randn() * noise_level
+        
+        # Add non-linear influence from X
+        if i >= lag:
+            y[i] += 0.5 * np.sin(x[i-lag]) + 0.3 * x[i-lag]**2
+    
+    print(f"Expected non-linear Granger causality: X -> Y at lag {lag}")
+    print("Standard linear Granger test might not fully capture this relationship")
+    
+    return t, x, y
+
+def generate_seasonal_causality(n=300, period=24, lag=6, seasonal_strength=0.8, 
+                              causal_strength=0.5, noise_level=0.2, seed=None):
+    """
+    Generate seasonal time series with causality: X -> Y
+    X has strong seasonality, and influences Y with a lag
+    
+    Parameters:
+    -----------
+    n : int
+        Number of time points
+    period : int
+        Seasonal period (e.g., 24 for daily data)
+    lag : int
+        Lag at which X influences Y
+    seasonal_strength : float
+        Strength of seasonal component
+    causal_strength : float
+        Strength of causal influence
+    noise_level : float
+        Standard deviation of noise
+    seed : int, optional
+        Random seed
+        
+    Returns:
+    --------
+    t : array
+        Time points
+    x : array
+        Seasonal cause variable X
+    y : array
+        Effect variable Y
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    
+    t = np.arange(n)
+    
+    # Generate X with seasonality + trend + noise
+    trend = 0.01 * t
+    seasonality = seasonal_strength * np.sin(2 * np.pi * t / period)
+    noise = np.random.normal(0, noise_level, n)
+    
+    x = trend + seasonality + noise
+    
+    # Generate Y influenced by lagged X + its own seasonality
+    y = np.zeros(n)
+    y_seasonality = 0.3 * np.sin(2 * np.pi * t / period + np.pi/3)  # Different phase
+    
+    for i in range(n):
+        # Y has some seasonality too
+        y[i] = y_seasonality[i] + np.random.normal(0, noise_level)
+        
+        # Add influence from X with lag
+        if i >= lag:
+            y[i] += causal_strength * x[i-lag]
+    
+    print(f"Expected Granger causality: X -> Y at lag {lag}")
+    print("Both X and Y have seasonality - needs differencing to be stationary")
+    
+    return t, x, y
+
+def generate_intermittent_causality(n=400, active_periods=[(50, 100), (200, 250)], 
+                                   lag=2, causal_strength=0.6, noise_level=0.2, seed=None):
+    """
+    Generate time series where X -> Y only during specific time periods
+    
+    Parameters:
+    -----------
+    n : int
+        Number of time points
+    active_periods : list of tuples
+        List of (start, end) periods where causality is active
+    lag : int
+        Lag at which X influences Y
+    causal_strength : float
+        Strength of causal influence during active periods
+    noise_level : float
+        Standard deviation of noise
+    seed : int, optional
+        Random seed
+        
+    Returns:
+    --------
+    t : array
+        Time points
+    x : array
+        Cause variable X
+    y : array
+        Effect variable Y (intermittently influenced by X)
+    """
+    if seed is not None:
+        np.random.seed(seed)
+    
+    t = np.arange(n)
+    
+    # Generate X as a stationary AR(1) process
+    x = np.zeros(n)
+    x[0] = np.random.randn()
+    for i in range(1, n):
+        x[i] = 0.5 * x[i-1] + np.random.randn() * noise_level
+    
+    # Generate Y with intermittent influence from X
+    y = np.zeros(n)
+    y[0] = np.random.randn() * noise_level
+    
+    # Create mask for active periods
+    is_active = np.zeros(n, dtype=bool)
+    for start, end in active_periods:
+        is_active[start:end] = True
+    
+    for i in range(1, n):
+        # Autoregressive component
+        y[i] = 0.3 * y[i-1] + np.random.randn() * noise_level
+        
+        # Add influence from X only during active periods
+        if i >= lag and is_active[i]:
+            y[i] += causal_strength * x[i-lag]
+    
+    print(f"Expected intermittent Granger causality: X -> Y at lag {lag}")
+    print(f"Active during periods: {active_periods}")
+    print("Standard Granger test on full series might show weaker causality")
+    
+    return t, x, y
+
+# Helper function to demonstrate and test
+def test_granger_with_generated_data(data_generator, params, max_lag=10):
+    """
+    Generate data, visualize it, and run Granger causality test
+    """
+    # Generate data
+    result = data_generator(**params)
+    t = result[0]
+    
+    # Create DataFrame
+    columns = ['x', 'y'] if len(result) == 3 else ['x', 'y', 'z']
+    df = pd.DataFrame(dict(zip(columns, result[1:])), index=t)
+    
+    # Plot
+    plt.figure(figsize=(12, 6))
+    df.plot()
+    plt.title(f"Generated time series: {data_generator.__name__}")
+    plt.show()
+    
+    # Run Granger causality analysis
+    gc = GrangerCausalityAnalysis(df)
+    results = gc.full_analysis(max_lag=max_lag)
+    
+    return df, results
+
 
     
 # ----------------------------------------------------
