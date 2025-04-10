@@ -5,7 +5,7 @@ import torch.utils.data
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_error
 from scipy.sparse.linalg import eigs
-
+import pandas as pd 
 
 def re_normalization(x, mean, std):
     x = x * std + mean
@@ -102,6 +102,9 @@ def scaled_Laplacian(W):
     D = np.diag(np.sum(W, axis=1))
 
     L = D - W
+
+    if type(L) == pd.DataFrame:
+        L = L.values.astype(float)
 
     lambda_max = eigs(L, k=1, which='LR')[0].real
 

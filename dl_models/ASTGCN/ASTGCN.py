@@ -2,9 +2,9 @@
 Copy from https://github.com/guoshnBJTU/ASTGCN-2019-pytorch/blob/master/train_ASTGCN_r.py
 """
 
-from torch import nn
 import torch
-
+import torch.nn as nn
+import torch.nn.functional as F
 # Relative path:
 import sys 
 import os 
@@ -15,11 +15,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-from dl_models.TimeEmbedding.time_embedding import TimeEmbedding
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from lib.utils import scaled_Laplacian, cheb_polynomial
+from dl_models.ASTGCN.lib.utils import scaled_Laplacian, cheb_polynomial
 
 
 class Spatial_Attention_layer(nn.Module):
@@ -232,7 +228,7 @@ class ASTGCN_block(nn.Module):
         return x_residual
 
 
-class ASTGCN_submodule(nn.Module):
+class ASTGCN(nn.Module):
 
     def __init__(self, DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices):
         '''
@@ -246,7 +242,7 @@ class ASTGCN_submodule(nn.Module):
         :param nb_predict_step:
         '''
 
-        super(ASTGCN_submodule, self).__init__()
+        super(ASTGCN, self).__init__()
 
         self.BlockList = nn.ModuleList([ASTGCN_block(DEVICE, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_of_vertices, len_input)])
 
@@ -258,17 +254,17 @@ class ASTGCN_submodule(nn.Module):
 
         self.to(DEVICE)
 
-    def forward(self, x):
+    def forward(self, x,extracted_feature=None,time_elt=None):
         '''
-        :param x: (B, N_nodes, F_in, T_in)
+        :param x: (B, F_in, N_nodes, T_in)  but PERMUTE to be (B, N_nodes, F_in, T_in)
         :return: (B, N_nodes, T_out)
         '''
+        x = x.permute(0,2,1,3)  # (B, F_in, N_nodes, T_in) -> (B, N_nodes, F_in, T_in) 
         for block in self.BlockList:
             x = block(x)
 
         output = self.final_conv(x.permute(0, 3, 1, 2))[:, :, :, -1].permute(0, 2, 1)
         # (b,N,F,T)->(b,T,N,F)-conv<1,F>->(b,c_out*T,N,1)->(b,c_out*T,N)->(b,N,T)
-
         return output
 
 
@@ -289,7 +285,7 @@ def make_model(DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter,
     '''
     L_tilde = scaled_Laplacian(adj_mx)
     cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(DEVICE) for i in cheb_polynomial(L_tilde, K)]
-    model = ASTGCN_submodule(DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices)
+    model = ASTGCN(DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices)
 
     for p in model.parameters():
         if p.dim() > 1:

@@ -21,6 +21,8 @@ from dl_models.RNN.RNN import RNN
 from dl_models.STGCN.STGCN import STGCN
 from dl_models.DCRNN.DCRNN import DCRNN
 from dl_models.TFT.TFT import TFT
+from dl_models.ASTGCN.ASTGCN import ASTGCN
+from dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
 
 from utils.utilities import filter_args
 from profiler.profiler import model_memory_cost
@@ -396,7 +398,16 @@ def load_model(dataset, args):
         TE_concatenation_late = False
         TE_embedding_dim = None
 
-
+    if args.model_name == 'ASTGCN':
+        from dl_models.ASTGCN.load_config import args as ASTGCN_args
+        from dl_models.ASTGCN.load_config import transfer_from_orig_args 
+        ASTGCN_args = transfer_from_orig_args(args,ASTGCN_args)
+        filtered_args = {k: v for k, v in vars(ASTGCN_args).items() if k in inspect.signature(ASTGCN.__init__).parameters.keys()}
+        adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
+        L_tilde = scaled_Laplacian(adj_mx)
+        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(args.device) for i in cheb_polynomial(L_tilde, ASTGCN_args.K)]
+        #model = ASTGCN(DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices)
+        model = ASTGCN(**filtered_args,cheb_polynomials=cheb_polynomials).to(args.device)
 
     if args.model_name == 'TFT':
         model = TFT(args)
