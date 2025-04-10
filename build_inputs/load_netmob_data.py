@@ -164,7 +164,7 @@ def tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize
     bool_netmob = (sum([True for d in args.dataset_names if (('netmob' in d) or ('subway_out' in d)) ])) > 0
     if (DATA_TO_PREDICT == 'subway_in') and (len([d for d in args.dataset_names if d == 'subway_in'])>1):  # case where subway-in is a contextual data
         bool_netmob  = True
-
+        
     if bool_netmob: 
         # TACKLE THE INPUT DATA 
         NetMob_ds,args,netmob_dataset_name = tackle_input_data(dataset,invalid_dates,intersect_coverage_period,args,normalize)

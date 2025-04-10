@@ -12,6 +12,7 @@ from loader import DictDataLoader
 from utils.save_results import save_object,read_object
 from data_augmentation.data_augmentation import DataAugmenter
 from utils.utilities import load_inputs_from_dataloader
+from packaging.version import Version
 # ...
 
 class TrainValidTest_Split_Normalize(object):
@@ -202,7 +203,14 @@ class Normalizer(object):
         if (regular_values_set_to_0 > 0) or (Values_with_normalization_issues>0):
             print('Values with issues: ','{:.3%}'.format(Values_with_normalization_issues.item()/output_with_nan_and_inf.numel() ))
             print('Regular Values that we have to set to 0: ','{:.3%}'.format(regular_values_set_to_0.item()/output_with_nan_and_inf.numel() ))
-        output = torch.nan_to_num(output_with_nan_and_inf,0,0,0)  # Set 0 when devided by maxi - mini = 0 (0 when Nan, 0 when +inf, 0 when -inf
+        if Version(torch.__version__) >= Version("2.0.0"):
+            output = torch.nan_to_num(output_with_nan_and_inf,0,0,0)  # Set 0 when devided by maxi - mini = 0 (0 when Nan, 0 when +inf, 0 when -inf
+        else:
+            output = output_with_nan_and_inf.clone()
+            output[torch.isnan(output)] = 0
+            output[torch.isinf(output)] = 0
+            output[output == float('inf')] = 0
+            output[output == float('-inf')] = 0
         return(output)
     
 

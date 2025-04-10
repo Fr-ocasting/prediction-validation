@@ -39,7 +39,7 @@ def load_data(dataset,args,ROOT,FOLDER_PATH,intersect_coverage_period,normalize,
     id_stations = dataset.spatial_unit
     dims = [0]
     subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intersect_coverage_period,filename = FILE_NAME)
-    T_subway_out = torch.Tensor(subway_out.raw_values)
+    T_subway_out = torch.Tensor(subway_out.raw_values.float())
 
     print('T_subway_out: ',T_subway_out.size())
 

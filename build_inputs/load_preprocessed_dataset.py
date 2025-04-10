@@ -235,7 +235,8 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     # Netmob: 
     args,NetMob_ds = tackle_netmob(dataset,invalid_dates,intersect_coverage_period,args,normalize = normalize)
     print('subway_ds.U_valid',subway_ds.U_valid.size())
-    print('NetMob_ds.U_valid',NetMob_ds.U_valid.size())
+    if NetMob_ds is not None:
+        print('NetMob_ds.U_valid',NetMob_ds.U_valid.size())
     # Add Contextual Tensors and their positions: 
     subway_ds,args = add_contextual_data(args,subway_ds,NetMob_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
 
