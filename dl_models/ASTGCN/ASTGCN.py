@@ -30,13 +30,24 @@ class Spatial_Attention_layer(nn.Module):
         self.bs = nn.Parameter(torch.FloatTensor(1, num_of_vertices, num_of_vertices).to(DEVICE))
         self.Vs = nn.Parameter(torch.FloatTensor(num_of_vertices, num_of_vertices).to(DEVICE))
 
+        self.init_parameters()
+        
+    def init_parameters(self):
+        # Uniform distribution on 1D and Xavier uniform distribution on tensors >= 2D
+        nn.init.uniform_(self.W1)   # 1D 
+        nn.init.xavier_uniform_(self.W2)
+        nn.init.uniform_(self.W3)
+        nn.init.xavier_uniform_(self.bs)
+        nn.init.xavier_uniform_(self.Vs)
+
 
     def forward(self, x):
         '''
         :param x: (batch_size, N, F_in, T)
         :return: (B,N,N)
         '''
-
+        # print('\nStart Spatial Attention Layer: ')
+        # print('nan in x, W1, W2: ',torch.isnan(x).any().item(),torch.isnan(self.W1).any().item(),torch.isnan(self.W2).any().item())
         lhs = torch.matmul(torch.matmul(x, self.W1), self.W2)  # (b,N,F,T)(T)->(b,N,F)(F,T)->(b,N,T)
 
         rhs = torch.matmul(self.W3, x).transpose(-1, -2)  # (F)(b,N,F,T)->(b,N,T)->(b,T,N)
@@ -46,6 +57,11 @@ class Spatial_Attention_layer(nn.Module):
         S = torch.matmul(self.Vs, torch.sigmoid(product + self.bs))  # (N,N)(B, N, N)->(B,N,N)
 
         S_normalized = F.softmax(S, dim=1)
+        # print('nan in lhs: ',torch.isnan(lhs).any().item())
+        # print('nan in rhs: ',torch.isnan(rhs).any().item())
+        # print('nan in product: ',torch.isnan(product).any().item())
+        # print('nan in S: ',torch.isnan(S).any().item())
+        # print('nan in S_normalized: ',torch.isnan(S_normalized).any().item())
 
         return S_normalized
 
@@ -68,6 +84,13 @@ class cheb_conv_withSAt(nn.Module):
         self.out_channels = out_channels
         self.DEVICE = cheb_polynomials[0].device
         self.Theta = nn.ParameterList([nn.Parameter(torch.FloatTensor(in_channels, out_channels).to(self.DEVICE)) for _ in range(K)])
+
+        self.init_parameters()
+
+    def init_parameters(self):
+        # Uniform distribution on 1D and Xavier uniform distribution on tensors >= 2D
+        for theta in self.Theta:
+            nn.init.xavier_uniform_(theta)
 
     def forward(self, x, spatial_attention):
         '''
@@ -111,6 +134,15 @@ class Temporal_Attention_layer(nn.Module):
         self.U3 = nn.Parameter(torch.FloatTensor(in_channels).to(DEVICE))
         self.be = nn.Parameter(torch.FloatTensor(1, num_of_timesteps, num_of_timesteps).to(DEVICE))
         self.Ve = nn.Parameter(torch.FloatTensor(num_of_timesteps, num_of_timesteps).to(DEVICE))
+        self.init_parameters()
+        
+    def init_parameters(self):
+        # Uniform distribution on 1D and Xavier uniform distribution on tensors >= 2D
+        nn.init.uniform_(self.U1)   # 1D 
+        nn.init.xavier_uniform_(self.U2)
+        nn.init.uniform_(self.U3)
+        nn.init.xavier_uniform_(self.be)
+        nn.init.xavier_uniform_(self.Ve)
 
     def forward(self, x):
         '''
@@ -119,6 +151,8 @@ class Temporal_Attention_layer(nn.Module):
         '''
         _, num_of_vertices, num_of_features, num_of_timesteps = x.shape
 
+        #print('\nStart Temporal Attention Layer: ')
+        #print('nan in x, U1, U2: ',torch.isnan(x).any().item(),torch.isnan(self.U1).any().item(),torch.isnan(self.U2).any().item())
         lhs = torch.matmul(torch.matmul(x.permute(0, 3, 2, 1), self.U1), self.U2)
         # x:(B, N, F_in, T) -> (B, T, F_in, N)
         # (B, T, F_in, N)(N) -> (B,T,F_in)
@@ -131,6 +165,12 @@ class Temporal_Attention_layer(nn.Module):
         E = torch.matmul(self.Ve, torch.sigmoid(product + self.be))  # (B, T, T)
 
         E_normalized = F.softmax(E, dim=1)
+
+        #print('\nnan in lhs: ',torch.isnan(lhs).any().item())
+        #print('nan in rhs: ',torch.isnan(rhs).any().item())
+        #print('nan in product: ',torch.isnan(product).any().item())
+        #print('nan in E: ',torch.isnan(E).any().item())
+        #print('nan in E_normalized: ',torch.isnan(E_normalized).any().item())
 
         return E_normalized
 
@@ -153,6 +193,12 @@ class cheb_conv(nn.Module):
         self.out_channels = out_channels
         self.DEVICE = cheb_polynomials[0].device
         self.Theta = nn.ParameterList([nn.Parameter(torch.FloatTensor(in_channels, out_channels).to(self.DEVICE)) for _ in range(K)])
+        self.init_parameters()
+
+    def init_parameters(self):
+        # Uniform distribution on 1D and Xavier uniform distribution on tensors >= 2D
+        for theta in self.Theta:
+            nn.init.xavier_uniform_(theta)
 
     def forward(self, x):
         '''
@@ -202,28 +248,38 @@ class ASTGCN_block(nn.Module):
         :param x: (batch_size, N, F_in, T)
         :return: (batch_size, N, nb_time_filter, T)
         '''
+        #print('\nx start block_i:')
+        #print('nan in x: ',torch.isnan(x).any().item())
         batch_size, num_of_vertices, num_of_features, num_of_timesteps = x.shape
 
         # TAt
         temporal_At = self.TAt(x)  # (b, T, T)
+        #print('nan in x after TAt: ',torch.isnan(temporal_At).any().item())
 
         x_TAt = torch.matmul(x.reshape(batch_size, -1, num_of_timesteps), temporal_At).reshape(batch_size, num_of_vertices, num_of_features, num_of_timesteps)
-
+        #print('nan in x after matmul reshape: ',torch.isnan(x_TAt).any().item())
         # SAt
         spatial_At = self.SAt(x_TAt)
+        #print('nan in x after SAt : ',torch.isnan(spatial_At).any().item())
 
         # cheb gcn
         spatial_gcn = self.cheb_conv_SAt(x, spatial_At)  # (b,N,F,T)
+        #print('nan in x after cheb_conv_SAt : ',torch.isnan(spatial_gcn).any().item())
         # spatial_gcn = self.cheb_conv(x)
 
         # convolution along the time axis
         time_conv_output = self.time_conv(spatial_gcn.permute(0, 2, 1, 3))  # (b,N,F,T)->(b,F,N,T) 用(1,3)的卷积核去做->(b,F,N,T)
+        #print('nan in x after time_conv : ',torch.isnan(time_conv_output).any().item())
 
         # residual shortcut
         x_residual = self.residual_conv(x.permute(0, 2, 1, 3))  # (b,N,F,T)->(b,F,N,T) 用(1,1)的卷积核去做->(b,F,N,T)
+        #print('nan in x after residual_conv : ',torch.isnan(x_residual).any().item())
 
         x_residual = self.ln(F.relu(x_residual + time_conv_output).permute(0, 3, 2, 1)).permute(0, 2, 3, 1)
+        #print('nan in x after ln(F(ReLU)) : ',torch.isnan(x_residual).any().item())
         # (b,F,N,T)->(b,T,N,F) -ln-> (b,T,N,F)->(b,N,F,T)
+
+
 
         return x_residual
 
@@ -259,11 +315,17 @@ class ASTGCN(nn.Module):
         :param x: (B, F_in, N_nodes, T_in)  but PERMUTE to be (B, N_nodes, F_in, T_in)
         :return: (B, N_nodes, T_out)
         '''
+        #print('\nx entry: ')
+        #print('nan in x: ',torch.isnan(x).any())
         x = x.permute(0,2,1,3)  # (B, F_in, N_nodes, T_in) -> (B, N_nodes, F_in, T_in) 
         for block in self.BlockList:
             x = block(x)
+        #print('\nx after blocks: ')
+        #print('nan in x: ',torch.isnan(x).any())
 
         output = self.final_conv(x.permute(0, 3, 1, 2))[:, :, :, -1].permute(0, 2, 1)
+        #print('\nx after final_conv: ')
+        #print('nan in x: ',torch.isnan(x).any())
         # (b,N,F,T)->(b,T,N,F)-conv<1,F>->(b,c_out*T,N,1)->(b,c_out*T,N)->(b,N,T)
         return output
 

@@ -351,6 +351,8 @@ class Trainer(object):
             #print('\nNo Mixed Precision')  
             pred = self.model(x_b,contextual_b)
             loss = self.loss_function(pred.float(),y_b)
+            #print('\npred: ', pred.size(), 'y_b: ', y_b.size())
+            #print('loss: ',loss)
             #print('\nloss: ',loss) 
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
