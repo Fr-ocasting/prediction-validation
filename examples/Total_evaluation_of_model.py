@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
     if True:
         
-        model_name = 'STGCN' #'CNN'
+        model_name = 'ASTGCN' #'CNN' # 'STGCN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
 
@@ -169,7 +169,7 @@ if __name__ == '__main__':
                             dataset_for_coverage=dataset_for_coverage,
                             modification = {'ray':True,
                                             'grace_period':20,#20,
-                                            'HP_max_epochs':500,#100,
+                                            'HP_max_epochs':200,#100,
                                             'evaluate_complete_ds' : True,
                                             #'set_spatial_units' : ['BON','SOI','GER','CHA'],
 
@@ -189,8 +189,8 @@ if __name__ == '__main__':
                                             'DA_method':'rich_interpolation', # 'noise' # 'interpolation
                                             })
         # Init 
-        epochs_validation = 500#100
-        num_samples = 400 # 500
+        epochs_validation = 200#100
+        num_samples = 1000 # 500
         
         HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:

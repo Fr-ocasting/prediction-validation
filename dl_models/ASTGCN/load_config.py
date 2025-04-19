@@ -10,7 +10,7 @@ parser.add_argument('--nb_chev_filter', type=int, default=64,
                     help='Number of Chebyshev filters')
 parser.add_argument('--nb_time_filter', type=int, default=64, 
                     help='Number of time filters')
-parser.add_argument('--adj_type', type=str, default='adj', choices=['adj', 'dist','corr'], 
+parser.add_argument('--adj_type', type=str, default='corr', choices=['adj', 'dist','corr'], 
                     help='type of adjacency matrix')
 parser.add_argument('--threshold', type=float, default=0.3, 
                     help='threshold to build sparse weighted adjacency matrix. Replace each value below threshold with 0. Is not used if adj_type == "adj"')
