@@ -30,10 +30,7 @@ def HP_modification(config,args):
         if key in forbidden_keys:
             raise ValueError(f"Key {key} cant' be modified while loading trainer for HP-tuning cause it has also impact on dataloader which is already defined")
         else:
-            if key == 'HP_max_epochs':
-                setattr(args, 'epochs',config['HP_max_epochs'])
-                
-            elif key == 'scheduler':
+            if key == 'scheduler':
                 if config['scheduler']['scheduler']:
                     for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
                          setattr(args, args_scheduler, config['scheduler'][args_scheduler])

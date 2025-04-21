@@ -101,7 +101,6 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     print('Custom POIs associated by stations: ',[f"{id_station}: {nb_pois_by_station[k]}" for k,id_station in enumerate(id_stations)])
     return(NetMob_ds)
 
-
 def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
     if hasattr(args,'NetMob_only_epsilon') and getattr(args,'NetMob_only_epsilon'):
         save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}"
@@ -109,10 +108,13 @@ def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
         save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
     metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
+    data_app = extract_apps_tags_modes(data_app,metadata,args.NetMob_selected_apps,args.NetMob_selected_tags,args.NetMob_transfer_mode)
+    return(data_app)
 
-    pos_selected_apps = [k for k,app in enumerate(metadata['apps']) if app in args.NetMob_selected_apps]
-    pos_selected_modes = [k for k,mode in enumerate(metadata['transfer_modes']) if mode in args.NetMob_transfer_mode]
-    pos_selected_tags = [k for k,tag in enumerate(metadata['tags']) if tag in args.NetMob_selected_tags]
+def extract_apps_tags_modes(data_app,metadata,NetMob_selected_apps,NetMob_selected_tags,NetMob_transfer_mode):
+    pos_selected_apps = [k for k,app in enumerate(metadata['apps']) if app in NetMob_selected_apps]
+    pos_selected_modes = [k for k,mode in enumerate(metadata['transfer_modes']) if mode in NetMob_transfer_mode]
+    pos_selected_tags = [k for k,tag in enumerate(metadata['tags']) if tag in NetMob_selected_tags]
 
     # Extract sub-dataset thanks to np.ix_ (kind of n-dimensional meshgrid)
     n1 = np.array(pos_selected_apps)
@@ -122,8 +124,7 @@ def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
     idxs = [n1,n2,n3,n4]
     sub_indices = np.ix_(*idxs)
     data_app = data_app[sub_indices]  # data_app[pos_selected_apps,pos_selected_tags,pos_selected_modes,:]
-
-    return(data_app)
+    return data_app
 
 
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
