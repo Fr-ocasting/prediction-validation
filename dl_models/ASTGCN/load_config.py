@@ -2,13 +2,13 @@ import argparse
 
 parser = argparse.ArgumentParser(description='ASTGCN')
 
-parser.add_argument('--nb_block', type=int, default=2, 
+parser.add_argument('--nb_block', type=int, default=2, # 2 
                     help='Number of blocks in the model')
-parser.add_argument('--K', type=int, default=3, 
+parser.add_argument('--K', type=int, default=3,   #3
                     help='Order of the Chebyshev polynomial')
-parser.add_argument('--nb_chev_filter', type=int, default=64, 
+parser.add_argument('--nb_chev_filter', type=int, default=32, #64 
                     help='Number of Chebyshev filters')
-parser.add_argument('--nb_time_filter', type=int, default=64, 
+parser.add_argument('--nb_time_filter', type=int, default=64, # 64
                     help='Number of time filters')
 parser.add_argument('--adj_type', type=str, default='corr', choices=['adj', 'dist','corr'], 
                     help='type of adjacency matrix')
@@ -27,13 +27,6 @@ def transfer_from_orig_args(args_init,args):
     args.in_channels = args_init.C
     args.DEVICE = args_init.device
     return args
-
-
-
-
-
-
-
 
 
 

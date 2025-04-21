@@ -67,8 +67,8 @@ def get_ray_config(args):
 
     resources_per_trial = {'gpu':1,'cpu':6} if torch.cuda.is_available() else {'cpu':1}
     num_gpus = 2 if torch.cuda.is_available() else 0
-    num_cpus = 36 if torch.cuda.is_available() else 6
-    max_concurrent_trials = 18 if torch.cuda.is_available() else 6
+    num_cpus = 24 if torch.cuda.is_available() else 6
+    max_concurrent_trials = 12 if torch.cuda.is_available() else 6
 
 
     return(scheduler,search_alg,resources_per_trial,num_gpus,max_concurrent_trials,num_cpus)
