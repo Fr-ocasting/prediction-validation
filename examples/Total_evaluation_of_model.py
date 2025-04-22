@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
     if True:
         
-        model_name = 'ASTGCN' #'CNN' # 'STGCN'
+        model_name = 'STGCN' #'CNN' # 'STGCN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
 
