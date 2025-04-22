@@ -87,15 +87,14 @@ def keep_track_on_model_metrics(df_results,model_name,performance,metrics):
     return df_results
 
 if __name__ == '__main__':
-
+    target_data = 'subway_in'
     for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs'],['subway_in']],['VariableSelectionNetwork',None]):
         # GET PARAMETERS
         #dataset_names = ['subway_in','netmob_POIs'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon'] #['netmob_POIs']
         dataset_for_coverage = ['subway_in','netmob_POIs'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon'] #['netmob_POIs'] 
         #vision_model_name = 'VariableSelectionNetwork' # None # 'VariableSelectionNetwork'
 
-        from constants.paths import DATA_TO_PREDICT
-        assert DATA_TO_PREDICT in dataset_names, f'You are trying to predict {DATA_TO_PREDICT} with only these data: {dataset_names}'
+        assert target_data in dataset_names, f'You are trying to predict {target_data} with only these data: {dataset_names}'
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()
         modification = {'epochs' : 200, #100,

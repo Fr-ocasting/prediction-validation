@@ -114,7 +114,6 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] #['subway_in','netmob_POIs'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY'] # ['data_bidon','netmob_bidon'] #['netmob_POIs'] 
         #vision_model_name = 'VariableSelectionNetwork' # None # 'VariableSelectionNetwork'
 
-        from constants.paths import DATA_TO_PREDICT
 
         save_folder = 'benchmark/fold0/'
         df_loss,df_results = pd.DataFrame(),pd.DataFrame()

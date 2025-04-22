@@ -3,7 +3,7 @@ import argparse
 '''
 Have to define :
 >> 'args' which represent all the hyperparamer linked to the feature extractor model
->> get_config() which return 'args', a NameSpace containing the hyperparameter of feature extractor model updated thank to parameters from the backbone model and DATA_TO_PREDICT
+>> get_config() which return 'args', a NameSpace containing the hyperparameter of feature extractor model updated thank to parameters from the backbone model and args.target_data
 '''
 
 parser = argparse.ArgumentParser(description='ImageAvgPooling')

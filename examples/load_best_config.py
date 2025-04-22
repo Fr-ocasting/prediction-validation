@@ -12,9 +12,6 @@ if working_dir not in sys.path:
 
 
 from constants.paths import SAVE_DIRECTORY
-from utils.utilities_DL import get_loss,load_model_and_optimizer
-from build_inputs.load_datasets_to_predict import load_datasets_to_predict
-from calendar_class import get_time_slots_labels
 from examples.train_and_visu_non_recurrent import get_ds
 from constants.paths import SAVE_DIRECTORY
 from high_level_DL_method import load_model,load_optimizer_and_scheduler
@@ -108,14 +105,3 @@ def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modific
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler)
 
     return trainer,ds,args
-
-
-if __name__ == '__main__':
-    args = load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',folder = 'save/HyperparameterTuning',metric = '_metric/Loss_model')
-    # Load model with the best config:
-    dataset,_,_,_ = load_datasets_to_predict(args,coverage_period)
-    _,dic_class2rpz,_,_ = get_time_slots_labels(dataset,nb_class = [0,1,2,3])
-    loss_function = get_loss(args)
-    model,optimizer,scheduler = load_model_and_optimizer(args,dic_class2rpz)
-
-    print(model)

@@ -183,7 +183,7 @@ if __name__ == '__main__':
 
 
     # Load Adj, Dist or Corr matrix : 
-    from constants.paths import FOLDER_PATH, DATA_TO_PREDICT
+    from constants.paths import FOLDER_PATH
     from examples.benchmark import local_get_args,get_inputs
 
 
@@ -208,11 +208,11 @@ if __name__ == '__main__':
     corr =  load_adjacency_matrix(dataset, type = 'correlation')
     dist = load_adjacency_matrix(dataset, type = 'distance', df_locations = df_locations, treshold = 1e-4)
 
-    if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}'):
+    if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{args.target_data}'):
         raise 'Folder not find'
     else:
-        if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/'):
-            os.mkdir(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/')
-        adj.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/adj.csv')
-        corr.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/corr.csv')
-        dist.to_csv(f'{ROOT}/{FOLDER_PATH}/{DATA_TO_PREDICT}/adj/dist.csv')
+        if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/'):
+            os.mkdir(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/')
+        adj.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/adj.csv')
+        corr.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/corr.csv')
+        dist.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/dist.csv')

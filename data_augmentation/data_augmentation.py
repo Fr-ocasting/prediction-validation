@@ -8,7 +8,6 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from constants.paths import USELESS_DATES,DATA_TO_PREDICT
 from DL_class import FeatureVectorBuilder
 from data_augmentation.Jittering import JitteringObject
 from data_augmentation.Interpolation import InterpolatorObject
@@ -30,6 +29,7 @@ class DataAugmenter(object):
         self.Week_nb_steps = ds.Week_nb_steps
         self.shift_from_first_elmt = ds.shift_from_first_elmt
         self.normalizers = ds.normalizers 
+        self.target_data = ds.target_data
         self.DA_magnitude_max_scale = DA_magnitude_max_scale
 
 
@@ -120,8 +120,7 @@ class DataAugmenter(object):
 
         # Noise Injection for the Dataset To predict, and its historical data: 
         jiterringobject = JitteringObject(self.normalizers, self.step_ahead, self.H, self.D, self.W, self.Day_nb_steps, self.Week_nb_steps, self.shift_from_first_elmt, self.time_step_per_hour)
-        U_train_copy, Utarget_train_copy = jiterringobject.compute_noise_injection(U_train_copy, Utarget_train_copy, ds, DATA_TO_PREDICT, mask_inject, out_dim, alpha)
-        #U_train_copy,Utarget_train_copy = self.compute_noise_injection(U_train_copy,Utarget_train_copy,ds,DATA_TO_PREDICT,mask_inject,out_dim,alpha)
+        U_train_copy, Utarget_train_copy = jiterringobject.compute_noise_injection(U_train_copy, Utarget_train_copy, ds, self.target_data, mask_inject, out_dim, alpha)
 
         # Noise Injection for the contextual data (subway-out ok, but not for NetMob)
         contextual_train_copy = {}

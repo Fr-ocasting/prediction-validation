@@ -14,7 +14,7 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np 
 import pickle
 from utils.utilities import filter_args
-from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
+from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 

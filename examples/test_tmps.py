@@ -16,38 +16,51 @@ from examples.train_model_on_k_fold_validation import train_model_on_k_fold_vali
 
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""
 if True:
-    save_folder = 'K_fold_validation/training_with_HP_tuning/subway_in_only'
+    save_folder = 'K_fold_validation/training_with_HP_tuning/ASTGCN_2025_04_21_20_06_76371'
     #trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
     #trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_03_29_00_17_68381'
-    trial_id = 'subway_in_STGCN_MSELoss_2025_01_20_14_27_20569'
-    epochs_validation = 100
+    trial_id = 'subway_in_subway_out_ASTGCN_MSELoss_2025_04_21_20_06_76371'
+    epochs_validation = 160
     args,folds = load_configuration(trial_id,True)
     modification ={'keep_best_weights':True,
                     'epochs':epochs_validation,
                     'device':torch.device("cuda:0"),
-                    'standardize': False,
-                    'minmaxnorm':True,
-
-                    'learnable_adj_matrix' : False,
-                    
-                    'stacked_contextual': True,
-                    'temporal_graph_transformer_encoder': False,
-                    'compute_node_attr_with_attn': False,
-
-                    'freq': '15min',
+                    #'standardize': False,
+                    #'minmaxnorm':True,
+                    #'learnable_adj_matrix' : False,
+                    #'stacked_contextual': True,
+                    #'temporal_graph_transformer_encoder': False,
+                    #'compute_node_attr_with_attn': False,
+                    #'freq': '15min',
                     }
     
-    config_diffs = {'_1':{},  
-                    '_2':{},  
-                    '_3':{},  
-                    '_4':{},  
-                    '_5':{},   
-                    '_6':{},  
-                    '_7':{},  
-                    '_8':{},  
-                    '_9':{},  
-                    '_10':{},
-                    }
+    config_diffs = {'subway_in_subway_out':{}, 
+                    'subway_in_subway_in':{'dataset_names':['subway_in','subway_in']},  
+                    'station_epsilon100_Google_Maps':{'dataset_names':['subway_in','netmob_POIs'],
+                                                    'NetMob_only_epsilon': True,   
+                                                    'NetMob_selected_apps':  ['Google_Maps'],
+                                                    'NetMob_transfer_mode' :  ['DL'],
+                                                    'NetMob_selected_tags': ['station_epsilon100'],
+                                                    'NetMob_expanded' : ''},
+                    'station_epsilon100_Web_Weather':{'dataset_names':['subway_in','netmob_POIs'],
+                                                    'NetMob_only_epsilon': True,   
+                                                    'NetMob_selected_apps':  ['Web_Weather'],
+                                                    'NetMob_transfer_mode' :  ['DL'],
+                                                    'NetMob_selected_tags': ['station_epsilon100'],
+                                                    'NetMob_expanded' : ''},
+                    'station_epsilon100_Web_Downloads':{'dataset_names':['subway_in','netmob_POIs'],
+                                                    'NetMob_only_epsilon': True,   
+                                                    'NetMob_selected_apps':  ['Web_Downloads'],
+                                                    'NetMob_transfer_mode' :  ['DL'],
+                                                    'NetMob_selected_tags': ['station_epsilon100'],
+                                                    'NetMob_expanded' : ''},
+                    'station_epsilon100_Web_Deezer':{'dataset_names':['subway_in','netmob_POIs'],
+                                                    'NetMob_only_epsilon': True,   
+                                                    'NetMob_selected_apps':  ['Deezer'],
+                                                    'NetMob_transfer_mode' :  ['DL'],
+                                                    'NetMob_selected_tags': ['station_epsilon100'],
+                                                    'NetMob_expanded' : ''}
+                                                      }
                         
 
     for add_name_id,config_diff in config_diffs.items():

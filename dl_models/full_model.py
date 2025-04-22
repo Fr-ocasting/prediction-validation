@@ -27,7 +27,6 @@ from dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
 from utils.utilities import filter_args
 from profiler.profiler import model_memory_cost
 from build_inputs.load_adj import load_adj
-from constants.paths import DATA_TO_PREDICT
 import importlib
 
 def load_vision_model(args_vision):
@@ -64,7 +63,7 @@ class full_model(nn.Module):
         if 'calendar' in args.contextual_positions.keys(): 
             self.pos_calendar = args.contextual_positions['calendar']
 
-        if DATA_TO_PREDICT in args.dataset_names :
+        if dataset.target_data in args.dataset_names :
             self.remove_trafic_inputs = False
         else:
             self.remove_trafic_inputs = True

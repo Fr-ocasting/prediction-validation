@@ -7,10 +7,9 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from dataset import DataSet
+from dataset import DataSet,PersonnalInput
 from datetime import datetime 
 from utils.utilities import filter_args,get_time_step_per_hour
-
 from constants.paths import USELESS_DATES
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -36,7 +35,26 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 n_vertex = 40
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
+def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True,filename=None):
+    dataset = load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = intersect_coverage_period,filename=filename)
+    args_DataSet = filter_args(DataSet, args)
+
+    preprocesed_ds = PersonnalInput(invalid_dates, args,tensor = dataset.raw_values, dates = dataset.df_dates, 
+                                    spatial_unit = dataset.spatial_unit,
+                                    indices_spatial_unit = dataset.indices_spatial_unit,
+                                    time_step_per_hour = dataset.time_step_per_hour,
+                                    city = dataset.city,
+                                    dims=dataset.dims,
+                                    periods = dataset.periods,
+                                     **args_DataSet
+                                     )
+
+    preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
+
+    return preprocesed_ds
+
+
+def load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 

@@ -5,7 +5,7 @@ current_file_path = os.path.abspath(os.path.dirname(__file__))
 ROOT = os.path.abspath(os.path.join(current_file_path,'..'))
 if ROOT not in sys.path:
     sys.path.insert(0,ROOT)
-from constants.paths import ABS_PATH_PACKAGE,FOLDER_PATH,DATA_TO_PREDICT
+from constants.paths import ABS_PATH_PACKAGE,FOLDER_PATH
 
 def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
     '''
@@ -25,7 +25,7 @@ def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
         gso[gso < threshold] = 0 
     # Otherwise, we can load the precomputed weighted adj matrix:
     else:
-        gso = pd.read_csv(f'{ABS_PATH_PACKAGE}/{FOLDER_PATH}/{DATA_TO_PREDICT}/{folder}/{adj_type}.csv',index_col = 0)
+        gso = pd.read_csv(f'{ABS_PATH_PACKAGE}/{FOLDER_PATH}/{dataset.target_data}/{folder}/{adj_type}.csv',index_col = 0)
         gso = gso.iloc[dataset.indices_spatial_unit]
         if (adj_type == 'dist') :
             assert threshold is not None, f"You defined a distance-based (adj_type: {adj_type}) matrix but you did not define any threshold distance"

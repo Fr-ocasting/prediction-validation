@@ -12,14 +12,12 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from constants.paths import DATA_TO_PREDICT
 
 def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['model_name'] = model_name
     config['dataset_names'] = dataset_names
     config['dataset_for_coverage'] = dataset_for_coverage
 
-    #data_module = importlib.import_module(f"load_inputs.{DATA_TO_PREDICT}")
     #importlib.reload(data_module)
     #config['n_vertex'] = data_module.n_vertex
     #config['C'] =  data_module.C

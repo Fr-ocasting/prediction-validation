@@ -14,7 +14,9 @@ from sklearn.cluster import AgglomerativeClustering
 import numpy as np 
 import pickle
 from utils.utilities import filter_args
-from build_inputs.load_netmob_data import find_positions,replace_heure_d_ete
+from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
+from utils.utilities import get_time_step_per_hour
+
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
@@ -36,7 +38,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 ## C = 1
 ## n_vertex = 
-def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -66,21 +68,21 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
     indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
     netmob_T = netmob_T[indices_dates]
+    """
     local_df_dates = pd.DataFrame(coverage_local[indices_dates])
     local_df_dates.columns = ['date']
-    # Reduce dimensionality : [T',R] -> [T',R']
+    """
 
-    
+    # Reduce dimensionality : [T',R] -> [T',R']
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
     # netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
 
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,df_dates = local_df_dates)
+    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,intersect_coverage_period = intersect_coverage_period) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
-
 
     print('Netmob_T.size(): ',netmob_T.size())
     return(NetMob_POI)
@@ -101,16 +103,16 @@ def load_data_npy(ROOT,FOLDER_PATH,args):
     return netmob_T
 
 
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset,df_dates=None):
-    if df_dates is None:
-        df_dates = dataset.df_dates
+def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,intersect_coverage_period):
+    df_dates = pd.DataFrame(intersect_coverage_period)
+    df_dates.columns = ['date']
     args_DataSet = filter_args(DataSet, args)
     #print('Netmb_T.size: ',netmob_T.size())
     #print('df_dates: ',dataset.df_dates)
     #print('Theoric df-dates length:',len(pd.date_range(start=START, end=END, freq=args.freq)[:-1]))
     #blabla
     NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = df_dates,
-                           time_step_per_hour = dataset.time_step_per_hour,
+                            time_step_per_hour = get_time_step_per_hour(args.freq),
                             #minmaxnorm = dataset.minmaxnorm,
                             #standardize = dataset.standardize,
                            dims =dims,

@@ -11,7 +11,6 @@ import numpy as np
 
 from build_inputs.load_adj import load_adj
 from dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
-from constants.paths import DATA_TO_PREDICT
 
 def is_condition(args):
     condition1 = not(len(vars(args.args_vision))>0) and not(getattr(args.args_embedding,'concatenation_early'))
@@ -28,7 +27,7 @@ def get_output_kernel_size(args):
         Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num   
 
     # Tackle the case where prediction is based only from contextual data:
-    if  not (DATA_TO_PREDICT in args.dataset_names):
+    if  not (args.target_data in args.dataset_names):
         Ko = 0
         if is_condition(args):
             Ko = 1
@@ -55,7 +54,7 @@ def get_block_dims(args,Ko):
     blocks = args.blocks.copy()
     if Ko > 0:
         blocks[-1] = blocks[-1]*2
-        if  not(DATA_TO_PREDICT in args.dataset_names) and is_condition(args):
+        if  not(args.target_data in args.dataset_names) and is_condition(args):
             blocks[-1][0] = 0
     blocks.append([args.out_dim])
     number_of_st_conv_blocks = len(blocks) - 3

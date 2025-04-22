@@ -14,7 +14,6 @@ if parent_dir not in sys.path:
 from build_inputs.load_preprocessed_dataset import load_complete_ds
 from dataset import TensorDataset
 from constants.paths import FOLDER_PATH
-from build_inputs.load_datasets_to_predict import get_intersect_of_coverage_periods
 from argparse import Namespace
 
 class KFoldSplitter(object):
@@ -69,9 +68,9 @@ class KFoldSplitter(object):
         return(subway_ds_tmps)
     
     def load_init_ds(self,normalize = False):
-        subway_ds,NetMob_ds,args = load_complete_ds(self.args,normalize = normalize)  #,dic_class2rpz
+        target_ds,contextual_ds,args = load_complete_ds(self.args,normalize = normalize)  #,dic_class2rpz
         
-        return(subway_ds,NetMob_ds,args) #,dic_class2rpz)
+        return(target_ds,contextual_ds,args) #,dic_class2rpz)
 
     def split_k_fold(self):
         if self.validation_split_method == 'custom_blocked_cv':
@@ -111,39 +110,39 @@ class KFoldSplitter(object):
         Limitations:
         >>> The first few folds are particularly small, leading to worse metrics and large variance that can significantly impact the overall average MSE.
         '''
-        K_subway_ds = []
-        subway_ds_init,_,args = self.load_init_ds(normalize = True)  # Load 'U' and 'U_target'. # Define already feature vect for the K-th fold with proportion train/valid/test.
+        K_ds = []
+        target_ds_init,_,args = self.load_init_ds(normalize = True)  # Load 'U' and 'U_target'. # Define already feature vect for the K-th fold with proportion train/valid/test.
         #print('Considered Spatial-Unit: ',args.set_spatial_units)
         # Get Init Coverage Period
-        df_verif_init = subway_ds_init.tensor_limits_keeper.df_verif 
+        df_verif_init = target_ds_init.tensor_limits_keeper.df_verif 
         nb_samples = len(df_verif_init)
         t_step_ahead = [c for c in df_verif_init.columns if 't+' in c][0]
         coverage_period_init = df_verif_init[t_step_ahead]
 
         # Get number of added samples for each next fold :
-        N1 = len(subway_ds_init.tensor_limits_keeper.df_verif_train)//self.args.K_fold
-        N_valid = len(subway_ds_init.tensor_limits_keeper.df_verif_valid)
-        N_test = len(subway_ds_init.tensor_limits_keeper.df_verif_test)
+        N1 = len(target_ds_init.tensor_limits_keeper.df_verif_train)//self.args.K_fold
+        N_valid = len(target_ds_init.tensor_limits_keeper.df_verif_valid)
+        N_test = len(target_ds_init.tensor_limits_keeper.df_verif_test)
 
         for k in self.folds:
             if k == self.args.K_fold-1:
-                K_subway_ds.append(subway_ds_init)
+                K_ds.append(target_ds_init)
             else:
                 args_copy = Namespace(**vars(args))
 
-                args_copy.set_spatial_units = subway_ds_init.spatial_unit
+                args_copy.set_spatial_units = target_ds_init.spatial_unit
                 new_nb_samples = nb_samples-int((self.args.K_fold-(k+1))*N1*args.min_fold_size_proportion)
-                coverage_period_tmps =pd.date_range(df_verif_init.min().min(), df_verif_init.iloc[:new_nb_samples].max().max(), freq=f'{60 // subway_ds_init.time_step_per_hour}min')# coverage_period_init.iloc[:new_nb_samples]
+                coverage_period_tmps =pd.date_range(df_verif_init.min().min(), df_verif_init.iloc[:new_nb_samples].max().max(), freq=f'{60 // target_ds_init.time_step_per_hour}min')# coverage_period_init.iloc[:new_nb_samples]
                 # Modify local 'args':
                 args_copy.train_prop = 1 - (N_valid+N_test)/new_nb_samples
                 args_copy.valid_prop = N_valid/new_nb_samples
                 args_copy.test_prop = N_test/new_nb_samples
 
-                subway_ds_tmps,_,_= load_complete_ds(args_copy,coverage_period=coverage_period_tmps,normalize = True)  # Normalize
-                subway_ds_tmps.init_invalid_dates = subway_ds_init.invalid_dates
+                target_ds_tmps,_,_= load_complete_ds(args_copy,coverage_period=coverage_period_tmps,normalize = True)  # Normalize
+                target_ds_tmps.init_invalid_dates = target_ds_init.invalid_dates
 
-                K_subway_ds.append(subway_ds_tmps)
-        return K_subway_ds,args
+                K_ds.append(target_ds_tmps)
+        return K_ds,args
 
 
 
