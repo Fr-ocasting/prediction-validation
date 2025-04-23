@@ -222,8 +222,9 @@ def tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,nor
                 else:
                     if ('netmob_POIs' in args.dataset_names) and (args.stacked_contextual) and (not args.compute_node_attr_with_attn):
                         add_C = len(args.NetMob_selected_apps)*len(args.NetMob_transfer_mode)*len(args.NetMob_selected_tags) 
+                        raise NotImplementedError("NE PREND PAS EN COMPTE CORRECTEMENT NETMOB POIS AVEC D AUTRES DONNEE CONTUEXTUELLES")
                     else:
-                        add_C = latent_dim*contextual_ds.C
+                        add_C = latent_dim*sum([contextual_ds_i.C for name_i,contextual_ds_i in contextual_ds.items()])
                 args.C = args.C + add_C
 
         else:

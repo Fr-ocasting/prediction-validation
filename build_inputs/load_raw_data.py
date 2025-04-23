@@ -18,7 +18,27 @@ def load_subway_15_min(txt_path, dates = None):
     ''' Return preprocessed df of "Métro 15 minutes". 
     dates : list of months, when dates[0] and dates[-1] are start and end of period. Must have '%MM-%YYYY' format
     '''
-    df = pd.read_csv(txt_path, delimiter ="\t",low_memory=False).rename(columns = {' Date jour (CAS tr)':'date','Heure (CAS tr)':'hour','Nb entrées total (CAS tr)':'in','Nb sorties total (CAS tr)':'out'})
+    txt_name = txt_path.split('/')[-1].split('.')[0]
+    if  "Métro 15 minutes 2021" == txt_name:
+        df = pd.read_csv(txt_path, delimiter =",",low_memory=False).rename(columns = {'Date jour (CAS tr)':'date',' Date jour (CAS tr)':'date','Heure (CAS tr)':'hour','Nb entrées total (CAS tr)':'in','Nb sorties total (CAS tr)':'out'})
+        df = df[df['hour'] != ':'].copy()
+        df['date'] = pd.to_datetime(df['date'])
+        df['hour'] = df['hour'].apply(lambda h: f"{int(h.split(':')[0]) - 24}:{h.split(':')[1].zfill(2)}" if int(h.split(':')[0]) >= 24 else h)
+        df['hour_timedelta'] = df['hour'].apply(lambda h: timedelta(hours=int(h.split(':')[0]), minutes=int(h.split(':')[1]) )) 
+        df['datetime'] = df['date'] + df['hour_timedelta'] 
+
+    elif "Métro 15 minutes 2019 2020" == txt_name:
+        df = pd.read_csv(txt_path, delimiter ="\t",low_memory=False).rename(columns = {'Date jour (CAS tr)':'date',' Date jour (CAS tr)':'date','Heure (CAS tr)':'hour','Nb entrées total (CAS tr)':'in','Nb sorties total (CAS tr)':'out'})
+        # Add '20' like '01_01_2020' instead of '01_01_20'
+        df['date'] = df['date'].transform(lambda d : d+'20' if len(d)<10 else d)
+        T_2020 = pd.to_datetime(df['date'] + ' ' + df['hour'], format='%d/%m/%Y %H:%M', errors='coerce')
+        df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['hour'], format='%d/%m/%Y %H:%M:%S', errors='coerce').fillna(T_2020)
+    elif "Métro 15 minutes 2021 jusqu'au 31 mai.txt" == txt_name:
+        df = pd.read_csv(txt_path, delimiter =",",low_memory=False).rename(columns = {'Date jour (CAS tr)':'date',' Date jour (CAS tr)':'date','Heure (CAS tr)':'hour','Nb entrées total (CAS tr)':'in','Nb sorties total (CAS tr)':'out'})
+        df = df.dropna()
+        raise NotImplementedError(f"Reading of {txt_path} has not been implemented.")
+    else:
+        raise NotImplementedError(f"Reading of {txt_path} has not been implemented.")
 
     # Tackle float values represented by str: 
     df['out'] = df['out'].transform(lambda x : str_xa2int(x))
@@ -27,11 +47,6 @@ def load_subway_15_min(txt_path, dates = None):
     # Tackle String Values ('A', 'B'):
     df['in'] = df['in'].transform(lambda x : str2neg(x))  # Transform each string values like 'A', 'B', '1A'  and so on to '-1'. Keep NaN values as NaN values.
     df['out'] = df['out'].transform(lambda x : str2neg(x))  
-
-    # Add '20' like '01_01_2020' instead of '01_01_20'
-    df['date'] = df['date'].transform(lambda d : d+'20' if len(d)<10 else d)
-    T_2020 = pd.to_datetime(df['date'] + ' ' + df['hour'], format='%d/%m/%Y %H:%M', errors='coerce')
-    df['datetime'] = pd.to_datetime(df['date'] + ' ' + df['hour'], format='%d/%m/%Y %H:%M:%S', errors='coerce').fillna(T_2020)
 
     # Keep usefull columns
     df = df[['datetime','Station','Code ligne','in','out']]

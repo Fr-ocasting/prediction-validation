@@ -472,9 +472,9 @@ class DataSet(object):
     def get_dataloader(self):
         ''' Build DataLoader '''
         # Train, Valid, Test split : 
-        contextual_train  = {name: self.contextual_tensors[name]['train'] for name in self.contextual_tensors.keys()} #[self.contextual_tensors[name]['train'] for name in self.contextual_tensors.keys()]
-        contextual_valid  = {name: self.contextual_tensors[name]['valid'] if 'valid' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()}   # [self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()]
-        contextual_test  =  {name: self.contextual_tensors[name]['test'] if 'test' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()] 
+        contextual_train = {name_i: contextual_i['train'] for name_i,contextual_i in self.contextual_tensors.items()}  
+        contextual_valid ={name_i: contextual_i['valid'] for name_i,contextual_i in self.contextual_tensors.items() if 'valid' in contextual_i.keys()}     # {name: self.contextual_tensors[name]['valid'] if 'valid' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()}   # [self.contextual_tensors[name]['valid'] for name in self.contextual_tensors.keys()]
+        contextual_test  = {name_i: contextual_i['test'] for name_i,contextual_i in self.contextual_tensors.items() if 'test' in contextual_i.keys()}    #  {name: self.contextual_tensors[name]['test'] if 'test' in self.contextual_tensors[name].keys() else None for name in self.contextual_tensors.keys()} # [self.contextual_tensors[name]['test'] for name in self.contextual_tensors.keys()] 
 
         # Data Augmentation if needed : 
         contextual_train = self.get_data_augmentation(contextual_train)

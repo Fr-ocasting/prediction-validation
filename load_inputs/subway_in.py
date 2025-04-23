@@ -110,11 +110,16 @@ def load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period):
         assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
         df = df.resample(args.freq).sum()
 
-    
+    # Temporal Restriction: 
     df = restrain_df_to_specific_period(df,coverage_period)
+
+    # Restrain to specific stations:
     df_correspondance = get_trigram_correspondance()
-    df_correspondance.set_index('Station').reindex(df.columns)
-    df.columns = df_correspondance.COD_TRG
+    df_correspondance.sort_values(by = 'Station',inplace = True)
+    df = df.rename(columns = {row.Station: row.COD_TRG for _,row in df_correspondance.iterrows()})
+    df = df[df_correspondance.COD_TRG]
+    # ...
+
     return df
   
 def remove_outliers(df):

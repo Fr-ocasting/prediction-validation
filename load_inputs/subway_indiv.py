@@ -23,7 +23,7 @@ DATA_SUBFOLDER = 'agg_data/validation_individuelle' # Sous-dossier dans FOLDER_P
 # Fréquence native la plus fine disponible (pour info, le chargement dépendra de args.freq)
 NATIVE_FREQ = '3min'
 # Couverture théorique (à remplacer par les vraies dates si connues)
-START = '2019-10-01' # Exemple basé sur head()
+START = '2019-11-01' # Exemple basé sur head()
 END = '2020-04-01'
 
 # Liste des périodes invalides (à compléter si nécessaire)
@@ -68,18 +68,9 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
 
     # --- Prétraitement ---
     try:
-        print('df.head(): ',df.head())
-        print('Len coverage_period: ',len(coverage_period))
-
         df[DATE_COL] = pd.to_datetime(df[DATE_COL])
-        print('df.head(): ',df.head())
         df = df.set_index(DATE_COL)
-        print('df.head(): ',df.head())
         df_reindexed = df[df.index.isin(coverage_period)].copy()
-
-        print(f"Check the current coverage period on the trial: ({min(coverage_period)} - {max(coverage_period)})")
-        print(f"And the maximum coverage period of {file_name}: ({df.index.min()} - {df.index.max()})")
-        print('df_reindexed.head(): ',df_reindexed.head())
 
         if df_reindexed.empty:
              print(f"ERROR : Not any remainig data in {file_name}.csv")
