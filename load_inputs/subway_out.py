@@ -9,7 +9,7 @@ if parent_dir not in sys.path:
 from datetime import datetime 
 import torch
 from load_inputs.subway_in import load_data as load_data_from_subway_in_py
-from load_inputs.netmob_POIs import load_input_and_preprocess
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from utils.utilities import filter_args
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -35,9 +35,9 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 #n_vertex = 40
 
-def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize):
+def load_data(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize):
     dims = [0]
-    subway_out = load_data_from_subway_in_py(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= normalize,filename = FILE_NAME)
+    subway_out = load_data_from_subway_in_py(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME)
     T_subway_out = torch.Tensor(subway_out.raw_values.float())
 
     print('T_subway_out: ',T_subway_out.size())
@@ -45,7 +45,7 @@ def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,norm
     # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:
     #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
     #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
-    preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,intersect_coverage_period=intersect_coverage_period)
+    preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=T_subway_out,coverage_period=coverage_period)
     preprocessed_personal_input.periods = subway_out.periods
     preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
     preprocessed_personal_input.C = C

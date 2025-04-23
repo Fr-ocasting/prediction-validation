@@ -7,9 +7,10 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from dataset import DataSet,PersonnalInput
+from dataset import DataSet
 from datetime import datetime 
 from utils.utilities import filter_args,get_time_step_per_hour
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from constants.paths import USELESS_DATES
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -35,21 +36,21 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 n_vertex = 40
 
-def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True,filename=None):
-    dataset = load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = intersect_coverage_period,filename=filename)
+def load_data(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,filename=None):
+    dataset = load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = coverage_period,filename=filename)
     args_DataSet = filter_args(DataSet, args)
 
-    preprocesed_ds = PersonnalInput(invalid_dates, args,tensor = dataset.raw_values, dates = dataset.df_dates, 
-                                    spatial_unit = dataset.spatial_unit,
-                                    indices_spatial_unit = dataset.indices_spatial_unit,
-                                    time_step_per_hour = dataset.time_step_per_hour,
-                                    city = dataset.city,
-                                    dims=dataset.dims,
-                                    periods = dataset.periods,
-                                     **args_DataSet
-                                     )
 
-    preprocesed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
+
+    preprocesed_ds = load_input_and_preprocess(dims = dataset.dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=dataset.raw_values,coverage_period=coverage_period)
+    
+    preprocesed_ds.spatial_unit = dataset.spatial_unit
+    preprocesed_ds.dims = dataset.dims
+    preprocesed_ds.periods = dataset.periods
+    preprocesed_ds.time_step_per_hour = dataset.time_step_per_hour
+    preprocesed_ds.indices_spatial_unit = dataset.indices_spatial_unit
+    preprocesed_ds.city = dataset.city
+
 
     return preprocesed_ds
 
@@ -158,9 +159,11 @@ def get_trigram_correspondance():
                      'CUI','CUS','FLA','GOR',
                      'BLA','GRA','GUI','GIL',
                      'HEN','HOT','LAE','MAS',
+
                      'MER','LUM','PRY','PER',
-                     'SAN','SAX','VMY','JEA',
+                     'SAN','SAX','VMY','JEA', #JEA = Vieux Lyon
                      'BON','CHA','VAI','VEN',
+
                      'MAC','GAR','FOC','REP',
                      'GER','DEB','JAU','CPA',
                      'CRO','PAR','SOI','OGA']
@@ -169,10 +172,25 @@ def get_trigram_correspondance():
                     'Cuire','Cusset','Flachet','Gorge de Loup',
                     'Grange Blanche','Gratte Ciel','Place Guichard','Guillotière',
                     'Hénon','Hôtel de ville - Louis Pradel','Laënnec','Masséna',
+
                     'Mermoz - Pinel','Monplaisir Lumière','Parilly','Perrache',
                     'Sans Souci','Saxe - Gambetta','Valmy','Vieux Lyon',
                     'Laurent Bonnevay','Charpennes','Gare de Vaise','Gare de Vénissieux',
+
                     'Jean Macé','Garibaldi','Foch','République Villeurbanne',
                     'Stade de Gerland','Debourg','Place Jean Jaurès','Croix Paquet',
                     'Croix-Rousse','Part-Dieu','La soie',"Gare d'Oullins"]
+    
+    df['INDIV'] = ['AMPERE', 'BELLECOUR', 'BROTTEAUX','CORDELIERS',
+                   'CUIRE', 'CUSSET','FLACHET','GORGE DE LOUP',
+                   'GRANGE BLANCHE', 'GRATTE CIEL', 'PLACE GUICHARD', 'GUILLOTIERE',
+                    'HENON', 'HOTEL DE VILLE', 'LAENNEC','MASSENA',      
+
+                    'MERMOZ PINEL', 'MONPLAISIR LUMIERE','PARILLY','PERRACHE',
+                    'SANS SOUCI', 'SAXE GAMBETTA','VALMY','VIEUX LYON',
+                    'LAURENT BONNEVAY', 'CHARPENNES', 'GARE DE VAISE', 'GARE DE VENISSIEUX',
+
+                    'JEAN MACE','GARIBALDI','FOCH', 'REPUBLIQUE',
+                    'STADE DE GERLAND', 'DEBOURG', 'PLACE JEAN JAURES','CROIX PAQUET',
+                    'CROIX ROUSSE', 'PART DIEU',  'VAULX-EN-VELIN LA SOIE', 'OULLINS GARE',]
     return(df)

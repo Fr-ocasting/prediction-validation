@@ -82,11 +82,12 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     # Load the dataset and its associated caracteristics
     module_data = importlib.import_module(f"load_inputs.{args.target_data}")
     importlib.reload(module_data) 
-    """
-    dataset = module_data.load_data(args,parent_dir,FOLDER_PATH,intersect_coverage_period)
-    preprocesed_ds = preprocess_dataset(dataset,args,union_invalid_dates,normalize)
-    """
-    preprocessed_ds = module_data.load_data(ROOT,FOLDER_PATH,union_invalid_dates,intersect_coverage_period,args,normalize= True)
+    
+    preprocessed_ds = module_data.load_data(ROOT,FOLDER_PATH,
+                                            invalid_dates = union_invalid_dates,
+                                            coverage_period = intersect_coverage_period,
+                                            args = args,
+                                            normalize= True)
     print(f"\nInit Dataset: '{preprocessed_ds.raw_values.size()} with {preprocessed_ds.raw_values.numel()} Total nb of elements and {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")
 
     if args.data_augmentation and args.DA_method == 'noise':

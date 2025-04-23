@@ -11,10 +11,17 @@ if parent_dir not in sys.path:
 from build_inputs.load_contextual_data import tackle_contextual
 from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from build_inputs.load_calendar import load_calendar,get_args_embedding
+from utils.utilities import filter_args
+from utils.utilities import get_time_step_per_hour
+from dataset import DataSet
+from dataset import PersonnalInput
+
 # from build_inputs.load_calendar import tackle_calendar
 from utils.seasonal_decomposition import fill_and_decompose_df
 from constants.paths import USELESS_DATES
 import pandas as pd 
+
+
 def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn):
     
     if type(contextual_ds) == list:
@@ -72,9 +79,10 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     dict_node_attr2dataset = {}
     node_attr_which_need_attn = []
     target_ds.normalizers = {target_ds.target_data:target_ds.normalizer}
+
     contextual_tensors,positions = {},{}
 
-    # Define contextual tensor for Calendar Information:
+    # Add calednar data to the contextual tensors:
     contextual_tensors = {f'calendar_{calendar_type}': {'train': dict_calendar_U_train[calendar_type],
                                 'valid': dict_calendar_U_valid[calendar_type],
                                 'test': dict_calendar_U_test[calendar_type]} for calendar_type in dict_calendar_U_train.keys()
@@ -86,19 +94,11 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     # positions['calibration_calendar'] = pos_calibration_calendar
     # ==
 
-    contextual_dataset_names = [dataset_name for dataset_name in args.dataset_names if dataset_name != target_ds.target_data]
 
-    # Particular case if we use a dataset as contextual data AND target_ds.target_data:
-    if len([ds_name for ds_name in args.dataset_names if target_ds.target_data == ds_name])>1: 
-        contextual_dataset_names.append(target_ds.target_data)
+    for dataset_name in args.contextual_dataset_names:
+        contextual_ds_i = contextual_ds[dataset_name]
 
 
-    #if ('netmob_POIs' in contextual_dataset_names) and ('subway_out' in contextual_dataset_names):
-    if len(contextual_dataset_names)>2:
-        raise NotImplementedError('Semblerait que contextual_ds est soit subway_out / soit NetMob Pois. ça à l air de merder si on a les deux, en tout cas on a pas encore implémenter, donc à vérifier.')
-
-
-    for dataset_name in contextual_dataset_names:
         if dataset_name == 'calendar':
             #pos_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.args_embedding.calendar_class}')
             pos_calendar = [list(contextual_tensors.keys()).index(f'calendar_{calendar_type}') for calendar_type in dict_calendar_U_train.keys()]
@@ -107,45 +107,33 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
         elif (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
              need_local_spatial_attn = False
              contextual_tensors,target_ds,contextual_tensors,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
-                                                                                                                             target_ds,contextual_tensors,contextual_ds,
+                                                                                                                             target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
              
-             """
-             contextual_tensors.update({'netmob': {'train': contextual_ds.U_train,
-                                            'valid': contextual_ds.U_valid if hasattr(contextual_ds,'U_valid') else None,
-                                            'test': contextual_ds.U_test  if hasattr(contextual_ds,'U_test') else None}
-                                            }
-                                            )
-            
-             pos_netmob = list(contextual_tensors.keys()).index('netmob')
-             ds_which_need_spatial_attn.append(dataset_name)
-             positions[dataset_name] = pos_netmob
-             target_ds.normalizers.update({dataset_name:contextual_ds.normalizer})
-             """
 
         elif (dataset_name == 'subway_out') or (dataset_name == 'subway_in') or (dataset_name == 'subway_indiv'):
             need_local_spatial_attn = False
             contextual_tensors,target_ds,contextual_tensors,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
-                                                                                                                             target_ds,contextual_tensors,contextual_ds,
+                                                                                                                             target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn) 
             if args.data_augmentation and args.DA_method == 'noise':
                 if args.DA_noise_from == 'MSTL':
-                    decomposition = fill_and_decompose_df(contextual_ds.raw_values,
-                                                        contextual_ds.tensor_limits_keeper.df_verif_train,
-                                                        contextual_ds.time_step_per_hour,
-                                                        contextual_ds.spatial_unit,
+                    decomposition = fill_and_decompose_df(contextual_ds_i.raw_values,
+                                                        contextual_ds_i.tensor_limits_keeper.df_verif_train,
+                                                        contextual_ds_i.time_step_per_hour,
+                                                        contextual_ds_i.spatial_unit,
                                                         min_count = args.DA_min_count, 
-                                                        periods = contextual_ds.periods)
+                                                        periods = contextual_ds_i.periods)
                     df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
-                    df_noises = df_noises[contextual_ds.spatial_unit]
+                    df_noises = df_noises[contextual_ds_i.spatial_unit]
                 elif args.DA_noise_from == 'Homogenous':
-                    df_verif_train = contextual_ds.tensor_limits_keeper.df_verif_train
+                    df_verif_train = contextual_ds_i.tensor_limits_keeper.df_verif_train
                     dates_used_in_train = pd.Series(pd.concat([df_verif_train[c] for c in df_verif_train.columns]).unique()).sort_values() 
-                    reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/contextual_ds.time_step_per_hour}h")
+                    reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/contextual_ds_i.time_step_per_hour}h")
                     reindex_dates = reindex_dates[~reindex_dates.hour.isin(USELESS_DATES['hour'])&~reindex_dates.hour.isin(USELESS_DATES['weekday'])]
-                    df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in contextual_ds.spatial_unit},index =reindex_dates )
+                    df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in contextual_ds_i.spatial_unit},index =reindex_dates )
                 else :
                     raise NotImplementedError(f"Noise from {args.DA_noise_from} has not been implemented")
                 
@@ -153,7 +141,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
         elif (dataset_name == 'netmob_POIs'):
             need_local_spatial_attn = False
             contextual_tensors,target_ds,contextual_tensors,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
-                                                                                                                             target_ds,contextual_tensors,contextual_ds,
+                                                                                                                             target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
             if args.data_augmentation and args.DA_method == 'noise':
@@ -163,7 +151,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
         elif dataset_name == 'netmob_POIs_per_station':
             need_local_spatial_attn = True
             contextual_tensors,target_ds,contextual_tensors,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
-                                                                                                                             target_ds,contextual_tensors,contextual_ds,
+                                                                                                                             target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
             if args.data_augmentation and args.DA_method == 'noise':
@@ -173,28 +161,27 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
         elif dataset_name == 'subway_out_per_station':
             need_local_spatial_attn = True
             contextual_tensors,target_ds,contextual_tensors,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
-                                                                                                                             target_ds,contextual_tensors,contextual_ds,
+                                                                                                                             target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn,positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
-
 
              # build Noises :
             if args.data_augmentation and args.DA_method == 'noise':
                 if args.DA_noise_from == 'MSTL':
-                    decomposition = fill_and_decompose_df(contextual_ds[0].raw_values,
-                                                        contextual_ds[0].tensor_limits_keeper.df_verif_train,
-                                                        contextual_ds[0].time_step_per_hour,
-                                                        contextual_ds[0].spatial_unit,
+                    decomposition = fill_and_decompose_df(contextual_ds_i[0].raw_values,
+                                                        contextual_ds_i[0].tensor_limits_keeper.df_verif_train,
+                                                        contextual_ds_i[0].time_step_per_hour,
+                                                        contextual_ds_i[0].spatial_unit,
                                                         min_count = args.DA_min_count, 
-                                                        periods = contextual_ds[0].periods)
+                                                        periods = contextual_ds_i[0].periods)
                     df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
-                    df_noises = df_noises[contextual_ds[0].spatial_unit]
+                    df_noises = df_noises[contextual_ds_i[0].spatial_unit]
                 elif args.DA_noise_from == 'Homogenous':
-                    df_verif_train = contextual_ds[0].tensor_limits_keeper.df_verif_train
+                    df_verif_train = contextual_ds_i[0].tensor_limits_keeper.df_verif_train
                     dates_used_in_train = pd.Series(pd.concat([df_verif_train[c] for c in df_verif_train.columns]).unique()).sort_values() 
-                    reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/contextual_ds[0].time_step_per_hour}h")
+                    reindex_dates = pd.date_range(dates_used_in_train.min(),dates_used_in_train.max(),freq=f"{1/contextual_ds_i[0].time_step_per_hour}h")
                     reindex_dates = reindex_dates[~reindex_dates.hour.isin(USELESS_DATES['hour'])&~reindex_dates.hour.isin(USELESS_DATES['weekday'])]
-                    df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in contextual_ds[0].spatial_unit},index =reindex_dates )
+                    df_noises = pd.DataFrame({col : [1]*len(reindex_dates) for col in contextual_ds_i[0].spatial_unit},index =reindex_dates )
                 else :
                     raise NotImplementedError(f"Noise from {args.DA_noise_from} has not been implemented")
 
@@ -218,6 +205,23 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     return(target_ds,args)
 
 
+def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period):
+    df_dates = pd.DataFrame(coverage_period)
+    df_dates.columns = ['date']
+    args_DataSet = filter_args(DataSet, args)
+
+    preprocessed_ds = PersonnalInput(invalid_dates,args, tensor = data_T, dates = df_dates,
+                            time_step_per_hour = get_time_step_per_hour(args.freq),
+                            #minmaxnorm = dataset.minmaxnorm,
+                            #standardize = dataset.standardize,
+                           dims =dims,
+                           **args_DataSet)
+    
+    preprocessed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
+
+    return preprocessed_ds
+
+
 def load_complete_ds(args,coverage_period = None,normalize = True):
     # Load subway-in DataSet:
     target_ds,invalid_dates,intersect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
@@ -230,7 +234,7 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     args,contextual_ds = tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,normalize = normalize)
     print('target_ds.U_valid',target_ds.U_valid.size())
     if contextual_ds is not None:
-        print('contextual_ds.U_valid',contextual_ds.U_valid.size())
+        print('contextual_ds.U_valid:',[contextual_ds_i.U_valid.size() for  name_i,contextual_ds_i in contextual_ds.items()])
 
     # Add Contextual Tensors and their positions: 
     target_ds,args = add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

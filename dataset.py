@@ -591,6 +591,7 @@ class PersonnalInput(DataSet):
         self.invalid_dates = invalid_dates
         self.args = arg_parser
         self.target_data = arg_parser.target_data
+        self.name = ''
         
     def preprocess(self,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize = True):
         self.split_normalize_load_feature_vect(self.invalid_dates,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize)

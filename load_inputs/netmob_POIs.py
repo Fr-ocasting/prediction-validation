@@ -8,14 +8,10 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 from datetime import datetime 
-from dataset import DataSet
-from dataset import PersonnalInput
 from sklearn.cluster import AgglomerativeClustering
 import numpy as np 
-import pickle
-from utils.utilities import filter_args
-from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
-from utils.utilities import get_time_step_per_hour
+from build_inputs.load_contextual_data import replace_heure_d_ete
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
@@ -80,7 +76,7 @@ def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,norm
 
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,intersect_coverage_period = intersect_coverage_period) 
+    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=netmob_T,coverage_period = intersect_coverage_period) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
 
@@ -101,26 +97,6 @@ def load_data_npy(ROOT,FOLDER_PATH,args):
     #print(args.NetMob_selected_apps,args.NetMob_transfer_mode,args.NetMob_selected_tags)
     #print(netmob_T.size())
     return netmob_T
-
-
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,intersect_coverage_period):
-    df_dates = pd.DataFrame(intersect_coverage_period)
-    df_dates.columns = ['date']
-    args_DataSet = filter_args(DataSet, args)
-    #print('Netmb_T.size: ',netmob_T.size())
-    #print('df_dates: ',dataset.df_dates)
-    #print('Theoric df-dates length:',len(pd.date_range(start=START, end=END, freq=args.freq)[:-1]))
-    #blabla
-    NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = df_dates,
-                            time_step_per_hour = get_time_step_per_hour(args.freq),
-                            #minmaxnorm = dataset.minmaxnorm,
-                            #standardize = dataset.standardize,
-                           dims =dims,
-                           **args_DataSet)
-    
-    NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
-
-    return NetMob_ds
 
 
 def agg_clustering(multi_ts,epsilon):

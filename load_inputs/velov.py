@@ -14,11 +14,12 @@ if parent_dir not in sys.path:
 # --- Importations personnalisées ---
 from dataset import DataSet, PersonnalInput
 from utils.utilities import filter_args # Assurez-vous que ce chemin est correct
-
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 # --- Constantes spécifiques à cette donnée ---
+FILE_BASE_NAME = 'velov'
 DIRECTION = 'emitted'
 FILE_PATTERN = f'velov_{DIRECTION}_by_station' # Sera complété par args.freq
-DATA_SUBFOLDER = 'velov' # Sous-dossier dans FOLDER_PATH
+DATA_SUBFOLDER = 'agg_data/velov' # Sous-dossier dans FOLDER_PATH
 
 # Fréquence native la plus fine disponible (pour info)
 NATIVE_FREQ = '2min' # A vérifier, basé sur votre commentaire
@@ -35,7 +36,7 @@ DATE_COL = 'date_sortie' # Ou 'date_entree' pour 'attracted'?
 LOCATION_COL = 'id_sortie' # Ou 'id_entree' pour 'attracted'?
 VALUE_COL = 'volume'
 
-def load_data(dataset, ROOT, FOLDER_PATH, invalid_dates, intersect_coverage_period, args, normalize=True):
+def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
     """
     Charge, pivote, filtre et pré-traite les données velov (emitted).
     """
@@ -74,8 +75,8 @@ def load_data(dataset, ROOT, FOLDER_PATH, invalid_dates, intersect_coverage_peri
         df_pivoted.index = pd.to_datetime(df_pivoted.index)
 
         # Filtrage temporel basé sur l'intersection
-        print(f"Filtrage temporel sur {len(intersect_coverage_period)} dates...")
-        df_filtered = df_pivoted[df_pivoted.index.isin(intersect_coverage_period)].copy()
+        print(f"Filtrage temporel sur {len(coverage_period)} dates...")
+        df_filtered = df_pivoted[df_pivoted.index.isin(coverage_period)].copy()
         local_df_dates = pd.DataFrame(df_filtered.index, columns=['date'])
 
         if df_filtered.empty:
@@ -97,51 +98,17 @@ def load_data(dataset, ROOT, FOLDER_PATH, invalid_dates, intersect_coverage_peri
 
     # --- Création et Prétraitement avec PersonnalInput ---
     print("Création et prétraitement de l'objet PersonnalInput...")
-    processed_input = load_input_and_preprocess(
-        dims=[0],
-        normalize=normalize,
-        invalid_dates=invalid_dates,
-        args=args,
-        data_T=data_T,
-        dataset=dataset,
-        df_dates=local_df_dates
-    )
+    dims = [0] # if [0] then Normalisation on temporal dim
 
-    if processed_input is None: return None
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df_filtered.columns.tolist()
     processed_input.C = C
-    processed_input.periods = None
+    processed_input.periods = None # Pas de périodicité spécifique définie ici
 
-    print(f"Chargement et prétraitement de velov_{DIRECTION} terminés.")
+    print(f"Chargement et prétraitement de {FILE_BASE_NAME} terminés.")
     return processed_input
-
-# Definition de load_input_and_preprocess (identique à subway_indiv.py)
-def load_input_and_preprocess(dims, normalize, invalid_dates, args, data_T, dataset, df_dates):
-    """
-    Fonction helper pour instancier PersonnalInput à partir d'un Tensor
-    et appeler preprocess.
-    """
-    args_DataSet = filter_args(DataSet, args)
-    try:
-        personal_instance = PersonnalInput(
-            invalid_dates, args, tensor=data_T, dates=df_dates,
-            time_step_per_hour=getattr(dataset, 'time_step_per_hour', None),
-            dims=dims, **args_DataSet
-        )
-        print("Appel de la méthode preprocess...")
-        personal_instance.preprocess(
-            args.train_prop, args.valid_prop, args.test_prop,
-            args.train_valid_test_split_method, normalize=normalize
-        )
-        print("Méthode preprocess terminée.")
-        return personal_instance
-    except Exception as e:
-        print(f"ERREUR lors de l'instanciation ou preprocess de PersonnalInput : {e}")
-        import traceback
-        traceback.print_exc()
-        return None
 
 # --- Point d'entrée pour exécution directe (optionnel, pour tests) ---
 # ... (Similaire à subway_indiv.py, adapter les mocks) ...
