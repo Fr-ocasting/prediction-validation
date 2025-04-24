@@ -11,7 +11,8 @@ import pandas as pd
 import numpy as np 
 from constants.config import get_args,update_modif, modification_contextual_args
 from K_fold_validation.K_fold_validation import KFoldSplitter
-from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from high_level_DL_method import load_optimizer_and_scheduler
+from dl_models.full_model import load_model
 from utils.save_results import get_trial_id
 from trainer import Trainer
 import matplotlib.pyplot as plt 
@@ -44,10 +45,12 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
     # update each modif
     args = update_modif(args)
 
+    """
     if model_name == 'STGCN':
-        from dl_models.STGCN.load_config import load_blocks
+        from dl_models.STGCN.get_gso import load_blocks
         blocks = load_blocks(args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
         args.blocks = blocks
+    """
 
     return args
 
@@ -68,6 +71,8 @@ def get_inputs(args,folds):
     return(K_fold_splitter,K_subway_ds,args)
 
 def train_on_ds(ds,args,trial_id,save_folder,df_loss):
+    print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
+    print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     model = load_model(ds, args)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)

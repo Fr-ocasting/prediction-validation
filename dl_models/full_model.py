@@ -367,7 +367,6 @@ def reshaping(x):
     return x
 
 def load_model(dataset, args):
-
     # Init L_add 
     if hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
         # IF Early concatenation : 
@@ -432,10 +431,9 @@ def load_model(dataset, args):
     if args.model_name == 'STGCN':
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
         Ko = get_output_kernel_size(args)
-        blocks = get_block_dims(args,Ko)
-
+        args = get_block_dims(args,Ko)
         gso,_ = get_gso_from_adj(dataset, args)
-        model = STGCN(args,gso=gso, blocks = blocks,Ko = Ko).to(args.device)
+        model = STGCN(args,gso=gso, blocks = args.blocks,Ko = Ko).to(args.device)
 
     if args.model_name == 'LSTM':
         from dl_models.LSTM.load_config import args as LSTM_args

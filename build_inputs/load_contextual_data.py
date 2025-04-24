@@ -82,7 +82,7 @@ def tackle_input_data(invalid_dates,intersect_coverage_period,args,normalize):
     '''
     contextual_ds = {}
     for dataset_name in args.contextual_dataset_names:
-        print('>>>Tackle dataset_name:',dataset_name)
+        print('\n>>>Tackle Contextual dataset: ',dataset_name)
 
         """ NEW"""
         module_path = f"load_inputs.{dataset_name}"
@@ -203,8 +203,6 @@ def tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,nor
         contextual_ds,args = tackle_input_data(invalid_dates,intersect_coverage_period,args,normalize)
 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
-        print('vision_input_type', args.vision_input_type)
-        print('vision_model_name', args.vision_model_name)
         if args.vision_model_name is None: 
             if not args.stacked_contextual:
                 raise ValueError("You are using contextual data but you did not defined 'args.vision_model_name'. It needs to be set ")
@@ -234,12 +232,21 @@ def tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,nor
                                  Otherwise, set 'stacked_contextual' to False\
                                  ")
             else:
+                print('   vision_input_type', args.vision_input_type)
+                print('   vision_model_name', args.vision_model_name)
                 args_vision = Namespace(**{'dataset_name': [contextual_ds_i.name for  name_i,contextual_ds_i in contextual_ds.items()], 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
                 args_vision = tackle_config_of_feature_extractor_module(contextual_ds,args_vision)
                 args.args_vision = args_vision
+        print(f"   Init Dataset: '{[c_i.raw_values.size()for _,c_i in contextual_ds.items()]}. {[torch.isnan(c_i.raw_values).sum()for _,c_i in contextual_ds.items()]} Nan values")
+        print('   TRAIN contextual_ds:',[c_i.U_train.size() for _,c_i in contextual_ds.items()])
+        print('   VALID contextual_ds:',[c_i.U_valid.size() for  _,c_i in contextual_ds.items()]) if hasattr(target_ds,'U_valid') else None
+        print('   TEST contextual_ds:',[c_i.U_test.size() for  _,c_i in contextual_ds.items()]) if hasattr(target_ds,'U_test') else None
+
 
     else:
         contextual_ds = None
         args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
+
+
 
     return args,contextual_ds

@@ -16,7 +16,8 @@ if parent_dir not in sys.path:
 from trainer import Trainer, report
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
-from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from high_level_DL_method import load_optimizer_and_scheduler
+from dl_models.full_model import full_model
 from utils.save_results import get_date_id,load_json_file,update_json
 
 
@@ -83,7 +84,7 @@ def load_trainer(config, dataset, args):
     - batch-size
     '''
     args = HP_modification(config,args)
-    model = load_model(dataset, args)
+    model = full_model(dataset, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
 
     #model_ref = ray.put(model)

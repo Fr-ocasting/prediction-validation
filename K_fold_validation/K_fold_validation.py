@@ -111,8 +111,9 @@ class KFoldSplitter(object):
         >>> The first few folds are particularly small, leading to worse metrics and large variance that can significantly impact the overall average MSE.
         '''
         K_ds = []
+        print(f'----------------------------------------')
+        print(f'Loading the initial dataset for K-fold splitting')
         target_ds_init,_,args = self.load_init_ds(normalize = True)  # Load 'U' and 'U_target'. # Define already feature vect for the K-th fold with proportion train/valid/test.
-        #print('Considered Spatial-Unit: ',args.set_spatial_units)
         # Get Init Coverage Period
         df_verif_init = target_ds_init.tensor_limits_keeper.df_verif 
         nb_samples = len(df_verif_init)
@@ -125,6 +126,8 @@ class KFoldSplitter(object):
         N_test = len(target_ds_init.tensor_limits_keeper.df_verif_test)
 
         for k in self.folds:
+            print(f'\n----------------------------------------')
+            print(f'Loading the dataset for fold n°{k}')
             if k == self.args.K_fold-1:
                 K_ds.append(target_ds_init)
             else:

@@ -64,6 +64,7 @@ parser.add_argument('--TGE_FC_hdim', type=int, default=32,
 
 args = parser.parse_args(args=[])
 
+"""
 # Def STGCN dim
 def load_blocks(stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
     blocks = []
@@ -75,6 +76,7 @@ def load_blocks(stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
 # ...
 blocks = load_blocks(args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
 args.blocks = blocks
+"""
 
 parser_HP = argparse.ArgumentParser(description='HP')
 parser_HP.add_argument('--HP_max_epochs', type=int, default=50, help="Number maximum of epochs per trial with ASHA Scheduler on Ray Tune")

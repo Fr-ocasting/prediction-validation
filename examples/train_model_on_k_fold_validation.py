@@ -13,7 +13,8 @@ from trainer import Trainer
 from K_fold_validation.K_fold_validation import KFoldSplitter
 from constants.paths import SAVE_DIRECTORY
 from trainer import Trainer
-from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from high_level_DL_method import load_optimizer_and_scheduler
+from dl_models.full_model import full_model
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 
@@ -84,7 +85,7 @@ def load_trainer(args,trial_id,save_folder=None,modification={},fold_to_evaluate
                                     fold_to_evaluate = fold_to_evaluate)
     
     ds = ds_validation[0]
-    model = load_model(ds, args)
+    model = full_model(ds, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
     return trainer, args, ds

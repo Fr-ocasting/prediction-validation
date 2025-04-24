@@ -45,7 +45,7 @@ def add_noise(preprocesed_ds,args):
 def get_intersect_of_coverage_periods(args,coverage_period):
      # Load the Intersection of all the coverage period of each dataset_name:
     list_of_list_coverage_period,list_of_list_invalid_dates = [],[]
-    for ds_name in args.dataset_for_coverage:
+    for ds_name in (args.dataset_for_coverage + [ds_name for ds_name in args.dataset_names if not ds_name in args.dataset_for_coverage]):
         data_module = importlib.import_module(f"load_inputs.{ds_name}")
         importlib.reload(data_module) 
         coverage_i = pd.date_range(start=data_module.START, end=data_module.END, freq=args.freq)[:-1]
@@ -64,6 +64,7 @@ def get_intersect_of_coverage_periods(args,coverage_period):
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
     # ___Restrain the invalid dates to the specific restained coverage period :
     union_invalid_dates = list(set(union_invalid_dates)&set(intersect_coverage_period))
+    print(f"Coverage Period: {len(intersect_coverage_period)} elts between {min(intersect_coverage_period)} and {max(intersect_coverage_period)}") 
     print('Invalid dates within this fold:',len(union_invalid_dates))
     return union_invalid_dates,intersect_coverage_period
 
@@ -80,6 +81,7 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     union_invalid_dates,intersect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
 
     # Load the dataset and its associated caracteristics
+    print('\n>>>Tackle Target dataset:',args.target_data)
     module_data = importlib.import_module(f"load_inputs.{args.target_data}")
     importlib.reload(module_data) 
     
@@ -88,7 +90,10 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
                                             coverage_period = intersect_coverage_period,
                                             args = args,
                                             normalize= True)
-    print(f"\nInit Dataset: '{preprocessed_ds.raw_values.size()} with {preprocessed_ds.raw_values.numel()} Total nb of elements and {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")
+    print(f"   Init Dataset: '{preprocessed_ds.raw_values.size()}. {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")
+    print('   TRAIN contextual_ds:',preprocessed_ds.U_train.size())
+    print('   VALID contextual_ds:',preprocessed_ds.U_valid.size()) if hasattr(preprocessed_ds,'U_valid') else None
+    print('   TEST contextual_ds:',preprocessed_ds.U_test.size()) if hasattr(preprocessed_ds,'U_test') else None
 
     if args.data_augmentation and args.DA_method == 'noise':
         if args.DA_noise_from == 'MSTL':

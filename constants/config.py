@@ -229,9 +229,6 @@ def update_modif(args,name_gpu='cuda'):
     # Modif about n_vertex: 
     if args.set_spatial_units is not None:
         args.n_vertex = len(args.set_spatial_units)
-    
-    print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
-    print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     return(args)
 
 def modification_contextual_args(args,modification):

@@ -24,7 +24,7 @@ DATA_SUBFOLDER = 'agg_data/validation_individuelle' # Sous-dossier dans FOLDER_P
 NATIVE_FREQ = '3min'
 # Couverture théorique (à remplacer par les vraies dates si connues)
 START = '2019-11-01' # Exemple basé sur head()
-END = '2020-04-01'
+END = '2020-04-30 23:30:00'
 
 # Liste des périodes invalides (à compléter si nécessaire)
 list_of_invalid_period = []
@@ -55,43 +55,48 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
     file_name = f"{FILE_BASE_NAME}_{target_freq}"
     data_file_path = os.path.join(ROOT, FOLDER_PATH, DATA_SUBFOLDER, file_name, f"{file_name}.csv")
 
-    print(f"Chargement des données depuis : {data_file_path}")
+    print(f"   Load data from: {data_file_path}")
     try:
         df = pd.read_csv(data_file_path)
     except FileNotFoundError:
-        print(f"ERREUR : Le fichier {data_file_path} n'a pas été trouvé.")
-        print(f"Vérifiez que la fréquence '{target_freq}' existe pour {FILE_BASE_NAME} et que les chemins sont corrects.")
+        print(f"   ERROR : File {data_file_path} has not been found.")
+        print(f"   Check if '{target_freq}' exists in {FILE_BASE_NAME} and than paths are well set.")
         return None
     except Exception as e:
-        print(f"ERREUR lors du chargement du fichier {file_name}.csv: {e}")
+        print(f"   ERROR while loading {file_name}.csv: {e}")
         return None
 
     # --- Prétraitement ---
     try:
+        
         df[DATE_COL] = pd.to_datetime(df[DATE_COL])
         df = df.set_index(DATE_COL)
+        reindex = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
+        df = df.reindex(reindex).fillna(0)
+
+
         df_reindexed = df[df.index.isin(coverage_period)].copy()
 
         if df_reindexed.empty:
-             print(f"ERROR : Not any remainig data in {file_name}.csv")
-             print(f"Check the current coverage period on the trial: ({min(coverage_period)} - {max(coverage_period)})")
+             print(f"   ERROR : Not any remainig data in {file_name}.csv")
+             print(f"   Check the current coverage period on the trial: ({min(coverage_period)} - {max(coverage_period)})")
              if df is not None:
-                print(f"And the maximum coverage period of {file_name}: ({df.index.min()} - {df.index.max()})")
+                print(f"   And the maximum coverage period of {file_name}: ({df.index.min()} - {df.index.max()})")
              else:
-                print(f"DataFrame df is empty, no data in {file_name}.csv")
+                print(f"   DataFrame df is empty, no data in {file_name}.csv")
         data_T = torch.tensor(df_reindexed.values).float()
 
     except KeyError as e:
-        print(f"ERREUR: Colonne manquante dans {file_name}.csv : {e}. Vérifiez DATE_COL, LOCATION_COL, VALUE_COL.")
+        print(f"   ERROR: Missing column within {file_name}.csv : {e}. Check if columns DATE_COL, LOCATION_COL, VALUE_COL exists.")
         return None
     except Exception as e:
-        print(f"ERREUR pendant le prétraitement des données {file_name}.csv: {e}")
+        print(f"   ERROR while pre-processing {file_name}.csv: {e}")
         return None
 
 
     # --- Création et Prétraitement avec PersonnalInput ---
     # Utilisation de la fonction helper locale
-    print("Création et prétraitement de l'objet PersonnalInput...")
+    #print("   Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
     processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
@@ -101,7 +106,7 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
     processed_input.C = C
     processed_input.periods = None # Pas de périodicité spécifique définie ici
 
-    print(f"Chargement et prétraitement de {FILE_BASE_NAME} terminés.")
+    #print(f"   Chargement et prétraitement de {FILE_BASE_NAME} terminés.")
     return processed_input
 
 

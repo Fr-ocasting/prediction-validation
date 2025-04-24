@@ -6,12 +6,6 @@ from K_fold_validation.K_fold_validation import KFoldSplitter
 
 # =======================================================================================================================
 # =======================================================================================================================
-def load_model(dataset, args):
-    model = full_model(dataset, args).to(args.device)
-    print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
-    print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
-    return(model)
-
 
 def load_optimizer_and_scheduler(model,args):
     optimizer = choose_optimizer(model,args)
@@ -29,8 +23,10 @@ def load_everything(args):
     # ...
 
     # Load Model:
-    model = load_model(subway_ds,args)
-
+    model = full_model(subway_ds, args).to(args.device)
+    print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
+    print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
+    
     # Load Optimizer, Scheduler, Loss function: 
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     

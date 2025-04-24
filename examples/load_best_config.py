@@ -14,7 +14,8 @@ if working_dir not in sys.path:
 from constants.paths import SAVE_DIRECTORY
 from examples.train_and_visu_non_recurrent import get_ds
 from constants.paths import SAVE_DIRECTORY
-from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from high_level_DL_method import load_optimizer_and_scheduler
+from dl_models.full_model import full_model
 from trainer import Trainer
 
 def load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name):
@@ -92,7 +93,7 @@ def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modific
     
            
     ds,_,_,_,_ =  get_ds(args_init=args,modification = modification,fold_to_evaluate=fold_to_evaluate)
-    model = load_model(ds, args)
+    model = full_model(ds, args).to(args.device)
 
 
     # Load Trained Weights 

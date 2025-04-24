@@ -186,7 +186,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                 target_ds.noises[dataset_name] = df_noises
         else:
             raise NotImplementedError(f'Dataset {dataset_name} has not been implemented')
-
+        
 
     target_ds.contextual_tensors = contextual_tensors
     target_ds.get_dataloader()
@@ -229,9 +229,6 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
 
     # Contextual: 
     args,contextual_ds = tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,normalize = normalize)
-    print('target_ds.U_valid',target_ds.U_valid.size())
-    if contextual_ds is not None:
-        print('contextual_ds.U_valid:',[contextual_ds_i.U_valid.size() for  name_i,contextual_ds_i in contextual_ds.items()])
 
     # Add Contextual Tensors and their positions: 
     target_ds,args = add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

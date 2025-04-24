@@ -71,7 +71,7 @@ def load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     df = load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period)
 
     if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
-        print('Considered Spatial-Unit: ',args.set_spatial_units)
+        print('   Number of Considered Spatial-Unit: ',len(args.set_spatial_units))
         spatial_unit = args.set_spatial_units
         indices_spatial_unit = [list(df.columns).index(station_i) for station_i in  spatial_unit]
         df = df[spatial_unit]
@@ -99,7 +99,17 @@ def load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     
 
 def load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period):
-    df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{filename}.csv",index_col = 0)
+    
+    print(f"   Load data from: {ROOT}/{FOLDER_PATH}/{filename}.csv")
+    try:
+        df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{filename}.csv",index_col = 0)
+    except FileNotFoundError:
+        print(f"   ERROR : File {ROOT}/{FOLDER_PATH}/{filename}.csv has not been found.")
+        return None
+    except Exception as e:
+        print(f"   ERROR while loading {ROOT}/{FOLDER_PATH}/{filename}.csv: {e}")
+        return None
+
     df.columns.name = 'Station'
     df.index = pd.to_datetime(df.index)
 
