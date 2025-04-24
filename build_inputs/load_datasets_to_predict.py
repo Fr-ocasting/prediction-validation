@@ -45,32 +45,33 @@ def add_noise(preprocesed_ds,args):
 def get_intersect_of_coverage_periods(args,coverage_period):
      # Load the Intersection of all the coverage period of each dataset_name:
     list_of_list_coverage_period,list_of_list_invalid_dates = [],[]
-    for ds_name in (args.dataset_for_coverage + [ds_name for ds_name in args.dataset_names if not ds_name in args.dataset_for_coverage]):
+    for ds_name in list(set(args.dataset_for_coverage)|set(args.dataset_names)):
         data_module = importlib.import_module(f"load_inputs.{ds_name}")
         importlib.reload(data_module) 
+        
         coverage_i = pd.date_range(start=data_module.START, end=data_module.END, freq=args.freq)[:-1]
         list_of_list_coverage_period.append(coverage_i)
-        invalid_dates_i = get_INVALID_DATES(data_module.list_of_invalid_period,args.freq)
 
+        invalid_dates_i = get_INVALID_DATES(data_module.list_of_invalid_period,args.freq)
         list_of_list_invalid_dates.append(invalid_dates_i)
 
-    intersect_coverage_period = list(set.intersection(*map(set, list_of_list_coverage_period)))
+    intersect_coverage_period = sorted(list(set.intersection(*map(set, list_of_list_coverage_period))))
     # ___Intersection between the expected coverage_period and the limits from datasets:
     if coverage_period is not None: 
-        intersect_coverage_period = list(set(coverage_period)&set(intersect_coverage_period))
+        intersect_coverage_period = sorted(list(set(coverage_period)&set(intersect_coverage_period)))
     # ...
        
     # Load the union of all the invalid_dates: 
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
     # ___Restrain the invalid dates to the specific restained coverage period :
-    union_invalid_dates = list(set(union_invalid_dates)&set(intersect_coverage_period))
+    union_invalid_dates = sorted(list(set(union_invalid_dates)&set(intersect_coverage_period)))
     print(f"Coverage Period: {len(intersect_coverage_period)} elts between {min(intersect_coverage_period)} and {max(intersect_coverage_period)}") 
     print('Invalid dates within this fold:',len(union_invalid_dates))
     return union_invalid_dates,intersect_coverage_period
 
 
 
-def load_datasets_to_predict(args,coverage_period,normalize=True):
+def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,):
     '''Tackling DataSet to predict : Subway_in data,
     
     outputs:
@@ -78,16 +79,14 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     subway_ds : PersonnalInput object, containing dataset.raw_values
     invalid_dates : All the dates which have been removed 
     '''
-    union_invalid_dates,intersect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
-
     # Load the dataset and its associated caracteristics
     print('\n>>>Tackle Target dataset:',args.target_data)
     module_data = importlib.import_module(f"load_inputs.{args.target_data}")
     importlib.reload(module_data) 
     
     preprocessed_ds = module_data.load_data(ROOT,FOLDER_PATH,
-                                            invalid_dates = union_invalid_dates,
-                                            coverage_period = intersect_coverage_period,
+                                            invalid_dates = invalid_dates,
+                                            coverage_period = coverage_period,
                                             args = args,
                                             normalize= True)
     print(f"   Init Dataset: '{preprocessed_ds.raw_values.size()}. {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")
@@ -102,4 +101,4 @@ def load_datasets_to_predict(args,coverage_period,normalize=True):
     args.C = preprocessed_ds.C
     # ...
   
-    return(preprocessed_ds,union_invalid_dates,intersect_coverage_period)
+    return(preprocessed_ds)

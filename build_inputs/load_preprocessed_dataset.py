@@ -9,7 +9,7 @@ if parent_dir not in sys.path:
 
 # Personnal inputs:
 from build_inputs.load_contextual_data import tackle_contextual
-from build_inputs.load_datasets_to_predict import load_datasets_to_predict
+from build_inputs.load_datasets_to_predict import load_datasets_to_predict,get_intersect_of_coverage_periods
 from build_inputs.load_calendar import load_calendar,get_args_embedding
 from utils.utilities import filter_args
 from utils.utilities import get_time_step_per_hour
@@ -20,7 +20,6 @@ from dataset import PersonnalInput
 from utils.seasonal_decomposition import fill_and_decompose_df
 from constants.paths import USELESS_DATES
 import pandas as pd 
-
 
 def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn):
     
@@ -209,8 +208,6 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_
 
     preprocessed_ds = PersonnalInput(invalid_dates,args, tensor = data_T, dates = df_dates,
                             time_step_per_hour = get_time_step_per_hour(args.freq),
-                            #minmaxnorm = dataset.minmaxnorm,
-                            #standardize = dataset.standardize,
                            dims =dims,
                            **args_DataSet)
     
@@ -221,14 +218,22 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_
 
 def load_complete_ds(args,coverage_period = None,normalize = True):
     # Load subway-in DataSet:
-    target_ds,invalid_dates,intersect_coverage_period = load_datasets_to_predict(args,coverage_period,normalize)
+    union_invalid_dates,intersect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
+    target_ds= load_datasets_to_predict(args,
+                                        invalid_dates = union_invalid_dates,
+                                        coverage_period = intersect_coverage_period,
+                                        normalize=normalize)
     
     # Calendar data for Calibration : 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = load_calendar(target_ds)
     args = get_args_embedding(args,dict_calendar_U_train)
 
     # Contextual: 
-    args,contextual_ds = tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,normalize = normalize)
+    args,contextual_ds = tackle_contextual(target_ds,
+                                           invalid_dates= union_invalid_dates,
+                                           coverage_period=intersect_coverage_period,
+                                           args=args,
+                                           normalize = normalize)
 
     # Add Contextual Tensors and their positions: 
     target_ds,args = add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

@@ -112,7 +112,7 @@ class KFoldSplitter(object):
         '''
         K_ds = []
         print(f'----------------------------------------')
-        print(f'Loading the initial dataset for K-fold splitting')
+        print(f'Loading the Complete Dataset for K-fold splitting')
         target_ds_init,_,args = self.load_init_ds(normalize = True)  # Load 'U' and 'U_target'. # Define already feature vect for the K-th fold with proportion train/valid/test.
         # Get Init Coverage Period
         df_verif_init = target_ds_init.tensor_limits_keeper.df_verif 

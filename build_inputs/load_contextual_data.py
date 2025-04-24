@@ -70,7 +70,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,contextual_T,dat
 
     return contrextual_ds
 
-def tackle_input_data(invalid_dates,intersect_coverage_period,args,normalize):
+def tackle_input_data(invalid_dates,coverage_period,args,normalize):
     ''' Load the contextual data
 
     args : 
@@ -83,81 +83,19 @@ def tackle_input_data(invalid_dates,intersect_coverage_period,args,normalize):
     contextual_ds = {}
     for dataset_name in args.contextual_dataset_names:
         print('\n>>>Tackle Contextual dataset: ',dataset_name)
-
-        """ NEW"""
         module_path = f"load_inputs.{dataset_name}"
         module = importlib.import_module(module_path)
         importlib.reload(module)
         contextual_ds_i = module.load_data(parent_dir,FOLDER_PATH,
-                                           coverage_period = intersect_coverage_period,
+                                           coverage_period = coverage_period,
                                            invalid_dates=invalid_dates,
                                            args=args,
                                            normalize=normalize
                                            )
         contextual_ds_i.name = dataset_name
         contextual_ds[dataset_name] = contextual_ds_i
-        """ END NEW"""
-
-        """
-        if 'netmob_video_lyon' in args.dataset_names:
-        # if vision_input_type == 'unique_image_through_lyon':
-            #contextual_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
-            from load_inputs.netmob_video_lyon import load_data
-            contextual_ds_i = load_data(parent_dir,invalid_dates,intersect_coverage_period,args,restricted,normalize= True)
-            args.vision_input_type = 'unique_image_through_lyon'
-            netmob_dataset_name = 'netmob_video_lyon'
-
-
-        elif 'netmob_image_per_station' in args.dataset_names:
-            from load_inputs.netmob_image_per_station import load_data
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize = normalize) 
-            args.vision_input_type = 'image_per_stations'
-            netmob_dataset_name = 'netmob_image_per_station'
-            
-        elif "netmob_POIs" in args.dataset_names:
-            from load_inputs.netmob_POIs import load_data
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= normalize)
-            args.vision_input_type = 'POIs'
-            netmob_dataset_name = 'netmob_POIs'
-
-        elif "netmob_POIs_per_station" in args.dataset_names:
-            from load_inputs.netmob_POIs_per_station import load_data
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= normalize)
-            args.vision_input_type = 'POIs'
-            netmob_dataset_name = 'netmob_POIs_per_station'
-
-        elif 'subway_out' in args.dataset_names:
-            from load_inputs.subway_out import load_data      
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize)  
-            args.vision_input_type = 'POIs'
-            netmob_dataset_name = 'subway_out'
-
-        elif 'subway_in' in args.dataset_names:
-            from load_inputs.subway_in import load_data
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,args,coverage_period=intersect_coverage_period,normalize=True)
-            args.vision_input_type = 'POIs'
-            netmob_dataset_name = 'subway_in'
-
-        elif 'subway_indiv' in args.dataset_names:
-            from load_inputs.subway_in import load_data
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,args,coverage_period=intersect_coverage_period,normalize=True)
-            args.vision_input_type = 'POIs'
-            netmob_dataset_name = 'subway_indiv'  
-
-        elif 'subway_out_per_station' in args.dataset_names:
-            from load_inputs.subway_out_per_station import load_data      
-            contextual_ds_i = load_data(parent_dir,FOLDER_PATH,coverage_period = intersect_coverage_period,invalid_dates=invalid_dates,args=args,normalize=normalize)  
-            args.vision_input_type = 'POIs'
-            netmob_dataset_name = 'subway_out_per_station'
-        else :
-            raise NotImplementedError(f'load data has not been implemented for the netmob file here {args.dataset_names}')
-        return(contextual_ds,args,netmob_dataset_name)
-        """
-
         return(contextual_ds,args)
         
-
-
 
 def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
     if len(vars(args_vision))>0:
@@ -188,7 +126,7 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
     return args_vision
 
 
-def tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,normalize = True):
+def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = True):
 
     # Define contextual tensors
     contextual_dataset_names = [ds_name for ds_name in args.dataset_names if ds_name != target_ds.target_data]
@@ -200,7 +138,7 @@ def tackle_contextual(target_ds,invalid_dates,intersect_coverage_period,args,nor
     # USE CONTEXTUAL DATA
     if len(args.contextual_dataset_names) > 0: 
 
-        contextual_ds,args = tackle_input_data(invalid_dates,intersect_coverage_period,args,normalize)
+        contextual_ds,args = tackle_input_data(invalid_dates,coverage_period,args,normalize)
 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         if args.vision_model_name is None: 

@@ -136,7 +136,7 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
         else:
             fold = fold_i
 
-        model = load_model(ds, args)
+        model = full_model(ds, args).to(args.device)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
         trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
         trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 

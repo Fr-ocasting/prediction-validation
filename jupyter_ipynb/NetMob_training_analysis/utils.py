@@ -13,7 +13,8 @@ working_dir = os.path.abspath(os.path.join(current_path, '..','..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
     
-from high_level_DL_method import load_model,load_optimizer_and_scheduler
+from high_level_DL_method import load_optimizer_and_scheduler
+from dl_models.full_model import full_model
 from trainer import Trainer
 from examples.train_and_visu_non_recurrent import get_multi_ds
 from utils.metrics import evaluate_metrics
@@ -79,7 +80,7 @@ def load_trained_model(model_args,ds,model_fold_i,folder_name):
     model_param = torch.load(selected_model_path)
     args = model_args['model'][model_fold_i]['args']
     args = Namespace(**args)
-    model = load_model(ds, args)
+    model = full_model(ds, args)
     model.load_state_dict(model_param['state_dict'])
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler)

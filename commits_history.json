@@ -1,0 +1,12 @@
+[
+{"commit":"699384692fca79a8cb0acf8daedb8ff9f1fa6ed5","author":"Fr-ocasting","date":"2025-04-24T14:53:35+02:00","message":"Changement de 'blocks' qui était pris en compte dans l'HP tuning mais pas dans les revalidation..."},
+{"commit":"038ba6a7f44a6b40f6ff23e542cd8878fdd65485","author":"Fr-ocasting","date":"2025-04-23T17:32:01+02:00","message":"bordel de data qui correspondent pas"},
+{"commit":"1dd7de5f6cb194238bf34705aabd8d0001db88db","author":"Fr-ocasting","date":"2025-04-23T12:02:29+02:00","message":"continuation de la modif"},
+{"commit":"d69d37cbb6322cb411ad163b6d577b8500035121","author":"Fr-ocasting","date":"2025-04-22T18:54:47+02:00","message":"Gross modif  flexibilité du code et debut integration multimodale"},
+{"commit":"f522f81090ff4d743791a73e148283a0105cb804","author":"Fr-ocasting","date":"2025-04-22T11:22:53+02:00","message":"commit"},
+{"commit":"9ebef206531adbcc3f1ada78cb3514b093123ea7","author":"Fr-ocasting","date":"2025-04-21T15:45:45+02:00","message":"add opening netmob save"},
+{"commit":"4bcf026891bbd5d111bb1b332397037e86b60b6b","author":"Fr-ocasting","date":"2025-04-21T10:59:43+02:00","message":"correction threshold pour correlation adj_mx + abs(corr)"},
+{"commit":"21ba9bba620e63450a44b47b6d89aba21f07e9c2","author":"Fr-ocasting","date":"2025-04-20T00:03:16+02:00","message":"lancement hp tuning ASTGCN2019"},
+{"commit":"5914f1acbe32b242793fdb11374766e61ccad7fe","author":"Fr-ocasting","date":"2025-04-18T19:20:59+02:00","message":"commit"},
+{"commit":"dd41d20dadc1a7162d4f7cd3a936a5856e9035e3","author":"Fr-ocasting","date":"2025-04-11T17:22:44+02:00","message":"commit"}
+]

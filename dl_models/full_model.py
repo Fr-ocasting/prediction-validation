@@ -90,7 +90,8 @@ class full_model(nn.Module):
         if ((self.te is not None) and not(args.args_embedding.concatenation_early) and not(args.args_embedding.concatenation_late)):
                  raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         # === Trafic Model ===
-        self.core_model = load_model(dataset, args)
+        core_model, args = load_model(dataset, args)
+        self.core_model = core_model
 
         self.n_vertex = args.n_vertex
 
@@ -458,4 +459,4 @@ def load_model(dataset, args):
         model = None
 
     if model is not None : model_memory_cost(model)
-    return(model)
+    return(model,args)

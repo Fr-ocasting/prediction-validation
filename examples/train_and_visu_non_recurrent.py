@@ -52,6 +52,9 @@ def evaluate_config(args_init = None,
     expanded: '' if we look at the intensity of netmob consumption at the POI. '_expanded' if we look also one square around.
     '''
     trainer,ds,args,trial_id,df_loss = train_the_config(args_init,modification,fold_to_evaluate)
+
+    print(f"\n--------------------------------------------------")
+    print(f"Reload dataset without shuffling on train set, and remove data_augmentation")
     trainer,ds_no_shuffle = get_ds_without_shuffling_on_train_set(trainer,modification,args_init,fold_to_evaluate)
 
 
@@ -245,6 +248,10 @@ def get_multi_ds(model_name,
 
         
     K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args_copy,folds)
+
+    if args_init.hp_tuning_on_first_fold:
+        K_subway_ds = K_subway_ds[1:]
+
     args_with_contextual = modification_contextual_args(args_with_contextual,modification)
 
     return args_with_contextual,K_subway_ds

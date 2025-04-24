@@ -50,9 +50,9 @@ def get_output_kernel_size(args):
     
     return(Ko)
 
-def load_blocks(stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
+def load_blocks(c_in,stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
     blocks = []
-    blocks.append([1])
+    blocks.append([c_in])
     for l in range(stblock_num):
         blocks.append([temporal_h_dim, spatial_h_dim, temporal_h_dim])
     blocks.append([output_h_dim])
@@ -60,7 +60,7 @@ def load_blocks(stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
 
 
 def get_block_dims(args,Ko):
-    blocks = load_blocks(args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
+    blocks = load_blocks(args.C, args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
     #blocks = args.blocks.copy()
     if Ko > 0:
         blocks[-1] = blocks[-1]*2
@@ -71,8 +71,6 @@ def get_block_dims(args,Ko):
 
     assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
 
-    # C-in:
-    #blocks[0][0] = args.C
     args.blocks = blocks
     return(args)
 

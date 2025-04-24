@@ -40,8 +40,6 @@ def load_data(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize):
     subway_out = load_data_from_subway_in_py(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME)
     T_subway_out = torch.Tensor(subway_out.raw_values.float())
 
-    print('T_subway_out: ',T_subway_out.size())
-
     # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:
     #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
     #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
