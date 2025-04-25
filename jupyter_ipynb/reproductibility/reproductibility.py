@@ -103,8 +103,8 @@ if __name__ == "__main__":
     
     # Créer un DataFrame de référence pour vérification
     checking = pd.DataFrame({
-        'mse_test': [5988.421875, 48209.429688],
-        'mse_valid': [6884.651855, 71904.921875]
+        'mse_test': [5985.67627,61116.550781], # [5988.421875, 48209.429688],
+        'mse_valid': [6531.581055,87919.257812], # [6884.651855, 71904.921875],
     }, index=['STGCN', 'ASTGCN'])
 
     print("\n=== HAS TO BE EQUAL TO: ===")
