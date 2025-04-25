@@ -24,7 +24,7 @@ DATA_SUBFOLDER = 'agg_data/validation_individuelle' # Sous-dossier dans FOLDER_P
 NATIVE_FREQ = '3min'
 # Couverture théorique (à remplacer par les vraies dates si connues)
 START = '2019-11-01' # Exemple basé sur head()
-END = '2020-04-30 23:30:00'
+END = '2020-03-30 23:30:00'
 
 # Liste des périodes invalides (à compléter si nécessaire)
 list_of_invalid_period = []
@@ -35,14 +35,17 @@ C = 1 # Nombre de canaux/features par unité spatiale
 DATE_COL = 'VAL_DATE'
 LOCATION_COL = 'COD_TRG'
 VALUE_COL = 'Flow'
-def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
+def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+                data_subfolder = DATA_SUBFOLDER,
+                file_base_name = FILE_BASE_NAME
+              ):
     """
     Charge, pivote, filtre et pré-traite les données subway_indiv.
 
     Args:
         dataset (DataSet): L'objet DataSet principal (pour contexte).
         ROOT (str): Chemin racine du projet ou des données.
-        FOLDER_PATH (str): Chemin vers le dossier contenant DATA_SUBFOLDER.
+        FOLDER_PATH (str): Chemin vers le dossier contenant data_subfolder.
         invalid_dates (list): Liste des périodes invalides fournie globalement.
         coverage_period (pd.DatetimeIndex): Période temporelle à conserver.
         args (Namespace): Arguments globaux (contient args.freq).
@@ -52,15 +55,15 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
         PersonnalInput: Objet contenant les données traitées.
     """
     target_freq = args.freq
-    file_name = f"{FILE_BASE_NAME}_{target_freq}"
-    data_file_path = os.path.join(ROOT, FOLDER_PATH, DATA_SUBFOLDER, file_name, f"{file_name}.csv")
+    file_name = f"{file_base_name}_{target_freq}"
+    data_file_path = os.path.join(ROOT, FOLDER_PATH, data_subfolder, file_name, f"{file_name}.csv")
 
     print(f"   Load data from: {data_file_path}")
     try:
         df = pd.read_csv(data_file_path)
     except FileNotFoundError:
         print(f"   ERROR : File {data_file_path} has not been found.")
-        print(f"   Check if '{target_freq}' exists in {FILE_BASE_NAME} and than paths are well set.")
+        print(f"   Check if '{target_freq}' exists in {file_base_name} and than paths are well set.")
         return None
     except Exception as e:
         print(f"   ERROR while loading {file_name}.csv: {e}")
@@ -105,8 +108,6 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
     processed_input.spatial_unit = df_reindexed.columns.tolist()
     processed_input.C = C
     processed_input.periods = None # Pas de périodicité spécifique définie ici
-
-    #print(f"   Chargement et prétraitement de {FILE_BASE_NAME} terminés.")
     return processed_input
 
 

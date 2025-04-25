@@ -233,7 +233,6 @@ class cheb_conv(nn.Module):
 
 
 class ASTGCN_block(nn.Module):
-
     def __init__(self, DEVICE, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_of_vertices, num_of_timesteps):
         super(ASTGCN_block, self).__init__()
         self.TAt = Temporal_Attention_layer(DEVICE, in_channels, num_of_vertices, num_of_timesteps)

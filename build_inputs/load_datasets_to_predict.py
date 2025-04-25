@@ -65,6 +65,10 @@ def get_intersect_of_coverage_periods(args,coverage_period):
     union_invalid_dates = list(set.union(*map(set, list_of_list_invalid_dates)))
     # ___Restrain the invalid dates to the specific restained coverage period :
     union_invalid_dates = sorted(list(set(union_invalid_dates)&set(intersect_coverage_period)))
+    if len(intersect_coverage_period)==0:
+        raise ValueError("Intersection of coverage period is empty. Check the coverage period of each dataset and the expected coverage period\n\
+                         Coverage period of each dataset:\n",'\n'.join([f'{importlib.import_module(f"load_inputs.{ds_name}").START} - {importlib.import_module(f"load_inputs.{ds_name}").END}' for ds_name in list(set(args.dataset_for_coverage)|set(args.dataset_names))])
+        )
     print(f"Coverage Period: {len(intersect_coverage_period)} elts between {min(intersect_coverage_period)} and {max(intersect_coverage_period)}") 
     print('Invalid dates within this fold:',len(union_invalid_dates))
     return union_invalid_dates,intersect_coverage_period
