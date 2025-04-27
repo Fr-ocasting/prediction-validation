@@ -19,7 +19,7 @@ import h5py
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-FILE_NAME = 'PEMS_BAY/PEMS_BAY'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
+FILE_NAME = 'PEMS_BAY/PEMS_BAY'
 START = '01/01/2017'
 END = '07/01/2017'
 FREQ = '5min'
@@ -33,6 +33,14 @@ list_of_invalid_period = []
 # Daylight saving time changeover
 list_of_invalid_period.append([datetime(2017,3,12,2,0),datetime(2017,3,12,2,55)])
 
+def load_PEMS_BAY_df(ROOT,FOLDER_PATH):
+    data = h5py.File(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
+    axis0 = pd.Series(data['speed']['axis0'][:].astype(str))
+    axis1 = pd.Series(data['speed']['axis1'][:].astype(str))
+    df = pd.DataFrame(data['speed']['block0_values'][:], columns=axis0, index = pd.to_datetime(axis1.astype(int)/1_000_000_000,unit='s'))
+    df.columns.name = 'Sensor'
+    df.index = pd.to_datetime(df.index)
+    return df 
 
 def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
@@ -44,14 +52,8 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df.index : coverage period of the dataset 
     invalid_dates : list of invalid dates 
     '''
-    data = h5py.File(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
-    axis0 = pd.Series(data['speed']['axis0'][:].astype(str))
-    axis1 = pd.Series(data['speed']['axis1'][:].astype(str))
-    df = pd.DataFrame(data['speed']['block0_values'][:], columns=axis0, index = pd.to_datetime(axis1.astype(int)/1_000_000_000,unit='s'))
-    df.columns.name = 'Sensor'
-    df.index = pd.to_datetime(df.index)
-
-    
+    # Load the dataset
+    df = load_PEMS_BAY_df(ROOT,FOLDER_PATH)
 
     if args.freq != FREQ :
         assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
@@ -73,10 +75,8 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
                       time_step_per_hour=time_step_per_hour, 
                       spatial_unit = df.columns,
                       indices_spatial_unit = np.arange(len(df.columns)),
-                      dims = [0],       DEFINIR 'DIMS'  // MODIFIER ICIIIIIIII
+                      dims = [0],
                       **args_DataSet)
-
-
     
     return(dataset)
     
