@@ -10,7 +10,6 @@ if parent_dir not in sys.path:
 from dataset import DataSet
 from datetime import datetime 
 from utils.utilities import filter_args,get_time_step_per_hour
-from constants.paths import USELESS_DATES
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.

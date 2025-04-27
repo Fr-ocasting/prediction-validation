@@ -36,7 +36,9 @@ DATE_COL = 'VAL_DATE'
 LOCATION_COL = 'VAL_ARRET_CODE'
 VALUE_COL = 'Flow'
 MIN_AVG_DAILY_PASSENGER = 24*10
-
+USELESS_DATES = {'hour':[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 
 def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
               data_subfolder = DATA_SUBFOLDER,

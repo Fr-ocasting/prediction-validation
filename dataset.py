@@ -278,7 +278,8 @@ class DataSet(object):
                  DA_alpha = None,
                  DA_prop = None,
                  DA_noise_from = None,
-                 DA_magnitude_max_scale = None
+                 DA_magnitude_max_scale = None,
+                 target_data = None
                  ):
         
         if df is not None:
@@ -338,6 +339,7 @@ class DataSet(object):
         self.D = D
         self.H = H
         self.cleaned_df = cleaned_df
+        self.target_data = target_data
 
         # Data Augmentation: 
         self.data_augmentation = data_augmentation
@@ -393,13 +395,12 @@ class DataSet(object):
         #  ...
 
         # Get forbidden indices, and df_verif to check just in case 
-        dates_verif_object = DatesVerifFeatureVect(self.df_dates, Weeks = self.W, Days = self.D, historical_len = self.H, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour)
+        dates_verif_object = DatesVerifFeatureVect(self.df_dates, Weeks = self.W, Days = self.D, historical_len = self.H, step_ahead = self.step_ahead, time_step_per_hour = self.time_step_per_hour,target_data = self.target_data)
         dates_verif_object.get_df_verif(invalid_dates)
         self.forbidden_indice_U = dates_verif_object.forbidden_indice_U
         self.df_verif  = dates_verif_object.df_verif
         # ...
         self.mask_tensor()
-
 
     def get_dic_split_limits(self,train_prop,valid_prop,test_prop,
                              train_valid_test_split_method):
@@ -434,8 +435,13 @@ class DataSet(object):
 
         split_limits = self.get_dic_split_limits(train_prop,valid_prop,test_prop,train_valid_test_split_method)
         tensor_limits_keeper = TensorLimitsKeeper(split_limits,self.df_dates,self.df_verif,train_prop,valid_prop, test_prop,self.step_ahead)
+        #print('df_dates: ',self.df_dates)
+        #print('df_verif: ',self.df_verif)
+
         for training_mode in ['train','valid','test']:
             tensor_limits_keeper.get_local_df_verif(training_mode)   # Build DataFrame Verif associated to each training mode
+
+            #print('df_verif_train: ',tensor_limits_keeper.df_verif_train)
 
             tensor_limits_keeper.keep_track_on_df_limits(training_mode)   # Keep track on DataFrame Limits (dates)
             tensor_limits_keeper.get_raw_values_indices(training_mode)

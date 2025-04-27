@@ -11,6 +11,13 @@ import pickle
 import io 
 import inspect
 
+def restrain_df_to_specific_period(df,coverage_period):
+    if coverage_period is not None:
+        df = df.loc[coverage_period]
+
+    df = df.sort_index()
+    return df
+
 def load_inputs_from_dataloader(dataloader,device):
         inputs_i = [[x,y,x_c] for  x,y,x_c  in dataloader]
         X = torch.cat([x for x,_,_ in inputs_i]).to(device)

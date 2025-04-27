@@ -10,14 +10,14 @@ if parent_dir not in sys.path:
 import pandas as pd
 import numpy as np
 import math 
+import importlib
 try:
     from statsmodels.tsa.seasonal import seasonal_decompose, STL , MSTL
 except ImportError:
     print("statsmodels not installed or issue with version. Please install or update it to use seasonal decomposition.")
-from constants.paths import USELESS_DATES
 import matplotlib.pyplot as plt 
 
-def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,min_count = 10, periods = [24*7*4,24*4]):
+def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,min_count = 10, periods = [24*7*4,24*4],dataset_name = None):
     '''
     ds : PersonnalInput ou DataSet object 
     min_count : défini le minimum d'occurence d'un tuple (weekday,hour) pour qu'on y input avec la médiane.
@@ -25,6 +25,10 @@ def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,m
     period : liste de périodes associées aux différentes périodicités de la série temporelle. S
               Si on considère que y a D time-steps entre deux jours consécutif, et W entre deux semaines consécutives, alors period = [W,D] est adapté.
     '''
+    module_path = f"load_inputs.{dataset_name}"
+    module = importlib.import_module(module_path)
+    USELESS_DATES = module.USELESS_DATES
+    
     dates_used_in_train = pd.Series(pd.concat([df_verif_train[c] for c in df_verif_train.columns]).unique()).sort_values() # Concat forbidden indexes within each columns
 
     # Get corresponding indices:

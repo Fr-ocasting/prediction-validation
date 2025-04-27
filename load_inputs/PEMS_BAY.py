@@ -23,7 +23,9 @@ FILE_NAME = 'PEMS_BAY/PEMS_BAY'
 START = '01/01/2017'
 END = '07/01/2017'
 FREQ = '5min'
-
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 C = 1
 n_vertex = 325
 

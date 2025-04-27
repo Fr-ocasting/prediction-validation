@@ -1,6 +1,8 @@
 # Relative path:
 import sys 
 import os 
+import importlib
+import pandas as pd 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -15,11 +17,8 @@ from utils.utilities import filter_args
 from utils.utilities import get_time_step_per_hour
 from dataset import DataSet
 from dataset import PersonnalInput
-
-# from build_inputs.load_calendar import tackle_calendar
 from utils.seasonal_decomposition import fill_and_decompose_df
-from constants.paths import USELESS_DATES
-import pandas as pd 
+
 
 def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn):
     
@@ -99,6 +98,10 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     for dataset_name in args.contextual_dataset_names:
         contextual_ds_i = contextual_ds[dataset_name]
 
+        module_path = f"load_inputs.{dataset_name}"
+        module = importlib.import_module(module_path)
+        USELESS_DATES = module.USELESS_DATES
+
             
         if (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
              need_local_spatial_attn = False
@@ -121,7 +124,8 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                                                         contextual_ds_i.time_step_per_hour,
                                                         contextual_ds_i.spatial_unit,
                                                         min_count = args.DA_min_count, 
-                                                        periods = contextual_ds_i.periods)
+                                                        periods = contextual_ds_i.periods,
+                                                        dataset_name =dataset_name)
                     df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
                     df_noises = df_noises[contextual_ds_i.spatial_unit]
                 elif args.DA_noise_from == 'Homogenous':
@@ -169,7 +173,8 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                                                         contextual_ds_i[0].time_step_per_hour,
                                                         contextual_ds_i[0].spatial_unit,
                                                         min_count = args.DA_min_count, 
-                                                        periods = contextual_ds_i[0].periods)
+                                                        periods = contextual_ds_i[0].periods,
+                                                        dataset_name = dataset_name)
                     df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
                     df_noises = df_noises[contextual_ds_i[0].spatial_unit]
                 elif args.DA_noise_from == 'Homogenous':
@@ -217,7 +222,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_
 
 
 def load_complete_ds(args,coverage_period = None,normalize = True):
-    # Load subway-in DataSet:
+
     union_invalid_dates,intersect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
     target_ds= load_datasets_to_predict(args,
                                         invalid_dates = union_invalid_dates,

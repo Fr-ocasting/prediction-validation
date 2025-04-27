@@ -12,7 +12,7 @@ if ROOT not in sys.path:
 
 # Personnal inputs:
 from dataset import PersonnalInput,DataSet
-from constants.paths import FOLDER_PATH,USELESS_DATES
+from constants.paths import FOLDER_PATH
 from utils.utilities import filter_args,get_INVALID_DATES
 from utils.seasonal_decomposition import fill_and_decompose_df
 
@@ -25,7 +25,8 @@ def add_noise(preprocesed_ds,args):
                                                 preprocesed_ds.time_step_per_hour,
                                                 preprocesed_ds.spatial_unit,
                                                 min_count = args.DA_min_count, 
-                                                periods = preprocesed_ds.periods)
+                                                periods = preprocesed_ds.periods,
+                                                dataset_name =dataset_name)
             df_noises = pd.DataFrame({col : decomposition[col]['resid'] for col in decomposition.keys()})
             df_noises = df_noises[preprocesed_ds.spatial_unit]
         elif args.DA_noise_from == 'Homogenous':

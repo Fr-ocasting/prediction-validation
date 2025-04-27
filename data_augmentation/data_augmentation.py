@@ -119,7 +119,7 @@ class DataAugmenter(object):
         mask_inject = torch.rand(n, N) < p
 
         # Noise Injection for the Dataset To predict, and its historical data: 
-        jiterringobject = JitteringObject(self.normalizers, self.step_ahead, self.H, self.D, self.W, self.Day_nb_steps, self.Week_nb_steps, self.shift_from_first_elmt, self.time_step_per_hour)
+        jiterringobject = JitteringObject(self.normalizers, self.step_ahead, self.H, self.D, self.W, self.Day_nb_steps, self.Week_nb_steps, self.shift_from_first_elmt, self.time_step_per_hour,dataset_name=ds.dataset_name)
         U_train_copy, Utarget_train_copy = jiterringobject.compute_noise_injection(U_train_copy, Utarget_train_copy, ds, self.target_data, mask_inject, out_dim, alpha)
 
         # Noise Injection for the contextual data (subway-out ok, but not for NetMob)

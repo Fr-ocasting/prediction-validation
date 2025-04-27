@@ -1,6 +1,7 @@
 import pandas as pd 
 import os
 import sys
+import numpy as np 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 ROOT = os.path.abspath(os.path.join(current_file_path,'..'))
 if ROOT not in sys.path:
@@ -25,8 +26,17 @@ def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
         gso[gso < threshold] = 0 
     # Otherwise, we can load the precomputed weighted adj matrix:
     else:
-        gso = pd.read_csv(f'{ABS_PATH_PACKAGE}/{FOLDER_PATH}/{dataset.target_data}/{folder}/{adj_type}.csv',index_col = 0)
-        gso = gso.iloc[dataset.indices_spatial_unit]
+        if dataset.target_data in ['subway-in','subway-out']:
+            gso = pd.read_csv(f'{ABS_PATH_PACKAGE}/{FOLDER_PATH}/{dataset.target_data}/{folder}/{adj_type}.csv',index_col = 0)
+            gso = gso.iloc[dataset.indices_spatial_unit]
+        elif dataset.target_data in ['PeMS03','PeMS04','PeMS07','PeMS08']:
+            if type == 'dist':
+                raise NotImplementedError('Distance-based adjacency matrix not implemented for this dataset')
+            gso = np.load(dataset.adj_mx_path)
+            gso = pd.DataFrame(gso, index = dataset.spatial_units, columns = dataset.spatial_units)
+        else:
+            raise NotImplementedError('Adjacency matrix not implemented for this dataset')
+        
         if (adj_type == 'dist') :
             assert threshold is not None, f"You defined a distance-based (adj_type: {adj_type}) matrix but you did not define any threshold distance"
             gso[gso < threshold] = 0 

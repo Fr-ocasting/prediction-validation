@@ -2,12 +2,12 @@ import torch
 import sys 
 import os 
 import pandas as pd
+import importlib
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from constants.paths import USELESS_DATES
 from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect
 
 
@@ -16,7 +16,7 @@ class JitteringObject(object):
     A class used for injecting noise into data for augmentation.
     """
 
-    def __init__(self, normalizers, step_ahead, H, D, W, Day_nb_steps, Week_nb_steps, shift_from_first_elmt, time_step_per_hour, init_noise_type = 'gaussian'):
+    def __init__(self, normalizers, step_ahead, H, D, W, Day_nb_steps, Week_nb_steps, shift_from_first_elmt, time_step_per_hour, init_noise_type = 'gaussian',dataset_name=None):
         """
         Initialize the JitteringObject with required parameters.
         """
@@ -31,6 +31,10 @@ class JitteringObject(object):
         self.time_step_per_hour = time_step_per_hour
         self.mask_seq_3d = None
         self.init_noise_type = init_noise_type
+
+        module_path = f"load_inputs.{dataset_name}"
+        module = importlib.import_module(module_path)
+        self.USELESS_DATES = module.USELESS_DATES
 
     def compute_noise_injection(self, U_train_copy, Utarget_train_copy, ds, dataset_name, mask_inject, out_dim, alpha):
             '''
@@ -79,8 +83,8 @@ class JitteringObject(object):
         self.df_noises_dates = pd.DataFrame(pd.date_range(self.start, self.end, freq=time_freq),columns=['date'])
         df_noises_reindexed = df_noises.reindex(list(self.df_noises_dates['date']))
 
-        df_noises_reindexed[df_noises_reindexed.index.hour.isin(USELESS_DATES['hour'])] = 0
-        if len(USELESS_DATES['weekday']) > 0 and len(USELESS_DATES['hour']) < 1:
+        df_noises_reindexed[df_noises_reindexed.index.hour.isin(self.USELESS_DATES['hour'])] = 0
+        if len(self.USELESS_DATES['weekday']) > 0 and len(self.USELESS_DATES['hour']) < 1:
             raise NotImplementedError(
                 'NaN values occur when predicting e.g. Monday at 00:15 with Sunday 23:45/23:30/23:15, etc.'
             )

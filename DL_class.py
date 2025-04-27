@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import torch 
 import torch.nn as nn 
-from constants.paths import USELESS_DATES
+import importlib 
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
         super().__init__()
@@ -176,12 +176,13 @@ class FeatureVectorBuilder(object):
 
 class DatesVerifFeatureVect(object):
     ''' From dataframe with TimeStamp Index, and historical elements, return df_verif'''
-    def __init__(self,df_dates, Weeks = 0, Days = 0, historical_len = 0, step_ahead = 1, time_step_per_hour = 4):
+    def __init__(self,df_dates, Weeks = 0, Days = 0, historical_len = 0, step_ahead = 1, time_step_per_hour = 4,target_data = None):
         self.df_dates = df_dates.sort_values('date')
         self.Weeks = Weeks
         self.Days = Days
         self.historical_len = historical_len
         self.step_ahead = step_ahead
+        self.target_data = target_data
 
         self.Week_nb_steps = int(7*24*time_step_per_hour)
         self.Day_nb_steps = int(24*time_step_per_hour)
@@ -227,6 +228,9 @@ class DatesVerifFeatureVect(object):
         forbidden_index : list of index within 'df_shifted' which are related to invalid dates
         forbidden_indice_U: list of indices withing the feature vector 'U' which contains at least one value related to a forbidden dates
         '''
+        module_path = f"load_inputs.{self.target_data}"
+        module = importlib.import_module(module_path)
+        USELESS_DATES = module.USELESS_DATES
 
         L_useless_index = []
         for key in USELESS_DATES.keys():

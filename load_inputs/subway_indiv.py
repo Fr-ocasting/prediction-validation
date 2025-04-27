@@ -28,7 +28,9 @@ END = '2020-03-30 23:30:00'
 
 # Liste des périodes invalides (à compléter si nécessaire)
 list_of_invalid_period = []
-
+USELESS_DATES = {'hour':[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 C = 1 # Nombre de canaux/features par unité spatiale
 
 # Colonnes attendues dans le CSV

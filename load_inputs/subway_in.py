@@ -9,7 +9,7 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime 
-from utils.utilities import filter_args,get_time_step_per_hour
+from utils.utilities import filter_args,get_time_step_per_hour,restrain_df_to_specific_period
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from constants.paths import USELESS_DATES
 ''' This file has to :
@@ -22,6 +22,9 @@ FILE_NAME = 'subway_in/subway_in'#'subway_IN_interpol_neg_15_min_2019_2020' #.cs
 START = '01/01/2019'
 END = '01/01/2020'
 FREQ = '15min'
+USELESS_DATES = {'hour':[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 
 list_of_invalid_period = []
 list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
@@ -154,13 +157,6 @@ def remove_outliers(df):
 
     # Remplacer les valeurs originales par les interpolées
     df.update(df_interpolated)
-    return df
-
-def restrain_df_to_specific_period(df,coverage_period):
-    if coverage_period is not None:
-        df = df.loc[coverage_period]
-
-    df = df.sort_index()
     return df
 
 

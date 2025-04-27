@@ -11,7 +11,7 @@ if parent_dir not in sys.path:
 import argparse 
 import  importlib
 from dataset import TrainValidTest_Split_Normalize
-from calendar_class import calendar_inputs,one_hot_encode_dataframe,get_time_slots_labels
+from calendar_class import calendar_inputs,one_hot_encode_dataframe
 from constants.paths import CALENDAR_TYPE
 
 
