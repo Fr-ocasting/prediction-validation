@@ -126,17 +126,6 @@ def similar_length_method(dataset,df_verif,train_prop,valid_prop,test_prop):
     # Test Limits
     first_test_date = predicted_serie.iat[split_valid_test]
     last_test_date = predicted_serie.iat[-1] 
-
-    print('   len(predicted_serie):',len(predicted_serie))
-    print('   nb of nan values: ',predicted_serie.isna().sum())
-    print('   split_train_valid:',split_train_valid)
-    print('   split_valid_test:',split_valid_test)
-    print(f'   Access predicted_serie.iat[{split_train_valid}]:',predicted_serie.iat[split_train_valid])
-    print(f'   Access predicted_serie.iat[{split_valid_test}]:',predicted_serie.iat[split_valid_test])
-
-    print(f"   first_train_date: {first_train_date}, last_train_date: {last_train_date}")
-    print(f"   first_valid_date: {first_valid_date}, last_valid_date: {last_valid_date}")
-    print(f"   first_test_date: {first_test_date}, last_test_date: {last_test_date}")
     # End Algorithm depending on wether test_set exists or not: 
     if abs(test_prop)<1e-3: 
         first_test_date,last_test_date = None,None

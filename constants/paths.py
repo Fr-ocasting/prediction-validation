@@ -10,7 +10,7 @@ if parent_dir not in sys.path:
 
 # Usual paths: 
 if torch.cuda.is_available():
-    FOLDER_PATH = '../../../../data/rrochas/prediction_validation' 
+    FOLDER_PATH = '~/../../data/rrochas/prediction_validation' 
     # Load the target data to predict: 
     #DATA_TO_PREDICT = 'subway_indiv' # 'subway_indiv', 'data_bidon'  # 'subway_in' # 'METR_LA' # 'PEMS_BAY' #'CRITER_3lanes'
     ABS_PATH_PACKAGE = '/home/rrochas/prediction-validation'
