@@ -216,14 +216,21 @@ class DatesVerifFeatureVect(object):
         Ddt = [self.df_dates.shift((self.Days-i)*self.Day_nb_steps) for i in range(self.Days)] 
         # Recent Historic pattern 
         Dt = [self.df_dates.shift(self.step_ahead+(self.historical_len-i)) for i in range(1,self.historical_len+1)] 
-        shifted_dates = Dwt+Ddt+Dt
+        # Step Ahead:
+        Ds = [self.df_dates.shift(sa) for sa in reversed(range(self.step_ahead))]
+
+        shifted_dates = Dwt+Ddt+Dt+Ds
         return(shifted_dates)
 
     def get_df_shifted(self):
         # Get the shifted "Dates" of Feature Vector and Target
-        shifted_dates = self.shift_dates()
-        L_shifted_dates = shifted_dates + [self.df_dates]
-        Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] + [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] + [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+ [f't+{self.step_ahead-1}']
+        #shifted_dates = self.shift_dates()
+        #L_shifted_dates = shifted_dates + [self.df_dates]
+        L_shifted_dates = self.shift_dates()
+        Names = [f't-{str(self.Week_nb_steps*(self.Weeks-w))}' for w in range(self.Weeks)] +\
+                [f't-{str(self.Day_nb_steps*(self.Days-d))}' for d in range(self.Days)] +\
+                [f't-{str(self.historical_len-t)}' for t in range(self.historical_len)]+\
+                [f't+{sa}' for sa in range(self.step_ahead)] #[f't+{self.step_ahead-1}']
         self.df_shifted = pd.DataFrame({name:lst['date'] for name,lst in zip(Names,L_shifted_dates)})[self.shift_from_first_elmt:] 
 
     def identify_forbidden_index(self,invalid_dates):

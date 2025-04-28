@@ -45,6 +45,9 @@ class Trainer(object):
         self.training_mode = 'train'
         self.optimizer = optimizer
         self.loss_function = loss_function
+        self.out_dim_factor = dataset.out_dim_factor
+        self.step_ahead = dataset.step_ahead
+
         if args.loss_function_type == 'MSE':
             self.metrics = ['mse','mae','mape','mase'] 
             self.type_calib = None

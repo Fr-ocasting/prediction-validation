@@ -71,7 +71,7 @@ def drag_selection_box(df,p1,p2=None,p3=None, width=1500, height=150):
     return(select)
 
 
-def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False):
+def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False,out_dim_factor=1,nb_step_ahead=1):
        '''
        args:
        ------
@@ -84,19 +84,36 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
 
        if type(station) != list:
              station = [station]
-       
-       for k,station_i in enumerate(station):
-              c = p.line(x=df_true.index, line_width = 2.5, y=df_true[station_i], alpha=0.8,color = Plasma256[int(k*255/len(station))])
-              legend_it.append((f'True_{station_i}', [c]))
 
-              if df_prediction is not None: 
-                     if type(df_prediction) == list:
-                            for q_i,df_pred in enumerate(df_prediction):
-                                   c = p.line(x=df_pred.index, line_width = 2.5, y=df_pred[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
-                                   legend_it.append((f'Prediction_{station_i}_q{q_i}', [c]))
-                     else :
-                            c = p.line(x=df_prediction.index, line_width = 2.5, y=df_prediction[station_i], alpha=0.6, line_dash = 'dashed',color = Plasma256[int(k*255/len(station))])
-                            legend_it.append((f'Prediction_{station_i}', [c]))
+
+       for k,spatial_unit_i in enumerate(df_true.columns):
+              c = p.line(x=df_true.index, line_width = 2.5, y=df_true[spatial_unit_i], alpha=0.8,color = Plasma256[int(k*255/len(station))])
+              legend_it.append((f'True_{spatial_unit_i}', [c]))
+
+       if df_prediction is None:
+              df_prediction = []
+       if not type(df_prediction) == list:
+              df_prediction = [df_prediction]
+              
+       for df_prediction_i in df_prediction:
+              for column_i in df_prediction_i.columns:
+                     station_i = column_i[0]
+                     horizon = int(column_i[1][1:])
+                     q_i = int(column_i[2][1:])
+                     ind_station = station.index(station_i)
+
+                     # Draw Line:
+                     c = p.line(x=df_prediction_i.index, 
+                            line_width = 2.5, 
+                            y=df_prediction_i[column_i], 
+                            alpha=0.8*(1-horizon/nb_step_ahead/2), 
+                            line_dash = 'dashed',
+                            color = Plasma256[int(ind_station*255/len(station))])
+
+                     # Add legend
+                     legend_str = f'Pred_{station_i}_h{horizon}'
+                     if out_dim_factor>1: legend_str = f"{legend_str}_q{q_i}"
+                     legend_it.append((legend_str, [c]))
 
        # Add rugby matches :
        for kick_time in kick_off_time:

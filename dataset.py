@@ -279,7 +279,8 @@ class DataSet(object):
                  DA_prop = None,
                  DA_noise_from = None,
                  DA_magnitude_max_scale = None,
-                 target_data = None
+                 target_data = None,
+                 out_dim_factor = None
                  ):
         
         if df is not None:
@@ -335,6 +336,7 @@ class DataSet(object):
         self.remaining_dates = None
         self.time_slots_labels = None
         self.step_ahead = step_ahead
+        self.out_dim_factor = out_dim_factor
         self.W = W
         self.D = D
         self.H = H
@@ -597,6 +599,7 @@ class PersonnalInput(DataSet):
         self.invalid_dates = invalid_dates
         self.args = arg_parser
         self.target_data = arg_parser.target_data
+        self.out_dim_factor = arg_parser.out_dim_factor
         self.name = ''
         
     def preprocess(self,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize = True):

@@ -4,6 +4,7 @@ import os
 import pandas as pd
 import numpy as np 
 import geopandas as gpd 
+import torch
 from argparse import Namespace
 # Get Parent folder : 
 current_path = os.getcwd()
@@ -122,7 +123,7 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         trainer.model.load_state_dict(trainer.best_weights, strict=True)
 
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)                                  
-    df_true,df_predictions = get_df_for_visualisation(ds,Preds,Y_true,training_mode,trainer.out_dim_factor)
+    df_true,df_predictions = get_df_for_visualisation(ds,Preds,Y_true,training_mode,trainer.out_dim_factor,stations=station)
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
 
     if apps is not None : 
@@ -156,24 +157,64 @@ def get_netmob_consumption_on_specifics_tags_apps(s_dates,apps,type_POIs,spatial
     return netmob_consumption
 
 # Get df_True Volume: 
-def get_df_for_visualisation(ds,Preds,Y_true,training_mode,out_dim_factor):
-       '''
-       outputs:
-       --------
-       return 2 pd DataFrame : df_true and df_prediction
-       >>>> the DataFrames contains the unormalized predicted and real value  
-       '''
-       df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")  
-       df_true = pd.DataFrame(Y_true[:,:,-1],columns = ds.spatial_unit,index = df_verif.iloc[:,-1])
-       for i in range(out_dim_factor):
-           blablablabalb
+def get_df_for_visualisation(ds,Preds,Y_true,training_mode,out_dim_factor,stations):
+    '''
+    outputs:
+    --------
+    return 2 pd DataFrame : df_true and df_prediction
+    >>>> the DataFrames contains the unormalized predicted and real value  
+    '''
 
-       df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
-       return(df_true,df_predictions)
+    df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")  
+    #df_true = pd.DataFrame(Y_true[:,:,-1],columns = ds.spatial_unit,index = df_verif.iloc[:,-1])
+    
+    nb_step_ahead = Preds.size(-1)//out_dim_factor
+    if stations is not None:
+        remaining_column_ind = [k for k,c in enumerate(ds.spatial_unit) if c in stations]
+    else:
+        stations = ds.spatial_unit
+        remaining_column_ind = np.arange(len(ds.spatial_unit))
+
+    sub_Preds = Preds[:,remaining_column_ind,:].detach().cpu().numpy()
+    sub_Y_true = Y_true[:,remaining_column_ind,-1].detach().cpu().numpy()
+
+    def get_multi_index_columns(stations,L_out_dim_factor,L_nb_step_ahead):
+        level_0,level_1,level_2 = [],[],[]
+        for station in stations:
+            for q in L_out_dim_factor:
+                for h in L_nb_step_ahead:
+                    level_0.append(station)
+                    level_1.append(f'h{h+1}')
+                    level_2.append(f'q{q}')
+        multi_index = pd.MultiIndex.from_tuples(list(zip(level_0,level_1,level_2)),names=['station','step_ahead','q'])
+        return multi_index
+
+
+    df_true =  pd.DataFrame(sub_Y_true,columns = stations,index = df_verif.iloc[:,-1])
+
+    df_predictions = []
+    for i in range(out_dim_factor):
+        for sa in range(nb_step_ahead):
+            multi_index = get_multi_index_columns(stations,[i],[sa])
+            df_predictions.append(pd.DataFrame(sub_Preds[:,:,nb_step_ahead*i + sa],
+                                            columns = multi_index,
+                                            index = df_verif.iloc[:,-nb_step_ahead+sa])
+            )
+    #df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
+    return(df_true,df_predictions)
 
 def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time=[],Range=None,width=1200,height=300,min_flow=None,training_mode='test',netmob_consumption=None):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
-    p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic variable Prediction at each spatial units ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
+    p1 = plot_single_point_prediction(df_true,df_prediction,station,
+                                      title= f'{training_mode} Trafic variable Prediction at each spatial units ',
+                                      kick_off_time=kick_off_time, 
+                                      range=Range,
+                                      width=width,
+                                      height = height,
+                                      bool_show = False,
+                                      out_dim_factor=trainer.out_dim_factor,
+                                      nb_step_ahead=trainer.step_ahead)
+    
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
 
     if (df_prediction is not None) and (len(df_prediction)==1):
