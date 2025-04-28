@@ -34,7 +34,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 ## C = 1
 ## n_vertex = 
-def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -47,7 +47,7 @@ def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,norm
     '''
 
     # data_app.shape :[nb-osmid*(apps*transfer_mode*tags), T]
-    netmob_T = load_data_npy(ROOT,FOLDER_PATH,args)
+    netmob_T = load_data_npy(FOLDER_PATH,args)
 
     # [T,nb-osmid*(apps*transfer_mode*tags)]
     netmob_T = netmob_T.permute(1,0)
@@ -84,8 +84,8 @@ def load_data(ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,norm
     return(NetMob_POI)
 
 
-def load_data_npy(ROOT,FOLDER_PATH,args):
-    save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/agg_TS"
+def load_data_npy(FOLDER_PATH,args):
+    save_folder = f"{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/agg_TS"
     list_of_data = []
     for app in args.NetMob_selected_apps:
         for mode in args.NetMob_transfer_mode:

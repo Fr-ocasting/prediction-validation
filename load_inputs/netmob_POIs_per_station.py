@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 ## C = 1
 ## n_vertex = 
 
-def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -54,7 +54,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     nb_pois_by_station = []
     for id_station in id_stations:
         # data_app.shape :[len(apps),len(osmid_associated),len(transfer_modes),T]
-        netmob_T = torch.Tensor(load_data_npy(id_station,ROOT,FOLDER_PATH,args))
+        netmob_T = torch.Tensor(load_data_npy(id_station,FOLDER_PATH,args))
         netmob_T = netmob_T.permute(3,0,1,2)
 
         # Extract only usefull data, and replace "heure d'été"
@@ -101,11 +101,11 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     print('Custom POIs associated by stations: ',[f"{id_station}: {nb_pois_by_station[k]}" for k,id_station in enumerate(id_stations)])
     return(NetMob_ds)
 
-def load_data_npy(id_station,ROOT,FOLDER_PATH,args):
+def load_data_npy(id_station,FOLDER_PATH,args):
     if hasattr(args,'NetMob_only_epsilon') and getattr(args,'NetMob_only_epsilon'):
-        save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}"
+        save_folder = f"{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}"
     else:
-        save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
+        save_folder = f"{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/{id_station}"
     data_app = np.load(open(f"{save_folder}/data.npy","rb"))
     metadata = pickle.load(open(f"{save_folder}/metadata.pkl","rb"))
     data_app = extract_apps_tags_modes(data_app,metadata,args.NetMob_selected_apps,args.NetMob_selected_tags,args.NetMob_transfer_mode)

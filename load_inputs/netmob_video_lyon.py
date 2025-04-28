@@ -33,7 +33,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 ## n_vertex = 
 
 
-def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,args,restricted,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(dataset,FOLDER_PATH,invalid_dates,args,restricted,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -42,7 +42,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,args,restricted,normalize= 
     '''
 
     if torch.cuda.is_available():
-        netmob_T = load_netmob_lyon_map(ROOT,FOLDER_PATH,restricted)
+        netmob_T = load_netmob_lyon_map(FOLDER_PATH,restricted)
         if args.freq != FREQ :
             assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
             netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
@@ -54,7 +54,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,args,restricted,normalize= 
     return(NetMob_ds)
 
    
-def load_netmob_lyon_map(ROOT,FOLDER_PATH,
+def load_netmob_lyon_map(FOLDER_PATH,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
@@ -70,12 +70,12 @@ def load_netmob_lyon_map(ROOT,FOLDER_PATH,
 
     #selected_apps = ['Uber','Google_Maps','Spotify','Instagram','Deezer','WhatsApp','Twitter','Snapchat']
 
-    apps =  pickle.load(open(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}_APP.pkl","rb"))
+    apps =  pickle.load(open(f"{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}_APP.pkl","rb"))
     trafic_pos = find_positions(SELECTED_APPS,apps)
     if restricted:
-        netmob_T = torch.load(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}.pt")[trafic_pos,:,110:-40,85:-55]
+        netmob_T = torch.load(f"{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}.pt")[trafic_pos,:,110:-40,85:-55]
     else:
-        netmob_T = torch.load(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}.pt")[trafic_pos,:,:,:]                
+        netmob_T = torch.load(f"{FOLDER_PATH}/{FILE_NAME}/{FILE_NAME}.pt")[trafic_pos,:,:,:]                
     netmob_T = netmob_T.permute(1,0,2,3)
 
     # Replace problematic time-slots:

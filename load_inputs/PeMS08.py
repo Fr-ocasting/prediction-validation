@@ -41,8 +41,8 @@ list_of_invalid_period = []
 
 C = 1 # Nb channels by spatial units
 
-def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
-    return load_data_from_PEMS03(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
+    return load_data_from_PEMS03(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
               data_subfolder = DATA_SUBFOLDER,
             year = YEAR,
             city = CITY)

@@ -30,7 +30,7 @@ C = 1
 n_vertex = 40
 
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_data(args,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -41,7 +41,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     invalid_dates : list of invalid dates 
     '''
 
-    df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.csv",index_col = 0)
+    df = pd.read_csv(f"{FOLDER_PATH}/{FILE_NAME}.csv",index_col = 0)
     df.columns.name = 'Station'
     df.index = pd.to_datetime(df.index)
 

@@ -11,7 +11,7 @@ from dataset import DataSet
 from datetime import datetime 
 from utils.utilities import filter_args,get_time_step_per_hour,restrain_df_to_specific_period
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
-from constants.paths import USELESS_DATES
+
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
@@ -39,12 +39,9 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 n_vertex = 40
 
-def load_data(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,filename=None):
-    dataset = load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = coverage_period,filename=filename)
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,filename=None):
+    dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename)
     args_DataSet = filter_args(DataSet, args)
-
-
-
     preprocesed_ds = load_input_and_preprocess(dims = dataset.dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=dataset.raw_values,coverage_period=coverage_period)
     
     preprocesed_ds.spatial_unit = dataset.spatial_unit
@@ -58,7 +55,7 @@ def load_data(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize= Tru
     return preprocesed_ds
 
 
-def load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
+def load_DataSet(args,FOLDER_PATH,coverage_period = None,filename=None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -71,7 +68,7 @@ def load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     if filename==None:
         filename = FILE_NAME
 
-    df = load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period)
+    df = load_subway_in_df(args,FOLDER_PATH,filename,coverage_period)
 
     if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
         print('   Number of Considered Spatial-Unit: ',len(args.set_spatial_units))
@@ -101,16 +98,16 @@ def load_DataSet(args,ROOT,FOLDER_PATH,coverage_period = None,filename=None):
     return(dataset)
     
 
-def load_subway_in_df(args,ROOT,FOLDER_PATH,filename,coverage_period):
+def load_subway_in_df(args,FOLDER_PATH,filename,coverage_period):
     
-    print(f"   Load data from: {ROOT}/{FOLDER_PATH}/{filename}.csv")
+    print(f"   Load data from: /{FOLDER_PATH}/{filename}.csv")
     try:
-        df = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{filename}.csv",index_col = 0)
+        df = pd.read_csv(f"{FOLDER_PATH}/{filename}.csv",index_col = 0)
     except FileNotFoundError:
-        print(f"   ERROR : File {ROOT}/{FOLDER_PATH}/{filename}.csv has not been found.")
+        print(f"   ERROR : File {FOLDER_PATH}/{filename}.csv has not been found.")
         return None
     except Exception as e:
-        print(f"   ERROR while loading {ROOT}/{FOLDER_PATH}/{filename}.csv: {e}")
+        print(f"   ERROR while loading {FOLDER_PATH}/{filename}.csv: {e}")
         return None
 
     df.columns.name = 'Station'

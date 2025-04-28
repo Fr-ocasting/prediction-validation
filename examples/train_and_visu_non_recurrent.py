@@ -122,7 +122,7 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         trainer.model.load_state_dict(trainer.best_weights, strict=True)
 
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer, training_mode =training_mode)                                  
-    df_true,df_predictions = get_df_for_visualisation(ds,Preds,Y_true,training_mode)
+    df_true,df_predictions = get_df_for_visualisation(ds,Preds,Y_true,training_mode,trainer.out_dim_factor)
     kick_off_time,match_times = rugby_matches(df_true.index,RANGE)
 
     if apps is not None : 
@@ -156,7 +156,7 @@ def get_netmob_consumption_on_specifics_tags_apps(s_dates,apps,type_POIs,spatial
     return netmob_consumption
 
 # Get df_True Volume: 
-def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
+def get_df_for_visualisation(ds,Preds,Y_true,training_mode,out_dim_factor):
        '''
        outputs:
        --------
@@ -164,13 +164,16 @@ def get_df_for_visualisation(ds,Preds,Y_true,training_mode):
        >>>> the DataFrames contains the unormalized predicted and real value  
        '''
        df_verif = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}")  
-       df_true = pd.DataFrame(Y_true[:,:,0],columns = ds.spatial_unit,index = df_verif.iloc[:,-1])
+       df_true = pd.DataFrame(Y_true[:,:,-1],columns = ds.spatial_unit,index = df_verif.iloc[:,-1])
+       for i in range(out_dim_factor):
+           blablablabalb
+
        df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
        return(df_true,df_predictions)
 
 def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time=[],Range=None,width=1200,height=300,min_flow=None,training_mode='test',netmob_consumption=None):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
-    p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic Volume Prediction at each subway station ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
+    p1 = plot_single_point_prediction(df_true,df_prediction,station,title= f'{training_mode} Trafic variable Prediction at each spatial units ',kick_off_time=kick_off_time, range=Range,width=width,height = height,bool_show = False)
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
 
     if (df_prediction is not None) and (len(df_prediction)==1):

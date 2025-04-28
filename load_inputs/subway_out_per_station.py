@@ -37,12 +37,12 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 n_vertex = 40
 
-def load_data(dataset,args,ROOT,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
+def load_data(dataset,args,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
     id_stations = dataset.spatial_unit
     contextual_subway_out = []
 
     dims = [0]
-    subway_out = load_data_from_subway_in_py(args,ROOT,FOLDER_PATH,intersect_coverage_period,filename = FILE_NAME)
+    subway_out = load_data_from_subway_in_py(args,FOLDER_PATH,intersect_coverage_period,filename = FILE_NAME)
     for id_station in id_stations:
         T_subway_out = torch.Tensor(subway_out.raw_values)
 

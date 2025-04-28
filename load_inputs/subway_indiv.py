@@ -37,7 +37,7 @@ C = 1 # Nombre de canaux/features par unité spatiale
 DATE_COL = 'VAL_DATE'
 LOCATION_COL = 'COD_TRG'
 VALUE_COL = 'Flow'
-def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
                 data_subfolder = DATA_SUBFOLDER,
                 file_base_name = FILE_BASE_NAME
               ):
@@ -46,7 +46,6 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
 
     Args:
         dataset (DataSet): L'objet DataSet principal (pour contexte).
-        ROOT (str): Chemin racine du projet ou des données.
         FOLDER_PATH (str): Chemin vers le dossier contenant data_subfolder.
         invalid_dates (list): Liste des périodes invalides fournie globalement.
         coverage_period (pd.DatetimeIndex): Période temporelle à conserver.
@@ -58,7 +57,7 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
     """
     target_freq = args.freq
     file_name = f"{file_base_name}_{target_freq}"
-    data_file_path = os.path.join(ROOT, FOLDER_PATH, data_subfolder, file_name, f"{file_name}.csv")
+    data_file_path = os.path.join(FOLDER_PATH, data_subfolder, file_name, f"{file_name}.csv")
 
     print(f"   Load data from: {data_file_path}")
     try:

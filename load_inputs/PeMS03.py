@@ -40,7 +40,7 @@ list_of_invalid_period = []
 C = 1 # Nb channels by spatial units
 
 
-def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
               data_subfolder = DATA_SUBFOLDER,
             year = YEAR,
             city =CITY):
@@ -55,7 +55,7 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
         PersonnalInput: Objet contenant les données traitées.
     """
 
-    dirname = f"{ROOT}/{FOLDER_PATH}/{data_subfolder}"
+    dirname = f"{FOLDER_PATH}/{data_subfolder}"
     print(f"   Load data from: {dirname}")
 
     data = h5py.File(f"{dirname}/{data_subfolder.lower()}_his_{year}.h5", 'r')

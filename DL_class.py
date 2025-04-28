@@ -170,7 +170,17 @@ class FeatureVectorBuilder(object):
         ------
         Target Tensor, with shift of step_ahead. 
         '''
-        Utarget = torch.unsqueeze(tensor[self.shift_from_first_elmt:],-1) # add last dim
+        #Utarget = torch.unsqueeze(tensor[self.shift_from_first_elmt:],-1) # add last dim
+
+        Utarget = []
+        for i in reversed(range(self.step_ahead)):
+            if i == 0 :
+                U_target_i = tensor[self.shift_from_first_elmt-i:]
+            else:
+                U_target_i = tensor[self.shift_from_first_elmt-i:-i]
+            Utarget.append(U_target_i) 
+        Utarget = torch.stack(Utarget,dim=-1) 
+
         self.Utarget = Utarget
 
 

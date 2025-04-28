@@ -37,9 +37,9 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 #n_vertex = 40
 
-def load_data(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize):
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize):
     dims = [0]
-    subway_out = load_data_from_subway_in_py(ROOT,FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME)
+    subway_out = load_data_from_subway_in_py(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME)
     T_subway_out = torch.Tensor(subway_out.raw_values.float())
 
     # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:

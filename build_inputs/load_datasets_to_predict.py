@@ -89,7 +89,7 @@ def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,)
     module_data = importlib.import_module(f"load_inputs.{args.target_data}")
     importlib.reload(module_data) 
     
-    preprocessed_ds = module_data.load_data(ROOT,FOLDER_PATH,
+    preprocessed_ds = module_data.load_data(FOLDER_PATH,
                                             invalid_dates = invalid_dates,
                                             coverage_period = coverage_period,
                                             args = args,

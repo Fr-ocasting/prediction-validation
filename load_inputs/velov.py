@@ -36,14 +36,14 @@ DATE_COL = 'date_sortie' # Ou 'date_entree' pour 'attracted'?
 LOCATION_COL = 'id_sortie' # Ou 'id_entree' pour 'attracted'?
 VALUE_COL = 'volume'
 
-def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
     """
     Charge, pivote, filtre et pré-traite les données velov (emitted).
     """
     target_freq = args.freq
     # Construction spécifique du nom de fichier pour velov
     file_name = f"{FILE_PATTERN}{target_freq}"
-    data_file_path = os.path.join(ROOT, FOLDER_PATH, DATA_SUBFOLDER, f"{file_name}.csv")
+    data_file_path = os.path.join(FOLDER_PATH, DATA_SUBFOLDER, f"{file_name}.csv")
 
     print(f"Chargement des données depuis : {data_file_path}")
     try:

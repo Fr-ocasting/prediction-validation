@@ -86,7 +86,7 @@ def tackle_input_data(invalid_dates,coverage_period,args,normalize):
         module_path = f"load_inputs.{dataset_name}"
         module = importlib.import_module(module_path)
         importlib.reload(module)
-        contextual_ds_i = module.load_data(parent_dir,FOLDER_PATH,
+        contextual_ds_i = module.load_data(FOLDER_PATH,
                                            coverage_period = coverage_period,
                                            invalid_dates=invalid_dates,
                                            args=args,

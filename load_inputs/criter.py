@@ -47,7 +47,7 @@ DATE_COL = 'HORODATE'
 LOCATION_COL = 'ID_POINT_MESURE'
 VALUE_COL = 'DEBIT_HEURE' # Ou une autre colonne pertinente retournée par load_CRITER
 
-def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
     """
     Charge, concatène, pivote, filtre et pré-traite les données CRITER.
     """
@@ -62,7 +62,7 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
 
     all_files_to_load = []
     for year in years_to_load:
-        criter_path_year = os.path.join(ROOT, FOLDER_PATH, DATA_SUBFOLDER_PATTERN.format(year=year))
+        criter_path_year = os.path.join(FOLDER_PATH, DATA_SUBFOLDER_PATTERN.format(year=year))
         # Lister tous les fichiers .txt dans le dossier de l'année
         # Attention: ceci charge tous les fichiers de l'année, même ceux hors période.
         # Un filtrage plus fin sur les noms de fichiers pourrait être nécessaire si beaucoup de fichiers.
@@ -72,7 +72,7 @@ def load_data(ROOT, FOLDER_PATH, invalid_dates, coverage_period, args, normalize
         all_files_to_load.extend(files_in_year)
 
     if not all_files_to_load:
-        print(f"ERREUR: Aucun fichier CRITER trouvé pour les années {list(years_to_load)} dans {os.path.join(ROOT, FOLDER_PATH)}")
+        print(f"ERREUR: Aucun fichier CRITER trouvé pour les années {list(years_to_load)} dans {FOLDER_PATH}")
         return None
 
     print(f"Chargement de {len(all_files_to_load)} fichiers CRITER...")

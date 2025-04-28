@@ -31,7 +31,7 @@ C = 1
 n_vertex = 10
 
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_data(args,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -42,7 +42,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     invalid_dates : list of invalid dates 
     '''
 
-    tensor = torch.load(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.pt")
+    tensor = torch.load(f"{FOLDER_PATH}/{FILE_NAME}.pt")
     dates = pd.date_range(start=START, end=END, freq=args.freq)[:1000]
 
     tensor = restrain_tensor_to_specific_period(tensor,dates,coverage_period)

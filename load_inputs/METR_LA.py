@@ -29,7 +29,7 @@ list_of_invalid_period = []
 
 
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_data(args,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -39,7 +39,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     df.index : coverage period of the dataset 
     invalid_dates : list of invalid dates 
     '''
-    data = h5py.File(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
+    data = h5py.File(f"{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
     axis0 = pd.Series(data['df']['axis0'][:].astype(str))
     axis1 = pd.Series(data['df']['axis1'][:].astype(str))
     df = pd.DataFrame(data['df']['block0_values'][:], columns=axis0, index = pd.to_datetime(axis1.astype(int)/1_000_000_000,unit='s'))

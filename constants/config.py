@@ -129,10 +129,10 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
 
     # Define Output dimension: 
-    if config['loss_function_type'] == 'MSE': out_dim = 1
-    elif config['loss_function_type'] == 'quantile': out_dim = 2
+    if config['loss_function_type'] == 'MSE': out_dim_factor = 1
+    elif config['loss_function_type'] == 'quantile': out_dim_factor = 2
     else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
-    config['out_dim'] = out_dim
+    config['out_dim_factor'] = out_dim_factor
     # ...
 
     # Vision Model:
@@ -206,12 +206,14 @@ def convert_into_parameters(config):
 
 def update_out_dim(args):
     if args.loss_function_type == 'MSE': 
-        args.out_dim = 1
+        args.out_dim_factor = 1
         args.alpha = None
     elif args.loss_function_type == 'quantile': 
-        args.out_dim = 2
+        args.out_dim_factor = 2
     else: 
         raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    
+    args.out_dim = args.out_dim_factor * args.step_ahead
     return args 
 
 def update_modif(args,name_gpu='cuda'):

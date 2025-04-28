@@ -33,7 +33,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 ## C = 1
 ## n_vertex = 
 
-def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,ROOT,FOLDER_PATH,coverage_period = None
+def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -42,7 +42,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     '''
 
     if torch.cuda.is_available():
-        netmob_T = load_netmob_per_subway_station(ROOT,FOLDER_PATH,args,intersect_coverage_period,dataset.spatial_unit)
+        netmob_T = load_netmob_per_subway_station(FOLDER_PATH,args,intersect_coverage_period,dataset.spatial_unit)
 
     else:
         raise NotImplementedError
@@ -51,7 +51,7 @@ def load_data(dataset,ROOT,FOLDER_PATH,invalid_dates,intersect_coverage_period,a
     return(NetMob_ds)
 
 
-def load_netmob_per_subway_station(ROOT,FOLDER_PATH,args,intersect_coverage_period,columns,
+def load_netmob_per_subway_station(FOLDER_PATH,args,intersect_coverage_period,columns,
                      trafic_apps = ['Uber', 'Google_Maps','Waze'],
                      music_apps = ['Spotify','Deezer','Apple_Music','Apple_iTunes','SoundCloud'],
                      direct_messenger_apps = ['Telegram','Apple_iMessage','Facebook_Messenger','Snapchat','WhatsApp'],
@@ -63,9 +63,9 @@ def load_netmob_per_subway_station(ROOT,FOLDER_PATH,args,intersect_coverage_peri
     # NetMob Tensor : [T,N,C,H,W]
     # dims : [0,3,4] #[0,-2,-1]  -> dimension for which we want to retrieve stats 
     '''
-    data_path = f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}"
+    data_path = f"{FOLDER_PATH}/{FILE_NAME}"
     # selected_apps =  ['Google_Maps'] #trafic_apps # music_apps  # direct_messenger_apps # social_networks_apps
-    apps=  pickle.load(open(f'{data_path}/apps.pkl','rb'))#glob.glob(f'{ROOT}/{FOLDER_PATH}/{FILE_NAME}/*.pt')  
+    apps=  pickle.load(open(f'{data_path}/apps.pkl','rb'))#glob.glob(f'{FOLDER_PATH}/{FILE_NAME}/*.pt')  
 
     # Extract only some specific apps: 
     trafic_pos = find_positions(args.NetMob_selected_apps,apps)

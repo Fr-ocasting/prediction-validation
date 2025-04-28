@@ -35,8 +35,8 @@ list_of_invalid_period = []
 # Daylight saving time changeover
 list_of_invalid_period.append([datetime(2017,3,12,2,0),datetime(2017,3,12,2,55)])
 
-def load_PEMS_BAY_df(ROOT,FOLDER_PATH):
-    data = h5py.File(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
+def load_PEMS_BAY_df(FOLDER_PATH):
+    data = h5py.File(f"{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
     axis0 = pd.Series(data['speed']['axis0'][:].astype(str))
     axis1 = pd.Series(data['speed']['axis1'][:].astype(str))
     df = pd.DataFrame(data['speed']['block0_values'][:], columns=axis0, index = pd.to_datetime(axis1.astype(int)/1_000_000_000,unit='s'))
@@ -44,7 +44,7 @@ def load_PEMS_BAY_df(ROOT,FOLDER_PATH):
     df.index = pd.to_datetime(df.index)
     return df 
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_data(args,FOLDER_PATH,coverage_period = None):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -55,7 +55,7 @@ def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
     invalid_dates : list of invalid dates 
     '''
     # Load the dataset
-    df = load_PEMS_BAY_df(ROOT,FOLDER_PATH)
+    df = load_PEMS_BAY_df(FOLDER_PATH)
 
     if args.freq != FREQ :
         assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'

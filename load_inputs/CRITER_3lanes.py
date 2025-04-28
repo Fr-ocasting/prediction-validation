@@ -27,12 +27,12 @@ list_of_invalid_period = []
 #C = 1
 #n_vertex = 
 
-def load_csvs(args,ROOT,FOLDER_PATH,coverage_period,limit_max_nan=200,taux_heure_limit = 100):
+def load_csvs(args,FOLDER_PATH,coverage_period,limit_max_nan=200,taux_heure_limit = 100):
     # Load df: 
     df = pd.DataFrame()
     idptm_list = []
     for month_name in ['Mars','Avril','Mai']:
-        df_i = pd.read_csv(f"{ROOT}/{FOLDER_PATH}/{FILE_NAME}_{month_name}.csv",index_col = 0)
+        df_i = pd.read_csv(f"{FOLDER_PATH}/{FILE_NAME}_{month_name}.csv",index_col = 0)
         df_i.HORODATE = pd.to_datetime(df_i.HORODATE)
         forbidden_ids = df_i[df_i.TAUX_HEURE > taux_heure_limit].ID_POINT_MESURE.unique()
         init_idptm = list(df_i.ID_POINT_MESURE.unique())
@@ -57,9 +57,9 @@ def load_csvs(args,ROOT,FOLDER_PATH,coverage_period,limit_max_nan=200,taux_heure
     return df_loop_occupancy_rate_full,df_flow_full,idptm_list
 
 
-def load_data(args,ROOT,FOLDER_PATH,coverage_period = None):
+def load_data(args,FOLDER_PATH,coverage_period = None):
     # Load df: 
-    df_loop_occupancy_rate,df_flow,idptm_list = load_csvs(args,ROOT,FOLDER_PATH,coverage_period=coverage_period,limit_max_nan = 200)
+    df_loop_occupancy_rate,df_flow,idptm_list = load_csvs(args,FOLDER_PATH,coverage_period=coverage_period,limit_max_nan = 200)
 
     for df_feature_i,name_i in zip([df_loop_occupancy_rate,df_flow],['loop_occupancy_rate','flow']):
         df_feature_i.columns.name = 'sensor'
