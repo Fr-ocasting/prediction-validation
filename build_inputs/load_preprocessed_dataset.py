@@ -20,7 +20,7 @@ from dataset import PersonnalInput
 from utils.seasonal_decomposition import fill_and_decompose_df
 
 
-def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn):
+def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn):
     
     if type(contextual_ds) == list:
         contextual_tensors.update({f'{dataset_name}_{k}': {'train': ds_i.U_train,
@@ -46,7 +46,7 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
         setattr(args,f"input_dim_{dataset_name}",contextual_ds.U_train.size(2))
 
     
-    positions[dataset_name] = pos_contextual_i
+    contextual_positions[dataset_name] = pos_contextual_i
 
     if need_local_spatial_attn:
         ds_which_need_spatial_attn.append(dataset_name)
@@ -58,7 +58,7 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
             node_attr_which_need_attn.append(dataset_name)
 
     
-    return contextual_tensors,ds_to_predict,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn
+    return contextual_tensors,ds_to_predict,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn
 
 
 def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
@@ -80,18 +80,17 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
 
 
 
-    # Create 'contextual_tensors' and 'positions' and Add calendar data to the contextual tensors:
+    # Create 'contextual_tensors' and 'contextual_positions' and Add calendar data to the contextual tensors:
     contextual_tensors = {f'calendar_{calendar_type}': {'train': dict_calendar_U_train[calendar_type],
                                 'valid': dict_calendar_U_valid[calendar_type],
                                 'test': dict_calendar_U_test[calendar_type]} for calendar_type in dict_calendar_U_train.keys()
                                 }
-    pos_calendar = [list(contextual_tensors.keys()).index(f'calendar_{calendar_type}') for calendar_type in dict_calendar_U_train.keys()]
-    positions= {'calendar': pos_calendar}
+    contextual_positions= {f'calendar_{calendar_type}': list(contextual_tensors.keys()).index(f'calendar_{calendar_type}') for calendar_type in dict_calendar_U_train.keys()}
     # ...
 
     # == Define contextual tensor for Calibration : 
     # pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
-    # positions['calibration_calendar'] = pos_calibration_calendar
+    # contextual_positions['calibration_calendar'] = pos_calibration_calendar
     # ==
 
 
@@ -105,17 +104,17 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
             
         if (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
              need_local_spatial_attn = False
-             contextual_tensors,target_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+             contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
-                                                                                                                             ds_which_need_spatial_attn,positions,pos_node_attributes,
+                                                                                                                             ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
              
 
         elif (dataset_name == 'subway_out') or (dataset_name == 'subway_in') or (dataset_name == 'subway_indiv'):
             need_local_spatial_attn = False
-            contextual_tensors,target_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
-                                                                                                                             ds_which_need_spatial_attn,positions,pos_node_attributes,
+                                                                                                                             ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn) 
             if args.data_augmentation and args.DA_method == 'noise':
                 if args.DA_noise_from == 'MSTL':
@@ -140,9 +139,9 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                 target_ds.noises[dataset_name] = df_noises         
         elif (dataset_name == 'netmob_POIs'):
             need_local_spatial_attn = False
-            contextual_tensors,target_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
-                                                                                                                             ds_which_need_spatial_attn,positions,pos_node_attributes,
+                                                                                                                             ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
             if args.data_augmentation and args.DA_method == 'noise':
                 raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out ?')     
@@ -150,9 +149,9 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                 
         elif dataset_name == 'netmob_POIs_per_station':
             need_local_spatial_attn = True
-            contextual_tensors,target_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
-                                                                                                                             ds_which_need_spatial_attn,positions,pos_node_attributes,
+                                                                                                                             ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
             if args.data_augmentation and args.DA_method == 'noise':
                  raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')
@@ -160,9 +159,9 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
 
         elif dataset_name == 'subway_out_per_station':
             need_local_spatial_attn = True
-            contextual_tensors,target_ds,ds_which_need_spatial_attn,positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,dict_node_attr2dataset,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
-                                                                                                                             ds_which_need_spatial_attn,positions,pos_node_attributes,
+                                                                                                                             ds_which_need_spatial_attn,contextual_positions,pos_node_attributes,
                                                                                                                              dict_node_attr2dataset,node_attr_which_need_attn)
 
              # build Noises :
@@ -194,10 +193,9 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
 
     target_ds.contextual_tensors = contextual_tensors
     target_ds.get_dataloader()
-
     # Maybe useless to send it to the both 
-    target_ds.contextual_positions = positions
-    args.contextual_positions = positions
+    target_ds.contextual_positions = contextual_positions
+    args.contextual_positions = contextual_positions
     args.ds_which_need_spatial_attn = ds_which_need_spatial_attn
     args.pos_node_attributes = pos_node_attributes
     args.dict_node_attr2dataset = dict_node_attr2dataset
@@ -240,7 +238,7 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
                                            args=args,
                                            normalize = normalize)
 
-    # Add Contextual Tensors and their positions: 
+    # Add Contextual Tensors and their contextual_positions: 
     target_ds,args = add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
     # Update/Set arguments: 
     assert target_ds.U_train.dim() == 3, f'Feature Vector does not have the good dimension. Expected shape dimension [B,N,L], got {target_ds.U_train.dim()} dim: {target_ds.U_train.size()}'

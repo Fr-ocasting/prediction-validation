@@ -129,7 +129,7 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
 def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = True):
 
     # Define contextual tensors
-    contextual_dataset_names = [ds_name for ds_name in args.dataset_names if ds_name != target_ds.target_data]
+    contextual_dataset_names = [ds_name for ds_name in args.dataset_names if not (ds_name in (['calendar','calendar_embedding']+ [target_ds.target_data]))]
     if args.use_target_as_context:
         if target_ds.target_data not in contextual_dataset_names:
             contextual_dataset_names.append(target_ds.target_data)

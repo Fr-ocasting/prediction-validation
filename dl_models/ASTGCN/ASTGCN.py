@@ -285,7 +285,7 @@ class ASTGCN_block(nn.Module):
 
 class ASTGCN(nn.Module):
 
-    def __init__(self, DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices):
+    def __init__(self, device, nb_block, C, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, step_ahead, L, n_vertex):
         '''
         :param nb_block:
         :param in_channels:
@@ -296,18 +296,23 @@ class ASTGCN(nn.Module):
         :param cheb_polynomials:
         :param nb_predict_step:
         '''
-
         super(ASTGCN, self).__init__()
+        # Apply correspondance between our syntaxe and the one in the paper:
+        self.DEVICE = device
+        self.in_channels = C
+        self.len_input = L
+        self.num_for_predict = step_ahead
+        self.num_of_vertices = n_vertex
 
-        self.BlockList = nn.ModuleList([ASTGCN_block(DEVICE, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_of_vertices, len_input)])
 
-        self.BlockList.extend([ASTGCN_block(DEVICE, nb_time_filter, K, nb_chev_filter, nb_time_filter, 1, cheb_polynomials, num_of_vertices, len_input//time_strides) for _ in range(nb_block-1)])
+        self.BlockList = nn.ModuleList([ASTGCN_block(self.DEVICE, self.in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, self.num_of_vertices, self.len_input)])
 
-        self.final_conv = nn.Conv2d(int(len_input/time_strides), num_for_predict, kernel_size=(1, nb_time_filter))
+        self.BlockList.extend([ASTGCN_block(DEVICE, nb_time_filter, K, nb_chev_filter, nb_time_filter, 1, cheb_polynomials, self.num_of_vertices, self.len_input//time_strides) for _ in range(nb_block-1)])
 
-        self.DEVICE = DEVICE
+        self.final_conv = nn.Conv2d(int(self.len_input/time_strides), self.num_for_predict, kernel_size=(1, nb_time_filter))
 
-        self.to(DEVICE)
+
+        self.to(self.DEVICE)
 
     def forward(self, x,extracted_feature=None,time_elt=None):
         '''

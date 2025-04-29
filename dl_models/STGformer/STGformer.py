@@ -201,12 +201,12 @@ class SelfAttentionLayer(nn.Module):
 class STGformer(nn.Module):
     def __init__(
         self,
-        num_nodes,
-        in_steps=12,
-        out_steps=12,
-        steps_per_day=288,
-        input_dim=3,
-        output_dim=1,
+        n_vertex,
+        L=12,
+        step_ahead=12,
+        time_step_per_hour=12,
+        C=1,
+        out_dim_factor = 1,
         input_embedding_dim=24,
         tod_embedding_dim=12,
         dow_embedding_dim=12,
@@ -220,15 +220,16 @@ class STGformer(nn.Module):
         use_mixed_proj=True,
         dropout_a=0.3,
         kernel_size=[1],
+        contextual_positions = {}
     ):
         super().__init__()
 
-        self.num_nodes = num_nodes
-        self.in_steps = in_steps
-        self.out_steps = out_steps
-        self.steps_per_day = steps_per_day
-        self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.num_nodes = n_vertex
+        self.in_steps = L
+        self.out_steps = step_ahead
+        self.steps_per_day = 24*time_step_per_hour
+        self.input_dim = C
+        self.output_dim = out_dim_factor
         self.input_embedding_dim = input_embedding_dim
         self.tod_embedding_dim = tod_embedding_dim
         self.dow_embedding_dim = dow_embedding_dim
@@ -245,14 +246,14 @@ class STGformer(nn.Module):
         self.num_layers = num_layers
         self.use_mixed_proj = use_mixed_proj
 
-        self.input_proj = nn.Linear(input_dim, input_embedding_dim)
-        if tod_embedding_dim > 0:
-            self.tod_embedding = nn.Embedding(steps_per_day, tod_embedding_dim)
-        if dow_embedding_dim > 0:
-            self.dow_embedding = nn.Embedding(7, dow_embedding_dim)
-        if adaptive_embedding_dim > 0:
+        self.input_proj = nn.Linear(self.input_dim, self.input_embedding_dim)
+        if self.tod_embedding_dim > 0:
+            self.tod_embedding = nn.Embedding(self.steps_per_day, self.tod_embedding_dim)
+        if self.dow_embedding_dim > 0:
+            self.dow_embedding = nn.Embedding(7, self.dow_embedding_dim)
+        if self.adaptive_embedding_dim > 0:
             self.adaptive_embedding = nn.init.xavier_uniform_(
-                nn.Parameter(torch.empty(in_steps, num_nodes, adaptive_embedding_dim))
+                nn.Parameter(torch.empty(self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
             )
 
         self.dropout = nn.Dropout(dropout_a)
@@ -263,7 +264,7 @@ class STGformer(nn.Module):
                 SelfAttentionLayer(
                     self.model_dim,
                     mlp_ratio,
-                    num_heads,
+                    self.num_heads,
                     dropout,
                     kernel=size,
                     supports=supports,
@@ -273,7 +274,7 @@ class STGformer(nn.Module):
         )
 
         self.encoder_proj = nn.Linear(
-            (in_steps - sum(k - 1 for k in kernel_size)) * self.model_dim,
+            (self.in_steps - sum(k - 1 for k in kernel_size)) * self.model_dim,
             self.model_dim,
         )
         self.kernel_size = kernel_size[0]
@@ -290,21 +291,42 @@ class STGformer(nn.Module):
             ]
         )
 
-        self.output_proj = nn.Linear(self.model_dim, out_steps * output_dim)
+        self.output_proj = nn.Linear(self.model_dim, self.out_steps * self.output_dim)
         # self.temporal_proj = TCNLayer(self.model_dim, self.model_dim, max_seq_length=in_steps)
         self.temporal_proj = nn.Conv2d(
             self.model_dim, self.model_dim, (1, kernel_size[0]), 1, 0
         )
+        self.pos_tod = contextual_positions.get("calendar_timeofday", None)
+        self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
 
     def forward(self, x,x_vision=None,x_calendar = None):
+        """
+        Args:
+            x: (batch_size, in_steps, num_nodes, input_dim)
+            x_vision: None
+            x_calendar: (batch_size, in_steps, 1, 1)
+
+        x_calendar.size() has dim has to correspond to x.size(), then we repeat it
+        """
+        assert x_calendar.size(1) == 2, f"Expected x_calendar.size(1) == 2, but got {x_calendar.size(1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names."
+        
+        if x_vision is not None:
+            raise NotImplementedError("tackling x_vision has not been implemented")
+        
+
         # x: (batch_size, in_steps, num_nodes, input_dim+tod+dow=3)
         batch_size = x.shape[0]
 
         if self.tod_embedding_dim > 0:
-            tod = x[..., 1]
+            tod = x_calendar[..., self.pos_tod]
         if self.dow_embedding_dim > 0:
-            dow = x[..., 2]
-        x = x[..., : self.input_dim]
+            dow = x_calendar[..., self.pos_dow]
+
+        print('tod',tod.shape)  # [B]
+        print('dow',dow.shape) # [B]
+        TIME OF DAY ET DAY OF WEEEK ONT ETE CONCU POUR Y(t) ET PAS POUR X(t-1),....,X(t-h),X(t-d),X(t-w)
+        dow = dow.repeat(1, 1, self.num_nodes, 1)
+        tod = tod.repeat(1, 1, self.num_nodes, 1)
 
         x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
         features = torch.tensor([]).to(x)

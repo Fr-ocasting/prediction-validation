@@ -28,11 +28,6 @@ else:
     
 SAVE_DIRECTORY = 'save'
 
-''' Training Parameters'''
-
-''' Calendar Parameters: '''
-CALENDAR_TYPE=['dayofweek','hour']#['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
-
 ''' NetMob Parameters: '''
 #SELECTED_APPS = ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
 #TRANSFER_MODE = ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

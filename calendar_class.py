@@ -98,7 +98,9 @@ def is_school_holidays(timestamp,city):
 
     return False, -1
 
-def calendar_inputs(df_dates, calendar_type=['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays'],city = 'Lyon'):
+def calendar_inputs(df_dates,
+                    calendar_type=['timeofday','dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays'],
+                    city = 'Lyon'):
     if not('California' in city) and (city != 'Lyon'): 
         if ('bank_holidays' in calendar_type) or ('school_holidays' in calendar_type) or ('remaining_holidays' in calendar_type) :
             raise NotImplementedError(f'The holidays are not designed for another city than Lyon or districts in California (here city is {city})')
@@ -119,6 +121,9 @@ def calendar_inputs(df_dates, calendar_type=['dayofweek', 'hour', 'minute', 'ban
         df['school_holidays'] = school_holidays
         if 'remaining_holidays' in calendar_type:
             df['remaining_holidays'] = remaining_holidays
+    if 'timeofday' in calendar_type:
+        df['timeofday'] = df['date'].dt.hour * 60 + df['date'].dt.minute
+        df['timeofday'] = df['timeofday'] / (24 * 60)
 
     return df.drop(columns=['date'])
 
@@ -137,7 +142,7 @@ def one_hot_encode_dataframe(df, columns):
         df[column] = df[column].fillna(-1)
         one_hot = pd.get_dummies(df[column], prefix=column)
         one_hot_tensor = torch.tensor(one_hot.values, dtype=torch.float32)
-        one_hot_dict[column] = one_hot_tensor
+        one_hot_dict[column] = one_hot_tensor 
     return one_hot_dict
 
 

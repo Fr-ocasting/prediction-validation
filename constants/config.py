@@ -18,6 +18,10 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['dataset_names'] = dataset_names
     config['dataset_for_coverage'] = dataset_for_coverage
 
+    # Contextual Information: Calendar
+    config['calendar_types'] = ['dayofweek','timeofday']  # IF 'calendar' in 'dataset_names': Define the type of calendar information used in the model 
+    config['embedding_calendar_types'] = ['dayofweek', 'hour']  # IF 'calendar_embedding' in ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
+
     #importlib.reload(data_module)
     #config['n_vertex'] = data_module.n_vertex
     #config['C'] =  data_module.C

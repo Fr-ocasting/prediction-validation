@@ -336,10 +336,12 @@ class Trainer(object):
         return(x_b,y_b,contextual_b)
     
     def loop_batch(self,x_b,y_b,contextual_b,nb_samples,loss_epoch):
+        #print('position of contextual data: ',self.args.contextual_positions)
+        #print('contextual_b: ',[c.size() for c in contextual_b])
+        
         #Forward 
         if self.training_mode=='train':
             self.chrono.forward()
-
         # Plus clean : with autocast(enabled = self.args.mixed_precision):
         if self.args.mixed_precision:
             #print('\nMixed Precision')

@@ -23,6 +23,7 @@ from dl_models.DCRNN.DCRNN import DCRNN
 from dl_models.TFT.TFT import TFT
 from dl_models.ASTGCN.ASTGCN import ASTGCN
 from dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
+from dl_models.STGformer.STGformer import STGformer
 
 from utils.utilities import filter_args
 from profiler.profiler import model_memory_cost
@@ -60,9 +61,8 @@ class full_model(nn.Module):
         super(full_model,self).__init__()
 
         # Add positions for each contextual data:
-        if 'calendar' in args.contextual_positions.keys(): 
-            self.pos_calendar = args.contextual_positions['calendar']
-
+        #self.pos_calendar = [pos_i for pos_i in args.contextual_positions.keys() if 'calendar' in pos_i]
+        self.pos_calendar = {data_name: pos_i for data_name,pos_i in args.contextual_positions.items() if 'calendar' in data_name}
         if dataset.target_data in args.dataset_names :
             self.remove_trafic_inputs = False
         else:
@@ -120,21 +120,23 @@ class full_model(nn.Module):
             self.vision_input_type = None
             self.vision_concatenation_early = False
         
-    def forward_te_model(self,x,contextual):
+    def forward_calendar_model(self,x,contextual):
+        
         if self.te is not None:
-            time_elt = [contextual[pos]for pos in self.pos_calendar] # contextual[self.pos_calendar] 
-            time_elt = [elt.long() for elt in time_elt]# time_elt.long()
-            # Extract feature: [B] -> [B,C,N,L_calendar]
-            time_elt = self.te(x,time_elt)
-            #print('x',x.size())
-            #print('time embedding + x passage dans gru',time_elt.size())
+            time_elt = [contextual[pos]for _,pos in self.pos_calendar.items()]
+            time_elt = [elt.long() for elt in time_elt] # time_elt.long()
+            time_elt = self.te(x,time_elt) # Extract feature: [B] -> [B,C,N,L_calendar]
+
             if self.TE_concatenation_early:
                 # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
                 x = torch.cat([x,time_elt],dim = -1)
-                #print('concat de x et  x + calendar',x.size())
+
+        elif (self.te is None) and (len(self.pos_calendar)>0):
+            time_elt = torch.cat([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
         else:
             time_elt = None
             # ... 
+
         return x,time_elt  
 
     def forward_netmob_model(self,x,contextual):
@@ -303,10 +305,10 @@ class full_model(nn.Module):
         #print('x after attributing node information: ',x.size())
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
         #print('x after NetMob model: ',x.size())
-        #print('extracted_feature: ',extracted_feature.size())
-        x,time_elt = self.forward_te_model(x,contextual)         # Tackle Calendar Data (if exists)
+        #print('extracted_feature: ',extracted_feature.size() if extracted_feature is not None else None)
+        x,time_elt = self.forward_calendar_model(x,contextual)         # Tackle Calendar Data (if exists)
         #print('x after Calendar model: ',x.size())
-        #print('CalendarEmbedded Vector: ',time_elt.size())
+        #print('CalendarEmbedded Vector: ',time_elt.size() if time_elt is not None else None)
 
         # Core model 
         if self.core_model is not None:
@@ -397,13 +399,18 @@ def load_model(dataset, args):
         TE_concatenation_late = False
         TE_embedding_dim = None
 
-    if args.model_name == 'ASTGCN':
-        from dl_models.ASTGCN.load_config import args as ASTGCN_args
-        from dl_models.ASTGCN.load_config import transfer_from_orig_args 
-        ASTGCN_args = transfer_from_orig_args(args,ASTGCN_args)
-        filtered_args = {k: v for k, v in vars(ASTGCN_args).items() if k in inspect.signature(ASTGCN.__init__).parameters.keys()}
+    if args.model_name == 'STGformer':
+        from dl_models.STGformer.STGformer_utilities import normalize_adj_mx
+        filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STGformer.__init__).parameters.keys())}
         adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
-        print('adj_mx: ',adj_mx)
+        # normalze adjacency matrix : 
+        adj_mx = normalize_adj_mx(adj_mx, args.adj_normalize_method, return_type="dense")
+
+        supports = [torch.tensor(i).to(args.device) for i in adj_mx]
+        model = STGformer(**filtered_args,supports=supports).to(args.device)
+    if args.model_name == 'ASTGCN':
+        filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(ASTGCN.__init__).parameters.keys()}
+        adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
         L_tilde = scaled_Laplacian(adj_mx)
         cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(args.device) for i in cheb_polynomial(L_tilde, ASTGCN_args.K)]
         #model = ASTGCN(DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices)
@@ -411,9 +418,6 @@ def load_model(dataset, args):
 
     if args.model_name == 'TFT':
         model = TFT(args)
-
-    if args.model_name == 'CNN': 
-        model = CNN(args,L_add = L_add,vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None)
 
     if args.model_name == 'MTGNN': 
         filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(MTGNN.__init__).parameters.keys()}
@@ -436,18 +440,13 @@ def load_model(dataset, args):
         args = get_block_dims(args,Ko)
         gso,_ = get_gso_from_adj(dataset, args)
         model = STGCN(args,gso=gso, blocks = args.blocks,Ko = Ko).to(args.device)
+        
+    if args.model_name == 'CNN': 
+        model = CNN(args,L_add = L_add,vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None)
 
-    if args.model_name == 'LSTM':
-        from dl_models.LSTM.load_config import args as LSTM_args
-        model = RNN(**vars(LSTM_args),out_dim =args.out_dim,L=args.L+L_add,dropout=args.dropout,device = args.device).to(args.device)
-                          
-    if args.model_name == 'GRU':
-        from dl_models.GRU.load_config import args as GRU_args
-        model = RNN(**vars(GRU_args),out_dim =args.out_dim,L=args.L+L_add, dropout=args.dropout,device = args.device).to(args.device)
-   
-    if args.model_name == 'RNN':
-        from dl_models.RNN.load_config import args as RNN_args
-        model = RNN(**vars(RNN_args),out_dim =args.out_dim,L=args.L+L_add,dropout=args.dropout,device = args.device).to(args.device)
+    if args.model_name in ['LSTM','GRU','RNN']:
+        filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(RNN.__init__).parameters.keys()}
+        model = RNN(**filtered_args).to(args.device)
 
     if args.model_name == 'MLP':
         from dl_models.MLP.MLP import MLP_output 
