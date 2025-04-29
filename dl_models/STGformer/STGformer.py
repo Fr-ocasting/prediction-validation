@@ -302,14 +302,22 @@ class STGformer(nn.Module):
     def forward(self, x,x_vision=None,x_calendar = None):
         """
         Args:
-            x: (batch_size, in_steps, num_nodes, input_dim)
+            x: (batch_size, input_dim, num_nodes, in_steps)  
+               -> Need to permute x cause expected size is: (batch_size, in_steps, num_nodes, input_dim) 
             x_vision: None
-            x_calendar: (batch_size, in_steps, 1, 1)
+            x_calendar: (batch_size, in_steps, 2) last dim = 2 cause channels are[dayofweek,timeofday]
 
         x_calendar.size() has dim has to correspond to x.size(), then we repeat it
         """
-        assert x_calendar.size(1) == 2, f"Expected x_calendar.size(1) == 2, but got {x_calendar.size(1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names."
+
         
+       
+        x = x.permute(0,3,2,1)
+        assert x_calendar.size(-1) == 2, f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names."
+        if x_calendar.dim() ==3:
+            x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
+        x_calendar = x_calendar.repeat(1,1,self.num_nodes,1) # [B,L,1,2]-> [B,L,N,2]
+
         if x_vision is not None:
             raise NotImplementedError("tackling x_vision has not been implemented")
         
@@ -322,11 +330,10 @@ class STGformer(nn.Module):
         if self.dow_embedding_dim > 0:
             dow = x_calendar[..., self.pos_dow]
 
-        print('tod',tod.shape)  # [B]
-        print('dow',dow.shape) # [B]
-        TIME OF DAY ET DAY OF WEEEK ONT ETE CONCU POUR Y(t) ET PAS POUR X(t-1),....,X(t-h),X(t-d),X(t-w)
-        dow = dow.repeat(1, 1, self.num_nodes, 1)
-        tod = tod.repeat(1, 1, self.num_nodes, 1)
+        #print('x: ',x.size(), 'expected (batch_size, in_steps, num_nodes, input_dim)')
+        #print('x_calendar: ',x_calendar.size(), 'expected (batch_size, in_steps, num_nodes, 2)')
+        #print('tod',tod.shape)  # [B,L,N] 
+        #print('dow',dow.shape) # [B,L,N]
 
         x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
         features = torch.tensor([]).to(x)
@@ -364,5 +371,6 @@ class STGformer(nn.Module):
             batch_size, self.num_nodes, self.out_steps, self.output_dim
         )
         out = out.transpose(1, 2)  # (batch_size, out_steps, num_nodes, output_dim)
+        out = out.permute(0,3,2,1)  #  (batch_size, output_dim, num_nodes, out_steps )
 
         return out

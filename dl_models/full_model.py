@@ -132,7 +132,7 @@ class full_model(nn.Module):
                 x = torch.cat([x,time_elt],dim = -1)
 
         elif (self.te is None) and (len(self.pos_calendar)>0):
-            time_elt = torch.cat([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
+            time_elt = torch.stack([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
         else:
             time_elt = None
             # ... 
@@ -412,7 +412,7 @@ def load_model(dataset, args):
         filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(ASTGCN.__init__).parameters.keys()}
         adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
         L_tilde = scaled_Laplacian(adj_mx)
-        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(args.device) for i in cheb_polynomial(L_tilde, ASTGCN_args.K)]
+        cheb_polynomials = [torch.from_numpy(i).type(torch.FloatTensor).to(args.device) for i in cheb_polynomial(L_tilde, args.K)]
         #model = ASTGCN(DEVICE, nb_block, in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, num_for_predict, len_input, num_of_vertices)
         model = ASTGCN(**filtered_args,cheb_polynomials=cheb_polynomials).to(args.device)
 

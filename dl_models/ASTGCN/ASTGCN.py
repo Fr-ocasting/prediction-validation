@@ -307,7 +307,7 @@ class ASTGCN(nn.Module):
 
         self.BlockList = nn.ModuleList([ASTGCN_block(self.DEVICE, self.in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, self.num_of_vertices, self.len_input)])
 
-        self.BlockList.extend([ASTGCN_block(DEVICE, nb_time_filter, K, nb_chev_filter, nb_time_filter, 1, cheb_polynomials, self.num_of_vertices, self.len_input//time_strides) for _ in range(nb_block-1)])
+        self.BlockList.extend([ASTGCN_block(self.DEVICE, nb_time_filter, K, nb_chev_filter, nb_time_filter, 1, cheb_polynomials, self.num_of_vertices, self.len_input//time_strides) for _ in range(nb_block-1)])
 
         self.final_conv = nn.Conv2d(int(self.len_input/time_strides), self.num_for_predict, kernel_size=(1, nb_time_filter))
 

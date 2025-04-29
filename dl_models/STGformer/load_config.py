@@ -31,7 +31,6 @@ parser_HP.add_argument('--scheduler', type=bool, default=None, choices = [True, 
 args_HP = parser_HP.parse_args(args=[])
 # Other possible parameters: 
 if False: 
-adj_type,adj_normalize_method,threshold
     parser_HP.add_argument("--adj_type", type=str, default='corr', choices=['adj','dist','corr'], help="Adjacency matrix type")
     parser_HP.add_argument('--adj_normalize_method', type=str, default='normlap', choices = ['normlap','scalap','symadj','transition','doubletransition','identity'], help = 'Adjacency matrix normalization method.')
     parser_HP.add_argument('--threshold', type=float, default=0.7, help="Threshold for adjacency matrix and get a sparse one (non complete)")

@@ -2,6 +2,7 @@ import torch
 # Relative path:
 import sys 
 import os 
+import pandas as pd 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 #parent_dir = f"{parent_dir}/prediction_validation/"  # A utiliser sur .ipynb notebook
@@ -23,11 +24,9 @@ def load_calendar(subway_ds):
         split into future feature vector U_train, U_valid, U_test
         keep these information into 'dict_calendar_U_{training_mode}'
     """
+    # Get date associated to last step ahead of prediction:
     dates = subway_ds.df_verif[f"t+{subway_ds.step_ahead-1}"]
     df_calendar = calendar_inputs(dates,city = subway_ds.city)
-
-
-
 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = {},{},{}
     tensor_limits_keeper = subway_ds.tensor_limits_keeper
@@ -49,10 +48,19 @@ def load_calendar(subway_ds):
 
     if 'calendar' in subway_ds.args.dataset_names:
         calendar_types = subway_ds.args.calendar_types
+        # Get dates associated to 
+        date_related_tensors = {calendar_type: pd.DataFrame() for calendar_type in calendar_types}
+        for c in subway_ds.df_verif.columns[:-subway_ds.step_ahead]:
+            date_i = subway_ds.df_verif[c]
+            df_calendar_i = calendar_inputs(dates,city = subway_ds.city)
+            for calendar_type in calendar_types:
+                date_related_tensors[calendar_type][c] = df_calendar_i[calendar_type]
+                
+        # ...
+
         for calendar_type in calendar_types:
-            calendar_tensor = torch.tensor(df_calendar[calendar_type].values, dtype=torch.float32)
-            if calendar_tensor.dim() == 1:
-                calendar_tensor = calendar_tensor.unsqueeze(1)
+            calendar_tensor = torch.tensor(date_related_tensors[calendar_type].values, dtype=torch.float32)
+            if calendar_tensor.dim() == 1: calendar_tensor = calendar_tensor.unsqueeze(1)
             dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = update_dict_calendar(dict_calendar_U_train,
                                                                                                 dict_calendar_U_valid,
                                                                                                 dict_calendar_U_test,

@@ -158,41 +158,44 @@ if __name__ == '__main__':
 
 
     if True:
-        
-        model_name = 'STGCN' #'CNN' # 'STGCN'
+
+        #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
 
-        args = local_get_args(model_name,
-                            args_init = None,
-                            dataset_names=dataset_names,
-                            dataset_for_coverage=dataset_for_coverage,
-                            modification = {'ray':True,
-                                            'grace_period':20,#20,
-                                            'HP_max_epochs':500,#100,
-                                            'evaluate_complete_ds' : True,
-                                            #'set_spatial_units' : ['BON','SOI','GER','CHA'],
+        for model_name in ['ASTGCN','STGCN','STGformer']:
+            args = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=dataset_names,
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = {'ray':True,
+                                                'target_data' :'subway_in',
+                                                'use_target_as_context': False,
+                                                'grace_period':20,#20,
+                                                'HP_max_epochs':100,#100,
+                                                'evaluate_complete_ds' : True,
+                                                #'set_spatial_units' : ['BON','SOI','GER','CHA'],
 
-                                            'temporal_graph_transformer_encoder': False, # False # True
-                                            'compute_node_attr_with_attn' : False, # False # True
+                                                'temporal_graph_transformer_encoder': False, # False # True
+                                                'compute_node_attr_with_attn' : False, # False # True
 
-                                            'stacked_contextual': True, # True # False
-                                            #'vision_concatenation_early' : True,
-                                            #'vision_concatenation_late' : False,
-                                            #'vision_model_name': 'VariableSelectionNetwork',
+                                                'stacked_contextual': True, # True # False
+                                                #'vision_concatenation_early' : True,
+                                                #'vision_concatenation_late' : False,
+                                                #'vision_model_name': 'VariableSelectionNetwork',
 
-                                            'learnable_adj_matrix' : False,
-                                            #'learnable_adj_top_k' : 8,  # If learnable_adj_matrix is True, set the number of kept node links on the graph conv
-                                            #'learnable_adj_embd_dim' : 8 ,# If learnable_adj_matrix is True, set the embedding dim of each nodes
+                                                'learnable_adj_matrix' : False,
+                                                #'learnable_adj_top_k' : 8,  # If learnable_adj_matrix is True, set the number of kept node links on the graph conv
+                                                #'learnable_adj_embd_dim' : 8 ,# If learnable_adj_matrix is True, set the embedding dim of each nodes
 
-                                            'data_augmentation': True, #True,  #False
-                                            'DA_method':'rich_interpolation', # 'noise' # 'interpolation
-                                            })
-        # Init 
-        epochs_validation = 500#100
-        num_samples = 200 # 500
-        
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+                                                'data_augmentation': True, #True,  #False
+                                                'DA_method':'rich_interpolation', # 'noise' # 'interpolation
+                                                })
+            # Init 
+            epochs_validation = 1#100
+            num_samples = 2 # 200
+            
+            HP_and_valid_one_config(args,epochs_validation,num_samples)
     if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
