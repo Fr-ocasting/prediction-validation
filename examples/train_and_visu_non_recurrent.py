@@ -233,7 +233,8 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
             col1 = column(p1,p3,select)   
         else:
             col1 = column(p1,select) 
-    col2 = plot_loss_from_trainer(trainer,width=width//3,height=2*height,bool_show=False)
+    height_loss = (2+1/3)*height if p2 is not None else height
+    col2 = plot_loss_from_trainer(trainer,width=width//2,height=height_loss,bool_show=False)
     grid = row(col1,col2)
 
     output_notebook()

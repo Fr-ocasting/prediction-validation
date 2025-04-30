@@ -46,14 +46,18 @@ def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=None)
     '''
     Tackle the case of single point prediction
     '''
-    for metric in metrics :
-        if 'by station' in metric:
-            metric_name = metric.split(' ')[0]
-            error = metrics_by_station(Preds,Y_true,metric_name,previous=previous)
-        else:
-            fun = load_fun(metric,previous=previous)
-            error = fun(Preds,Y_true).item()
-        dic_metric[metric] = error
+
+    for out_dim in range(Preds.size(-1)):
+        Preds_i = Preds[...,out_dim]
+        Y_true_i = Y_true[...,out_dim]
+        for metric in metrics :
+            if 'by station' in metric:
+                metric_name = metric.split(' ')[0]
+                error = metrics_by_station(Preds_i,Y_true_i,metric_name,previous=previous)
+            else:
+                fun = load_fun(metric,previous=previous)
+                error = fun(Preds_i,Y_true_i).item()
+            dic_metric[f"{metric}_h{out_dim+1}"] = error
     return dic_metric
 
 def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):

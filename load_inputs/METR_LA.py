@@ -1,73 +1,96 @@
-import sys 
-import os 
+import sys
+import os
 import pandas as pd
-current_file_path = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
-if parent_dir not in sys.path:
-    sys.path.insert(0,parent_dir)
-
-from dataset import DataSet
-from utils.utilities import get_time_step_per_hour
+import torch
+import numpy as np
+from datetime import datetime
 import h5py
 
-''' This file has to :
- - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
- - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
-'''
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path, '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
-FILE_NAME = 'METR_LA/METR_LA'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
-START = '03/01/2012'
-END = '06/28/2012'
+# Personnal import
+from dataset import DataSet, PersonnalInput
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
+from utils.utilities import restrain_df_to_specific_period
+
+"""
+METR-LA Dataset
+df.shape:  ()
+
+traffic speed on 207 sensors on the highways of Los Angeles County
+"""
+
+FILE_BASE_NAME = 'METR_LA'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
+DATA_SUBFOLDER = 'METR_LA'
+CITY = f'California_7' 
+
+# Naive Freq
 FREQ = '5min'
-
-C = 1
-n_vertex = 207
+# Temporal Coverage period
+START = '2012-03-01 00:00:00'
+END = '2012-06-28 00:00:00'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
+# List of invalid period 
 list_of_invalid_period = []
-#list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
-#list_of_invalid_period.append([datetime(2019,1,30,8,15),datetime(2019,1,30,10,30)])
+
+C = 1 # Nb channels by spatial units
+
+n_vertex = 207
 
 
 
-def load_data(args,FOLDER_PATH,coverage_period = None):
-    '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
-    columns has to represent the spatial units.
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+              data_subfolder = DATA_SUBFOLDER,
+              file_base_name = FILE_BASE_NAME,city =CITY):
+     
+    """
+    Load data
 
-    outputs: 
-    ---------
-    df: contains 
-    df.index : coverage period of the dataset 
-    invalid_dates : list of invalid dates 
-    '''
-    data = h5py.File(f"{FOLDER_PATH}/{FILE_NAME}.h5", 'r')
+    Args:
+        
+
+    Returns:
+        PersonnalInput: Objet contenant les données traitées.
+    """
+    dirname = f"{FOLDER_PATH}/{data_subfolder}"
+    print(f"   Load data from: {dirname}")
+
+    data = h5py.File(f"{dirname}/{file_base_name}.h5", 'r')
     axis0 = pd.Series(data['df']['axis0'][:].astype(str))
     axis1 = pd.Series(data['df']['axis1'][:].astype(str))
     df = pd.DataFrame(data['df']['block0_values'][:], columns=axis0, index = pd.to_datetime(axis1.astype(int)/1_000_000_000,unit='s'))
     df.columns.name = 'Sensor'
+
+    assert '5min' == args.freq, f"Trying to apply a a {args.freq} temporal aggregation while METR-LA is designed for 5min"
+    #assert args.D == 0, f"Trying to look {args.D}Day before but there are no Weekends"
+
+    # --- Preprocess ---
     df.index = pd.to_datetime(df.index)
-
     df = restrain_df_to_specific_period(df,coverage_period)
-    
-    time_step_per_hour = get_time_step_per_hour(args.freq)
-    if args.freq != FREQ :
-        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
-        df = df.resample(args.freq).mean()
+    print(f"Data loaded with shape: {df.shape}")
+    data_T = torch.tensor(df.values).float()
+    dims = [0] # if [0] then Normalisation on temporal dim
 
-    dataset = DataSet(df,
-                      time_step_per_hour=time_step_per_hour, 
-                      Weeks = args.W, 
-                      Days = args.D, 
-                      historical_len= args.H,
-                      step_ahead=args.step_ahead,
-                      spatial_unit = df.columns,
-                      data_augmentation= args.data_augmentation
-                      )
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
 
-    return(dataset)
-    
-def restrain_df_to_specific_period(df,coverage_period):
-    if coverage_period is not None:
-        df = df.loc[coverage_period]
+    # --- Finalisation Métadonnées ---
+    processed_input.spatial_unit = df.columns.tolist()
+    processed_input.C = C
+    if args.adj_type == 'dist':
+        adj_mx_name = 'dist.csv'
+    elif args.adj_type == 'adj':
+        raise NotImplementedError('direct Neighborhood Adjacency matrix does not exists for this dataset')
+    processed_input.adj_mx_path = f"{dirname}/adj/{adj_mx_name}"
+    processed_input.raw_data_path =f"{dirname}/{file_base_name}.h5"
+    processed_input.city = city
+    # processed_input.periods = None 
+    return processed_input
 
-    df = df.sort_index()
-    return df
+if __name__ == "__main__":
+    # blabla
+    blabla

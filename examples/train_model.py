@@ -19,10 +19,10 @@ from constants.config_by_datasets import dic_config
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
 target_data = 'subway_in' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
-dataset_names = ['subway_in','subway_out','calendar'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_names = ['subway_in','subway_out'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
 dataset_for_coverage = ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STGformer' # 'STGCN', 'ASTGCN' # 'STGformer'
-station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
+model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer'
+#station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
 # Modif 
@@ -32,7 +32,7 @@ modification = {'target_data': target_data,
                 'data_augmentation': False,
                 'step_ahead':4,
         
-                'epochs' : 3, #100
+                'epochs' : 100, #100
 
                 # Contextual data:
 
@@ -64,21 +64,26 @@ modification = {'target_data': target_data,
 
 if target_data in dic_config.keys():
     modification.update(dic_config[target_data])
-# ...
-#1038945
 
-# Training and visu: 
+
 args_init = local_get_args(model_name,
                     args_init = None,
                     dataset_names=dataset_names,
                     dataset_for_coverage=dataset_for_coverage,
                     modification = modification)
 
-training_mode_to_visualise = ['test'] # ['test','valid','train']
+
+def main():
+    ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init)
+    model = full_model(ds, args).to(args.device)
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
+    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
+    return trainer,ds,model,args
 
 
-ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init)
-model = full_model(ds, args).to(args.device)
-optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
-trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
+if __name__ == "__main__":
+    # Run the script
+    trainer,ds,model,args = main()
+    print("Training completed successfully.")
+    print(trainer.performance)

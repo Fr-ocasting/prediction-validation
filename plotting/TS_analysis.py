@@ -6,7 +6,8 @@ import pandas as pd
 from bokeh.palettes import Set3_12 
 from bokeh.palettes import Plasma256 
 from bokeh.palettes import Turbo256 as palette
-
+from bokeh.models.widgets import Div
+from bokeh.layouts import column
 from bokeh.plotting import output_notebook,show
 import numpy as np 
 
@@ -194,29 +195,28 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
 
                      last_loss = str_valeur(loss_list[-1])
                      best_loss = str_valeur(np.min(np.array(loss_list)))
-                     displayed_legend = f"{name} \n   Last loss: {last_loss} \n   Best loss: {best_loss}"
-                     
-                     if training_mode == 'valid':
-                            if 'MPIW' in list(trainer.performance['test_metrics'].keys()):
-                                   test_mpiw = str_valeur(trainer.performance['test_metrics']['MPIW'])
-                                   test_picp =  "{:.2%}".format(trainer.performance['test_metrics']['PICP'])
-                                   displayed_legend = f"{displayed_legend}\n   Test MPIW: {test_mpiw}\n   Test PICP: {test_picp}"
-                            if 'mse' in list(trainer.performance['test_metrics'].keys()):
-                                   test_mae = str_valeur(trainer.performance['test_metrics']['mae'])
-                                   test_mse = str_valeur(trainer.performance['test_metrics']['mse'])
-                                   displayed_legend = f"{displayed_legend}\n   Test MSE: {test_mse}\n   Test MAE: {test_mae}"
-
+                     displayed_legend = f"{name} loss: best (last) {best_loss} ({last_loss})"
                      legend_it.append((displayed_legend, [c]))
 
               p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
               legend = Legend(items=legend_it)
               p.add_layout(legend, 'below')
 
+              if trainer.args.loss_function_type == 'MSE':
+                     test_mae = ' // '.join([str_valeur(trainer.performance['test_metrics'][f'mae_h{h+1}']) for h in range(trainer.args.step_ahead)])
+                     test_mse =' // '.join([str_valeur(trainer.performance['test_metrics'][f'mse_h{h+1}']) for h in range(trainer.args.step_ahead)])
+                     text = Div(text = f"<b>Test MAE:</b> {test_mae} <br> <b>Test MSE:</b> {test_mse}", width=width, height=height//3)
+              elif trainer.args.loss_function_type == 'quantile':
+                     test_mpiw = str_valeur(trainer.performance['test_metrics']['MPIW'])
+                     test_picp =  "{:.2%}".format(trainer.performance['test_metrics']['PICP'])
+                     text = Div(text = f"<b>Test MPIW:</b> {test_mpiw} <br> <b>Test PICP:</b> {test_picp}", width=width, height=height//3)
+              layout = column(p, text)
+
        if bool_show:
               output_notebook()
-              show(p)
+              show(layout)
 
-       return p
+       return layout
 
 
 def plot_TS(list_df_ts,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False,x_datetime = True):
