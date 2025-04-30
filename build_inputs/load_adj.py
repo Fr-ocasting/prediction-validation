@@ -33,7 +33,7 @@ def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
             if type == 'dist':
                 raise NotImplementedError('Distance-based adjacency matrix not implemented for this dataset')
             gso = np.load(dataset.adj_mx_path)
-            gso = pd.DataFrame(gso, index = dataset.spatial_units, columns = dataset.spatial_units)
+            gso = pd.DataFrame(gso, index = dataset.spatial_unit, columns = dataset.spatial_unit)
             
         elif dataset.target_data in ['METR_LA']:
             gso = pd.read_csv(dataset.adj_mx_path,index_col=0)

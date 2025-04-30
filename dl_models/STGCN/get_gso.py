@@ -25,6 +25,8 @@ def get_output_kernel_size(args):
         Ko = args.L  if args.L > 0 else 1
     else :
         Ko = args.L - (args.Kt - 1) * 2 * args.stblock_num   
+        assert (Ko > 0), f"The temporal dimension will decrease by {(args.Kt - 1)*2* args.stblock_num} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
+
 
     # Tackle the case where prediction is based only from contextual data:
     if  not (args.target_data in args.dataset_names):
@@ -67,9 +69,6 @@ def get_block_dims(args,Ko):
         if  not(args.target_data in args.dataset_names) and is_condition(args):
             blocks[-1][0] = 0
     blocks.append([args.out_dim])
-    number_of_st_conv_blocks = len(blocks) - 3
-
-    assert ((args.enable_padding)or((args.Kt - 1)*2*number_of_st_conv_blocks > args.L + 1)), f"The temporal dimension will decrease by {(args.Kt - 1)*2*number_of_st_conv_blocks} which doesn't work with initial dimension L: {args.L} \n you need to increase temporal dimension or add padding in STGCN_layer"
 
     args.blocks = blocks
     return(args)

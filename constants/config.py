@@ -56,7 +56,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
         config['pin_memory'] = True # False 
         config['prefetch_factor'] = 2 # None, 2,3,4,5 ... 
         config['drop_last'] = False  # True
-        config['mixed_precision'] = False # True # False
+        config['mixed_precision'] = True # True # False
     else:
         config['num_workers'] = 0 # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
         config['persistent_workers'] = False # False 
@@ -108,9 +108,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['W'] = 0
     config['D'] = 1
     config['step_ahead'] = 1
-
-    if not 'subway_in' in dataset_names:
-        config['L'] = 0
     config['L'] = config['H']+config['W']+config['D']
 
     # Split proportion
@@ -235,6 +232,12 @@ def update_modif(args,name_gpu='cuda'):
     # Modif about n_vertex: 
     if args.set_spatial_units is not None:
         args.n_vertex = len(args.set_spatial_units)
+
+    # Update total sequence length:
+    if not args.target_data in args.dataset_names:
+        args.L = 0
+    else:
+        args.L = args.H+args.D+args.W
     return(args)
 
 def modification_contextual_args(args,modification):

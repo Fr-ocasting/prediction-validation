@@ -104,7 +104,7 @@ class CNN(nn.Module):
             x_vision = x_vision.reshape(x_vision.size(0)*x_vision.size(-1),-1)
             # Concat [B*N,H*L] + [B*N,Z] ->  [B*N,H*L+Z]
             if not (x.numel() == 0):
-                x = torch.concat([x,x_vision],axis=1)
+                x = torch.cat([x,x_vision],dim=1)
             else:
                 x = x_vision
         if self.TE_concatenation_late:
@@ -114,7 +114,7 @@ class CNN(nn.Module):
             x_calendar = x_calendar.reshape(x_calendar.size(0)*x_calendar.size(-1),-1)          
             # Concat   [B*N,H*L] + [B*N,L_calendar]  ->   [B*N,H*L+L_calendar]
             if not (x.numel() == 0):
-                x = torch.concat([x,x_calendar],axis=1)
+                x = torch.cat([x,x_calendar],dim=1)
             else:
                 x = x_calendar
         ## == ...

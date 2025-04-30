@@ -3,7 +3,9 @@ import pandas as pd
 import numpy as np 
 import time
 from torch.cuda.amp import autocast,GradScaler
-
+#if torch.cuda.is_available():
+#    torch.backends.cuda.matmul.allow_tf32 = True
+#    torch.backends.cudnn.allow_tf32  = True
 
 try :
     from plotting.plotting_bokeh import generate_bokeh
@@ -236,6 +238,7 @@ class Trainer(object):
             self.chrono.next_iter()
             t0 = time.time()
             # Train and Valid each epoch 
+
             self.train_valid_one_epoch()
 
             # Save best model (only if it's not a ray tuning)
@@ -344,21 +347,17 @@ class Trainer(object):
             self.chrono.forward()
         # Plus clean : with autocast(enabled = self.args.mixed_precision):
         if self.args.mixed_precision:
-            #print('\nMixed Precision')
-            with autocast():
-                pred = self.model(x_b,contextual_b)
-                loss = self.loss_function(pred.float(),y_b)
-                #print('loss: ',loss)
-                #print('pred: ', pred.dtype, pred.size())
-                #print('y_b: ', y_b.dtype, y_b.size())
-                #print(self.loss_function)
+                with autocast():  #dtype=torch.bfloat16
+                    pred = self.model(x_b,contextual_b)
+                    loss = self.loss_function(pred.float(),y_b)
         else:
-            #print('\nNo Mixed Precision')  
             pred = self.model(x_b,contextual_b)
             loss = self.loss_function(pred.float(),y_b)
-            #print('\npred: ', pred.size(), 'y_b: ', y_b.size())
-            #print('loss: ',loss)
-            #print('\nloss: ',loss) 
+        #print('loss: ',loss)
+        #print('pred: ', pred.dtype, pred.size())
+        #print('y_b: ', y_b.dtype, y_b.size())
+        #print(self.loss_function)
+
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
             self.chrono.backward()
@@ -476,10 +475,15 @@ class Trainer(object):
 
     def backpropagation(self,loss):
         self.optimizer.zero_grad()
-        if self.args.mixed_precision:
-            self.scaler.scale(loss).backward()
-            self.scaler.step(self.optimizer)
-            self.scaler.update()
+        # Useless if autocast is used with torch.bfloat16
+        if True:
+            if self.args.mixed_precision:
+                self.scaler.scale(loss).backward()
+                self.scaler.step(self.optimizer)
+                self.scaler.update()
+            else:
+                loss.backward()
+                self.optimizer.step()
         else:
             loss.backward()
             self.optimizer.step()

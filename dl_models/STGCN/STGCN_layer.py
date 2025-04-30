@@ -33,43 +33,47 @@ class Align(nn.Module):
             x = x
         
         return x
-
+"""
 class CausalConv1d(nn.Conv1d):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, enable_padding=False, dilation=1, groups=1, bias=True):
         if enable_padding == True:
-            self.__padding = (kernel_size - 1) * dilation
+            self.ca1d_padding = (kernel_size - 1) * dilation
         else:
-            self.__padding = 0
-        super(CausalConv1d, self).__init__(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=self.__padding, dilation=dilation, groups=groups, bias=bias)
+            self.ca1d_padding = 0
+        super(CausalConv1d, self).__init__(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=self.ca1d_padding, dilation=dilation, groups=groups, bias=bias)
 
     def forward(self, input):
         result = super(CausalConv1d, self).forward(input)
-        if self.__padding != 0:
-            return result[: , : , : -self.__padding]
+        if self.ca1d_padding != 0:
+            return result[: , : , : -self.ca1d_padding]
         
         return result
-
-class CausalConv2d(nn.Conv2d):
+"""
+class CausalConv2d(nn.Module): # nn.Conv2d
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, enable_padding=False, dilation=1, groups=1, bias=True):
+        super().__init__()
         self.kernel_size = nn.modules.utils._pair(kernel_size)
         self.stride = nn.modules.utils._pair(stride)
         self.dilation = nn.modules.utils._pair(dilation)
         if enable_padding == True:
-            self.__padding = [int((self.kernel_size[i] - 1) * self.dilation[i]) for i in range(len(self.kernel_size))]
+            self.ca2d_padding = [int((self.kernel_size[i] - 1) * self.dilation[i]) for i in range(len(self.kernel_size))]
         else:
-            self.__padding = 0
-        self.left_padding = nn.modules.utils._pair(self.__padding)
-        super(CausalConv2d, self).__init__(in_channels, out_channels, self.kernel_size, stride=self.stride, padding=0, dilation=self.dilation, groups=groups, bias=bias)
+            self.ca2d_padding = 0
+        self.left_padding = nn.modules.utils._pair(self.ca2d_padding)
+        ## REMOVED TO ALLOW TORCH DYNAMO COMPILE 
+        #  #super(CausalConv2d, self).__init__(in_channels, out_channels, self.kernel_size, stride=self.stride, padding=0, dilation=self.dilation, groups=groups, bias=bias)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        
+        self.conv2d = nn.Conv2d(in_channels,out_channels, kernel_size=self.kernel_size,  stride=self.stride, padding=0, dilation=self.dilation,groups=groups,bias=bias)
     def forward(self, input):
-        if self.__padding != 0:
+        if self.ca2d_padding != 0:
             input = F.pad(input, (self.left_padding[1], 0, self.left_padding[0], 0))
             #print(f'x after padding: {input.size()}, Args F.pad: ({self.left_padding[1]}, 0, {self.left_padding[0]}, 0)')
         #print('kernel size: ',self.kernel_size)
-        result = super(CausalConv2d, self).forward(input)
+        # REMOVED TO ALLOW TORCH DYNAMO COMPILE  
+        # #result = super(CausalConv2d, self).forward(input)
+        result = self.conv2d(input)
         #print(f'x after causal conv2D: {result.size()}')    
 
         return result
@@ -202,6 +206,7 @@ class GraphConv(nn.Module):
         return graph_conv
 
     def compute_cheb_graph_conv(self,x):
+        x_list = []
         if self.Ks - 1 < 0:
             raise ValueError(f'ERROR: the graph convolution kernel size Ks has to be a strict positive integer, but received {self.Ks}.')  
         elif self.Ks - 1 == 0:
@@ -339,6 +344,7 @@ class OutputBlock(nn.Module):
         super(OutputBlock, self).__init__()
 
         self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
+        self.temporal_agg = nn.Identity() # initialize temporal agg for torch.jit.script
         if temporal_graph_transformer_encoder:
             if False:
                 self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
@@ -445,10 +451,10 @@ class OutputBlock(nn.Module):
 
         if self.vision_concatenation_late:
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
-            x = torch.concat([x,x_vision],axis=-1)
+            x = torch.cat([x,x_vision],dim=-1)
         if self.TE_concatenation_late:
             # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,C,N,Z+L_calendar]
-            x = torch.concat([x,x_calendar],axis=-1) 
+            x = torch.cat([x,x_calendar],dim=-1) 
 
         #print('x.size after concatenation late if exists: ',x.size())
         #print("\nforward output module:")

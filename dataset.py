@@ -3,7 +3,9 @@ import numpy as np
 import pandas as pd 
 import os 
 from datetime import timedelta
-
+#if torch.cuda.is_available():
+#    torch.backends.cuda.matmul.allow_tf32 = True
+#    torch.backends.cudnn.allow_tf32  = True
 
 # Personnal Import 
 from DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeeper

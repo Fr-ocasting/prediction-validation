@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import inspect
-
+from typing import List, Dict, Optional, Tuple
 # 
 # Relative path:
 import sys 
@@ -59,6 +59,21 @@ def load_spatial_attn_model(args,query_dim,init_spatial_dim):
 class full_model(nn.Module):
     def __init__(self,dataset, args):
         super(full_model,self).__init__()
+
+        self.ds_which_need_spatial_attn: List[str] = []
+        self.pos_node_attributes:        List[int] = []
+        self.node_attr_which_need_attn:  List[str] = []
+        self.dict_node_attr2dataset: Dict[int, str] = {}
+
+        self.netmob_vision: Optional[nn.Module] = None
+        self.te:            Optional[nn.Module] = None
+
+
+        # Init
+        self.ds_which_need_spatial_attn = list(args.ds_which_need_spatial_attn)
+        self.pos_node_attributes        = list(args.pos_node_attributes)
+        self.dict_node_attr2dataset     = dict(args.dict_node_attr2dataset)
+        self.node_attr_which_need_attn  = list(args.node_attr_which_need_attn)
 
         # Add positions for each contextual data:
         #self.pos_calendar = [pos_i for pos_i in args.contextual_positions.keys() if 'calendar' in pos_i]
@@ -172,10 +187,6 @@ class full_model(nn.Module):
         return x,extracted_feature
     
     def tackle_node_attributes(self,args):
-        self.ds_which_need_spatial_attn = args.ds_which_need_spatial_attn
-        self.pos_node_attributes = args.pos_node_attributes
-        self.dict_node_attr2dataset = args.dict_node_attr2dataset
-        self.node_attr_which_need_attn = args.node_attr_which_need_attn
         self.stacked_contextual = args.stacked_contextual
         self.n_vertex = args.n_vertex
         for dataset_name in self.ds_which_need_spatial_attn:
@@ -286,7 +297,8 @@ class full_model(nn.Module):
         '''
         #print('\nx size before forward: ',x.size())
         if self.remove_trafic_inputs:
-            x = torch.Tensor().to(x)
+            #x = torch.Tensor().to(x)
+            x = torch.empty(0, device=x.device, dtype=x.dtype)
 
         #print('x before stacking new channels:',x.size())
         # Spatial Attention and attributing node information: 
@@ -302,6 +314,9 @@ class full_model(nn.Module):
 
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attribute(x,list_node_attributes)
+        else:
+            if x.dim() == 3:  # If only 1 channels
+                x = x.unsqueeze(1)
         #print('x after attributing node information: ',x.size())
         x,extracted_feature = self.forward_netmob_model(x,contextual)        # Tackle NetMob (if exists):
         #print('x after NetMob model: ',x.size())
@@ -311,6 +326,7 @@ class full_model(nn.Module):
         #print('CalendarEmbedded Vector: ',time_elt.size() if time_elt is not None else None)
 
         # Core model 
+
         if self.core_model is not None:
             x= self.core_model(x,extracted_feature,time_elt)
             #print('x after Core Model: ',x.size())

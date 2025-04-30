@@ -5,6 +5,9 @@ import pandas as pd
 import numpy as np 
 import geopandas as gpd 
 import torch
+#if torch.cuda.is_available():
+#    torch.backends.cuda.matmul.allow_tf32 = True
+#    torch.backends.cudnn.allow_tf32  = True
 from argparse import Namespace
 # Get Parent folder : 
 current_path = os.getcwd()

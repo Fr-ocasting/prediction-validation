@@ -55,7 +55,7 @@ class FastAttentionLayer(nn.Module):
                 out_t = self.normal_attention(
                     x.transpose(1, 2), qs, ks, vs, dim=dim
                 ).transpose(1, 2)
-            out = torch.concat([out_s, out_t], -1)
+            out = torch.cat([out_s, out_t], -1)
             out = self.out_proj(out)
         else:
             out = self.out_proj(out_s)
@@ -341,18 +341,18 @@ class STGformer(nn.Module):
             tod_emb = self.tod_embedding(
                 (tod * self.steps_per_day).long()
             )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
-            features = torch.concat([features, tod_emb], -1)
+            features = torch.cat([features, tod_emb], -1)
         if self.dow_embedding_dim > 0:
             dow_emb = self.dow_embedding(
                 dow.long()
             )  # (batch_size, in_steps, num_nodes, dow_embedding_dim)
-            features = torch.concat([features, dow_emb], -1)
+            features = torch.cat([features, dow_emb], -1)
         if self.adaptive_embedding_dim > 0:
             adp_emb = self.adaptive_embedding.expand(
                 size=(batch_size, *self.adaptive_embedding.shape)
             )
 
-            features = torch.concat([features, self.dropout(adp_emb)], -1)
+            features = torch.cat([features, self.dropout(adp_emb)], -1)
         x = torch.cat(
             [x] + [features], dim=-1
         )  # (batch_size, in_steps, num_nodes, model_dim)

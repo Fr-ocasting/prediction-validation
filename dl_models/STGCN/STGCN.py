@@ -83,6 +83,11 @@ class STGCN(nn.Module):
 
         in_feature_fc1 = blocks[-3][-1] 
 
+        # Init for torch compile
+        self.output = nn.Identity()
+        self.fc1 = nn.Identity()
+        self.fc2 = nn.Identity()
+        self.relu = nn.ReLU()
         if self.Ko > 0:
             #print('blocks: ',blocks)
             #print('in_feature_fc1: ',in_feature_fc1)
@@ -96,7 +101,7 @@ class STGCN(nn.Module):
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=in_feature_fc1, out_features=blocks[-2][0], bias=args.enable_bias)
             self.fc2 = nn.Linear(in_features=blocks[-2][0], out_features=blocks[-1][0], bias=args.enable_bias)
-            self.relu = nn.ReLU()
+            
 
 
             #self.leaky_relu = nn.LeakyReLU()
@@ -139,7 +144,7 @@ class STGCN(nn.Module):
                     x = self.st_blocks(x)
 
                 ### ---
-
+            #print('self.Ko:', self.Ko)
             if self.Ko >= 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
                 x = self.output(x,x_vision,x_calendar)
@@ -150,7 +155,7 @@ class STGCN(nn.Module):
                     x_vision = x_vision.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C_out,L',N]
                     if not (x.numel() == 0):
-                        x = torch.concat([x,x_vision],axis=2)
+                        x = torch.cat([x,x_vision],dim=2)
                     else:
                         x = x_vision
                 if self.TE_concatenation_late:
@@ -158,7 +163,7 @@ class STGCN(nn.Module):
                     x_calendar = x_calendar.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C,L_calendar,N] 
                     if not (x.numel() == 0):
-                        x = torch.concat([x,x_calendar],axis=2)
+                        x = torch.cat([x,x_calendar],dim=2)
                     else:
                         x = x_calendar
 
@@ -172,6 +177,9 @@ class STGCN(nn.Module):
             #print('x.size: ' ,x.size())
             B = x.size(0)
             x = x.squeeze()
+            #print('x.size: ' ,x.size())
+            #print('self.n_vertex: ', self.n_vertex)
+            #print('self.out_dim: ', self.out_dim)
             if B ==1:
                 x = x.unsqueeze(0)
             if self.n_vertex == 1:

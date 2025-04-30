@@ -219,7 +219,7 @@ class MTGNN(nn.Module):
             x_vision = x_vision.permute(0,3,2,1)
             # Concat [B,H,N, 1] + [B,Z,N,1] ->  [B,H',N, 1]
             if not (x.numel() == 0):
-                skip = torch.concat([skip,x_vision],axis=1)
+                skip = torch.cat([skip,x_vision],dim=1)
             else:
                 skip = x_vision
         if self.TE_concatenation_late:
@@ -227,7 +227,7 @@ class MTGNN(nn.Module):
             x_calendar = x_calendar.permute(0,3,2,1)
             # Concat  [B,H,N,1] +  [B,L_calendar,N,1]  ->  [B,H',N, 1]
             if not (x.numel() == 0):
-                skip = torch.concat([skip,x_calendar],axis=1)
+                skip = torch.cat([skip,x_calendar],dim=1)
             else:
                 skip = x_calendar
         ## == ...
