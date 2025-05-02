@@ -4,7 +4,7 @@ parser = argparse.ArgumentParser(description='ASTGCN')
 
 parser.add_argument('--nb_block', type=int, default=2, # 2 
                     help='Number of blocks in the model')
-parser.add_argument('--K', type=int, default=3,   #3
+parser.add_argument('--K', type=int, default=2,   #3
                     help='Order of the Chebyshev polynomial')
 parser.add_argument('--nb_chev_filter', type=int, default=32, #64 
                     help='Number of Chebyshev filters')

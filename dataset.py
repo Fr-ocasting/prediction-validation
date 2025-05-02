@@ -441,12 +441,10 @@ class DataSet(object):
         tensor_limits_keeper = TensorLimitsKeeper(split_limits,self.df_dates,self.df_verif,train_prop,valid_prop, test_prop,self.step_ahead)
         #print('df_dates: ',self.df_dates)
         #print('df_verif: ',self.df_verif)
-
         for training_mode in ['train','valid','test']:
             tensor_limits_keeper.get_local_df_verif(training_mode)   # Build DataFrame Verif associated to each training mode
 
             #print('df_verif_train: ',tensor_limits_keeper.df_verif_train)
-
             tensor_limits_keeper.keep_track_on_df_limits(training_mode)   # Keep track on DataFrame Limits (dates)
             tensor_limits_keeper.get_raw_values_indices(training_mode)
             tensor_limits_keeper.get_raw_tensor_input_by_training_mode(self,training_mode)

@@ -92,7 +92,6 @@ def tackle_input_data(invalid_dates,coverage_period,args,normalize):
                                            args=args,
                                            normalize=normalize
                                            )
-        contextual_ds_i.name = dataset_name
         contextual_ds[dataset_name] = contextual_ds_i
         return(contextual_ds,args)
         

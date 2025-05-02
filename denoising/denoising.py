@@ -24,24 +24,19 @@ import torch
 
 from .median import MedianFilter
 from .exponential import ExponentialSmoother
-from .savitzky_golay_causal import SavitzkyGolayCausal
+from .savitzky_golay import SavitzkyGolay
+from .utils import BaseDenoiser
 
 # ---------------------------------------------------------------------------
 
 
-class BaseDenoiser:
-     """Common interface for all denoising algorithms."""
 
-     name: str = "base"
-
-     def __call__(self, series: torch.Tensor) -> torch.Tensor:  # pragma: no cover
-          raise NotImplementedError
 
 
 # Register of available denoisers.
 _DENOISERS: Dict[str, Type[BaseDenoiser]] = {
      cls.name: cls
-     for cls in (MedianFilter, ExponentialSmoother, SavitzkyGolayCausal)
+     for cls in (MedianFilter, ExponentialSmoother, SavitzkyGolay)
 }
 
 
@@ -55,7 +50,7 @@ class DenoisingManager:
           self,
           denoiser_names: Sequence[str],
           *,
-          training_modes: Sequence[str] | None = None,
+          training_mode: str | None = None,
           denoiser_kwargs: Dict[str, dict] | None = None,
      ) -> None:
           """
@@ -63,15 +58,15 @@ class DenoisingManager:
           ----------
           denoiser_names :
                 List of algorithms to chain (e.g. ``["median", "exponential"]``).
-          training_modes :
-                Subset of ``["train", "valid", "test"]`` on which to apply
-                the denoising. Default: ``["train"]``.
+          training_mode :
+                training_mode on which to apply
+                the denoising. Default: ``"train"``.
           denoiser_kwargs :
                 Optional dictionary to pass hyperparameters specific
                 to each denoiser, e.g.
                 ``{"median": {"kernel_size": 5}, "exponential": {"alpha": 0.2}}``.
           """
-          self.training_modes: List[str] = list(training_modes or ["train"])
+          self.training_mode: str = training_mode or "train"
           self.pipeline: List[BaseDenoiser] = [
                 self._instantiate(name, denoiser_kwargs or {}) for name in denoiser_names
           ]
@@ -94,36 +89,20 @@ class DenoisingManager:
 
      # ---------------------------------------------------------------------
 
-     def apply(self, dataset, /) -> None:
+     def apply(self,tensor_limits_keeper, dataset, /) -> None:
           """
-          Modifies *in-place* ``dataset.raw_values`` and possibly shifts
+          Modifies ``dataset.raw_values`` and possibly shifts
           ``dataset.df`` if a filter delay is introduced.
-
-          The *dataset* must have populated ``dataset.tensor_limits_keeper``;
-          it is therefore recommended to call this manager **after**
-          ``dataset.train_valid_test_split_indices`` but **before**
-          ``dataset.get_feature_vect``.
           """
-          if not hasattr(dataset, "tensor_limits_keeper"):
-                raise AttributeError(
-                     "The dataset does not yet have 'tensor_limits_keeper'. "
-                     "First call 'train_valid_test_split_indices'."
-                )
-
           df_dates_copy = dataset.df_dates.copy()
           df_dates_copy['index'] = df_dates_copy.index
           raw = dataset.raw_values.clone()
-
-          # Get the index ranges for each training_mode.
-          indices: List[int] = []
-          for mode_i in self.training_modes:
-            dates_i = getattr(dataset.tensor_limits_keeper,f"df_verif_{mode_i}").stack().unique()  # Get unique dates used for a specific training mode
-            df_raw_index_i = df_dates_copy.set_index('date').loc[list(dates_i)]
-            indices_i = torch.LongTensor(df_raw_index_i['index'].values)
-            raw_value_i = torch.index_select(ds.raw_values, 0, indices_i) # Select specific indices 
-
-            # Chained denoiser.
-            for denoiser in self.pipeline:
-                    raw_value_i = denoiser(raw_value_i)
-
-            dataset.raw_values[indices_i] = raw_value_i  # in-place update
+          
+          indices_i = torch.tensor(getattr(tensor_limits_keeper,f"{self.training_mode}_indices"),dtype=torch.long)
+          raw_value_i = torch.index_select(raw, 0, indices_i) # Select specific indices 
+          
+          # Chained denoiser.
+          for denoiser in self.pipeline:
+            raw_value_i = denoiser(raw_value_i)
+            
+          return raw_value_i  

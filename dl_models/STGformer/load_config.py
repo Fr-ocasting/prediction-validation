@@ -2,19 +2,17 @@ import argparse
 
 parser = argparse.ArgumentParser(description='STGformer')
 parser.add_argument('--input_embedding_dim', type=str, default=24, help='Size of the embedding space for input features')
-parser.add_argument('--tod_embedding_dim', type=str, default=12, help='Size of the Time-Of-Day embedding; set to 0 to disable')
-parser.add_argument('--dow_embedding_dim', type=str, default=12, help='Size of the Day-Of‐Week embedding; set to 0 to disable')
-parser.add_argument('--spatial_embedding_dim', type=str, default=0, help='Size of the fixed spatial embedding; set to 0 to disable')
+parser.add_argument('--tod_embedding_dim', type=str, default=0, help='Size of the Time-Of-Day embedding; set to 0 to disable')
+parser.add_argument('--dow_embedding_dim', type=str, default=0, help='Size of the Day-Of‐Week embedding; set to 0 to disable')
 parser.add_argument('--adaptive_embedding_dim', type=str, default=12, help='Size of the adaptive spatial embedding; set to 0 to disable')
 parser.add_argument('--num_heads', type=str, default=4, help='Number of multi-head attention heads')
 parser.add_argument('--num_layers', type=str, default=3, help='Number of MLP layers after attention')
 parser.add_argument('--mlp_ratio', type=str, default=2, help='MLP hidden size ratio relative to model_dim')
-parser.add_argument('--use_mixed_proj', type=str, default=True, help='Enable mixed projection (convolutions + linear) if True')
 parser.add_argument('--dropout_a', type=str, default=0.3, help='Dropout rate applied to adaptive embeddings')
-parser.add_argument('--adj_normalize_method', type=str, default='normlap',
-                     choices = ['normlap','scalap','symadj','transition','doubletransition','identity'], help = 'Adjacency matrix normalization method.')
-parser.add_argument('--adj_type', type=str, default='corr', choices=['adj','dist','corr'], help="Adjacency matrix type")
-parser.add_argument('--threshold', type=float, default=0.7, help="Threshold for adjacency matrix and get a sparse one (non complete)")
+#parser.add_argument('--adj_normalize_method', type=str, default='normlap',
+#                     choices = ['normlap','scalap','symadj','transition','doubletransition','identity'], help = 'Adjacency matrix normalization method.')
+#parser.add_argument('--adj_type', type=str, default='corr', choices=['adj','dist','corr'], help="Adjacency matrix type")
+#parser.add_argument('--threshold', type=float, default=0.7, help="Threshold for adjacency matrix and get a sparse one (non complete)")
 parser.add_argument('--kernel_size', type=str, default=[1], choices= [[1],[3],[1,1]], help='List of kernel sizes for projection in attention module.\
      There are as much SelfAttenLayer than kernel sizes.')
 

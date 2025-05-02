@@ -132,31 +132,15 @@ if False:
 
 
 if True: 
-    save_folder = 'K_fold_validation/training_with_HP_tuning/subway_in_subway_out'
-    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_02_19_00_05_19271'
-    epochs_validation = 100
+    save_folder = 'K_fold_validation/training_with_HP_tuning/subway_in_subway_out_STGCN_MSELoss_2025_05_02_15_47_82038'
+    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_05_02_15_47_82038'
+    epochs_validation = 300
     args,folds = load_configuration(trial_id,True)
-
-    modification ={'keep_best_weights':True,
-                    'epochs':epochs_validation,
-                    'device':torch.device("cuda:0"),
-                    'target_data':'subway_in',
-                    'use_target_as_context': False,
-                    'freq':'15min',
-                    'minmaxnorm':True,
-                    'standardize': False,
-                    'learnable_adj_matrix' : False,
-                    }
-
+    modification = {'epochs':epochs_validation}
+    
     config_diffs = {}
-    config_diffs.update({'subway_in_subway_out':{'dataset_names':['subway_in','subway_out'],
-                                            'data_augmentation': True,
-                                            'DA_method': 'rich_interpolation',
-                                            'stacked_contextual': True,
-                                            'temporal_graph_transformer_encoder': False,
-                                            'compute_node_attr_with_attn': False,
-                                            }
-                                })
+    config_diffs.update({'trial_1':{}
+                         })
                         
 
     df_metrics_per_config = pd.DataFrame()

@@ -10,7 +10,7 @@ class FastAttentionLayer(nn.Module):
 
         self.model_dim = model_dim
         self.num_heads = num_heads
-
+        assert model_dim % num_heads == 0, "final embedding dim must be divisible by num_heads"
         self.head_dim = model_dim // num_heads
 
         self.qkv = nn.Linear(model_dim, model_dim * 3, bias=qkv_bias)
@@ -160,7 +160,7 @@ class SelfAttentionLayer(nn.Module):
         order=2,
     ):
         super().__init__()
-        self.locals = GraphPropagate(Ks=order, gso=supports[0])
+        self.locals = GraphPropagate(Ks=order, gso=supports)
         self.attn = nn.ModuleList(
             [
                 FastAttentionLayer(model_dim, num_heads, mask, kernel=kernel)
@@ -210,14 +210,12 @@ class STGformer(nn.Module):
         input_embedding_dim=24,
         tod_embedding_dim=12,
         dow_embedding_dim=12,
-        spatial_embedding_dim=0,
         adaptive_embedding_dim=12,
         num_heads=4,
         supports=None,
         num_layers=3,
         dropout=0.1,
         mlp_ratio=2,
-        use_mixed_proj=True,
         dropout_a=0.3,
         kernel_size=[1],
         contextual_positions = {}
@@ -233,18 +231,15 @@ class STGformer(nn.Module):
         self.input_embedding_dim = input_embedding_dim
         self.tod_embedding_dim = tod_embedding_dim
         self.dow_embedding_dim = dow_embedding_dim
-        self.spatial_embedding_dim = spatial_embedding_dim
         self.adaptive_embedding_dim = adaptive_embedding_dim
         self.model_dim = (
             input_embedding_dim
             + tod_embedding_dim
             + dow_embedding_dim
-            + spatial_embedding_dim
             + adaptive_embedding_dim
         )
         self.num_heads = num_heads
         self.num_layers = num_layers
-        self.use_mixed_proj = use_mixed_proj
 
         self.input_proj = nn.Linear(self.input_dim, self.input_embedding_dim)
         if self.tod_embedding_dim > 0:
@@ -273,10 +268,18 @@ class STGformer(nn.Module):
             ]
         )
 
+        """ # Modification:
         self.encoder_proj = nn.Linear(
             (self.in_steps - sum(k - 1 for k in kernel_size)) * self.model_dim,
             self.model_dim,
         )
+        """
+        self.encoder_proj = nn.Linear(
+            (self.in_steps - (kernel_size[0] - 1)) * self.model_dim,
+            self.model_dim,
+        )
+
+
         self.kernel_size = kernel_size[0]
 
         self.encoder = nn.ModuleList(
@@ -309,8 +312,7 @@ class STGformer(nn.Module):
 
         x_calendar.size() has dim has to correspond to x.size(), then we repeat it
         """
-
-        x = x.permute(0,3,2,1)
+        x = x.permute(0,3,2,1) # [B,C,N,L] -> [B,L,N,C]
         assert x_calendar.size(-1) == 2, f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names."
         if x_calendar.dim() ==3:
             x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
@@ -334,6 +336,7 @@ class STGformer(nn.Module):
         #print('dow',dow.shape) # [B,L,N]
 
         x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
+        #print('x after projection: ',x.size(), 'expected (batch_size, in_steps, num_nodes, input_embedding_dim)')
         features = torch.tensor([]).to(x)
         if self.tod_embedding_dim > 0:
             tod_emb = self.tod_embedding(
@@ -352,8 +355,12 @@ class STGformer(nn.Module):
 
             features = torch.cat([features, self.dropout(adp_emb)], -1)
         x = torch.cat(
-            [x] + [features], dim=-1
-        )  # (batch_size, in_steps, num_nodes, model_dim)
+            [x] + [features], dim=-1)
+            
+        # (batch_size, in_steps, num_nodes, model_dim)
+        #print('x after concatenation with embedded features: ',x.size(), 'expected (batch_size, in_steps, num_nodes, model_dim)')
+        #print('x.transpose: ',x.transpose(1, 3).size())
+        #print('temporal proj: ',self.temporal_proj)
         x = self.temporal_proj(x.transpose(1, 3)).transpose(1, 3)
         graph = torch.matmul(self.adaptive_embedding, self.adaptive_embedding.transpose(1, 2))
         graph = self.pooling(graph.transpose(0, 2)).transpose(0, 2)
@@ -364,7 +371,6 @@ class STGformer(nn.Module):
         for layer in self.encoder:
             x = x + layer(x)
         # (batch_size, in_steps, num_nodes, model_dim)
-
         out = self.output_proj(x).view(
             batch_size, self.num_nodes, self.out_steps, self.output_dim
         )

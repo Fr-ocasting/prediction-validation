@@ -71,6 +71,15 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['prefetch_all'] = False
     # ...
 
+    # === Denoising ===
+    config['denoising_names'] = [] #If empty, then no denoising. Else, apply denoising on dataset_names in list (['subway_in', 'subway_out', .... ,])
+    config['denoiser_names'] = ["median"]   # Apply chaining denoising. Default: ``["median"]``. choices: ['median','savitzky_golay_causal','exponential']
+    config['denoising_modes'] = ["train"]             # Apply denoisin on a specific datasets (train, valid, test)
+    config['denoiser_kwargs'] = {"median": {"kernel_size": 5}}  # Apply denoising function with specific config .
+    
+
+    
+
     # === NetMob Config ===
     config['NetMob_selected_apps'] =  ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
     config['NetMob_transfer_mode'] =  ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

@@ -39,7 +39,7 @@ C = 1
 
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize):
     dims = [0]
-    subway_out = load_data_from_subway_in_py(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME)
+    subway_out = load_data_from_subway_in_py(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME,name=NAME)
     T_subway_out = torch.Tensor(subway_out.raw_values.float())
 
     # Si on souhaite utiliser le subway-in future, il suffit de dé-commenter les trois lignes en dessous, et changer le FILE_NAME:

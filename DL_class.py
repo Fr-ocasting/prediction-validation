@@ -3,6 +3,18 @@ import numpy as np
 import torch 
 import torch.nn as nn 
 import importlib 
+
+
+# Relative path:
+import sys 
+import os 
+current_path = os.path.abspath(os.path.dirname(__file__))
+working_dir = os.path.abspath(os.path.join(current_path,'..'))
+#parent_dir = f"{parent_dir}/prediction_validation/"  # A utiliser sur .ipynb notebook
+if working_dir not in sys.path:
+    sys.path.insert(0,working_dir)
+# ...
+from denoising import DenoisingManager
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
         super().__init__()
@@ -73,20 +85,18 @@ class TensorLimitsKeeper(object):
 
     def get_raw_tensor_input_by_training_mode(self,dataset,training_mode):
         if getattr(self,f"{training_mode}_prop") > 1e-3:
-            
-
-
-if hasattr(dataset.args, "denoising_names") and args.target_data in args.denoising_names:
-    denoise_mgr = DenoisingManager(
-        denoiser_names=args.denoiser_methods,         # ex. ["median"]
-        training_modes=args.denoising_modes or ["train"],
-        denoiser_kwargs=args.denoiser_kwargs,         # optionnel
-    )
-    denoise_mgr.apply(target_ds)
-
-
-
-            setattr(dataset,f"{training_mode}_input",dataset.raw_values[getattr(self,f"{training_mode}_indices")])
+        
+            if hasattr(dataset.args, "denoising_names") and ((dataset.name in dataset.args.denoising_names) & (training_mode in dataset.args.denoising_modes)):
+                raw_value_i = torch.index_select(dataset.raw_values,0,torch.tensor(getattr(self,f"{training_mode}_indices"),dtype=torch.long))
+                denoise_mgr = DenoisingManager(
+                    denoiser_names=dataset.args.denoiser_names,         # ex. ["median"]
+                    training_mode=training_mode,
+                    denoiser_kwargs=dataset.args.denoiser_kwargs,         # optionnel
+                )
+                raw_value_i = denoise_mgr.apply(self,dataset)
+            else:
+                raw_value_i = torch.index_select(dataset.raw_values,0,torch.tensor(getattr(self,f"{training_mode}_indices"),dtype=torch.long))
+            setattr(dataset,f"{training_mode}_input",raw_value_i)
 
     def keep_track_on_feature_vect_limits(self,training_mode):
         if getattr(self,f"{training_mode}_prop") > 1e-3:

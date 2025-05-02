@@ -167,7 +167,7 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
 
-        for model_name in ['STGformer','STGCN','ASTGCN']:
+        for model_name in ['STGformer','ASTGCN']:
             args = local_get_args(model_name,
                                 args_init = None,
                                 dataset_names=dataset_names,
@@ -202,7 +202,7 @@ if __name__ == '__main__':
                 args.calendar_types = ['dayofweek', 'timeofday']
             # Init 
             epochs_validation = 300#100
-            num_samples = 300 # 200
+            num_samples = 500 # 200
             
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 

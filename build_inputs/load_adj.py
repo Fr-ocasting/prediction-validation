@@ -26,8 +26,8 @@ def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
         gso[gso < threshold] = 0 
     # Otherwise, we can load the precomputed weighted adj matrix:
     else:
-        if dataset.target_data in ['subway-in','subway-out']:
-            gso = pd.read_csv(f'{ABS_PATH_PACKAGE}/{FOLDER_PATH}/{dataset.target_data}/{folder}/{adj_type}.csv',index_col = 0)
+        if dataset.target_data in ['subway_in','subway_out']:
+            gso = pd.read_csv(f'{FOLDER_PATH}/{dataset.target_data}/{folder}/{adj_type}.csv',index_col = 0)
             gso = gso.iloc[dataset.indices_spatial_unit]
         elif dataset.target_data in ['PeMS03','PeMS04','PeMS07','PeMS08']:
             if type == 'dist':

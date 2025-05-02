@@ -7,7 +7,7 @@ from typing import Final
 
 import torch
 
-from .denoising import BaseDenoiser
+from .utils import BaseDenoiser
 
 
 class ExponentialSmoother(BaseDenoiser):

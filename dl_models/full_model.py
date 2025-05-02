@@ -467,12 +467,16 @@ def load_model(dataset, args):
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         from dl_models.STGformer.STGformer_utilities import normalize_adj_mx
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STGformer.__init__).parameters.keys())}
-        adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
-        # normalze adjacency matrix : 
-        adj_mx = normalize_adj_mx(adj_mx, args.adj_normalize_method, return_type="dense")
 
-        supports = [torch.tensor(i).to(args.device) for i in adj_mx]
-        model = STGformer(**filtered_args,supports=supports).to(args.device)
+        # Useless in this version :
+        if hasattr(args,'adj_type'): 
+            raise notImplementedError('STGformer with adjacency matrix has not been implemented yet')
+            adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
+            adj_mx = normalize_adj_mx(adj_mx, args.adj_normalize_method, return_type="dense")
+            supports = [torch.tensor(i).to(args.device) for i in adj_mx]
+            model = STGformer(**filtered_args,supports=supports).to(args.device)
+        # ...
+        model = STGformer(**filtered_args).to(args.device)
     if args.model_name == 'ASTGCN':
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
