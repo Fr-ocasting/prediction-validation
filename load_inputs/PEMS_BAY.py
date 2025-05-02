@@ -18,7 +18,7 @@ import h5py
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
-
+NAME = 'PEMS_BAY'
 FILE_NAME = 'PEMS_BAY/PEMS_BAY'
 START = '01/01/2017'
 END = '07/01/2017'

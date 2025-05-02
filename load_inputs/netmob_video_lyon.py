@@ -12,16 +12,20 @@ from dataset import DataSet
 from dataset import PersonnalInput
 import pickle 
 from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from constants.paths import SELECTED_APPS
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set n_vertex as it's a contextual data 
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
-
+NAME= 'netmob_video_lyon'
 FILE_NAME = 'netmob_video_lyon'
 START = '03/16/2019'
 END = '06/01/2019'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 FREQ = '15min'
 
 list_of_invalid_period = []
@@ -50,7 +54,7 @@ def load_data(dataset,FOLDER_PATH,invalid_dates,args,restricted,normalize= True)
     else:
         raise NotImplementedError
 
-    NetMob_ds = load_input_and_preprocess(dims = [0,2,3],normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
+    NetMob_ds = load_input_and_preprocess(dims = [0,2,3],normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME)
     return(NetMob_ds)
 
    
@@ -82,24 +86,3 @@ def load_netmob_lyon_map(FOLDER_PATH,
     netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
 
     return(netmob_T)
-
-
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
-
-    print('\nInit NetMob Dataset: ', netmob_T.size())
-    print('Number of Nan Value: ',torch.isnan(netmob_T).sum())
-    print('Total Number of Elements: ', netmob_T.numel(),'\n')
-
-    NetMob_ds = PersonnalInput(invalid_dates,args, tensor = netmob_T, dates = dataset.df_dates,
-                           time_step_per_hour = dataset.time_step_per_hour,
-                           Weeks = args.W, 
-                           Days = args.D, 
-                           historical_len = args.H,
-                           step_ahead = args.step_ahead,
-                            minmaxnorm = args.minmaxnorm,
-                            standardize = args.standardize,
-                           dims =dims,
-                           data_augmentation= args.data_augmentation)
-    NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
-
-    return NetMob_ds

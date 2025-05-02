@@ -13,6 +13,8 @@ parser.add_argument('--use_mixed_proj', type=str, default=True, help='Enable mix
 parser.add_argument('--dropout_a', type=str, default=0.3, help='Dropout rate applied to adaptive embeddings')
 parser.add_argument('--adj_normalize_method', type=str, default='normlap',
                      choices = ['normlap','scalap','symadj','transition','doubletransition','identity'], help = 'Adjacency matrix normalization method.')
+parser.add_argument('--adj_type', type=str, default='corr', choices=['adj','dist','corr'], help="Adjacency matrix type")
+parser.add_argument('--threshold', type=float, default=0.7, help="Threshold for adjacency matrix and get a sparse one (non complete)")
 parser.add_argument('--kernel_size', type=str, default=[1], choices= [[1],[3],[1,1]], help='List of kernel sizes for projection in attention module.\
      There are as much SelfAttenLayer than kernel sizes.')
 

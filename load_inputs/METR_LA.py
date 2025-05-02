@@ -22,7 +22,7 @@ df.shape:  ()
 
 traffic speed on 207 sensors on the highways of Los Angeles County
 """
-
+NAME = 'METR_LA'
 FILE_BASE_NAME = 'METR_LA'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
 DATA_SUBFOLDER = 'METR_LA'
 CITY = f'California_7' 
@@ -76,7 +76,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
     data_T = torch.tensor(df.values).float()
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name= NAME)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df.columns.tolist()

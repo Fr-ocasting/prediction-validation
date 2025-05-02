@@ -21,10 +21,13 @@ from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-
+NAME = 'netmob_POIs_per_station'
 FILE_NAME = 'netmob_image_per_station'
 START = '03/16/2019'
 END = '06/01/2019'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 FREQ = '15min'
 
 list_of_invalid_period = []
@@ -89,7 +92,7 @@ def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,n
 
         # dimension on which we want to normalize: 
         dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-        NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset)
+        NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME)
         NetMob_POI.station_name = id_station
         NetMob_POI.periods = None # dataset.periods
         NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))

@@ -17,6 +17,9 @@ from utils.utilities import get_time_step_per_hour
 FILE_NAME = 'data_bidon/data_bidon' #.csv
 START = '03/16/2019'
 END = '06/01/2019'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 FREQ = '15min'
 
 list_of_invalid_period = []
@@ -56,7 +59,8 @@ def load_data(args,FOLDER_PATH,coverage_period = None):
                       spatial_unit = df.columns,
                       data_augmentation= args.data_augmentation
                       )
-    
+
+    raise NotImplementedError('DEVRAIT ETRE PersonnalInput.preprocess')
     return(dataset)
 
 

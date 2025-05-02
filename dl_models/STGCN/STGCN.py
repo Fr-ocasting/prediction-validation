@@ -1,4 +1,6 @@
+from typing import Optional
 import torch
+from torch import Tensor
 import torch.nn as nn
 
 # Relative path:
@@ -66,7 +68,7 @@ class STGCN(nn.Module):
         self.st_blocks = nn.Sequential(*modules)
 
         self.vision_concatenation_late = args.args_vision.concatenation_late if hasattr(args.args_vision,'concatenation_late') else False
-        self.TE_concatenation_late = args.args_embedding.concatenation_late if hasattr(args.args_embedding,'concatenation_late') else False 
+        self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
 
         self.Ko = Ko
         self.n_vertex = args.n_vertex
@@ -115,7 +117,9 @@ class STGCN(nn.Module):
             self.g_constructor = None
 
 
-    def forward(self, x,x_vision=None,x_calendar = None):
+    def forward(self,x: Tensor,
+                x_vision: Optional[Tensor] = None, 
+                x_calendar: Optional[Tensor] = None) -> Tensor:
             
             ''' 
             Args:
@@ -150,7 +154,7 @@ class STGCN(nn.Module):
                 x = self.output(x,x_vision,x_calendar)
             elif self.Ko == 0:
                 # [B,C_out,L',N] = [B,1,L',N] actually 
-                if self.vision_concatenation_late:
+                if self.vision_concatenation_late and x_vision is not None:
                     # [B,C_out,N,L'] -> [B,C_out,L',N] 
                     x_vision = x_vision.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C_out,L',N]
@@ -158,7 +162,7 @@ class STGCN(nn.Module):
                         x = torch.cat([x,x_vision],dim=2)
                     else:
                         x = x_vision
-                if self.TE_concatenation_late:
+                if self.TE_concatenation_late and x_calendar is not None:
                     # [B,C,N,L_calendar]  -> [B,C,L_calendar,N] 
                     x_calendar = x_calendar.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C,L_calendar,N] 

@@ -123,7 +123,8 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
     valid_losses,df_loss,training_mode_list,metric_list = init_metrics(args)
     for training_mode in training_mode_list:
         for metric in metric_list:
-            globals()[f'{training_mode}_{metric}'] = []
+            for h in range(1,args.step_ahead+1):  
+                globals()[f'{training_mode}_{metric}_h{h}'] = []
     # ...
 
     #___ Through each fold : 
@@ -154,9 +155,10 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
 
         # Keep track on metrics :
         for training_mode in training_mode_list:
-            for metric in metric_list:          
-                l = trainer.performance[f'{training_mode}_metrics'][metric]   
-                globals()[f'{training_mode}_{metric}'].append(l)
+            for metric in metric_list: 
+                for h in range(1,args.step_ahead+1):       
+                    l = trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"]   
+                    globals()[f'{training_mode}_{metric}_h{h}'].append(l)
 
     
     return trainer,args,valid_losses,training_mode_list,metric_list,df_loss
@@ -172,27 +174,28 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     # ...
 
     # Metrics Test :
-    model_metrics =  globals()[f'{training_mode_list[0]}_{metric_list[0]}']
+    model_metrics =  globals()[f'{training_mode_list[0]}_{metric_list[0]}_h1']
     nb_folds = len(model_metrics)
-    multi_cols =  pd.MultiIndex.from_product([metric_list, range(nb_folds)], 
-                                            names=["metric", "fold"])
+    multi_cols =  pd.MultiIndex.from_product([metric_list, range(nb_folds),range(args.step_ahead)], 
+                                            names=["metric", "fold","horizon"])
 
     df_metrics_by_folds = pd.DataFrame(index=training_mode_list, columns=multi_cols)
 
     for training_mode in training_mode_list:
         for metric in metric_list:
-            model_metrics = globals()[f"{training_mode}_{metric}"]
-            for fold_idx, value in enumerate(model_metrics):
-                df_metrics_by_folds.loc[training_mode, (metric, fold_idx)] = value
+            for h in range(1,args.step_ahead+1):  
+                model_metrics = globals()[f'{training_mode}_{metric}_h{h}']
+                for fold_idx, value in enumerate(model_metrics):
+                    df_metrics_by_folds.loc[training_mode, (metric, fold_idx,h)] = value
 
     # Metrics K-folds: 
     dict_metrics_on_K_fold = {}
-    mean_on_K_fold = {metric : [np.mean(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
-    var_on_K_fold = {f"VAR_{metric}" : [np.var(globals()[f'{training_mode}_{metric}']) for training_mode in training_mode_list] for metric in metric_list}
+    mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(globals()[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
+    var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(globals()[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
     dict_metrics_on_K_fold.update(mean_on_K_fold)
     dict_metrics_on_K_fold.update(var_on_K_fold)
     if (args.evaluate_complete_ds):
-        dict_metrics_on_K_fold.update({f'{metric}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][metric] for training_mode in training_mode_list ] for metric in metric_list})
+        dict_metrics_on_K_fold.update({f'{metric}_h{h}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"] for training_mode in training_mode_list ] for metric in metric_list for h in range(1,args.step_ahead+1)})
     df_metrics = pd.DataFrame(index = training_mode_list, 
                             data = dict_metrics_on_K_fold
                             )   

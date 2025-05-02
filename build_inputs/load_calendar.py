@@ -88,19 +88,22 @@ def update_dict_calendar(dict_calendar_U_train, dict_calendar_U_valid,dict_calen
 
 
 def dim_by_calendar_type(calendar_type):
+    calendar_type = calendar_type.split('_OHE')[0]
     #['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
     if calendar_type == 'dayofweek':
         return(3)
-    if calendar_type == 'hour':
+    elif calendar_type == 'hour':
         return(5)
-    if calendar_type == 'minute':
+    elif calendar_type == 'minute':
         return(2)
-    if calendar_type == 'bank_holidays':
+    elif calendar_type == 'bank_holidays':
         return(1)
-    if calendar_type == 'school_holidays':
+    elif calendar_type == 'school_holidays':
         return(1)
-    if calendar_type == 'remaining_holidays':
+    elif calendar_type == 'remaining_holidays':
         return(1)
+    else:
+        raise NotImplementedError(f"Unknown calendar type: {calendar_type}. Please check the calendar_types list here")
     
 def get_args_embedding(args,dict_calendar_U_train):
     if 'calendar_embedding' in args.dataset_names:
@@ -108,8 +111,11 @@ def get_args_embedding(args,dict_calendar_U_train):
         module = importlib.import_module(module_path)
         importlib.reload(module)
         args_embedding = module.args
+        print(dict_calendar_U_train.keys())
+        print('args_embedding.variable_selection_model_name: ',args_embedding.variable_selection_model_name)
         args_embedding.dic_sizes = [max(2,dict_calendar_U_train[calendar_type].size(-1)) for calendar_type in dict_calendar_U_train.keys()]
         args_embedding.embedding_dim_calendar_units = [max(1,dim_by_calendar_type(calendar_type)) for calendar_type in dict_calendar_U_train.keys()]
+        args_embedding.device = args.device
     else:
         args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
 

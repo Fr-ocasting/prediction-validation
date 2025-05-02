@@ -19,10 +19,13 @@ from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
-
+NAME = 'netmob_POIs'
 FILE_NAME = 'netmob_image_per_station'
 START = '03/16/2019'
 END = '06/01/2019'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 FREQ = '15min'
 
 list_of_invalid_period = []
@@ -34,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 ## C = 1
 ## n_vertex = 
-def load_data(FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -62,7 +65,7 @@ def load_data(FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize
     
     # Extract only usefull data : [T,R] -> [T',R]
     coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
-    indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
+    indices_dates = [k for k,date in enumerate(coverage_local) if date in coverage_period]
     netmob_T = netmob_T[indices_dates]
     """
     local_df_dates = pd.DataFrame(coverage_local[indices_dates])
@@ -76,7 +79,7 @@ def load_data(FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize
 
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=netmob_T,coverage_period = intersect_coverage_period) 
+    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=netmob_T,coverage_period = coverage_period,name=NAME) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
 

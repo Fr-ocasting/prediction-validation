@@ -22,7 +22,9 @@ def normalize_adj_mx(adj_mx, adj_type, return_type="dense"):
         return adj
 
     if return_type == "dense":
-        adj = [a.astype(np.float32).todense() for a in adj]
+        #adj = [a.astype(np.float32).todense() for a in adj]
+        adj = [a.astype(np.float32).todense() if hasattr(a, "todense") else a.astype(np.float32) for a in adj]
+
     elif return_type == "coo":
         adj = [a.tocoo() for a in adj]
     return adj

@@ -298,7 +298,11 @@ def get_multi_ds(model_name,
         
     K_fold_splitter,K_subway_ds,args_with_contextual = get_inputs(args_copy,folds)
 
-    if (args_init.hp_tuning_on_first_fold) and (folds == list(np.arange(args_init.K_fold))):
+    # Weird tricks cause folds can be np array or list 
+    target = np.arange(args_init.K_fold) 
+    comparison = folds == target if isinstance(folds, np.ndarray) else folds == list(target)
+    condition_i = comparison.all() if isinstance(comparison, np.ndarray) else bool(comparison)
+    if (args_init.hp_tuning_on_first_fold) & (condition_i):
         K_subway_ds = K_subway_ds[1:]
 
     args_with_contextual = modification_contextual_args(args_with_contextual,modification)

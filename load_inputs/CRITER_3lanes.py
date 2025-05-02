@@ -20,6 +20,9 @@ from utils.utilities import filter_args,get_time_step_per_hour
 FILE_NAME = 'CRITER_3lanes/CRITER_3lanes'
 START = '03/01/2019'
 END = '06/01/2019'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 FREQ = '30min'
 list_of_invalid_period = []
 #list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
@@ -88,6 +91,7 @@ def load_data(args,FOLDER_PATH,coverage_period = None):
                         periods = periods,
                         **args_DataSet)
     #return globals()[f"dataset_loop_occupancy_rate"],globals()[f"dataset_flow"]
+    raise NotImplementedError('DEVRAIT ETRE PersonnalInput.preprocess')
     return globals()[f"dataset_loop_occupancy_rate"]
     
 

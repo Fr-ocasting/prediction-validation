@@ -310,8 +310,6 @@ class STGformer(nn.Module):
         x_calendar.size() has dim has to correspond to x.size(), then we repeat it
         """
 
-        
-       
         x = x.permute(0,3,2,1)
         assert x_calendar.size(-1) == 2, f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names."
         if x_calendar.dim() ==3:

@@ -16,6 +16,7 @@ from dataset import DataSet, PersonnalInput
 from utils.utilities import filter_args # Assurez-vous que ce chemin est correct
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 # --- Constantes spécifiques à cette donnée ---
+NAME = 'velov'
 FILE_BASE_NAME = 'velov'
 DIRECTION = 'emitted'
 FILE_PATTERN = f'velov_{DIRECTION}_by_station' # Sera complété par args.freq
@@ -26,6 +27,9 @@ NATIVE_FREQ = '2min' # A vérifier, basé sur votre commentaire
 # Couverture théorique
 START = '2019-01-01' # Exemple basé sur head()
 END = '2020-01-01'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 # Liste des périodes invalides
 list_of_invalid_period = []
 
@@ -100,7 +104,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     print("Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df_filtered.columns.tolist()

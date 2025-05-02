@@ -73,6 +73,19 @@ class TensorLimitsKeeper(object):
 
     def get_raw_tensor_input_by_training_mode(self,dataset,training_mode):
         if getattr(self,f"{training_mode}_prop") > 1e-3:
+            
+
+
+if hasattr(dataset.args, "denoising_names") and args.target_data in args.denoising_names:
+    denoise_mgr = DenoisingManager(
+        denoiser_names=args.denoiser_methods,         # ex. ["median"]
+        training_modes=args.denoising_modes or ["train"],
+        denoiser_kwargs=args.denoiser_kwargs,         # optionnel
+    )
+    denoise_mgr.apply(target_ds)
+
+
+
             setattr(dataset,f"{training_mode}_input",dataset.raw_values[getattr(self,f"{training_mode}_indices")])
 
     def keep_track_on_feature_vect_limits(self,training_mode):

@@ -1,5 +1,9 @@
 import pandas as pd  # if not, I get this error while running a .py from terminal: 
 # ImportError: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /root/anaconda3/envs/pytorch-2.0.1_py-3.10.5/lib/python3.10/site-packages/pandas/_libs/window/aggregations.cpython-310-x86_64-linux-gnu.so)
+import torch 
+if torch.cuda.is_available():
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32  = True
 
 # Relative path:
 import sys 
@@ -163,7 +167,7 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
 
-        for model_name in ['ASTGCN','STGCN','STGformer']:
+        for model_name in ['STGformer','STGCN','ASTGCN']:
             args = local_get_args(model_name,
                                 args_init = None,
                                 dataset_names=dataset_names,
@@ -171,9 +175,11 @@ if __name__ == '__main__':
                                 modification = {'ray':True,
                                                 'target_data' :'subway_in',
                                                 'use_target_as_context': False,
+                                                'batch_size':128,
                                                 'grace_period':20,#20,
-                                                'HP_max_epochs':100,#100,
+                                                'HP_max_epochs':300, #300,#100,
                                                 'evaluate_complete_ds' : True,
+                                                'torch_compile':False,
                                                 #'set_spatial_units' : ['BON','SOI','GER','CHA'],
 
                                                 'temporal_graph_transformer_encoder': False, # False # True
@@ -191,11 +197,16 @@ if __name__ == '__main__':
                                                 'data_augmentation': True, #True,  #False
                                                 'DA_method':'rich_interpolation', # 'noise' # 'interpolation
                                                 })
+            if model_name == 'STGformer':
+                args.dataset_names = ['subway_in','subway_out','calendar']
+                args.calendar_types = ['dayofweek', 'timeofday']
             # Init 
-            epochs_validation = 1#100
-            num_samples = 2 # 200
+            epochs_validation = 300#100
+            num_samples = 300 # 200
             
             HP_and_valid_one_config(args,epochs_validation,num_samples)
+
+
     if False:
         model_name = 'STGCN' #'CNN'
         dataset_for_coverage = ['subway_in','netmob_POIs'] 

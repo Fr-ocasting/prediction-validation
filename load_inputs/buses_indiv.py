@@ -17,6 +17,7 @@ from utils.utilities import filter_args # Assurez-vous que ce chemin est correct
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 # --- Constantes spécifiques à cette donnée ---
 # Le nom de fichier sera construit dynamiquement basé sur args.freq
+NAME = 'bus_indiv'
 FILE_BASE_NAME = 'bus_indiv'
 DATA_SUBFOLDER = 'agg_data/validation_individuelle' # Sous-dossier dans FOLDER_PATH
 
@@ -122,7 +123,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
     #print("   Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df_reindexed.columns.tolist()

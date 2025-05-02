@@ -59,7 +59,7 @@ class TimeEmbedding(nn.Module):
         self.embedding_dim = args_embedding.embedding_dim
         self.dic_sizes = args_embedding.dic_sizes
         self.embedding_dim_calendar_units = args_embedding.embedding_dim_calendar_units
-        self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)])
+        self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)]).to(args_embedding.device)
         
         input_dim = sum(self.embedding_dim_calendar_units)
         self.n_vertex = n_vertex
@@ -67,9 +67,14 @@ class TimeEmbedding(nn.Module):
             out_h_dim = args_embedding.out_h_dim
         else:
             out_h_dim = input_dim//2
-
-        self.output_module = OutputModule(input_dim,x_input_size,out_h_dim,n_vertex,args_embedding.embedding_dim,dropout,args_embedding.multi_embedding,args_embedding.variable_selection_model_name)
-
+        self.output_module = OutputModule(input_dim = input_dim,
+                                          x_input_size = x_input_size,
+                                          out_h_dim = out_h_dim,
+                                          n_vertex = n_vertex,
+                                          embedding_dim = args_embedding.embedding_dim,
+                                          dropout = dropout,
+                                          multi_embedding = args_embedding.multi_embedding,
+                                          variable_selection_model_name = args_embedding.variable_selection_model_name)
 
     def forward(self,x,time_elt): 
         '''
@@ -105,6 +110,8 @@ class TE_module(nn.Module):
         time_elt = self.Tembedding(x,time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
         if not(self.multi_embedding):
             time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
+        else:
+            time_elt = time_elt.repeat(1,self.C,1)
         time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
         return(time_elt)
 

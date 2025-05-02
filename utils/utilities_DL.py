@@ -108,7 +108,7 @@ def choose_optimizer(model,args):
     
     # Specific LR for TimeEmbedding : 
     args_embedding = args.args_embedding
-    if (len(vars(args_embedding)) and (args_embedding.specific_lr))>0: 
+    if ('calendar_embedding' in args.dataset_names) and (args_embedding.specific_lr)>0: 
         specific_lr = optimizer_specific_lr(model,args)
     else:
         specific_lr = None

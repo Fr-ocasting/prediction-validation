@@ -25,7 +25,7 @@ FILE_BASE_NAME = '4'
 YEAR = 2018
 DATA_SUBFOLDER = f'PEMS0{FILE_BASE_NAME}' 
 CITY = f'California_{DATA_SUBFOLDER}'
-
+NAME = "PEMS04"
 # Naive Freq
 NATIVE_FREQ = '5min'
 # Temporal Coverage period
@@ -43,7 +43,8 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     return load_data_from_PEMS03(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
               data_subfolder = DATA_SUBFOLDER,
             year = YEAR,
-            city = CITY)
+            city = CITY,
+            name=NAME)
 
 
 if __name__ == "__main__":

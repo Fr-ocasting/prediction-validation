@@ -25,6 +25,7 @@ FILE_BASE_NAME = '3'
 YEAR = 2018
 DATA_SUBFOLDER = f'PEMS0{FILE_BASE_NAME}' 
 CITY = f'California_{DATA_SUBFOLDER}'
+NAME = "PEMS03"
 
 # Naive Freq
 NATIVE_FREQ = '5min'
@@ -43,7 +44,8 @@ C = 1 # Nb channels by spatial units
 def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
               data_subfolder = DATA_SUBFOLDER,
             year = YEAR,
-            city =CITY):
+            city =CITY,
+            name=NAME):
      
     """
     Load data
@@ -72,7 +74,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
     data_T = torch.tensor(df.values).float()
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=name)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df.columns.tolist()

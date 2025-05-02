@@ -4,7 +4,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
-
+from typing import Optional,List
+import torch
+from torch import Tensor
 import sys 
 import os 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
@@ -339,10 +341,9 @@ class OutputBlock(nn.Module):
     def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout,
                  vision_concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
-                 TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None
+                 TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None,
                  ):
         super(OutputBlock, self).__init__()
-
         self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
         self.temporal_agg = nn.Identity() # initialize temporal agg for torch.jit.script
         if temporal_graph_transformer_encoder:
@@ -375,7 +376,6 @@ class OutputBlock(nn.Module):
         self.vision_concatenation_late = vision_concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
         # ...
-
         if False:
             if temporal_graph_transformer_encoder:
                 # FC1: [last_block_channel,channels[1]]. Here 'channels[0] never used. Cause we don't change the C dim with TransformerGraphEncoder. 
@@ -442,19 +442,29 @@ class OutputBlock(nn.Module):
         return x
 
 
-    def forward(self, x,x_vision = None,x_calendar = None):
+    def forward(self,x: Tensor,
+                x_vision: Optional[Tensor] = None, 
+                x_calendar: Optional[Tensor] = None) -> Tensor:
         #print("\nEntry Output Block:")
         #print('x.size(): ',x.size())   #->  [B,C,N,1]
         x = self.forward_temporal_agg(x)
 
         #print('x.size after temporal conv + permute: ',x.size())
 
-        if self.vision_concatenation_late:
+        ## Concatenate Late if exists:
+        cat_list: List[Tensor] = []
+        if self.vision_concatenation_late and x_vision is not None:
+            #assert x_vision is not None
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
-            x = torch.cat([x,x_vision],dim=-1)
-        if self.TE_concatenation_late:
-            # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,C,N,Z+L_calendar]
-            x = torch.cat([x,x_calendar],dim=-1) 
+            cat_list.append(x_vision) 
+        if self.TE_concatenation_late and x_calendar is not None:
+            # Reduce channel dim of calendar to 1 (cause correspond to repeated channel and x channel has been reduce to 1)
+            x_calendar = x_calendar[:,0:1,:,:]  # [B,C,N,L_calendar] -> [B,1,N,L_calendar]
+            # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,1,N,Z+L_calendar]
+            cat_list.append(x_calendar)
+        if len(cat_list) > 0:
+            x = torch.cat([x]+cat_list,dim=-1) 
+        ## ...
 
         #print('x.size after concatenation late if exists: ',x.size())
         #print("\nforward output module:")

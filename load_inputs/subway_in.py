@@ -17,7 +17,7 @@ from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
-
+NAME= 'subway_in'
 FILE_NAME = 'subway_in/subway_in'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
 START = '01/01/2019'
 END = '01/01/2020'
@@ -42,7 +42,7 @@ n_vertex = 40
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,filename=None):
     dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename)
     args_DataSet = filter_args(DataSet, args)
-    preprocesed_ds = load_input_and_preprocess(dims = dataset.dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=dataset.raw_values,coverage_period=coverage_period)
+    preprocesed_ds = load_input_and_preprocess(dims = dataset.dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=dataset.raw_values,coverage_period=coverage_period,name=NAME)
     
     preprocesed_ds.spatial_unit = dataset.spatial_unit
     preprocesed_ds.dims = dataset.dims

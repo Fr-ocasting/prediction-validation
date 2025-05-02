@@ -9,6 +9,7 @@ if torch.cuda.is_available():
     torch.backends.cudnn.allow_tf32  = True
 # Get Parent folder : 
 
+
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
 if parent_dir not in sys.path:
@@ -95,9 +96,9 @@ config2update = {'METR_LA': {'adj_type': 'dist',
                              'W':0,
                              'enable_padding': False,
 
-                             'batch_size': 256,#32,
-                             'optimizer': 'adam',
-                             'epochs':50,
+                             'batch_size': 256, #512,#32,
+                             'optimizer': 'adamw',
+                             'epochs':200, # 50
                              'lr': 0.001,
                              'weight_decay': 0.0001,  # Pas sur  +   Optimizer n'est pas Adam 
 
@@ -153,7 +154,7 @@ def main():
     ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init)
     model = full_model(ds, args).to(args.device)
     #model = torch.jit.script(model)
-    #model = torch.compile(model, mode="default", fullgraph=True)
+    model = torch.compile(model, mode="default", fullgraph=True)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
     trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 

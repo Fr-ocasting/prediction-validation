@@ -36,7 +36,7 @@ parser.add_argument('--out_h_dim', type=int, default=16,
                     choices = [8,16,32,64],
                     help='hidden dim of the output of the first layer of the output module')
 
-parser.add_argument('--variable_selection_model_name', type=bool, default='MLP', 
+parser.add_argument('--variable_selection_model_name',  default='MLP', type=str,
                     choices = ['MLP','GRN'],
                     help='Design the type of module to capture Calendar Dependencies.')  
 

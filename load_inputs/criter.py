@@ -30,6 +30,7 @@ except ImportError:
 
 
 # --- Constantes spécifiques à cette donnée ---
+NAME = 'CRITER'
 FILE_BASE_NAME = 'CRITER'
 DATA_SUBFOLDER_PATTERN = 'Comptages_Velo_Routier/CRITER/6 min {year}' # Sera formaté avec l'année
 
@@ -37,6 +38,9 @@ NATIVE_FREQ = '6min' # La fréquence des fichiers bruts
 # Couverture théorique
 START = '2019-01-01' # Exemple basé sur head()
 END = '2020-01-01'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 # Liste des périodes invalides
 list_of_invalid_period = []
 
@@ -155,7 +159,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     print("Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df_filtered.columns.tolist()

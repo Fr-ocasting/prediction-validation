@@ -15,10 +15,13 @@ from utils.utilities import get_time_step_per_hour
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
-
+NAME = 'netmob_bidon'
 FILE_NAME = 'netmob_bidon'
 START = '03/16/2019'
 END = '06/01/2019'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
 FREQ = '15min'
 
 list_of_invalid_period = []
@@ -61,7 +64,7 @@ def load_data(args,FOLDER_PATH,coverage_period = None):
                       data_augmentation= args.data_augmentation
                       )
     
-    
+    raise NotImplementedError('DEVRAIT ETRE PersonnalInput.preprocess')
     return(dataset)
     
 def restrain_tensor_to_specific_period(tensor,dates,coverage_period):

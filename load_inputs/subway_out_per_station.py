@@ -16,7 +16,7 @@ from utils.utilities import filter_args
  - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
-
+NAME = 'subway_out_per_station'
 FILE_NAME = 'subway_out/subway_out'  # 'subway_out/subway_out'  #  'subway_in/subway_in' 
 START = '03/16/2019'
 END = '06/01/2019'
@@ -50,7 +50,7 @@ def load_data(dataset,args,FOLDER_PATH,intersect_coverage_period,normalize,inval
         #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
         #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
 
-        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset)
+        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset,name=NAME)
         preprocessed_personal_input.station_name = id_station
         preprocessed_personal_input.periods = subway_out.periods
         preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
