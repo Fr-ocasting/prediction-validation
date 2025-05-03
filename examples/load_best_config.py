@@ -4,7 +4,8 @@ import pandas as pd
 import pickle
 from argparse import Namespace
 import torch
-
+import ast 
+import numpy as np 
 current_path = os.path.dirname(__file__)
 working_dir = os.path.abspath(os.path.join(current_path, '..'))
 if working_dir not in sys.path:
@@ -17,6 +18,33 @@ from constants.paths import SAVE_DIRECTORY
 from high_level_DL_method import load_optimizer_and_scheduler
 from dl_models.full_model import full_model
 from trainer import Trainer
+
+def parse_lists_in_series(pd_serie: pd.Series):
+    """
+    Function to :
+    - parse str that supposed to be list of number in a pandas series.
+    - convert np.int32 or np.int64 into native 'int'
+
+
+    """
+    for k, v in pd_serie.items():
+        if isinstance(v, str):
+            try:
+                val = ast.literal_eval(v)
+                if isinstance(val, list) and all(isinstance(x, (int, float)) for x in val):
+                    pd_serie[k] = [int(x) if isinstance(x, np.integer) else x for x in val] # convert into natif 'int' (not int64)
+                else:
+                    pd_serie[k] = v
+            except (ValueError, SyntaxError):
+                pd_serie[k] = v
+        else:
+            if isinstance(v, list) and all(isinstance(x,(np.int32,np.int64)) for x in v):
+                v = [int(x) for x in v]
+            if isinstance(v, (np.int32, np.int64)):
+                v = int(v)
+            pd_serie[k] = v
+    return pd_serie
+
 
 def load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name):
     path_to_model_args = f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models"
@@ -36,7 +64,8 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     args = model_args['model'][trial_id]['args']
 
     # Get best config :
-    best_model = df_hp_tuning.sort_values(metric).iloc[0]
+    best_model = df_hp_tuning.sort_values(metric).iloc[0] 
+    best_model = parse_lists_in_series(best_model)   # Avoid Ray saving  list of float/int as str. 
 
     # Set tuned parameter from best config to 'args':
     HP_args = [indx.replace('config/', '') for indx in best_model.index if 'config/' in indx]

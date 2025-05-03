@@ -11,7 +11,7 @@ class FastAttentionLayer(nn.Module):
         self.model_dim = model_dim
         self.num_heads = num_heads
         assert model_dim % num_heads == 0, "final embedding dim must be divisible by num_heads"
-        self.head_dim = model_dim // num_heads
+        self.head_dim = model_dim // num_heads  
 
         self.qkv = nn.Linear(model_dim, model_dim * 3, bias=qkv_bias)
 
