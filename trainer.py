@@ -62,12 +62,14 @@ class Trainer(object):
         else:
             raise NotImplementedError(f"metrics associated to {args.loss_function_type} has not been implemented")
         
-        if args.torch_compile:
+        if args.torch_compile == 'compile':
             self.model = torch.compile(model,
                                        fullgraph = False,
                                        backend = args.backend,
                                        mode = None
                                         )
+        elif args.torch_compile == 'jit_script':
+            self.model = torch.jit.script(model)
         else:
             self.model = model 
 

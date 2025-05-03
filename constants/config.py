@@ -66,7 +66,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
         config['mixed_precision'] = False # True # False
     
     config['non_blocking'] = True
-    config['torch_compile'] = False #True
+    config['torch_compile'] = False # 'compile', 'jit_scirpt',  None, False 
     config['backend'] ='inductor' #'inductor' #'cudagraphs'
     config['prefetch_all'] = False
     # ...

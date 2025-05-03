@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal imports: 
-from trainer import Trainer, report
+from trainer import Trainer
 from HP_tuning.ray_search_space import get_search_space_ray 
 from HP_tuning.ray_config import get_ray_config
 from high_level_DL_method import load_optimizer_and_scheduler

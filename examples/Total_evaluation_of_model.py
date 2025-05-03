@@ -177,7 +177,7 @@ if __name__ == '__main__':
                                                 'use_target_as_context': False,
                                                 'batch_size':128,
                                                 'grace_period':20,#20,
-                                                'HP_max_epochs':300, #300,#100,
+                                                'HP_max_epochs':500, #300,#100,
                                                 'evaluate_complete_ds' : True,
                                                 'torch_compile':False,
                                                 #'set_spatial_units' : ['BON','SOI','GER','CHA'],
@@ -201,7 +201,7 @@ if __name__ == '__main__':
                 args.dataset_names = ['subway_in','subway_out','calendar']
                 args.calendar_types = ['dayofweek', 'timeofday']
             # Init 
-            epochs_validation = 300#100
+            epochs_validation = 500#100
             num_samples = 500 # 200
             
             HP_and_valid_one_config(args,epochs_validation,num_samples)
