@@ -1,11 +1,13 @@
 import torch.nn as nn
 import torch
+from torch import Tensor
 import numpy as np
 from timm.models.vision_transformer import Mlp
 import torch.nn.functional as F
+from typing import Optional,List
 
 class FastAttentionLayer(nn.Module):
-    def __init__(self, model_dim, num_heads=8, qkv_bias=False, kernel=1):
+    def __init__(self, model_dim: int, num_heads: int=8, qkv_bias: bool=False, kernel: int=1):
         super().__init__()
 
         self.model_dim = model_dim
@@ -21,7 +23,8 @@ class FastAttentionLayer(nn.Module):
         # self.proj_in = nn.Conv2d(model_dim, model_dim, (1, kernel), 1, 0) if kernel > 1 else nn.Identity()
         self.fast = 1
 
-    def forward(self, x, edge_index=None, dim=0):
+    def forward(self, x:  torch.Tensor, edge_index: Optional[torch.Tensor] = None, dim: int = 0) -> torch.Tensor:
+        
         # x = self.proj_in(x.transpose(1, 3)).transpose(1, 3)
         query, key, value = self.qkv(x).chunk(3, -1)
         qs = torch.stack(torch.split(query, self.head_dim, dim=-1), dim=-2).flatten(
@@ -62,7 +65,7 @@ class FastAttentionLayer(nn.Module):
 
         return out
 
-    def fast_attention(self, x, qs, ks, vs, dim=0):
+    def fast_attention(self, x: torch.Tensor, qs: torch.Tensor, ks: torch.Tensor, vs: torch.Tensor, dim: int = 0) -> torch.Tensor:
         qs = nn.functional.normalize(qs, dim=-1)
         ks = nn.functional.normalize(ks, dim=-1)
         N = qs.shape[1]
@@ -71,7 +74,7 @@ class FastAttentionLayer(nn.Module):
         # numerator
         kvs = torch.einsum("blhm,blhd->bhmd", ks, vs)
         attention_num = torch.einsum("bnhm,bhmd->bnhd", qs, kvs)  # [N, H, D]
-        attention_num += N * vs
+        attention_num = attention_num+N * vs
 
         # denominator
         all_ones = torch.ones([ks.shape[1]]).to(ks.device)
@@ -82,12 +85,12 @@ class FastAttentionLayer(nn.Module):
         attention_normalizer = torch.unsqueeze(
             attention_normalizer, len(attention_normalizer.shape)
         )  # [N, H, 1]
-        attention_normalizer += torch.ones_like(attention_normalizer) * N
+        attention_normalizer = attention_normalizer + torch.ones_like(attention_normalizer) * N
         out = attention_num / attention_normalizer  # [N, H, D]
         out = torch.unflatten(out, dim, (b, l)).flatten(start_dim=3)
         return out
 
-    def normal_attention(self, x, qs, ks, vs, dim=0):
+    def normal_attention(self, x: torch.Tensor, qs: torch.Tensor, ks: torch.Tensor, vs: torch.Tensor, dim: int = 0) -> torch.Tensor:
         b, l = x.shape[dim : dim + 2]
         qs, ks, vs = qs.transpose(1, 2), ks.transpose(1, 2), vs.transpose(1, 2)
         x = (
@@ -98,7 +101,7 @@ class FastAttentionLayer(nn.Module):
         x = torch.unflatten(x, dim, (b, l)).flatten(start_dim=3)
         return x
 
-
+"""
 class AttentionLayer(nn.Module):
     def __init__(self, model_dim, num_heads=8, qkv_bias=False, kernel=1):
         super().__init__()
@@ -112,7 +115,7 @@ class AttentionLayer(nn.Module):
 
         self.out_proj = nn.Linear(model_dim, model_dim)
 
-    def forward(self, x, edge_index=None):
+    def forward(self, x: torch.Tensor, edge_index: Optional[torch.Tensor] = None) -> torch.Tensor:
         query, key, value = self.qkv(x).chunk(3, -1)
         qs = torch.stack(torch.split(query, self.head_dim, dim=-1), dim=-3)
         ks = torch.stack(torch.split(key, self.head_dim, dim=-1), dim=-3)
@@ -124,7 +127,7 @@ class AttentionLayer(nn.Module):
         )
         x = self.out_proj(x)
         return x
-
+"""
 
 
 
@@ -150,17 +153,18 @@ class GraphPropagate(nn.Module):
 class SelfAttentionLayer(nn.Module):
     def __init__(
         self,
-        model_dim,
-        mlp_ratio=2,
-        num_heads=8,
-        dropout=0,
-        mask=False,
-        kernel=3,
-        supports=None,
-        order=2,
+        model_dim: int,
+        mlp_ratio: float=2.0,
+        num_heads: int =8,
+        dropout: float=0,
+        mask: bool=False,
+        kernel: int=3,
+        supports: Optional[List[torch.Tensor]]=None,
+        order: int=2,
     ):
         super().__init__()
         self.locals = GraphPropagate(Ks=order, gso=supports)
+        """
         self.attn = nn.ModuleList(
             [
                 FastAttentionLayer(model_dim, num_heads, mask, kernel=kernel)
@@ -170,9 +174,27 @@ class SelfAttentionLayer(nn.Module):
         self.pws = nn.ModuleList(
             [nn.Linear(model_dim, model_dim) for _ in range(order)]
         )
+
         for i in range(0, order):
             nn.init.constant_(self.pws[i].weight, 0)
             nn.init.constant_(self.pws[i].bias, 0)
+        """
+
+        ## NEW FOR JIT
+        self.layers = nn.ModuleDict({
+            str(i): nn.ModuleDict({
+                "att": FastAttentionLayer(model_dim, num_heads, mask, kernel=kernel),
+                "pw":  nn.Linear(model_dim, model_dim)
+            })
+            for i in range(order)
+        })
+
+        for i in range(0, order):
+            nn.init.constant_(self.layers[str(i)]['pw'].weight, 0)
+            nn.init.constant_(self.layers[str(i)]['pw'].bias, 0)
+        ## NEW FOR JIT
+
+
 
         self.kernel = kernel
         self.fc = Mlp(
@@ -184,15 +206,30 @@ class SelfAttentionLayer(nn.Module):
         self.ln1 = nn.LayerNorm(model_dim)
         self.ln2 = nn.LayerNorm(model_dim)
         self.dropout = nn.Dropout(dropout)
-        self.scale = [1, 0.01, 0.001]
+        self.scale: List[float] = [1.0, 0.01, 0.001]
+        self.order: int = order
 
     def forward(self, x, graph):
         x_loc = self.locals(x, graph)
         c = x_glo = x
-        for i, z in enumerate(x_loc):
-            att_outputs = self.attn[i](z)
-            x_glo += att_outputs * self.pws[i](c) * self.scale[i]
+
+        ## NEW FOR JIT
+        for k, layer in self.layers.items():
+            z = x_loc[int(k)]
+            att_outputs = layer["att"](z)
+            pw  = layer["pw"](c)
+            sc  = self.scale[int(k)]
+            x_glo = x_glo + att_outputs * pw * sc
             c = att_outputs
+
+        ## NEW FOR JIT
+        """
+        for attn_module, pw_module, scale_value, z in zip(self.attn, self.pws, self.scale, x_loc):
+            att_outputs = attn_module(z)
+            x_glo = x_glo + att_outputs * pw_module(c) * scale_value
+            c = att_outputs
+        """
+
         x = self.ln1(x + self.dropout(x_glo))
         x = self.ln2(x + self.dropout(self.fc(x)))
         return x
@@ -222,34 +259,42 @@ class STGformer(nn.Module):
     ):
         super().__init__()
 
-        self.num_nodes = n_vertex
-        self.in_steps = L
-        self.out_steps = step_ahead
-        self.steps_per_day = 24*time_step_per_hour
-        self.input_dim = C
-        self.output_dim = out_dim_factor
-        self.input_embedding_dim = input_embedding_dim
-        self.tod_embedding_dim = tod_embedding_dim
-        self.dow_embedding_dim = dow_embedding_dim
-        self.adaptive_embedding_dim = adaptive_embedding_dim
-        self.model_dim = (
+        self.num_nodes: int = n_vertex
+        self.in_steps: int = L
+        self.out_steps: int = step_ahead
+        self.steps_per_day: int = 24*time_step_per_hour
+        self.input_dim: int = C
+        self.output_dim: int = out_dim_factor
+        self.input_embedding_dim: int = input_embedding_dim
+        self.tod_embedding_dim: int = tod_embedding_dim
+        self.dow_embedding_dim: int = dow_embedding_dim
+        self.adaptive_embedding_dim: int = adaptive_embedding_dim
+        self.model_dim: int = (
             input_embedding_dim
             + tod_embedding_dim
             + dow_embedding_dim
             + adaptive_embedding_dim
         )
-        self.num_heads = num_heads
-        self.num_layers = num_layers
+        self.num_heads: int = num_heads
+        self.num_layers: int = num_layers
 
         self.input_proj = nn.Linear(self.input_dim, self.input_embedding_dim)
         if self.tod_embedding_dim > 0:
             self.tod_embedding = nn.Embedding(self.steps_per_day, self.tod_embedding_dim)
+        else:
+            self.tod_embedding = None
+            
         if self.dow_embedding_dim > 0:
             self.dow_embedding = nn.Embedding(7, self.dow_embedding_dim)
+        else:
+            self.dow_embedding = None
+
         if self.adaptive_embedding_dim > 0:
             self.adaptive_embedding = nn.init.xavier_uniform_(
                 nn.Parameter(torch.empty(self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
             )
+        else:
+            self.adaptive_embedding = None
 
         self.dropout = nn.Dropout(dropout_a)
         # self.dropout = DropPath(dropout_a)
@@ -302,7 +347,9 @@ class STGformer(nn.Module):
         self.pos_tod = contextual_positions.get("calendar_timeofday", None)
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
 
-    def forward(self, x,x_vision=None,x_calendar = None):
+    def forward(self, x: Tensor,
+                x_vision: Optional[Tensor] = None, 
+                x_calendar: Optional[Tensor] = None) -> Tensor:
         """
         Args:
             x: (batch_size, input_dim, num_nodes, in_steps)  
@@ -312,69 +359,63 @@ class STGformer(nn.Module):
 
         x_calendar.size() has dim has to correspond to x.size(), then we repeat it
         """
-        x = x.permute(0,3,2,1) # [B,C,N,L] -> [B,L,N,C]
-        assert x_calendar.size(-1) == 2, f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names."
-        if x_calendar.dim() ==3:
-            x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
-        x_calendar = x_calendar.repeat(1,1,self.num_nodes,1) # [B,L,1,2]-> [B,L,N,2]
-
         if x_vision is not None:
             raise NotImplementedError("tackling x_vision has not been implemented")
         
+        if x_calendar is None:
+            raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
+        else: 
+            x = x.permute(0,3,2,1) # [B,C,N,L] -> [B,L,N,C]
+            if x_calendar.size(-1) != 2:
+                raise ValueError(f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
+            if x_calendar.dim() ==3:
+                x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
+            x_calendar = x_calendar.repeat(1,1,self.num_nodes,1) # [B,L,1,2]-> [B,L,N,2]
 
-        # x: (batch_size, in_steps, num_nodes, input_dim+tod+dow=3)
-        batch_size = x.shape[0]
-
-        if self.tod_embedding_dim > 0:
-            tod = x_calendar[..., self.pos_tod]
-        if self.dow_embedding_dim > 0:
-            dow = x_calendar[..., self.pos_dow]
-
-        #print('x: ',x.size(), 'expected (batch_size, in_steps, num_nodes, input_dim)')
-        #print('x_calendar: ',x_calendar.size(), 'expected (batch_size, in_steps, num_nodes, 2)')
-        #print('tod',tod.shape)  # [B,L,N] 
-        #print('dow',dow.shape) # [B,L,N]
-
-        x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
-        #print('x after projection: ',x.size(), 'expected (batch_size, in_steps, num_nodes, input_embedding_dim)')
-        features = torch.tensor([]).to(x)
-        if self.tod_embedding_dim > 0:
-            tod_emb = self.tod_embedding(
-                (tod * self.steps_per_day).long()
-            )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
-            features = torch.cat([features, tod_emb], -1)
-        if self.dow_embedding_dim > 0:
-            dow_emb = self.dow_embedding(
-                dow.long()
-            )  # (batch_size, in_steps, num_nodes, dow_embedding_dim)
-            features = torch.cat([features, dow_emb], -1)
-        if self.adaptive_embedding_dim > 0:
-            adp_emb = self.adaptive_embedding.expand(
-                size=(batch_size, *self.adaptive_embedding.shape)
-            )
-
-            features = torch.cat([features, self.dropout(adp_emb)], -1)
-        x = torch.cat(
-            [x] + [features], dim=-1)
+            # x: (batch_size, in_steps, num_nodes, input_dim+tod+dow=3)
+            batch_size = x.shape[0]
+            x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
             
-        # (batch_size, in_steps, num_nodes, model_dim)
-        #print('x after concatenation with embedded features: ',x.size(), 'expected (batch_size, in_steps, num_nodes, model_dim)')
-        #print('x.transpose: ',x.transpose(1, 3).size())
-        #print('temporal proj: ',self.temporal_proj)
-        x = self.temporal_proj(x.transpose(1, 3)).transpose(1, 3)
-        graph = torch.matmul(self.adaptive_embedding, self.adaptive_embedding.transpose(1, 2))
-        graph = self.pooling(graph.transpose(0, 2)).transpose(0, 2)
-        graph = F.softmax(F.relu(graph), dim=-1)
-        for attn in self.attn_layers_s:
-            x = attn(x, graph)
-        x = self.encoder_proj(x.transpose(1, 2).flatten(-2))
-        for layer in self.encoder:
-            x = x + layer(x)
-        # (batch_size, in_steps, num_nodes, model_dim)
-        out = self.output_proj(x).view(
-            batch_size, self.num_nodes, self.out_steps, self.output_dim
-        )
-        out = out.transpose(1, 2)  # (batch_size, out_steps, num_nodes, output_dim)
-        out = out.permute(0,3,2,1)  #  (batch_size, output_dim, num_nodes, out_steps )
+            #print('x after projection: ',x.size(), 'expected (batch_size, in_steps, num_nodes, input_embedding_dim)')
 
-        return out
+            # Init features with empty tensor with 0 channels
+            features = torch.empty(x.size(0), x.size(1), x.size(2), 0,dtype=x.dtype, device=x.device)  
+
+            if self.tod_embedding is not None:
+                tod = x_calendar[..., self.pos_tod]
+                tod_emb = self.tod_embedding( (tod * self.steps_per_day).long() )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
+                features = torch.cat([features, tod_emb], -1)
+
+            if self.dow_embedding is not None:
+                dow = x_calendar[..., self.pos_dow]
+                dow_emb = self.dow_embedding(dow.long())  # (batch_size, in_steps, num_nodes, dow_embedding_dim)
+                features = torch.cat([features, dow_emb], -1)
+
+            if self.adaptive_embedding is not None:
+                adp_emb = self.adaptive_embedding.expand(
+                    size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim)
+                )
+                features = torch.cat([features, self.dropout(adp_emb)], -1)
+
+            x = torch.cat([x] + [features], dim=-1)
+                
+            # (batch_size, in_steps, num_nodes, model_dim)
+            #print('x after concatenation with embedded features: ',x.size(), 'expected (batch_size, in_steps, num_nodes, model_dim)')
+            #print('x.transpose: ',x.transpose(1, 3).size())
+            #print('temporal proj: ',self.temporal_proj)
+            x = self.temporal_proj(x.transpose(1, 3)).transpose(1, 3)
+            graph = torch.matmul(self.adaptive_embedding, self.adaptive_embedding.transpose(1, 2))
+            graph = self.pooling(graph.transpose(0, 2)).transpose(0, 2)
+            graph = F.softmax(F.relu(graph), dim=-1)
+            for attn in self.attn_layers_s:
+                x = attn(x, graph)
+            x = self.encoder_proj(x.transpose(1, 2).flatten(-2))
+            for layer in self.encoder:
+                x = x + layer(x)
+            # (batch_size, in_steps, num_nodes, model_dim)
+            #out = self.output_proj(x).view(batch_size, self.num_nodes, self.out_steps, self.output_dim)
+            out = self.output_proj(x).contiguous().reshape(-1, self.num_nodes, self.out_steps, self.output_dim)
+            out = out.transpose(1, 2)  # (batch_size, out_steps, num_nodes, output_dim)
+            out = out.permute(0,3,2,1)  #  (batch_size, output_dim, num_nodes, out_steps )
+
+            return out

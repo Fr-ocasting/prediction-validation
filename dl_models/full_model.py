@@ -1,5 +1,7 @@
 import numpy as np 
 import torch
+from torch import Tensor
+from typing import Optional,Tuple
 import torch.nn as nn
 if torch.cuda.is_available():
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -61,29 +63,27 @@ def load_spatial_attn_model(args,query_dim,init_spatial_dim):
 
 class full_model(nn.Module):
     
+    dict_pos_node_attr2ds:       Dict[int, str]
+    contextual_positions:        Dict[str, int]
+    pos_calendar:                Dict[str,int]    
     ds_which_need_spatial_attn:  List[str]
     node_attr_which_need_attn:   List[str]
     dict_pos_node_attr2ds:       Dict[int, str]
-    contextual_positions:        Dict[str, int]
-    pos_calendar:             Dict[str,int]         
-
+    dict_ds_which_need_attn2pos: Dict[str, List[int]]
+    nb_add_channel:              int
 
     def __init__(self,dataset, args):
         super(full_model,self).__init__()
 
         # Init for jit script 
-        self.ds_which_need_spatial_attn = torch.jit.Attribute([], List[str])
-        self.node_attr_which_need_attn  = torch.jit.Attribute([], List[str])
-        self.dict_pos_node_attr2ds     = torch.jit.Attribute({}, Dict[int, str])
-        self.dict_ds_which_need_attn2pos: Dict[str, List[int]] = torch.jit.Attribute({}, Dict[str, List[int]])
-        self.pos_calendar = torch.jit.Attribute({}, Dict[str, int])
+        self.nb_add_channel = torch.jit.Attribute(0, int)
 
         # Init for the model
         self.ds_which_need_spatial_attn = list(args.ds_which_need_spatial_attn)
         self.node_attr_which_need_attn  = list(args.node_attr_which_need_attn)
-        self.dict_pos_node_attr2ds     = dict(args.dict_pos_node_attr2ds)
-        self.netmob_vision: Optional[nn.Module] = None
-        self.te:            Optional[nn.Module] = None
+        self.dict_pos_node_attr2ds     = args.dict_pos_node_attr2ds
+        self.netmob_vision= None 
+        self.te= None        
 
         self.spatial_attn_by_station = nn.ModuleDict()   # même nom conservé
         self.spatial_attn_poi        = nn.ModuleDict()
@@ -92,7 +92,7 @@ class full_model(nn.Module):
         self.contextual_positions = args.contextual_positions
 
         #___ Add positions for each contextual data:
-        self.pos_calendar: Dict[str,int] = {data_name: pos_i for data_name,pos_i in args.contextual_positions.items() if 'calendar' in data_name}
+        self.pos_calendar = {data_name: pos_i for data_name,pos_i in args.contextual_positions.items() if 'calendar' in data_name}
 
         #___ Add correspondance of position for each couple dataset/ list of positions:
         for pos,ds_name in self.dict_pos_node_attr2ds.items():     # ex: (pos,ds_name) = (2,'subway_out')
@@ -175,7 +175,8 @@ class full_model(nn.Module):
             self.vision_concatenation_early = False
             self.vision_concatenation_late = False
         
-    def forward_calendar_model(self,x,contextual):
+    def forward_calendar_model(self,x:Tensor,
+                               contextual:List[Tensor])->Tuple[Tensor,Optional[Tensor]]:
         if self.te is not None:
             time_elt = [contextual[pos]for _,pos in self.pos_calendar.items()]
             time_elt = [elt.long() for elt in time_elt] # time_elt.long()
@@ -194,7 +195,8 @@ class full_model(nn.Module):
 
         return x,time_elt  
 
-    def forward_netmob_model(self,x,contextual):
+    def forward_netmob_model(self,x: Tensor,
+                             contextual: List[Tensor])->Tuple[Tensor,Optional[Tensor]]:
         if self.netmob_vision is not None:
             if self.vision_input_type == 'image_per_stations':
                 netmob_video_batch = contextual[self.pos_netmob]
@@ -258,7 +260,7 @@ class full_model(nn.Module):
 
             
     def stack_node_attribute(self,x: torch.Tensor, 
-                             L_node_attributes: List[torch.Tensor]):
+                             L_node_attributes: List[torch.Tensor])-> Tensor:
         ''' Concat node attributed to the channel dim of x'''
 
         #print('x.size: ',x.size())
@@ -268,7 +270,7 @@ class full_model(nn.Module):
     
 
     def spatial_attention(self, x: torch.Tensor, 
-                          contextual: List[torch.Tensor]):
+                          contextual: List[torch.Tensor])-> List[torch.Tensor]:
         '''
         x:  [B,N,L]
         Some DataSet are not directly available as node attribute. 
@@ -297,7 +299,7 @@ class full_model(nn.Module):
                                   L_node_attributes: List[torch.Tensor], 
                                     x: torch.Tensor,
                                     contextual: List[torch.Tensor]
-                                  ):
+                                  )-> List[torch.Tensor]:
         '''
         Some 'Node attribute' doesnot need any spatial attention. 
         It is as example the case for 'subway-out' as contextual data for 'subway-in'. 
@@ -329,7 +331,8 @@ class full_model(nn.Module):
                 L_node_attributes.append(node_attr)
         return L_node_attributes
 
-    def forward(self,x,contextual = None):
+    def forward(self,x: Tensor,
+                contextual: List[Tensor])->Tensor:
         ''' 
         Args:
         -----
@@ -345,7 +348,7 @@ class full_model(nn.Module):
 
         #print('x before stacking new channels:',x.size())
         # Spatial Attention and attributing node information: 
-        if self.stacked_contextual: 
+        if self.stacked_contextual and (contextual is not None): 
             L_node_attributes = self.spatial_attention(x,contextual)
             #print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
             L_node_attributes = self.add_other_node_attributes(L_node_attributes,x,contextual)
@@ -384,7 +387,7 @@ class full_model(nn.Module):
     
     # =========================================================================== #
     ## ==== SHOULD BE USELESS FOR FUTURE ====================================
-    def foward_image_per_stations(self,netmob_video_batch):
+    def foward_image_per_stations(self,netmob_video_batch:Tensor)-> Tensor:
         ''' Foward for input shape [B,C,N,H,W,L]'''
         B,N,C_netmob,H,W,L = netmob_video_batch.size()
 
@@ -400,7 +403,7 @@ class full_model(nn.Module):
 
         return extracted_feature
 
-    def forward_unique_image_through_lyon(self,netmob_video_batch):
+    def forward_unique_image_through_lyon(self,netmob_video_batch:Tensor)-> Tensor:
         ''' Foward for input shape [B,C,H,W,L]'''
         B,C_netmob,H,W,L = netmob_video_batch.size()
 

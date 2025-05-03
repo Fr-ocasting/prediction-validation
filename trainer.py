@@ -170,11 +170,10 @@ class Trainer(object):
             self.scheduler.step()
 
     def display_usefull_information(self,epoch,mod,t0):
-        if mod is not None:
-            if epoch%mod==0:
-                print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
-            if epoch == 1:
-                print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
+        if epoch == 1:
+            print(f"epoch: {epoch} \n min\epoch : {'{0:.2f}'.format((time.time()-t0)/60)}")
+        if epoch == 2:
+            print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
     
     def get_pi_from_prediction(self,Preds,Y_true,T_labels):
         if self.type_calib == 'CQR':

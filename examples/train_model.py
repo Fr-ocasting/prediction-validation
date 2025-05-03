@@ -2,6 +2,9 @@
 import os 
 import sys
 import torch 
+if torch.cuda.is_available():
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.allow_tf32  = True
 # Get Parent folder : 
 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
@@ -115,6 +118,15 @@ if model_name == 'STGCN':
                         'learnable_adj_top_k': 10,                                          # EXIST ONLY IF MODEL = STGCN
                         'learnable_adj_embd_dim': 16,                                       # EXIST ONLY IF MODEL = STGCN  
                         })
+
+modification.update({'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                        'persistent_workers' : True ,# False 
+                        'pin_memory' : True ,# False 
+                        'prefetch_factor' : 4, # None, 2,3,4,5 ... 
+                        'drop_last' : False,  # True
+                        'mixed_precision' : False, # True # False
+                        'torch_compile' : True, # True # False
+    })
 
 if target_data in dic_config.keys():
     modification.update(dic_config[target_data])

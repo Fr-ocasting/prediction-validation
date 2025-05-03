@@ -67,7 +67,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     
     config['non_blocking'] = True
     config['torch_compile'] = False #True
-    config['backend'] = 'inductor' #'cudagraphs'
+    config['backend'] ='inductor' #'inductor' #'cudagraphs'
     config['prefetch_all'] = False
     # ...
 
