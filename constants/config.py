@@ -116,7 +116,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['H'] = 6
     config['W'] = 0
     config['D'] = 1
-    config['step_ahead'] = 1
+    config['step_ahead'] = 4
     config['L'] = config['H']+config['W']+config['D']
 
     # Split proportion

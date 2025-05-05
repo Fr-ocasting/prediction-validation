@@ -167,7 +167,7 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
 
-        for model_name in ['STGformer','ASTGCN']:
+        for model_name in ['STAEformer']: # ['STGformer','ASTGCN','STGCN']:
             args = local_get_args(model_name,
                                 args_init = None,
                                 dataset_names=dataset_names,
@@ -178,6 +178,8 @@ if __name__ == '__main__':
                                                 'batch_size':128,
                                                 'grace_period':20,#20,
                                                 'HP_max_epochs':500, #300,#100,
+                                                'step_ahead':4,
+
                                                 'evaluate_complete_ds' : True,
                                                 'torch_compile':False,
                                                 #'set_spatial_units' : ['BON','SOI','GER','CHA'],
@@ -197,7 +199,7 @@ if __name__ == '__main__':
                                                 'data_augmentation': True, #True,  #False
                                                 'DA_method':'rich_interpolation', # 'noise' # 'interpolation
                                                 })
-            if model_name == 'STGformer':
+            if (model_name == 'STGformer') or (model_name == 'STAEformer'):
                 args.dataset_names = ['subway_in','subway_out','calendar']
                 args.calendar_types = ['dayofweek', 'timeofday']
             # Init 

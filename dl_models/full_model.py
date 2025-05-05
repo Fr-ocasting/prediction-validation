@@ -29,6 +29,7 @@ from dl_models.TFT.TFT import TFT
 from dl_models.ASTGCN.ASTGCN import ASTGCN
 from dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
 from dl_models.STGformer.STGformer import STGformer
+from dl_models.STAEformer.STAEformer import STAEformer
 
 from utils.utilities import filter_args
 from profiler.profiler import model_memory_cost
@@ -464,6 +465,12 @@ def load_model(dataset, args):
     else:
         TE_concatenation_late = False
         TE_embedding_dim = None
+
+    if args.model_name == 'STAEformer':
+        if TE_concatenation_late or vision_concatenation_late:
+            raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
+        filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}
+        model = STAEformer(**filtered_args).to(args.device)
 
     if args.model_name == 'STGformer':
         if TE_concatenation_late or vision_concatenation_late:

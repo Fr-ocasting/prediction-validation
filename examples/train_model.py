@@ -24,7 +24,7 @@ from constants.config_by_datasets import dic_config
 target_data = 'subway_in' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
 dataset_names = ['subway_in','subway_out'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
 dataset_for_coverage = ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STGformer' # 'STGCN', 'ASTGCN' # 'STGformer'
+model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
@@ -104,6 +104,20 @@ if model_name == 'STGformer':
 
     
     })
+if model_name == 'STAEformer':
+    dataset_names.append('calendar')
+    modification.update({ "input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
+                            "tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
+                            "dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
+                            "adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < n_vertex.
+                            "spatial_embedding_dim": 8, # choices = [4, 8, 12, 16,32,64]
+
+                            # Attention
+                            "num_heads": 2, # choices = [1, 2, 4, 8]  # Has to devide input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
+                            "num_layers": 2, # choices = [1, 2, 3, 4, 6]
+                            "feed_forward_dim": 16,
+    })
+
 if model_name == 'STGCN':
     modification.update({'Kt': 2,
                         'stblock_num': 3,
