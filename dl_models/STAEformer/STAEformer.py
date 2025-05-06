@@ -36,7 +36,7 @@ class AttentionLayer(nn.Module):
 
         self.out_proj = nn.Linear(model_dim, model_dim)
 
-    def forward(self, query, key, value):
+    def forward(self, query: Tensor, key: Tensor, value: Tensor) -> Tensor:
         # Q    (batch_size, ..., tgt_length, model_dim)
         # K, V (batch_size, ..., src_length, model_dim)
         batch_size = query.shape[0]
@@ -94,7 +94,7 @@ class SelfAttentionLayer(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
 
-    def forward(self, x, dim=-2):
+    def forward(self, x: Tensor, dim: int = -2) -> Tensor:
         x = x.transpose(dim, -2)
         # x: (batch_size, ..., length, model_dim)
         residual = x
@@ -152,6 +152,7 @@ class STAEformer(nn.Module):
             + spatial_embedding_dim
             + adaptive_embedding_dim
         )
+        
         self.num_heads = num_heads
         self.num_layers = num_layers
         self.use_mixed_proj = use_mixed_proj
@@ -183,9 +184,8 @@ class STAEformer(nn.Module):
             self.adaptive_embedding = None
 
         if use_mixed_proj:
-            self.output_proj = nn.Linear(
-                self.in_steps * self.model_dim, self.out_steps * self.output_dim
-            )
+            self.output_proj = nn.Linear(self.in_steps * self.model_dim, self.out_steps * self.output_dim)
+            self.temporal_proj = None
         else:
             self.temporal_proj = nn.Linear(self.in_steps, self.out_steps)
             self.output_proj = nn.Linear(self.model_dim, self.output_dim)
@@ -205,6 +205,7 @@ class STAEformer(nn.Module):
         )
         self.pos_tod = contextual_positions.get("calendar_timeofday", None)
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
+
         
     def forward(self,  x: Tensor,
                 x_vision: Optional[Tensor] = None, 
@@ -233,22 +234,22 @@ class STAEformer(nn.Module):
             if self.tod_embedding is not None:
                 tod = x_calendar[..., self.pos_tod]
                 tod_emb = self.tod_embedding( (tod * self.steps_per_day).long() )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
-                features = torch.cat([features, tod_emb], -1)
+                features = torch.cat([features, tod_emb], dim=-1)
 
             if self.dow_embedding is not None:
                 dow = x_calendar[..., self.pos_dow]
                 dow_emb = self.dow_embedding(dow.long())  # (batch_size, in_steps, num_nodes, dow_embedding_dim)
-                features = torch.cat([features, dow_emb], -1)
+                features = torch.cat([features, dow_emb], dim=-1)
 
             if self.node_emb is not None:
                 spatial_emb = self.node_emb.expand(batch_size, self.in_steps, self.num_nodes, self.spatial_embedding_dim)
-                features = torch.cat([features, spatial_emb], -1)
+                features = torch.cat([features, spatial_emb],dim= -1)
 
             if self.adaptive_embedding is not None:
                 adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
-                features = torch.cat([features, adp_emb], -1)
+                features = torch.cat([features, adp_emb], dim=-1)
 
-            x = torch.cat([x] + [features], dim=-1)
+            x = torch.cat([x, features], dim=-1)
 
 
             for attn in self.attn_layers_t:
@@ -257,14 +258,10 @@ class STAEformer(nn.Module):
                 x = attn(x, dim=2)
             # (batch_size, in_steps, num_nodes, model_dim)
 
-            if self.use_mixed_proj:
+            if self.temporal_proj is None:
                 out = x.transpose(1, 2)  # (batch_size, num_nodes, in_steps, model_dim)
-                out = out.reshape(
-                    batch_size, self.num_nodes, self.in_steps * self.model_dim
-                )
-                out = self.output_proj(out).view(
-                    batch_size, self.num_nodes, self.out_steps, self.output_dim
-                )
+                out = out.reshape( batch_size, self.num_nodes, self.in_steps * self.model_dim)
+                out = self.output_proj(out).view(batch_size, self.num_nodes, self.out_steps, self.output_dim)
                 out = out.transpose(1, 2)  # (batch_size, out_steps, num_nodes, output_dim)
             else:
                 out = x.transpose(1, 3)  # (batch_size, model_dim, num_nodes, in_steps)
@@ -277,6 +274,32 @@ class STAEformer(nn.Module):
 
 
 if __name__ == "__main__":
-    from torchinfo import summary
-    model = STAEformer(207, 12, 12)
-    summary(model, [64, 12, 207, 3])
+    import torch
+    # Debug JIT scripting per module
+    print("Testing AttentionLayer...")
+    try:
+        attn = AttentionLayer(model_dim=32, num_heads=4)
+        torch.jit.script(attn)
+        print("→ AttentionLayer scripted OK")
+    except Exception as e:
+        print("→ AttentionLayer JIT error:", e)
+
+    print("Testing SelfAttentionLayer...")
+    try:
+        self_attn = SelfAttentionLayer(model_dim=32, feed_forward_dim=128, num_heads=4, dropout=0.1)
+        torch.jit.script(self_attn)
+        print("→ SelfAttentionLayer scripted OK")
+    except Exception as e:
+        print("→ SelfAttentionLayer JIT error:", e)
+
+    print("Testing STAEformer...")
+    try:
+        model = STAEformer(n_vertex=10, L=12, step_ahead=12, time_step_per_hour=12, C=1, out_dim_factor=1)
+        dummy_x = torch.randn(1,1,10,12)
+        dummy_cal = torch.zeros(1,12,2)
+        _ = model(dummy_x,x_calendar= dummy_cal)  # eager forward
+        torch.jit.script(model)
+        print("→ STAEformer scripted OK")
+    except Exception as e:
+        print("→ STAEformer JIT error:", e)
+

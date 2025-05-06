@@ -70,8 +70,10 @@ class Trainer(object):
                                         )
         elif args.torch_compile == 'jit_script':
             self.model = torch.jit.script(model)
-        else:
+        elif (args.torch_compile is None) or not(args.torch_compile):
             self.model = model 
+        else:
+            raise NotImplementedError(f"torch compile {args.torch_compile} has not been implemented")
 
         self.scheduler = scheduler
         if args.mixed_precision:
