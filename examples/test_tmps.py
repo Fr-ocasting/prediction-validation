@@ -132,14 +132,44 @@ if False:
 
 
 if True: 
-    save_folder = 'K_fold_validation/training_with_HP_tuning/subway_in_subway_out_STGCN_MSELoss_2025_05_02_15_47_82038'
-    trial_id = 'subway_in_subway_out_STGCN_MSELoss_2025_05_02_15_47_82038'
-    epochs_validation = 300
+    save_folder = 'K_fold_validation/training_with_HP_tuning/subway_in_subway_out_calendar_STAEformer_MSELoss_2025_05_06_02_00_73032'
+    trial_id = 'subway_in_subway_out_calendar_STAEformer_MSELoss_2025_05_06_02_00_73032'
+    epochs_validation = 1000
     args,folds = load_configuration(trial_id,True)
-    modification = {'epochs':epochs_validation}
+    modification = {'epochs':epochs_validation,
+                    'device':torch.device("cuda:1")}
     
     config_diffs = {}
-    config_diffs.update({'trial_1':{}
+    config_diffs.update({'Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Google_Maps','Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                         },
+                         'DENOISE_SVG_Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Google_Maps','Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                                                'denoising_names':['netmob_POIs'],
+                                                'denoiser_names':["savitzky_golay"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoising_modes':["train"],             # par défaut
+                                                'denoiser_kwargs':{'savitzky_golay': {'window': 3, 'poly': 2}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                         },
+                         'naiv':{},
+                         'DENOISE_median_Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Google_Maps','Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                                                'denoising_names':['netmob_POIs'],
+                                                'denoiser_names':["median"],   
+                                                'denoising_modes':["train"],       
+                                                'denoiser_kwargs':{'median': {'kernel_size': 2}},
+                         }
                          })
                         
 

@@ -94,7 +94,6 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     module_path = f"load_inputs.{args.target_data}"
     module = importlib.import_module(module_path)
     USELESS_DATES = module.USELESS_DATES
-
     for dataset_name in args.contextual_dataset_names:
         contextual_ds_i = contextual_ds[dataset_name]
 

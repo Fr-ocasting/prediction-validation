@@ -227,7 +227,6 @@ class STAEformer(nn.Module):
             batch_size = x.shape[0]
             x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
             
-
             # Init features with empty tensor with 0 channels
             features = torch.empty(x.size(0), x.size(1), x.size(2), 0,dtype=x.dtype, device=x.device)  
 

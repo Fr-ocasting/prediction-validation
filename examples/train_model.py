@@ -101,21 +101,20 @@ if model_name == 'STGformer':
 
                             # Kernel sizes pour la projection temporelle
                             "kernel_size": [1], # choices = [[1], [3], [1, 3], [3, 5]]
-
-    
     })
+
 if model_name == 'STAEformer':
     dataset_names.append('calendar')
-    modification.update({ "input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
+    modification.update({ #"input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
                             "tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
                             "dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
-                            "adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < n_vertex.
-                            "spatial_embedding_dim": 8, # choices = [4, 8, 12, 16,32,64]
+                            #"adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < n_vertex.
+                            #"spatial_embedding_dim": 8, # choices = [4, 8, 12, 16,32,64]
 
                             # Attention
-                            "num_heads": 2, # choices = [1, 2, 4, 8]  # Has to devide input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
-                            "num_layers": 2, # choices = [1, 2, 3, 4, 6]
-                            "feed_forward_dim": 16,
+                            #"num_heads": 2, # choices = [1, 2, 4, 8]  # Has to devide input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
+                            #"num_layers": 2, # choices = [1, 2, 3, 4, 6]
+                            #"feed_forward_dim": 16,
     })
 
 if model_name == 'STGCN':

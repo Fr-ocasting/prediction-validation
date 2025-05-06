@@ -93,7 +93,7 @@ def tackle_input_data(invalid_dates,coverage_period,args,normalize):
                                            normalize=normalize
                                            )
         contextual_ds[dataset_name] = contextual_ds_i
-        return(contextual_ds,args)
+    return(contextual_ds,args)
         
 
 def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
@@ -128,6 +128,8 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
 def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = True):
 
     # Define contextual tensors
+
+
     contextual_dataset_names = [ds_name for ds_name in args.dataset_names if not (ds_name in (['calendar','calendar_embedding']+ [target_ds.target_data]))]
     if args.use_target_as_context:
         if target_ds.target_data not in contextual_dataset_names:
@@ -152,13 +154,13 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                     raise NotImplementedError(f"VA PRENDRE EN COMPTE UNE SPATIAL ATTENTION MAIS NE SAIS PAS POUR QUEL DONNEE LA FAIRE")
                 else:
                     latent_dim = 1
-                if type(contextual_ds)==list:
-                    add_C = latent_dim*contextual_ds[0].C
-                else:
-                    if ('netmob_POIs' in args.dataset_names) and (args.stacked_contextual) and (not args.compute_node_attr_with_attn):
-                        add_C = len(args.NetMob_selected_apps)*len(args.NetMob_transfer_mode)*len(args.NetMob_selected_tags) 
+
+                add_C = 0
+                for name_i,contextual_ds_i in contextual_ds.items():
+                    if ('netmob_POIs' in name_i) and (args.stacked_contextual) and (not args.compute_node_attr_with_attn):
+                        add_C = add_C+len(args.NetMob_selected_apps)*len(args.NetMob_transfer_mode)*len(args.NetMob_selected_tags) 
                     else:
-                        add_C = latent_dim*sum([contextual_ds_i.C for name_i,contextual_ds_i in contextual_ds.items()])
+                        add_C = add_C + latent_dim*contextual_ds_i.C 
                 args.C = args.C + add_C
 
         else:
