@@ -21,7 +21,7 @@ args = parser.parse_args(args=[])
 
 ''' Config that comes from the original 'args_init' : '''
 def transfer_from_orig_args(args_init,args):
-    args.num_of_vertices = args_init.n_vertex
+    args.num_of_vertices = args_init.num_nodes
     args.num_for_predict = args_init.step_ahead
     args.len_input = args_init.L
     args.in_channels = args_init.C

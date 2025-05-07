@@ -114,7 +114,7 @@ class SelfAttentionLayer(nn.Module):
 class STAEformer(nn.Module):
     def __init__(
         self,
-        n_vertex,
+        num_nodes,
         L=12,
         step_ahead=12,
         time_step_per_hour=12,
@@ -134,7 +134,7 @@ class STAEformer(nn.Module):
     ):
         super().__init__()
 
-        self.num_nodes: int = n_vertex
+        self.num_nodes: int = num_nodes
         self.in_steps = L
         self.out_steps = step_ahead
         self.steps_per_day = 24*time_step_per_hour
@@ -293,7 +293,7 @@ if __name__ == "__main__":
 
     print("Testing STAEformer...")
     try:
-        model = STAEformer(n_vertex=10, L=12, step_ahead=12, time_step_per_hour=12, C=1, out_dim_factor=1)
+        model = STAEformer(num_nodes=10, L=12, step_ahead=12, time_step_per_hour=12, C=1, out_dim_factor=1)
         dummy_x = torch.randn(1,1,10,12)
         dummy_cal = torch.zeros(1,12,2)
         _ = model(dummy_x,x_calendar= dummy_cal)  # eager forward

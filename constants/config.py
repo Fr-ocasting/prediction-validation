@@ -23,7 +23,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['embedding_calendar_types'] = ['dayofweek', 'hour']  # IF 'calendar_embedding' in ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 
     #importlib.reload(data_module)
-    #config['n_vertex'] = data_module.n_vertex
+    #config['num_nodes'] = data_module.num_nodes
     #config['C'] =  data_module.C
     
     # === Common config for everyone: ===
@@ -238,9 +238,9 @@ def update_modif(args,name_gpu='cuda'):
         args.track_pi = False
     # ...
 
-    # Modif about n_vertex: 
+    # Modif about num_nodes: 
     if args.set_spatial_units is not None:
-        args.n_vertex = len(args.set_spatial_units)
+        args.num_nodes = len(args.set_spatial_units)
 
     # Update total sequence length:
     if not args.target_data in args.dataset_names:

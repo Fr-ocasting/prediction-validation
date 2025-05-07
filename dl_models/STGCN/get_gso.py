@@ -75,7 +75,7 @@ def get_block_dims(args,Ko):
 
 def get_gso_from_adj(dataset, args):
     # Compute Weighted Adjacency Matrix: 
-    adj,n_vertex = load_adj(dataset, adj_type = args.adj_type, threshold=args.threshold)
+    adj,num_nodes = load_adj(dataset, adj_type = args.adj_type, threshold=args.threshold)
     adj[adj < args.threshold] = 0
     adj = adj.to_numpy()
     gso = calc_gso(adj, args.gso_type)
@@ -85,8 +85,8 @@ def get_gso_from_adj(dataset, args):
     gso = gso.astype(dtype=np.float32)
     if args.single_station:
         gso = np.array([[1]]).astype(dtype=np.float32)
-        n_vertex = 1
+        num_nodes = 1
     gso = torch.from_numpy(gso).to(args.device)
-    return gso,n_vertex
+    return gso,num_nodes
 
 

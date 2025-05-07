@@ -80,7 +80,7 @@ class full_model(nn.Module):
 
         # === Vision NetMob ===
         if 'netmob' in args.contextual_positions.keys():
-            args.args_vision.n_vertex = args.n_vertex
+            args.args_vision.num_nodes = args.num_nodes
             args.args_vision.H = args.H
             args.args_vision.W = args.W
             self.netmob_vision = load_vision_model(args.args_vision)
@@ -95,7 +95,7 @@ class full_model(nn.Module):
         # === Trafic Model ===
         self.core_model = load_model(dataset, args)
 
-        self.n_vertex = args.n_vertex
+        self.num_nodes = args.num_nodes
 
 
         # Add positions for each contextual data:
@@ -122,7 +122,7 @@ class full_model(nn.Module):
         extracted_feature = self.netmob_vision(netmob_video_batch)
 
         # Reshape  [B*N,Z] -> [B,C,N,Z]
-        extracted_feature = extracted_feature.reshape(B,self.n_vertex,-1)
+        extracted_feature = extracted_feature.reshape(B,self.num_nodes,-1)
         extracted_feature = extracted_feature.unsqueeze(1)
 
         return extracted_feature
@@ -136,8 +136,8 @@ class full_model(nn.Module):
 
         # [B,N*Z] ->  [B,N,Z]
         B,NZ = extracted_feature.size()
-        Z = NZ//self.n_vertex
-        extracted_feature = extracted_feature.view(B,self.n_vertex,Z) 
+        Z = NZ//self.num_nodes
+        extracted_feature = extracted_feature.view(B,self.num_nodes,Z) 
         # ...
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]

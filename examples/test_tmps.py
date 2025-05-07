@@ -140,36 +140,84 @@ if True:
                     'device':torch.device("cuda:1")}
     
     config_diffs = {}
-    config_diffs.update({'Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
-                                               'NetMob_only_epsilon': True,    # True # False
-                                                'NetMob_selected_apps': ['Google_Maps','Deezer'],
-                                                'NetMob_transfer_mode' :  ['DL'],
-                                                'NetMob_selected_tags' : ['station_epsilon100'],
-                                                'NetMob_expanded' : '', 
-                         },
-                         'DENOISE_SVG_Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+    config_diffs.update({'DENOISE_mean_centered3_Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
                                                'NetMob_only_epsilon': True,    # True # False
                                                 'NetMob_selected_apps': ['Google_Maps','Deezer'],
                                                 'NetMob_transfer_mode' :  ['DL'],
                                                 'NetMob_selected_tags' : ['station_epsilon100'],
                                                 'NetMob_expanded' : '', 
                                                 'denoising_names':['netmob_POIs'],
-                                                'denoiser_names':["savitzky_golay"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoiser_names':["median"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
                                                 'denoising_modes':["train"],             # par défaut
-                                                'denoiser_kwargs':{'savitzky_golay': {'window': 3, 'poly': 2}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                                                'denoiser_kwargs':{'median': {'kernel_size': 3,
+                                                                              'mode':'centered',
+                                                                              'agg_func':'mean'}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
                          },
-                         'naiv':{},
-                         'DENOISE_median_Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                         'DENOISE_mean_causal2_Google_Maps_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
                                                'NetMob_only_epsilon': True,    # True # False
                                                 'NetMob_selected_apps': ['Google_Maps','Deezer'],
                                                 'NetMob_transfer_mode' :  ['DL'],
                                                 'NetMob_selected_tags' : ['station_epsilon100'],
                                                 'NetMob_expanded' : '', 
                                                 'denoising_names':['netmob_POIs'],
-                                                'denoiser_names':["median"],   
-                                                'denoising_modes':["train"],       
-                                                'denoiser_kwargs':{'median': {'kernel_size': 2}},
-                         }
+                                                'denoiser_names':["median"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoising_modes':["train"],             # par défaut
+                                                'denoiser_kwargs':{'median': {'kernel_size': 2,
+                                                                              'mode':'causal',
+                                                                              'agg_func':'mean'}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                         },
+                         'DENOISE_mean_centered3_Google_Maps':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Google_Maps'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                                                'denoising_names':['netmob_POIs'],
+                                                'denoiser_names':["median"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoising_modes':["train"],             # par défaut
+                                                'denoiser_kwargs':{'median': {'kernel_size': 3,
+                                                                              'mode':'centered',
+                                                                              'agg_func':'mean'}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                         },
+                         'DENOISE_mean_causal2_Google_Maps':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Google_Maps'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                                                'denoising_names':['netmob_POIs'],
+                                                'denoiser_names':["median"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoising_modes':["train"],             # par défaut
+                                                'denoiser_kwargs':{'median': {'kernel_size': 2,
+                                                                              'mode':'causal',
+                                                                              'agg_func':'mean'}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                         },
+                         'DENOISE_mean_causal2_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                                                'denoising_names':['netmob_POIs'],
+                                                'denoiser_names':["median"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoising_modes':["train"],             # par défaut
+                                                'denoiser_kwargs':{'median': {'kernel_size': 2,
+                                                                              'mode':'causal',
+                                                                              'agg_func':'mean'}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                         },
+                         'DENOISE_mean_centered3_Deezer':{'dataset_names':['subway_in','subway_out','calendar','netmob_POIs'],
+                                               'NetMob_only_epsilon': True,    # True # False
+                                                'NetMob_selected_apps': ['Deezer'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon100'],
+                                                'NetMob_expanded' : '', 
+                                                'denoising_names':['netmob_POIs'],
+                                                'denoiser_names':["median"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                'denoising_modes':["train"],             # par défaut
+                                                'denoiser_kwargs':{'median': {'kernel_size': 3,
+                                                                              'mode':'centered',
+                                                                              'agg_func':'mean'}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                         },
                          })
                         
 

@@ -13,7 +13,7 @@ from load_inputs.netmob_POIs import load_input_and_preprocess
 from utils.utilities import filter_args
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - add argument 'num_nodes', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 NAME = 'subway_out_per_station'
@@ -35,7 +35,7 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 
 
 C = 1
-n_vertex = 40
+num_nodes = 40
 
 def load_data(dataset,args,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
     id_stations = dataset.spatial_unit

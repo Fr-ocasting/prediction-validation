@@ -40,7 +40,7 @@ list_of_invalid_period = []
 
 C = 1 # Nb channels by spatial units
 
-n_vertex = 207
+num_nodes = 207
 
 
 

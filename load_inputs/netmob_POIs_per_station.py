@@ -17,7 +17,7 @@ from utils.utilities import filter_args
 from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - >>>> No Need to set n_vertex as it's a contextual data 
+ - >>>> No Need to set num_nodes as it's a contextual data 
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
@@ -38,7 +38,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 
 ## C = 1
-## n_vertex = 
+## num_nodes = 
 
 def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''

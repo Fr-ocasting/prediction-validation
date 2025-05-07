@@ -4,14 +4,14 @@ from scipy.sparse.linalg import norm
 from scipy.sparse.linalg import svds
 
 def calc_gso(dir_adj, gso_type):
-    n_vertex = dir_adj.shape[0]
+    num_nodes = dir_adj.shape[0]
 
     if sp.issparse(dir_adj) == False:
         dir_adj = sp.csc_matrix(dir_adj)
     elif dir_adj.format != 'csc':
         dir_adj = dir_adj.tocsc()
 
-    id = sp.identity(n_vertex, format='csc')
+    id = sp.identity(num_nodes, format='csc')
 
     # Symmetrizing an adjacency matrix
     adj = dir_adj + dir_adj.T.multiply(dir_adj.T > dir_adj) - dir_adj.multiply(dir_adj.T > dir_adj)

@@ -13,9 +13,9 @@ class MLP_output(nn.Module):
     time_elt : useless here, supposed to be already used 
 
     '''
-    def __init__(self,input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout):
+    def __init__(self,input_dim,out_h_dim,num_nodes,embedding_dim,multi_embedding,dropout):
         super(MLP_output, self).__init__()
-        self.mlp = MLP_embedding(input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout)
+        self.mlp = MLP_embedding(input_dim,out_h_dim,num_nodes,embedding_dim,multi_embedding,dropout)
 
     def forward(self,x,extracted_feature,time_elt): 
         x  = self.mlp(None,x)
@@ -29,12 +29,12 @@ class MLP_embedding(nn.Module):
     --------
     Concatenation of embedded vector. 
     '''
-    def __init__(self,input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout):
+    def __init__(self,input_dim,out_h_dim,num_nodes,embedding_dim,multi_embedding,dropout):
         super(MLP_embedding, self).__init__()
         self.output1 = nn.Linear(input_dim,out_h_dim)
 
         if multi_embedding:
-            self.output2 = nn.Linear(out_h_dim,n_vertex*embedding_dim)
+            self.output2 = nn.Linear(out_h_dim,num_nodes*embedding_dim)
         else:
             self.output2 = nn.Linear(out_h_dim,embedding_dim)        
 

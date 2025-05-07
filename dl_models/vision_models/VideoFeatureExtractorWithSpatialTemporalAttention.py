@@ -5,7 +5,7 @@ class VideoFeatureExtractorWithSpatialTemporalAttention(nn.Module):
     def __init__(self, c_in=3, out_dim=64, N=40, d_model=128):
         super(VideoFeatureExtractorWithSpatialTemporalAttention, self).__init__()
         self.z_dim = out_dim
-        self.n_vertex = n_vertex
+        self.num_nodes = num_nodes
         self.d_model = d_model
 
         # Encodeur convolutionnel

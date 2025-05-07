@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
     # Load base args
     args = get_args(model_name,dataset_names,dataset_for_coverage)
-    print(args.n_vertex)
+    print(args.num_nodes)
 
     # Modification :
     for key,value in modification.items():

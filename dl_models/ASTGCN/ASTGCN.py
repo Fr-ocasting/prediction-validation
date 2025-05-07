@@ -285,7 +285,7 @@ class ASTGCN_block(nn.Module):
 
 class ASTGCN(nn.Module):
 
-    def __init__(self, device, nb_block, C, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, step_ahead, L, n_vertex):
+    def __init__(self, device, nb_block, C, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, step_ahead, L, num_nodes):
         '''
         :param nb_block:
         :param in_channels:
@@ -302,7 +302,7 @@ class ASTGCN(nn.Module):
         self.in_channels = C
         self.len_input = L
         self.num_for_predict = step_ahead
-        self.num_of_vertices = n_vertex
+        self.num_of_vertices = num_nodes
 
 
         self.BlockList = nn.ModuleList([ASTGCN_block(self.DEVICE, self.in_channels, K, nb_chev_filter, nb_time_filter, time_strides, cheb_polynomials, self.num_of_vertices, self.len_input)])

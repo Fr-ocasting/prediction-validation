@@ -10,7 +10,7 @@ from utils.utilities import get_time_step_per_hour
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - add argument 'num_nodes', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
@@ -24,7 +24,7 @@ FREQ = '15min'
 
 list_of_invalid_period = []
 C = 1
-n_vertex = 10
+num_nodes = 10
 
 
 def load_data(args,FOLDER_PATH,coverage_period = None):

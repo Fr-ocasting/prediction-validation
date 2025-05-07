@@ -103,7 +103,7 @@ def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,)
     if args.data_augmentation and args.DA_method == 'noise':
         if args.DA_noise_from == 'MSTL':
             raise NotImplementedError("Has to decompose seasonal component first but not implemented yet. Please refer to the commented code in the top of this file.")
-    args.n_vertex = preprocessed_ds.n_vertex
+    args.num_nodes = preprocessed_ds.num_nodes
     args.C = preprocessed_ds.C
     # ...
   

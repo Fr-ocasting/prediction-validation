@@ -29,7 +29,7 @@ from dl_models.MTGNN.MTGNN_layer import graph_constructor, LayerNorm,dilated_inc
 #   - La gate passe par une sigmoid
 #   - Les deux sont multiplié, puis passe dans un dropout
 class MTGNN(nn.Module):
-    def __init__(self, gcn_true, buildA_true, gcn_depth, n_vertex, device, 
+    def __init__(self, gcn_true, buildA_true, gcn_depth, num_nodes, device, 
                  predefined_A=None, static_feat=None, dropout=0.3, 
                  subgraph_size=20, 
                  node_dim=40, 
@@ -46,7 +46,7 @@ class MTGNN(nn.Module):
         super(MTGNN, self).__init__()
         self.gcn_true = gcn_true
         self.buildA_true = buildA_true
-        self.n_vertex = n_vertex
+        self.num_nodes = num_nodes
         self.dropout = dropout
         self.predefined_A = predefined_A
         self.out_dim = out_dim
@@ -60,7 +60,7 @@ class MTGNN(nn.Module):
         self.start_conv = nn.Conv2d(in_channels=c_in,
                                     out_channels=residual_channels,
                                     kernel_size=(1, 1))
-        self.gc = graph_constructor(n_vertex, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
+        self.gc = graph_constructor(num_nodes, subgraph_size, node_dim, device, alpha=tanhalpha, static_feat=static_feat)
 
         self.seq_length = seq_length
         if L_add != 0:
@@ -105,9 +105,9 @@ class MTGNN(nn.Module):
                     self.gconv2.append(mixprop(conv_channels, residual_channels, gcn_depth, dropout, propalpha))
 
                 if self.seq_length>self.receptive_field:
-                    self.norm.append(LayerNorm((residual_channels, n_vertex, self.seq_length - rf_size_j + 1),elementwise_affine=layer_norm_affline))
+                    self.norm.append(LayerNorm((residual_channels, num_nodes, self.seq_length - rf_size_j + 1),elementwise_affine=layer_norm_affline))
                 else:
-                    self.norm.append(LayerNorm((residual_channels, n_vertex, self.receptive_field - rf_size_j + 1),elementwise_affine=layer_norm_affline))
+                    self.norm.append(LayerNorm((residual_channels, num_nodes, self.receptive_field - rf_size_j + 1),elementwise_affine=layer_norm_affline))
 
                 new_dilation *= dilation_exponential
 
@@ -140,7 +140,7 @@ class MTGNN(nn.Module):
             self.skipE = nn.Conv2d(in_channels=residual_channels, out_channels=skip_channels, kernel_size=(1, 1), bias=True)
 
 
-        self.idx = torch.arange(self.n_vertex).to(device)
+        self.idx = torch.arange(self.num_nodes).to(device)
 
 
     def forward(self, x,x_vision=None,x_calendar = None,idx=None):

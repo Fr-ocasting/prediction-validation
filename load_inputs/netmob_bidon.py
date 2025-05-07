@@ -12,7 +12,7 @@ from dataset import DataSet
 from utils.utilities import get_time_step_per_hour
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - add argument 'num_nodes', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 NAME = 'netmob_bidon'
@@ -31,7 +31,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 
 C = 1
-n_vertex = 10
+num_nodes = 10
 
 
 def load_data(args,FOLDER_PATH,coverage_period = None):

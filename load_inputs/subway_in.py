@@ -14,7 +14,7 @@ from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - add argument 'num_nodes', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 NAME= 'subway_in'
@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 
 
 C = 1
-n_vertex = 40
+num_nodes = 40
 
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,filename=None,name=NAME):
     dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename)

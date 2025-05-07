@@ -30,6 +30,7 @@ from dl_models.ASTGCN.ASTGCN import ASTGCN
 from dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
 from dl_models.STGformer.STGformer import STGformer
 from dl_models.STAEformer.STAEformer import STAEformer
+from dl_models.DSTRformer.DSTRformer import DSTRformer
 
 from utils.utilities import filter_args
 from profiler.profiler import model_memory_cost
@@ -112,7 +113,7 @@ class full_model(nn.Module):
 
         for ds_name_i in self.node_attr_which_need_attn:
             init_dim = getattr(args, f"n_units_{ds_name_i}")
-            self.spatial_attn_poi[ds_name_i] = load_spatial_attn_model(args, query_dim=args.n_vertex, init_spatial_dim=init_dim )
+            self.spatial_attn_poi[ds_name_i] = load_spatial_attn_model(args, query_dim=args.num_nodes, init_spatial_dim=init_dim )
 
         # ...
         
@@ -145,14 +146,15 @@ class full_model(nn.Module):
         if ((self.te is not None) and not(args.args_embedding.concatenation_early) and not(args.args_embedding.concatenation_late)):
                  raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         # === Trafic Model ===
+        args.time_step_per_hour = int(dataset.time_step_per_hour)
         core_model, args = load_model(dataset, args)
         self.core_model = core_model
 
-        self.n_vertex = args.n_vertex
+        self.num_nodes = args.num_nodes
 
     def update_vision_args(self,args):
         if len(vars(args.args_vision))>0:
-            args.args_vision.n_vertex = args.n_vertex
+            args.args_vision.num_nodes = args.num_nodes
             args.args_vision.H = args.H
             args.args_vision.W = args.W
             args.args_vision.dropout = args.dropout
@@ -231,7 +233,7 @@ class full_model(nn.Module):
     
     def tackle_node_attributes(self,args):
         self.stacked_contextual = args.stacked_contextual
-        self.n_vertex = args.n_vertex
+        self.num_nodes = args.num_nodes
         for dataset_name in self.ds_which_need_spatial_attn:
             position_i = getattr(args,f"pos_{dataset_name}")
             setattr(self,f"pos_{dataset_name}",position_i)
@@ -257,7 +259,7 @@ class full_model(nn.Module):
 
         for ds in self.node_attr_which_need_attn:
             init_spatial_dim = getattr(args, f"n_units_{ds}")
-            self.spatial_attn_poi[ds] = load_spatial_attn_model(args, query_dim=args.n_vertex, init_spatial_dim=init_spatial_dim)
+            self.spatial_attn_poi[ds] = load_spatial_attn_model(args, query_dim=args.num_nodes, init_spatial_dim=init_spatial_dim)
 
             
     def stack_node_attribute(self,x: torch.Tensor, 
@@ -324,7 +326,7 @@ class full_model(nn.Module):
             pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
             node_attr = contextual[pos_i] 
             node_attr = attetion_module_i(x.permute(0, 2, 1),node_attr.permute(0, 2, 1))   # [B,L,Z*N]
-            node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.n_vertex, -1)  # [B,L,N,Z]
+            node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.num_nodes, -1)  # [B,L,N,Z]
             node_attr = node_attr.permute(0, 3, 2, 1)    # [B,C,N,L]
             if node_attr is not None:
                 if node_attr.dim() == 3:
@@ -399,7 +401,7 @@ class full_model(nn.Module):
         extracted_feature = self.netmob_vision(netmob_video_batch)
 
         # Reshape  [B*N,Z] -> [B,C,N,Z]
-        extracted_feature = extracted_feature.reshape(B,self.n_vertex,-1)
+        extracted_feature = extracted_feature.reshape(B,self.num_nodes,-1)
         extracted_feature = extracted_feature.unsqueeze(1)
 
         return extracted_feature
@@ -413,8 +415,8 @@ class full_model(nn.Module):
 
         # [B,N*Z] ->  [B,N,Z]
         B,NZ = extracted_feature.size()
-        Z = NZ//self.n_vertex
-        extracted_feature = extracted_feature.view(B,self.n_vertex,Z) 
+        Z = NZ//self.num_nodes
+        extracted_feature = extracted_feature.view(B,self.num_nodes,Z) 
         # ...
 
         extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
@@ -430,7 +432,7 @@ def reshaping(x):
     if x.dim()==2:
         x = x.unsqueeze(-1)
 
-    # Tackle the case when n_vertex = 1
+    # Tackle the case when num_nodes = 1
     if x.dim()==1: 
         x = x.unsqueeze(-1)           
         x = x.unsqueeze(-1) 
@@ -471,6 +473,18 @@ def load_model(dataset, args):
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}
         model = STAEformer(**filtered_args).to(args.device)
+
+    if args.model_name == 'DSTRformer':
+        if TE_concatenation_late or vision_concatenation_late:
+            raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
+        from dl_models.DSTRformer.DSTRformer_utilities import normalize_adj_mx
+        filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(DSTRformer.__init__).parameters.keys())}
+
+        adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold=args.threshold)
+        adj_mx = normalize_adj_mx(adj_mx, args.adj_normalize_method)
+        adj_mx = [torch.tensor(i).to(args.device) for i in adj_mx]
+        model = DSTRformer(**filtered_args,adj_mx=adj_mx).to(args.device)
+
 
     if args.model_name == 'STGformer':
         if TE_concatenation_late or vision_concatenation_late:
@@ -540,7 +554,7 @@ def load_model(dataset, args):
         print('\n>>>>Model == MLP, keep in mind Concatenation Late DOES NOT WORK here. Only Concatenation Early')
         print(f'>>>>Also Stupid model. Input_dim = h_dim = L+L_add. Output_dim = {args.out_dim}')
         input_dim = args.L+L_add
-        model = MLP_output(input_dim=input_dim,out_h_dim=input_dim,n_vertex=None,embedding_dim=args.out_dim,multi_embedding=False,dropout=args.dropout).to(args.device)
+        model = MLP_output(input_dim=input_dim,out_h_dim=input_dim,num_nodes=None,embedding_dim=args.out_dim,multi_embedding=False,dropout=args.dropout).to(args.device)
 
     if args.model_name == None:
         model = None

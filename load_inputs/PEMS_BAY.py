@@ -15,7 +15,7 @@ import h5py
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - add argument 'num_nodes', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 NAME = 'PEMS_BAY'
@@ -27,7 +27,7 @@ USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hou
                  'weekday':[]#[5,6],
                  }
 C = 1
-n_vertex = 325
+num_nodes = 325
 
 
 

@@ -44,5 +44,5 @@ def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
             assert threshold is not None, f"You defined a distance-based (adj_type: {adj_type}) matrix but you did not define any threshold distance"
             gso[gso < threshold] = 0 
     
-    n_vertex = len(gso)
-    return(gso,n_vertex)
+    num_nodes = len(gso)
+    return(gso,num_nodes)

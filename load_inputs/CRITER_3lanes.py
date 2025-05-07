@@ -13,7 +13,7 @@ from utils.utilities import filter_args,get_time_step_per_hour
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
- - add argument 'n_vertex', 'C' to the NameSpace. These are specific to this data
+ - add argument 'num_nodes', 'C' to the NameSpace. These are specific to this data
  - Detail 'INVALID_DATE' and the 'coverage' period of the dataset.
 '''
 
@@ -28,7 +28,7 @@ list_of_invalid_period = []
 #list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
 
 #C = 1
-#n_vertex = 
+#num_nodes = 
 
 def load_csvs(args,FOLDER_PATH,coverage_period,limit_max_nan=200,taux_heure_limit = 100):
     # Load df: 

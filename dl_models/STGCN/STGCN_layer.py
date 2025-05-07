@@ -27,9 +27,9 @@ class Align(nn.Module):
         if self.c_in > self.c_out:
             x = self.align_conv(x)
         elif self.c_in < self.c_out:
-            batch_size, _, timestep, n_vertex = x.shape
+            batch_size, _, timestep, num_nodes = x.shape
 
-            padding =  torch.zeros([batch_size, self.c_out - self.c_in, timestep, n_vertex]).to(x)
+            padding =  torch.zeros([batch_size, self.c_out - self.c_in, timestep, num_nodes]).to(x)
             x = torch.cat([x,padding], dim=1)
         else:
             x = x
@@ -91,13 +91,13 @@ class TemporalConvLayer(nn.Module):
     #             |--->--- casualconv2d --- sigmoid ---|                               
     #
     
-    #param x: tensor, [bs, c_in, ts, n_vertex]
-    def __init__(self, Kt, c_in, c_out, n_vertex, act_func,enable_padding):
+    #param x: tensor, [bs, c_in, ts, num_nodes]
+    def __init__(self, Kt, c_in, c_out, num_nodes, act_func,enable_padding):
         super(TemporalConvLayer, self).__init__()
         self.Kt = Kt
         self.c_in = c_in
         self.c_out = c_out
-        self.n_vertex = n_vertex
+        self.num_nodes = num_nodes
         self.enable_padding = enable_padding
         self.align = Align(c_in, c_out)
         if act_func == 'glu' or act_func == 'gtu':
@@ -176,7 +176,7 @@ class GraphConv(nn.Module):
         self.c_in = c_in
         self.c_out = c_out
         self.gso = gso
-        self.idx = torch.arange(gso.shape[0]).to(gso) #self.n_vertex  #self.n_vertex 
+        self.idx = torch.arange(gso.shape[0]).to(gso) #self.num_nodes  #self.num_nodes 
         self.g_constructor = g_constructor
         #print('number of parameters in g_constructor: {}'.format(sum([p.numel() for p in g_constructor.parameters()])))
         self.Ks = Ks
@@ -291,13 +291,13 @@ class STConvBlock(nn.Module):
     # N: Layer Normolization
     # D: Dropout
 
-    def __init__(self, Kt, Ks, n_vertex, last_block_channel, channels, act_func, graph_conv_type, gso, bias, dropout,enable_padding = False,g_constructor = None):
+    def __init__(self, Kt, Ks, num_nodes, last_block_channel, channels, act_func, graph_conv_type, gso, bias, dropout,enable_padding = False,g_constructor = None):
         super(STConvBlock, self).__init__()
         # ...
-        self.tmp_conv1 = TemporalConvLayer(Kt, last_block_channel, channels[0], n_vertex, act_func,enable_padding)
+        self.tmp_conv1 = TemporalConvLayer(Kt, last_block_channel, channels[0], num_nodes, act_func,enable_padding)
         self.graph_conv = GraphConvLayer(graph_conv_type, channels[0], channels[1], Ks, gso, bias, g_constructor)
-        self.tmp_conv2 = TemporalConvLayer(Kt, channels[1], channels[2], n_vertex, act_func,enable_padding)
-        self.tc2_ln = nn.LayerNorm([n_vertex, channels[2]])
+        self.tmp_conv2 = TemporalConvLayer(Kt, channels[1], channels[2], num_nodes, act_func,enable_padding)
+        self.tc2_ln = nn.LayerNorm([num_nodes, channels[2]])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
 
@@ -338,7 +338,7 @@ class OutputBlock(nn.Module):
     # F: Fully-Connected Layer
     # F: Fully-Connected Layer
 
-    def __init__(self, Ko, last_block_channel, channels, end_channel, n_vertex, act_func, bias, dropout,
+    def __init__(self, Ko, last_block_channel, channels, end_channel, num_nodes, act_func, bias, dropout,
                  vision_concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
                  TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None,
@@ -348,14 +348,14 @@ class OutputBlock(nn.Module):
         self.temporal_agg = nn.Identity() # initialize temporal agg for torch.jit.script
         if temporal_graph_transformer_encoder:
             if False:
-                self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
+                self.temporal_agg = TransformerGraphEncoder(node_ids = num_nodes,
                                                             num_layers = TGE_num_layers,
                                                             num_heads = TGE_num_heads,
                                                             dim_model = last_block_channel,
                                                             dim_feedforward = TGE_FC_hdim,
                                                             dropout =dropout
                                                             )
-            self.temporal_agg = TransformerGraphEncoder(node_ids = n_vertex,
+            self.temporal_agg = TransformerGraphEncoder(node_ids = num_nodes,
                                                         num_layers = TGE_num_layers,
                                                         num_heads = TGE_num_heads,
                                                         dim_model = Ko,
@@ -363,7 +363,7 @@ class OutputBlock(nn.Module):
                                                         dropout =dropout
                                                         )
             
-        self.temporal_conv_out = TemporalConvLayer(Ko, last_block_channel, channels[0], n_vertex, act_func,enable_padding = False)
+        self.temporal_conv_out = TemporalConvLayer(Ko, last_block_channel, channels[0], num_nodes, act_func,enable_padding = False)
                                               
 
         # Design Input Dimension according to contextual data integration or not: 
@@ -383,7 +383,7 @@ class OutputBlock(nn.Module):
         else:
             self.fc1 = nn.Linear(in_features=in_channel_fc1, out_features=channels[1], bias=bias)
         self.fc2 = nn.Linear(in_features=channels[1], out_features=end_channel, bias=bias)
-        self.tc1_ln = nn.LayerNorm([n_vertex, channels[0]])
+        self.tc1_ln = nn.LayerNorm([num_nodes, channels[0]])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
 

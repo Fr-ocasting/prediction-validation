@@ -55,7 +55,7 @@ class STGCN(nn.Module):
         self.out_dim = blocks[-1][-1]
         modules = []
         self.init_learnable_adjacency_matrix(args.learnable_adj_matrix,
-                                             args.n_vertex,
+                                             args.num_nodes,
                                              k=args.learnable_adj_top_k if getattr(args,'learnable_adj_matrix') else None,
                                              node_embedding_dim=args.learnable_adj_embd_dim if getattr(args,'learnable_adj_matrix') else None,
                                              device = args.device,
@@ -64,14 +64,14 @@ class STGCN(nn.Module):
 
 
         for l in range(len(blocks) - 3):
-            modules.append(layers.STConvBlock(args.Kt, args.Ks, args.n_vertex, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding,self.g_constructor))
+            modules.append(layers.STConvBlock(args.Kt, args.Ks, args.num_nodes, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding,self.g_constructor))
         self.st_blocks = nn.Sequential(*modules)
 
         self.vision_concatenation_late = args.args_vision.concatenation_late if hasattr(args.args_vision,'concatenation_late') else False
         self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
 
         self.Ko = Ko
-        self.n_vertex = args.n_vertex
+        self.num_nodes = args.num_nodes
         if hasattr(args.args_vision,'out_dim'):
             extracted_feature_dim = args.args_vision.out_dim 
         else:
@@ -93,7 +93,7 @@ class STGCN(nn.Module):
         if self.Ko > 0:
             #print('blocks: ',blocks)
             #print('in_feature_fc1: ',in_feature_fc1)
-            self.output = layers.OutputBlock(self.Ko, in_feature_fc1, blocks[-2], blocks[-1][0], args.n_vertex, args.act_func, args.enable_bias, args.dropout,
+            self.output = layers.OutputBlock(self.Ko, in_feature_fc1, blocks[-2], blocks[-1][0], args.num_nodes, args.act_func, args.enable_bias, args.dropout,
                                              self.vision_concatenation_late,extracted_feature_dim,
                                              self.TE_concatenation_late,embedding_dim,args.temporal_graph_transformer_encoder,
                                              TGE_num_layers=args.TGE_num_layers if args.temporal_graph_transformer_encoder else None, 
@@ -110,9 +110,9 @@ class STGCN(nn.Module):
             #self.silu = nn.SiLU()
             #self.dropout = nn.Dropout(p=args.dropout)
 
-    def init_learnable_adjacency_matrix(self,bool_learnable_adj,n_vertex,k,node_embedding_dim,device,alpha):
+    def init_learnable_adjacency_matrix(self,bool_learnable_adj,num_nodes,k,node_embedding_dim,device,alpha):
         if bool_learnable_adj:
-            self.g_constructor = graph_constructor(n_vertex, k, node_embedding_dim, device=device, alpha=alpha, static_feat=None).to(device)     
+            self.g_constructor = graph_constructor(num_nodes, k, node_embedding_dim, device=device, alpha=alpha, static_feat=None).to(device)     
         else:
             self.g_constructor = None
 
@@ -182,11 +182,11 @@ class STGCN(nn.Module):
             B = x.size(0)
             x = x.squeeze()
             #print('x.size: ' ,x.size())
-            #print('self.n_vertex: ', self.n_vertex)
+            #print('self.num_nodes: ', self.num_nodes)
             #print('self.out_dim: ', self.out_dim)
             if B ==1:
                 x = x.unsqueeze(0)
-            if self.n_vertex == 1:
+            if self.num_nodes == 1:
                 x = x.unsqueeze(-1)
             if self.out_dim == 1:
                 x = x.unsqueeze(-2)

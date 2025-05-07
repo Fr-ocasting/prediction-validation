@@ -5,7 +5,7 @@ class FeatureExtractorEncoderDecoder(nn.Module):
     def __init__(self, c_in=3, out_dim=64, N=40,H=268,W=287,L=8):
         super(FeatureExtractorEncoderDecoder, self).__init__()
         self.z_dim = out_dim
-        self.n_vertex = n_vertex
+        self.num_nodes = num_nodes
 
         # Encodeur
         self.encoder = nn.Sequential(

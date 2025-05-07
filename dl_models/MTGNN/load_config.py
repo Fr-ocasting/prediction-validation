@@ -8,7 +8,7 @@ parser.add_argument('--static_feat', default=None,
 parser.add_argument('--tanhalpha',type = int, default=3, 
                     help='Multiplicator coefficient used it GraphConstruction')
 parser.add_argument('--node_dim', type = int, default=20,   #30
-                    help="Embedding dim of each node. node_dim <= n_vertex (Cause we want to reduce dimensionality ?)")
+                    help="Embedding dim of each node. node_dim <= num_nodes (Cause we want to reduce dimensionality ?)")
 parser.add_argument('--subgraph_size', type=int, default=15, #5 
                     help="Dimension du sous-graph. A priori <= node_dim car issue de matrice générée depuis l'embedding des noeuds")
 parser.add_argument('--predefined_A', default=None, 

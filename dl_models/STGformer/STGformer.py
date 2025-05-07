@@ -238,7 +238,7 @@ class SelfAttentionLayer(nn.Module):
 class STGformer(nn.Module):
     def __init__(
         self,
-        n_vertex,
+        num_nodes,
         L=12,
         step_ahead=12,
         time_step_per_hour=12,
@@ -259,7 +259,7 @@ class STGformer(nn.Module):
     ):
         super().__init__()
 
-        self.num_nodes: int = n_vertex
+        self.num_nodes: int = num_nodes
         self.in_steps: int = L
         self.out_steps: int = step_ahead
         self.steps_per_day: int = 24*time_step_per_hour

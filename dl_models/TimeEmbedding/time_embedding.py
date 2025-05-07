@@ -21,28 +21,28 @@ class GRN_time_embedding(nn.Module):
     z: 2-th order Tensor [B,z]  Concatenation of embedded vector
     x: 4-th order Tensor [B,C,N,L] Sequence of Traffic data for each spatial units
     '''
-    def __init__(self,x_input_size,out_h_dim,embedding_dim,input_dim,dropout,n_vertex):
+    def __init__(self,x_input_size,out_h_dim,embedding_dim,input_dim,dropout,num_nodes):
         super(GRN_time_embedding, self).__init__()
-        self.n_vertex = n_vertex
+        self.num_nodes = num_nodes
         self.grn = GRN(x_input_size,out_h_dim,embedding_dim,input_dim,dropout)
 
     def forward(self,x,z):
         z = z.unsqueeze(1)
-        z = z.repeat(1,self.n_vertex,1)
+        z = z.repeat(1,self.num_nodes,1)
         z = z.unsqueeze(1)
         x_enhanced = self.grn(x,z)
         return x_enhanced
 
 
 class OutputModule(nn.Module):
-    def __init__(self,input_dim,x_input_size,out_h_dim,n_vertex,embedding_dim,dropout,multi_embedding,variable_selection_model_name):
+    def __init__(self,input_dim,x_input_size,out_h_dim,num_nodes,embedding_dim,dropout,multi_embedding,variable_selection_model_name):
         super(OutputModule, self).__init__()
 
         if variable_selection_model_name == 'MLP':
-            self.module = MLP_embedding(input_dim,out_h_dim,n_vertex,embedding_dim,multi_embedding,dropout)
+            self.module = MLP_embedding(input_dim,out_h_dim,num_nodes,embedding_dim,multi_embedding,dropout)
 
         elif variable_selection_model_name == 'GRN':
-            self.module = GRN_time_embedding(x_input_size,out_h_dim,embedding_dim,input_dim,dropout,n_vertex)
+            self.module = GRN_time_embedding(x_input_size,out_h_dim,embedding_dim,input_dim,dropout,num_nodes)
 
         else:
             raise NotImplementedError(f"Variable Selection Model '{variable_selection_model_name}' has not been implemented for capturing Calendar Informations")
@@ -54,7 +54,7 @@ class OutputModule(nn.Module):
 
 
 class TimeEmbedding(nn.Module):
-    def __init__(self,args_embedding,n_vertex,x_input_size,dropout): #n_vertex
+    def __init__(self,args_embedding,num_nodes,x_input_size,dropout): #num_nodes
         super(TimeEmbedding, self).__init__()
         self.embedding_dim = args_embedding.embedding_dim
         self.dic_sizes = args_embedding.dic_sizes
@@ -62,7 +62,7 @@ class TimeEmbedding(nn.Module):
         self.embedding = nn.ModuleList([nn.Embedding(dic_size,emb_dim) for dic_size,emb_dim in zip(self.dic_sizes,self.embedding_dim_calendar_units)]).to(args_embedding.device)
         
         input_dim = sum(self.embedding_dim_calendar_units)
-        self.n_vertex = n_vertex
+        self.num_nodes = num_nodes
         if args_embedding.out_h_dim is not None: 
             out_h_dim = args_embedding.out_h_dim
         else:
@@ -70,7 +70,7 @@ class TimeEmbedding(nn.Module):
         self.output_module = OutputModule(input_dim = input_dim,
                                           x_input_size = x_input_size,
                                           out_h_dim = out_h_dim,
-                                          n_vertex = n_vertex,
+                                          num_nodes = num_nodes,
                                           embedding_dim = args_embedding.embedding_dim,
                                           dropout = dropout,
                                           multi_embedding = args_embedding.multi_embedding,
@@ -92,12 +92,12 @@ class TE_module(nn.Module):
         super(TE_module, self).__init__()
         args_embedding =  args.args_embedding
         #self.multi_embedding = args_embedding.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding,args.n_vertex,args.L,args.dropout) #args.n_vertex
-        #self.N_repeat = 1 if self.multi_embedding else args.n_vertex
+        self.Tembedding = TimeEmbedding(args_embedding,args.num_nodes,args.L,args.dropout) #args.num_nodes
+        #self.N_repeat = 1 if self.multi_embedding else args.num_nodes
         self.C = args.C
-        self.n_vertex = args.n_vertex
+        self.num_nodes = args.num_nodes
         self.multi_embedding = args_embedding.multi_embedding
-        #self.n_vertex = args.n_vertex
+        #self.num_nodes = args.num_nodes
 
     def forward(self,x,time_elt):
         """
@@ -109,10 +109,10 @@ class TE_module(nn.Module):
         mini_batch_size = time_elt[0].size(0)
         time_elt = self.Tembedding(x,time_elt)   # [B,1] -> [B,N_station,embedding_dim]  or [B,embedding_dim] 
         if not(self.multi_embedding):
-            time_elt = time_elt.repeat(1,self.n_vertex*self.C,1)
+            time_elt = time_elt.repeat(1,self.num_nodes*self.C,1)
         else:
             time_elt = time_elt.repeat(1,self.C,1)
-        time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
+        time_elt = time_elt.reshape(mini_batch_size,self.C,self.num_nodes,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
         return(time_elt)
 
 # ======     
@@ -240,11 +240,11 @@ class TE_module(nn.Module):
         mapping_tensor = torch.tensor([(week[0], time[0][0], time[0][1]) for _, (week, time) in sorted(args_embedding.dic_class2rpz[args_embedding.calendar_class].items())]).to(args.device)
 
         self.multi_embedding = args_embedding.multi_embedding
-        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args_embedding.type_calendar,mapping_tensor,calendar_class = args_embedding.calendar_class, n_embedding= args.n_vertex if self.multi_embedding else 1)
+        self.Tembedding = TimeEmbedding(args_embedding.nb_words_embedding,args_embedding.embedding_dim,args_embedding.type_calendar,mapping_tensor,calendar_class = args_embedding.calendar_class, n_embedding= args.num_nodes if self.multi_embedding else 1)
         self.Tembedding_position = args_embedding.position
-        self.N_repeat = 1 if self.multi_embedding else args.n_vertex
+        self.N_repeat = 1 if self.multi_embedding else args.num_nodes
         self.C = args.C
-        self.n_vertex = args.n_vertex
+        self.num_nodes = args.num_nodes
 
 
 
@@ -254,7 +254,7 @@ class TE_module(nn.Module):
             time_elt = self.Tembedding(time_elt)   # [B,1] -> [B,embedding_dim*N_station]  
             if not(self.multi_embedding):
                 time_elt = time_elt.repeat(1,self.N_repeat*self.C,1)
-            time_elt = time_elt.reshape(mini_batch_size,self.C,self.n_vertex,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
+            time_elt = time_elt.reshape(mini_batch_size,self.C,self.num_nodes,-1)   # [B,N_station*embedding_dim] -> [B,C,embedding_dim,N]
 
         else:
             raise NotImplementedError(f'Position {self.Tembedding_position} has not been implemented')

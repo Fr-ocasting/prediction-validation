@@ -24,7 +24,7 @@ from constants.config_by_datasets import dic_config
 target_data = 'subway_in' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
 dataset_names = ['subway_in','subway_out'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
 dataset_for_coverage = ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer'
+model_name = 'DSTRformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
@@ -84,12 +84,34 @@ modification = {'target_data': target_data,
                     #'vision_concatenation_early':True,   
                     #'vision_concatenation_late':True,
                             }
+if model_name == 'DSTRformer':
+    dataset_names.append('calendar')
+    modification.update({ "input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
+                            "tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
+                            "dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
+                            "num_heads": 2, # choices = [1, 2, 4, 8]  # Has to devide input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
+                            "num_layers": 2, # choices = [1, 2, 3, 4, 6]
+
+                            "mlp_ratio": 1.5, # choices = [1.0, 1.5, 2.0, 2.5, 3.0]  # PAS SUR 
+                            "adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < num_nodes.
+                            "out_feed_forward_dim": 64, # choices = [8, 16, 32, 64, 128, 256]
+                            "num_layers_m": 1, # choices = [1, 2, 3, 4, 6]
+                            "ts_embedding_dim": 8, # choices = [0, 4, 8, 12, 16]
+                            "time_embedding_dim": 0, # choices = [0, 4, 8, 12, 16]
+                            "mlp_num_layers": 1, # choices = [1, 2, 3, 4, 6]
+                            "feed_forward_dim": 16, # choices = [8, 16, 32, 64, 128, 256]
+                            "use_mixed_proj": True, # choices = [True, False]
+                            "adj_type": 'adj', # choices = ['adj','dist','corr']
+                            "adj_normalize_method": 'doubletransition', # choices = ['normlap','scalap','symadj','transition','doubletransition','identity']
+                            "threshold": 0.7, # choices = [0.5, 0.7, 0.9] # useless if adj_type = 'adj'
+    })
+
 if model_name == 'STGformer':
     dataset_names.append('calendar')
     modification.update({ "input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
                             "tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
                             "dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
-                            "adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < n_vertex.
+                            "adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < num_nodes.
 
                             # Attention
                             "num_heads": 6, # choices = [1, 2, 4, 8]  # Has to devide input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
@@ -108,7 +130,7 @@ if model_name == 'STAEformer':
     modification.update({ #"input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
                             "tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
                             "dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
-                            #"adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < n_vertex.
+                            #"adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < num_nodes.
                             #"spatial_embedding_dim": 8, # choices = [4, 8, 12, 16,32,64]
 
                             # Attention
@@ -138,7 +160,7 @@ modification.update({'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bosse
                         'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                         'drop_last' : False,  # True
                         'mixed_precision' : False, # True # False
-                        'torch_compile' : True, # True # False
+                        'torch_compile' : False, # 'compile' # 'jit_sript'
     })
 
 if target_data in dic_config.keys():
