@@ -161,75 +161,144 @@ if __name__ == '__main__':
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
 
 
+    if False:
+
+        #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
+        dataset_for_coverage = ['subway_in','netmob_POIs'] 
+        model_name = 'STAEformer'
+
+        epochs_validation = 500#100
+        num_samples = 500 # 200
+        HP_max_epochs = 500 #300,#100,
+        modification  = {'ray':True,
+                        'target_data' :'subway_in',
+                        'use_target_as_context': False,
+
+                        'batch_size':128,
+                        'grace_period':20,#20,
+                        'HP_max_epochs':HP_max_epochs,
+                        'step_ahead':4,
+
+                        'evaluate_complete_ds' : True,
+                        'torch_compile':False,
+
+                        'temporal_graph_transformer_encoder': False, # False # True
+                        'compute_node_attr_with_attn' : False, # False # True
+                        'stacked_contextual': True, # True # False
+
+                        'data_augmentation': True, #True,  #False
+                        'DA_method':'rich_interpolation', # 'noise' # 'interpolation
+
+                        'denoising_names':['netmob_POIs'],
+                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                        'denoising_modes':["train","valid","test"],             # par défaut
+                        'denoiser_kwargs':{'exponential': {'alpha': 0.7}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                        }
+
+        modif_choices = {'weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+        'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Web_Weather'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        'no_netmob':{'dataset_names' : ['subway_in','calendar']},
+
+        'Deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+            'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Deezer'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        'Google_Maps':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+            'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Google_Maps'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        'weather_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+            'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Web_Weather','Deezer'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        'Google_Maps_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+            'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Google_Maps','Deezer'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        'Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+            'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Google_Maps','Web_Weather'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        'Deezer_Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+            'NetMob_only_epsilon': True,
+        'NetMob_selected_apps': ['Deezer','Google_Maps','Web_Weather'],
+        'NetMob_transfer_mode' :  ['DL'],
+        'NetMob_selected_tags' : ['station_epsilon300'],
+        'NetMob_expanded' : ''},
+
+        }
+        for name_i,modif_bis in modif_choices.items(): 
+            modif_bis.update(modification)
+            args = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=modif_bis['dataset_names'],
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification =modif_bis
+                                )
+            args.calendar_types = ['dayofweek', 'timeofday']
+            HP_and_valid_one_config(args,epochs_validation,num_samples)
+
+
     if True:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in','subway_out'] # ['subway_in','netmob_POIs_per_station']
+        model_name = 'STGCN'
 
-        for model_name in ['STAEformer']: # ['STGformer','ASTGCN','STGCN']:
+        epochs_validation = 500#100
+        num_samples = 500 # 200
+        HP_max_epochs = 500 #300,#100,
+        modification  = {'ray':True,
+                        'target_data' :'subway_in',
+                        'use_target_as_context': False,
+
+                        'batch_size':128,
+                        'grace_period':20,#20,
+                        'HP_max_epochs':HP_max_epochs,
+                        'step_ahead':4,
+
+                        'evaluate_complete_ds' : True,
+                        'torch_compile':False,
+
+                        'temporal_graph_transformer_encoder': False, # False # True
+                        'compute_node_attr_with_attn' : False, # False # True
+                        'stacked_contextual': True, # True # False
+
+                        'data_augmentation': True, #True,  #False
+                        'DA_method':'rich_interpolation', # 'noise' # 'interpolation
+                        }
+
+        modif_choices = {'no_netmob_no_calendar':{'dataset_names' : ['subway_in']},
+                         'no_netmob_with_calendar':{'dataset_names' : ['subway_in','calendar_embedding'],
+                                                    'embedding_calendar_types': ['dayofweek', 'hour'],}
+                         }
+        for name_i,modif_bis in modif_choices.items(): 
+            modif_bis.update(modification)
             args = local_get_args(model_name,
                                 args_init = None,
-                                dataset_names=dataset_names,
+                                dataset_names=modif_bis['dataset_names'],
                                 dataset_for_coverage=dataset_for_coverage,
-                                modification = {'ray':True,
-                                                'target_data' :'subway_in',
-                                                'use_target_as_context': False,
-                                                'batch_size':128,
-                                                'grace_period':20,#20,
-                                                'HP_max_epochs':500, #300,#100,
-                                                'step_ahead':4,
-
-                                                'evaluate_complete_ds' : True,
-                                                'torch_compile':False,
-                                                #'set_spatial_units' : ['BON','SOI','GER','CHA'],
-
-                                                'temporal_graph_transformer_encoder': False, # False # True
-                                                'compute_node_attr_with_attn' : False, # False # True
-
-                                                'stacked_contextual': True, # True # False
-                                                #'vision_concatenation_early' : True,
-                                                #'vision_concatenation_late' : False,
-                                                #'vision_model_name': 'VariableSelectionNetwork',
-
-                                                'learnable_adj_matrix' : False,
-                                                #'learnable_adj_top_k' : 8,  # If learnable_adj_matrix is True, set the number of kept node links on the graph conv
-                                                #'learnable_adj_embd_dim' : 8 ,# If learnable_adj_matrix is True, set the embedding dim of each nodes
-
-                                                'data_augmentation': True, #True,  #False
-                                                'DA_method':'rich_interpolation', # 'noise' # 'interpolation
-                                                })
-            if (model_name == 'STGformer') or (model_name == 'STAEformer'):
-                args.dataset_names = ['subway_in','subway_out','calendar']
-                args.calendar_types = ['dayofweek', 'timeofday']
-            # Init 
-            epochs_validation = 500#100
-            num_samples = 500 # 200
-            
+                                modification =modif_bis
+                                )
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
-
-    if False:
-        model_name = 'STGCN' #'CNN'
-        dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']], #['subway_in','subway_out'] # ['subway_in']
-                                                   ['VariableSelectionNetwork']): #'VariableSelectionNetwork' # None
-            args = local_get_args(model_name,
-                                    args_init = None,
-                                    dataset_names=dataset_names,
-                                    dataset_for_coverage=dataset_for_coverage,
-                                    modification = {'ray':True,
-                                                    'grace_period':20,
-                                                    'HP_max_epochs':100,
-                                                    'evaluate_complete_ds' : True,
-                                                    'vision_model_name': vision_model_name,
-                                                   }
-                                    
-                                     )
-
-            # Init 
-            epochs_validation = 100
-            num_samples = 500
-
-            # HP and evaluate K-fold best config
-            HP_and_valid_one_config(args,epochs_validation,num_samples)

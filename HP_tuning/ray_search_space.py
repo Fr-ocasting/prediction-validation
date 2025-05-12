@@ -14,14 +14,11 @@ def get_search_space_ray(args):
     config = {"lr": tune.qloguniform(1e-5, 1e-2, 1e-5), # tune.qloguniform(5e-5, 5e-3, 5e-5)
               "weight_decay" : tune.uniform(0.0005, 0.1),
               #"momentum" : tune.uniform(0.80, 0.99),
-              "dropout" : tune.uniform(0,0.9),
-              "scheduler" : tune.choice([{'scheduler':True,
-                                            "torch_scheduler_milestone": tune.randint(1, 50),
-                                            "torch_scheduler_gamma": tune.uniform(0.985, 0.999),
-                                            "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1), 
-                                        },
-                                        {'scheduler':None
-                                        }])
+              "dropout" : tune.uniform(0,0.2),
+              #"scheduler" : {"torch_scheduler_milestone": tune.randint(1, 20), "torch_scheduler_gamma": tune.uniform(0.985, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1)}
+              #tune.choice([{'scheduler':True, "torch_scheduler_milestone": tune.randint(1, 20),
+              #                "torch_scheduler_gamma": tune.uniform(0.985, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1)},
+              #                  {'scheduler':None }])
               }
 
     #if 'netmob_POIs' in args.dataset_name:

@@ -22,9 +22,9 @@ from constants.config_by_datasets import dic_config
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
 target_data = 'subway_in' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
-dataset_names = ['subway_in','subway_out'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_names = ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
 dataset_for_coverage = ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'DSTRformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
+model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
@@ -55,15 +55,19 @@ modification = {'target_data': target_data,
 
                     ### Denoising: 
                     'denoising_names':['subway_in','subway_out'],
-                    'denoiser_names':["savitzky_golay"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                    'denoising_modes':["train"],             # par défaut
-                    'denoiser_kwargs':{'savitzky_golay': {'window': 5, 'poly': 2}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                    'denoising_modes':["train","valid","test"],             # par défaut
+                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
 
                     #
                     #'graph_conv_type': 'graph_conv', # 'cheb_graph_conv', 'graph_conv'
                     #'learnable_adj_top_k': 10,
                     #'learnable_adj_embd_dim': 16, 
                     ### ========
+
+                    ### Time Embedding parameters:
+                    'TE_concatenation_early': False, # True # False
+                    'TE_concatenation_late': True, # True # False
 
                     ### Temporal Graph Transfermer Encoder parametrs:
                     #'TGE_num_layers' : 4, #2

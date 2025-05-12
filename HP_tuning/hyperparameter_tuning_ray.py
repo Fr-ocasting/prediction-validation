@@ -32,9 +32,13 @@ def HP_modification(config,args):
             raise ValueError(f"Key {key} cant' be modified while loading trainer for HP-tuning cause it has also impact on dataloader which is already defined")
         else:
             if key == 'scheduler':
-                if config['scheduler']['scheduler']:
+                if 'scheduler' in config['scheduler'].keys():
+                    if config['scheduler']['scheduler']:
+                        for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
+                            setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+                else:
                     for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
-                         setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+                            setattr(args, args_scheduler, config['scheduler'][args_scheduler])
 
             ## Tackle Vision HP tuning
             elif 'vision_' in key:

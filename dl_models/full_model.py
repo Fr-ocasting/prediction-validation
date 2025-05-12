@@ -377,7 +377,6 @@ class full_model(nn.Module):
 
         # Core model 
         vision_late = self.vision_concatenation_late
-        TE_late = self.TE_concatenation_late
         if self.core_model is not None:
             x= self.core_model(x,
                                extracted_feature if vision_late else None,
