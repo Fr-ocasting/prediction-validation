@@ -43,9 +43,7 @@ def load_calendar(subway_ds):
                                                                                             calendar_tensor,
                                                                                             tensor_limits_keeper,
                                                                                             f"{calendar_type}_OHE")
-
-
-
+            
     if 'calendar' in subway_ds.args.dataset_names:
         calendar_types = subway_ds.args.calendar_types
         # Get dates associated to 

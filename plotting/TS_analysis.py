@@ -202,7 +202,7 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
               legend = Legend(items=legend_it)
               p.add_layout(legend, 'below')
 
-              if trainer.args.loss_function_type == 'MSE':
+              if trainer.args.loss_function_type in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']:
                      test_mae = ' // '.join([str_valeur(trainer.performance['test_metrics'][f'mae_h{h+1}']) for h in range(trainer.args.step_ahead)])
                      test_mse =' // '.join([str_valeur(trainer.performance['test_metrics'][f'mse_h{h+1}']) for h in range(trainer.args.step_ahead)])
                      text = Div(text = f"<b>Test MAE:</b> {test_mae} <br> <b>Test MSE:</b> {test_mse}", width=width, height=height//3)

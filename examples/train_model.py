@@ -17,21 +17,19 @@ from examples.train_and_visu_non_recurrent import evaluate_config,train_the_conf
 from high_level_DL_method import load_optimizer_and_scheduler
 from dl_models.full_model import full_model
 from trainer import Trainer
-from constants.config_by_datasets import dic_config
-
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
-target_data = 'subway_in' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
-dataset_names = ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-dataset_for_coverage = ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
+target_data = 'PeMS08' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
+dataset_names = ['PeMS08'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_for_coverage = ['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+model_name = 'DSTRformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
 # Modif 
 modification = {'target_data': target_data, 
-                    'freq': '15min', #  '5min', 
-                    'step_ahead': 4,
+                    'freq': '5min', #  '5min', 
+                    'step_ahead': 12, # 4
                     'use_target_as_context': False,
                     'data_augmentation': False,
             
@@ -88,6 +86,8 @@ modification = {'target_data': target_data,
                     #'vision_concatenation_early':True,   
                     #'vision_concatenation_late':True,
                             }
+
+
 if model_name == 'DSTRformer':
     dataset_names.append('calendar')
     modification.update({ "input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
@@ -96,7 +96,6 @@ if model_name == 'DSTRformer':
                             "num_heads": 2, # choices = [1, 2, 4, 8]  # Has to devide input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
                             "num_layers": 2, # choices = [1, 2, 3, 4, 6]
 
-                            "mlp_ratio": 1.5, # choices = [1.0, 1.5, 2.0, 2.5, 3.0]  # PAS SUR 
                             "adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < num_nodes.
                             "out_feed_forward_dim": 64, # choices = [8, 16, 32, 64, 128, 256]
                             "num_layers_m": 1, # choices = [1, 2, 3, 4, 6]
@@ -108,7 +107,7 @@ if model_name == 'DSTRformer':
                             "adj_type": 'adj', # choices = ['adj','dist','corr']
                             "adj_normalize_method": 'doubletransition', # choices = ['normlap','scalap','symadj','transition','doubletransition','identity']
                             "threshold": 0.7, # choices = [0.5, 0.7, 0.9] # useless if adj_type = 'adj'
-    })
+                            'calendar_types':['dayofweek', 'timeofday']})
 
 if model_name == 'STGformer':
     dataset_names.append('calendar')
@@ -167,41 +166,67 @@ modification.update({'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bosse
                         'torch_compile' : False, # 'compile' # 'jit_sript'
     })
 
-if target_data in dic_config.keys():
-    modification.update(dic_config[target_data])
 
 
-args_init = local_get_args(model_name,
-                    args_init = None,
-                    dataset_names=dataset_names,
-                    dataset_for_coverage=dataset_for_coverage,
-                    modification = modification)
 
 
-def main():
-    ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init)
+def set_seed(seed=42):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+
+def main(fold_to_evaluate,save_folder,modification):
+    ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     model = full_model(ds, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
     trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
     return trainer,ds,model,args
 
-
 if __name__ == "__main__":
     import numpy as np 
     import random 
-    SEED = 42
-    def set_seed(seed=42):
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        torch.cuda.manual_seed(seed)
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+    from constants.paths import SAVE_DIRECTORY
+    from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
+    import importlib
+    config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
+    importlib.reload(config_file)
+    modification = config_file.config
+    SEED = config_file.SEED
+    args_init = local_get_args(model_name,
+                    args_init = None,
+                    dataset_names=dataset_names,
+                    dataset_for_coverage=dataset_for_coverage,
+                    modification = modification)
+
     set_seed(SEED)
+    if False:
+        print(f"\n>>>Error loading configuration for {target_data} with model {model_name}.\n---------------------\n")
+        SEED = 42
+        args_init = local_get_args(model_name,
+                        args_init = None,
+                        dataset_names=dataset_names,
+                        dataset_for_coverage=dataset_for_coverage,
+                        modification = modification)
+
+        set_seed(SEED)
 
     # Run the script
-    trainer,ds,model,args = main()
+    fold_to_evaluate=[args_init.K_fold-1]
+    trial_id = f"{args_init.model_name}_{'_'.join(args_init.dataset_names)}_fold_{str(fold_to_evaluate[0])}_epochs_{args_init.epochs}"
+    save_folder = f"K_fold_validation/training_wo_HP_tuning/{trial_id}"
+    print(f"Save folder: {save_folder}")
+    trainer,ds,model,args = main(fold_to_evaluate,save_folder,modification)
+
+    condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
+    valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
+    df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_to_evaluate,fold,condition1,condition2,training_mode_list,metric_list)
+
+    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
     print("Training completed successfully.")
     print(trainer.performance)

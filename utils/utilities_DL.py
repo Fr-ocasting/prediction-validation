@@ -8,7 +8,7 @@ import inspect
 import math 
 from torch.optim import SGD,Adam,AdamW
 try:
-    from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR
+    from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR,MultiStepLR
 except:
     print(f'Pytorch version {torch.__version__} does not allow you to use lr-scheduler')
 
@@ -27,7 +27,7 @@ from DL_class import QuantileLoss
 from dataset import  DataSet
 from TE_transfer_learning import TE_transfer
 from dl_models.full_model import full_model
-
+from utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape
 
 
 def get_associated__df_verif_index(dataset,date,iloc):
@@ -115,7 +115,7 @@ def choose_optimizer(model,args):
 
     model_parameters = filter(lambda p: p.requires_grad, model.parameters())
 
-    if args.optimizer == 'adam':
+    if args.optimizer in ['adam','Adam']:
         if specific_lr is not None: 
             return Adam(specific_lr,lr=args.lr,weight_decay= args.weight_decay)
         else:
@@ -137,18 +137,43 @@ def load_scheduler(optimizer,args):
     if (args.scheduler is None) or (math.isnan(args.scheduler)) or (args.scheduler == False):
         scheduler = None
     else:
-        scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)
-        scheduler2 = ExponentialLR(optimizer, gamma=args.torch_scheduler_gamma)
-        scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[args.torch_scheduler_milestone])
+        if args.torch_scheduler_type == 'MultiStepLR':
+            scheduler = MultiStepLR(optimizer, milestones=args.torch_scheduler_milestone, gamma=args.torch_scheduler_gamma)
+        elif args.torch_scheduler_type == 'warmup':
+            scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)
+            scheduler2 = ExponentialLR(optimizer, gamma=args.torch_scheduler_gamma)
+            scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[args.torch_scheduler_milestone])
+        else:
+            raise NotImplementedError(f'ERROR: The scheduler is not set in args or is not implemented. Please check the args.torch_scheduler_type. Set to MultiStepLR or warmup.')
     return(scheduler)
+
 
 def get_loss(args):
     if (args.loss_function_type == 'mse') or  (args.loss_function_type == 'MSE') or (args.loss_function_type == 'Mse'):
         return nn.MSELoss()
-    if (args.loss_function_type == 'quantile') or (args.loss_function_type == 'Quantile') (args.loss_function_type == 'quantile loss') or (args.loss_function_type == 'QunatileLoss') or (args.loss_function_type == 'Qunatile Loss'):
+    elif (args.loss_function_type == 'mae') or (args.loss_function_type == 'MAE') or (args.loss_function_type == 'Mae'):
+        return nn.L1Loss()
+    
+    elif (args.loss_function_type == 'masked_mse') or (args.loss_function_type == 'MaskedMSE') or (args.loss_function_type == 'Masked MSE'):
+        return masked_mse
+    elif (args.loss_function_type == 'masked_mae') or (args.loss_function_type == 'MaskedMAE') or (args.loss_function_type == 'Masked MAE'):
+        return masked_mae
+    elif (args.loss_function_type == 'masked_rmse') or (args.loss_function_type == 'MaskedRMSE') or (args.loss_function_type == 'Masked RMSE'):
+        return masked_rmse
+    elif (args.loss_function_type == 'masked_mape') or (args.loss_function_type == 'MaskedMAPE') or (args.loss_function_type == 'Masked MAPE'):
+        return masked_mape
+    
+    elif (args.loss_function_type == 'huber') or (args.loss_function_type == 'Huber') or (args.loss_function_type == 'HuberLoss'):
+        return nn.HuberLoss()
+    elif (args.loss_function_type == 'masked_huber') or (args.loss_function_type == 'MaskedHuber') or (args.loss_function_type == 'Masked Huber'):
+        return NotImplementedError
+    
+    elif (args.loss_function_type == 'quantile') or (args.loss_function_type == 'Quantile') (args.loss_function_type == 'quantile loss') or (args.loss_function_type == 'QunatileLoss') or (args.loss_function_type == 'Qunatile Loss'):
         quantiles = torch.Tensor([args.alpha/2,1-args.alpha/2]).to(args.device)
         assert args.out_dim == len(quantiles), f"Output dimension {args.out_dim} doesn't match with the number of estimated quantiles {len(quantiles)}"
         return QuantileLoss(quantiles)
+    else: 
+        raise NotImplementedError(f'ERROR: The loss function is not set in args or is not implemented. Please check the args.loss_function_type = {args.loss_function_type}.')
 # ============================================
 # USELESS. HAS TO BE REMOVED
 # ============================================

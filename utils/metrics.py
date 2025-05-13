@@ -3,12 +3,14 @@ import torch
 import sys
 import os
 import pandas as pd 
+import numpy as np
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 from PI.PI_object import PI_object
+from utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape
 
 def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None):
     '''
@@ -58,6 +60,9 @@ def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=None)
                 fun = load_fun(metric,previous=previous)
                 error = fun(Preds_i,Y_true_i).item()
             dic_metric[f"{metric}_h{out_dim+1}"] = error
+
+    for metric in metrics:
+        dic_metric[f"{metric}_all"] = np.mean(np.array([dic_metric[f"{metric}_h{out_dim+1}"] for out_dim in range(Preds.size(-1))]))
     return dic_metric
 
 def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):
@@ -74,6 +79,7 @@ def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):
 
     return(dic_metric,metrics)
 
+
 def load_fun(metric,previous=None):
     if metric == 'mse':
         fun = nn.MSELoss()
@@ -84,6 +90,16 @@ def load_fun(metric,previous=None):
     if metric == 'mase':
         def fun(Preds,Y_true):
             return personnal_MASE(Preds,Y_true,previous = previous)
+    if metric == 'masked_mse':
+        fun = masked_mse
+    if metric == 'masked_mae':
+        fun = masked_mae
+    if metric == 'masked_mape':
+        fun = masked_mape
+    if metric == 'masked_rmse': 
+        fun = masked_rmse
+    if metric == 'masked_wape':
+        fun = masked_mape
     return(fun)
 
 def metrics_by_station(Preds,Y_true,metric_name,previous=None):

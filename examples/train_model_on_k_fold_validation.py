@@ -64,8 +64,14 @@ def init_metrics(args):
         metric_list = ['mse','mae','mape','mase']
     valid_losses = []
     df_loss = pd.DataFrame()
+
+    dic_results = {}
+    for training_mode in training_mode_list:
+        for metric in metric_list:
+            for h in range(1,args.step_ahead+1):  
+                dic_results[f'{training_mode}_{metric}_h{h}'] = []
     # ...
-    return valid_losses,df_loss,training_mode_list,metric_list
+    return valid_losses,df_loss,training_mode_list,metric_list,dic_results
 
 def load_trainer(args,trial_id,save_folder=None,modification={},fold_to_evaluate = None):
     if fold_to_evaluate is None : 
@@ -96,11 +102,40 @@ def train_valid_1_model(args,trial_id,save_folder,modification={},fold_to_evalua
     trainer, args, ds = load_trainer(args,trial_id,save_folder,modification,fold_to_evaluate)
     trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
 
-    _,_,training_mode_list,metric_list = init_metrics(args)
+    valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
 
     return trainer,args,training_mode_list,metric_list
 
-    
+def get_conditions(args,fold_i,ds_validation):
+    condition1 = (args.evaluate_complete_ds) and (fold_i == len(ds_validation)-1)
+    condition2 = condition1 and args.validation_split_method == 'forward_chaining_cv'
+    if condition1:
+        fold = 'complete_dataset'
+    else:
+        fold = fold_i
+    return condition1,condition2,fold
+
+def keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_i,fold,condition1,condition2,training_mode_list,metric_list):
+    if condition2: 
+        df_loss[f"f{fold_i}_train_loss"] = trainer.train_loss
+        df_loss[f"f{fold_i}_valid_loss"] = trainer.valid_loss
+
+    df_loss[f"f{fold}_train_loss"] = trainer.train_loss
+    df_loss[f"f{fold}_valid_loss"] = trainer.valid_loss
+
+    # ____ Only keep metrics from k-folds (and not from the training on the added 'complete_dataset'):
+    if not(condition1) or (condition2):
+        valid_losses.append(trainer.performance['valid_loss'])
+
+    # Keep track on metrics :
+    for training_mode in training_mode_list:
+        for metric in metric_list: 
+            for h in range(1,args.step_ahead+1):       
+                l = trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"]   
+                dic_results[f'{training_mode}_{metric}_h{h}'].append(l)
+
+    return df_loss, valid_losses,dic_results 
+
 def train_valid_K_models(args,trial_id,save_folder,modification={}):
     '''
     args:
@@ -120,51 +155,27 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
 
     ## Train on the K-1 folds:
     #___ Init
-    valid_losses,df_loss,training_mode_list,metric_list = init_metrics(args)
-    for training_mode in training_mode_list:
-        for metric in metric_list:
-            for h in range(1,args.step_ahead+1):  
-                globals()[f'{training_mode}_{metric}_h{h}'] = []
+
+    valid_losses,df_loss,training_mode_list,metric_list,dic_results = init_metrics(args)
     # ...
 
     #___ Through each fold : 
     for fold_i,ds in enumerate(ds_validation):
         # ____ Specific case if we want to validate on the init entiere dataset:
-        condition1 = (args.evaluate_complete_ds) and (fold_i == len(ds_validation)-1)
-        condition2 = condition1 and args.validation_split_method == 'forward_chaining_cv'
-        if condition1:
-            fold = 'complete_dataset'
-        else:
-            fold = fold_i
+
+        condition1,condition2,fold = get_conditions(args,fold_i,ds_validation)
 
         model = full_model(ds, args).to(args.device)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
         trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
         trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
 
-        if condition2: 
-            df_loss[f"f{fold_i}_train_loss"] = trainer.train_loss
-            df_loss[f"f{fold_i}_valid_loss"] = trainer.valid_loss
-
-        df_loss[f"f{fold}_train_loss"] = trainer.train_loss
-        df_loss[f"f{fold}_valid_loss"] = trainer.valid_loss
-
-        # ____ Only keep metrics from k-folds (and not from the training on the added 'complete_dataset'):
-        if not(condition1) or (condition2):
-            valid_losses.append(trainer.performance['valid_loss'])
-
-        # Keep track on metrics :
-        for training_mode in training_mode_list:
-            for metric in metric_list: 
-                for h in range(1,args.step_ahead+1):       
-                    l = trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"]   
-                    globals()[f'{training_mode}_{metric}_h{h}'].append(l)
-
+        df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_i,fold,condition1,condition2,training_mode_list,metric_list)
     
-    return trainer,args,valid_losses,training_mode_list,metric_list,df_loss
+    return trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results
 
 
-def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
+def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,dic_results):
     # Metrics Valid 
     row = {f"fold{k}": [loss] for k,loss in enumerate(valid_losses)}
     row.update({'mean' : [np.mean(valid_losses)]})
@@ -174,7 +185,7 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     # ...
 
     # Metrics Test :
-    model_metrics =  globals()[f'{training_mode_list[0]}_{metric_list[0]}_h1']
+    model_metrics =  dic_results[f'{training_mode_list[0]}_{metric_list[0]}_h1']
     nb_folds = len(model_metrics)
     multi_cols =  pd.MultiIndex.from_product([metric_list, range(nb_folds),range(args.step_ahead)], 
                                             names=["metric", "fold","horizon"])
@@ -184,14 +195,14 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     for training_mode in training_mode_list:
         for metric in metric_list:
             for h in range(1,args.step_ahead+1):  
-                model_metrics = globals()[f'{training_mode}_{metric}_h{h}']
+                model_metrics = dic_results[f'{training_mode}_{metric}_h{h}']
                 for fold_idx, value in enumerate(model_metrics):
                     df_metrics_by_folds.loc[training_mode, (metric, fold_idx,h)] = value
 
     # Metrics K-folds: 
     dict_metrics_on_K_fold = {}
-    mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(globals()[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
-    var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(globals()[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
+    mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
+    var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
     dict_metrics_on_K_fold.update(mean_on_K_fold)
     dict_metrics_on_K_fold.update(var_on_K_fold)
     if (args.evaluate_complete_ds):
@@ -202,10 +213,10 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list):
     # ...
     
     return df_results,df_metrics,df_metrics_by_folds
-    
-def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id):
-    df_results,df_metrics,df_metrics_by_folds =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list)
-
+def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id):
+    df_results,df_metrics,df_metrics_by_folds =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,dic_results)
+    if not os.path.exists(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}"):
+        os.mkdir(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}")
     df_results.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
     df_loss.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
     df_metrics.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
@@ -227,9 +238,9 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modificati
 
     trial_id = f"{trial_id}{add_name_id}"
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss = train_valid_K_models(args,trial_id,save_folder,modification)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results = train_valid_K_models(args,trial_id,save_folder,modification)
     # 5.
-    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,save_folder,trial_id)
+    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
 
 
 # ========================================================

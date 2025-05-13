@@ -30,7 +30,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
-    config['loss_function_type'] = 'MSE' # 'MSE' #'quantile'
+    config['loss_function_type'] = 'MSE' # 'MSE' #'quantile' # 'masked_mae' 
     config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
     config['freq'] = '15min'
 
@@ -134,12 +134,13 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0
+    config['metrics'] = ['mse','mae','mape','mase']
     # ===   ===
     config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
 
 
     # Define Output dimension: 
-    if config['loss_function_type'] == 'MSE': out_dim_factor = 1
+    if config['loss_function_type'] in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']: out_dim_factor = 1
     elif config['loss_function_type'] == 'quantile': out_dim_factor = 2
     else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
     config['out_dim_factor'] = out_dim_factor
@@ -215,7 +216,7 @@ def convert_into_parameters(config):
     return(args)
 
 def update_out_dim(args):
-    if args.loss_function_type == 'MSE': 
+    if args.loss_function_type in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']: 
         args.out_dim_factor = 1
         args.alpha = None
     elif args.loss_function_type == 'quantile': 

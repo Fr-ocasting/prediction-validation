@@ -55,7 +55,7 @@ def add_row_in_get_df_results(df,trial_app,app,model_args,metrics):
     return df
 
 
-def get_df_results(trial_id,model_args,L_Apps,metrics = ['mse','mae','mape','mase'],name_id=None):
+def get_df_results(trial_id,model_args,L_Apps,metrics,name_id=None):
     df = pd.DataFrame(columns = metrics+['fold','id','trial_num'])
 
     if L_Apps == []:

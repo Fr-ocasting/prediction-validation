@@ -49,14 +49,13 @@ class Trainer(object):
         self.loss_function = loss_function
         self.out_dim_factor = dataset.out_dim_factor
         self.step_ahead = dataset.step_ahead
+        self.metrics = args.metrics
 
-        if args.loss_function_type == 'MSE':
-            self.metrics = ['mse','mae','mape','mase'] 
+        if args.loss_function_type in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']:
             self.type_calib = None
             self.alpha = None
             args.track_pi = False
         elif args.loss_function_type == 'quantile':
-            self.metrics = ['PICP','MPIW'] 
             self.type_calib = args.type_calib
             self.alpha = args.alpha
         else:

@@ -188,8 +188,6 @@ class full_model(nn.Module):
             if self.TE_concatenation_early:
                 # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
                 x = torch.cat([x,time_elt],dim = -1)
-
-
         elif (self.te is None) and (len(self.pos_calendar)>0):
             time_elt = torch.stack([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
         else:
