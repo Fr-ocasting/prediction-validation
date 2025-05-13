@@ -6,6 +6,7 @@ config = {'dataset_for_coverage' : ['PeMS08'],
           'model_name': 'DSTRformer',
           'use_target_as_context': False,
           'data_augmentation': False,
+          'step_ahead': 12,
         
             'station' : [],
             'freq': '5min',
@@ -47,7 +48,7 @@ config = {'dataset_for_coverage' : ['PeMS08'],
             'test_prop': 0.2,
             'standardize': True,
             'minmaxnorm': False,
-            'metrics':['masked_mae','masked_rmse','masked_mape','masked_wape','masked_mse','mae','rmse','mape','wape','mse','mase'],
+            'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
             }
 
 

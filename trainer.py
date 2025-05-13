@@ -51,7 +51,7 @@ class Trainer(object):
         self.step_ahead = dataset.step_ahead
         self.metrics = args.metrics
 
-        if args.loss_function_type in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']:
+        if args.loss_function_type in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']:
             self.type_calib = None
             self.alpha = None
             args.track_pi = False

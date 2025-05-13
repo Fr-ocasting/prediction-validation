@@ -61,7 +61,7 @@ def init_metrics(args):
     if args.loss_function_type == 'quantile':
         metric_list = ['MPIW','PICP']
     else:
-        metric_list = ['mse','mae','mape','mase']
+        metric_list = args.metrics
     valid_losses = []
     df_loss = pd.DataFrame()
 
@@ -201,6 +201,14 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
 
     # Metrics K-folds: 
     dict_metrics_on_K_fold = {}
+
+    # TO REMOVE 
+    for metric in metric_list:
+        print(f'\ntest_{metric}')
+        for h in range(1,args.step_ahead+1):  
+            print(dic_results[f'test_{metric}_h{h}'])
+    # TO REMOVE
+
     mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
     var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
     dict_metrics_on_K_fold.update(mean_on_K_fold)

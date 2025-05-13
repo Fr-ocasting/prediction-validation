@@ -3,6 +3,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 
 def l1_loss(input_data, target_data):
     """unmasked mae."""
@@ -141,3 +142,11 @@ def check_nan_inf(tensor: torch.Tensor, raise_ex: bool = True) -> tuple:
     if raise_ex and (nan or inf):
         raise Exception({"nan": nan, "inf": inf})
     return {"nan": nan, "inf": inf}, nan or inf
+
+class RMSELoss(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.mse = nn.MSELoss()
+        
+    def forward(self,yhat,y):
+        return torch.sqrt(self.mse(yhat,y))

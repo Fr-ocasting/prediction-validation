@@ -10,7 +10,7 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 from PI.PI_object import PI_object
-from utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape
+from utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape,RMSELoss
 
 def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None):
     '''
@@ -79,27 +79,29 @@ def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):
 
     return(dic_metric,metrics)
 
-
 def load_fun(metric,previous=None):
     if metric == 'mse':
         fun = nn.MSELoss()
-    if metric == 'mae':
+    elif metric == 'rmse':
+        fun = RMSELoss()
+    elif metric == 'mae':
         fun = nn.L1Loss()
-    if metric == 'mape':
+    elif metric == 'mape':
         fun = personnal_MAPE
-    if metric == 'mase':
+    elif metric == 'mase':
         def fun(Preds,Y_true):
             return personnal_MASE(Preds,Y_true,previous = previous)
-    if metric == 'masked_mse':
+        
+    elif metric == 'masked_mse':
         fun = masked_mse
-    if metric == 'masked_mae':
+    elif metric == 'masked_mae':
         fun = masked_mae
-    if metric == 'masked_mape':
+    elif metric == 'masked_mape':
         fun = masked_mape
-    if metric == 'masked_rmse': 
+    elif metric == 'masked_rmse': 
         fun = masked_rmse
-    if metric == 'masked_wape':
-        fun = masked_mape
+    else:
+        raise NotImplementedError(f"Metric {metric} is not implemented.")
     return(fun)
 
 def metrics_by_station(Preds,Y_true,metric_name,previous=None):

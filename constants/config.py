@@ -140,7 +140,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
 
     # Define Output dimension: 
-    if config['loss_function_type'] in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']: out_dim_factor = 1
+    if config['loss_function_type'] in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']: out_dim_factor = 1
     elif config['loss_function_type'] == 'quantile': out_dim_factor = 2
     else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
     config['out_dim_factor'] = out_dim_factor
@@ -216,7 +216,7 @@ def convert_into_parameters(config):
     return(args)
 
 def update_out_dim(args):
-    if args.loss_function_type in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']: 
+    if args.loss_function_type in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']: 
         args.out_dim_factor = 1
         args.alpha = None
     elif args.loss_function_type == 'quantile': 
