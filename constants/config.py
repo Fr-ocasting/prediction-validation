@@ -82,7 +82,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
     # === NetMob Config ===
     config['NetMob_selected_apps'] =  ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-    config['NetMob_transfer_mode'] =  ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+    config['NetMob_transfer_mode'] =  ['DL'] #,['UL'] # ['DL'] # ['UL'] #['DL','UL']
     config['NetMob_selected_tags'] = ['iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
     config['NetMob_expanded'] = '' # '' # '_expanded'
     config['NetMob_only_epsilon'] = False # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'  
@@ -90,7 +90,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     # === Ray config ===
     config['ray'] = False # True
     config['ray_scheduler'] = 'ASHA' #None
-    config['ray_search_alg'] = None #  'HyperOpt'
+    config['ray_search_alg'] = 'HyperOpt' #  'HyperOpt' # None
     config['grace_period'] = 2
     config['HP_max_epochs'] = 100
 

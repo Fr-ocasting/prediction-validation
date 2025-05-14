@@ -15,7 +15,7 @@ def get_search_space_ray(args):
               "weight_decay" : tune.uniform(0.0005, 0.1),
               #"momentum" : tune.uniform(0.80, 0.99),
               "dropout" : tune.uniform(0,0.2),
-              #"scheduler" : {"torch_scheduler_milestone": tune.randint(1, 20), "torch_scheduler_gamma": tune.uniform(0.985, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1)}
+              "scheduler" : {"torch_scheduler_milestone": tune.choice([1,5,10,20]), "torch_scheduler_gamma": tune.uniform(0.98, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.2, 0.8)}
               #tune.choice([{'scheduler':True, "torch_scheduler_milestone": tune.randint(1, 20),
               #                "torch_scheduler_gamma": tune.uniform(0.985, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1)},
               #                  {'scheduler':None }])

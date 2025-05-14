@@ -2,8 +2,8 @@ import argparse
 
 parser = argparse.ArgumentParser(description='STAEformer')
 parser.add_argument('--input_embedding_dim', type=int, default=8, help='Size of the embedding space for input features')
-parser.add_argument('--tod_embedding_dim', type=int, default=0, help='Size of the Time-Of-Day embedding; set to 0 to disable')
-parser.add_argument('--dow_embedding_dim', type=int, default=0, help='Size of the Day-Of‐Week embedding; set to 0 to disable')
+parser.add_argument('--tod_embedding_dim', type=int, default=4, help='Size of the Time-Of-Day embedding; set to 0 to disable')
+parser.add_argument('--dow_embedding_dim', type=int, default=4, help='Size of the Day-Of‐Week embedding; set to 0 to disable')
 parser.add_argument('--spatial_embedding_dim', type=int, default=0, help='Size of the spatial embedding; is never used in the model')
 parser.add_argument('--adaptive_embedding_dim', type=int, default=32, help='Size of the adaptive spatial embedding; set to 0 to disable')
 parser.add_argument('--num_heads', type=int, default=2, help='Number of multi-head attention heads')

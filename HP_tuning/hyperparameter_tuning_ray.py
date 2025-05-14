@@ -139,7 +139,22 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
         # gc.collect()  # Clean CPU memory
         # ...
 
-    
+
+    """
+    tuner = tune.Tuner(trainable = lambda config: train_with_tuner(config),
+                        param_space = config
+                        tune_config = tune.TuneConfig(ressources_per_trial = resources_per_trial,
+                                                    max_concurrent_trials = max_concurrent_trials,
+                                                    search_alg = ray_search_alg,
+                                                    num_samples = num_samples,
+                        fail_fast = False, # Continue even with errors 
+                        raise_on_failed_trial=False,
+                        )
+    )
+    analysis = tuner.fit()
+    """
+
+
     analysis = tune.run(
             lambda config: train_with_tuner(config),
             config=config,
@@ -151,6 +166,7 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
             fail_fast = False, # Continue even with errors 
             raise_on_failed_trial=False,
         )
+
     
     # Get Trial ID (Name of the entire HP-tuning)
     date_id = get_date_id()
