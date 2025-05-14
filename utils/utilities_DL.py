@@ -137,6 +137,7 @@ def load_scheduler(optimizer,args):
     if (args.scheduler is None) or (math.isnan(args.scheduler)) or (args.scheduler == False):
         scheduler = None
     else:
+        
         if args.torch_scheduler_type == 'MultiStepLR':
             scheduler = MultiStepLR(optimizer, milestones=args.torch_scheduler_milestone, gamma=args.torch_scheduler_gamma)
         elif args.torch_scheduler_type == 'warmup':
