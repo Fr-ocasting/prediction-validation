@@ -27,7 +27,7 @@ def get_search_alg(name,metric,mode,points_to_evaluate = None):
     if name=='HyperOpt':
          search_alg = HyperOptSearch(metric = metric,
                                      mode = mode,
-                                     points_to_evaluate = points_to_evaluate
+                                     #points_to_evaluate = points_to_evaluate
                                      )
 
     elif name is None:

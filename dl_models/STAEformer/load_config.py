@@ -24,6 +24,7 @@ parser_HP.add_argument('--scheduler', type=bool, default=True, choices = [True, 
 parser_HP.add_argument('--torch_scheduler_milestone', type=int, default=40)
 parser_HP.add_argument('--torch_scheduler_gamma', type=float, default=0.995)
 parser_HP.add_argument('--torch_scheduler_lr_start_factor', type=float, default=0.9)
+parser_HP.add_argument('--torch_scheduler_type',type=str,default = 'warmup')
 args_HP = parser_HP.parse_args(args=[])
 # Other possible parameters: 
 if False: 

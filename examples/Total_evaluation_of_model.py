@@ -161,15 +161,15 @@ if __name__ == '__main__':
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
 
 
-    if False:
+    if True:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         model_name = 'STAEformer'
 
-        epochs_validation = 500#100
-        num_samples = 500 # 200
-        HP_max_epochs = 500 #300,#100,
+        epochs_validation =500# 500
+        num_samples = 200 # 500
+        HP_max_epochs = 500 # 500
         modification  = {'ray':True,
                         'target_data' :'subway_in',
                         'use_target_as_context': False,
@@ -259,7 +259,7 @@ if __name__ == '__main__':
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
 
-    if True:
+    if False:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
