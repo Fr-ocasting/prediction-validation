@@ -87,6 +87,7 @@ def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,)
     '''
     # Load the dataset and its associated caracteristics
     print('\n>>>Tackle Target dataset:',args.target_data)
+
     module_data = importlib.import_module(f"load_inputs.{args.target_data}")
     importlib.reload(module_data) 
     
@@ -95,6 +96,7 @@ def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,)
                                             coverage_period = coverage_period,
                                             args = args,
                                             normalize= True)
+        
     print(f"   Init Dataset: '{preprocessed_ds.raw_values.size()}. {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")
     print('   TRAIN contextual_ds:',preprocessed_ds.U_train.size())
     print('   VALID contextual_ds:',preprocessed_ds.U_valid.size()) if hasattr(preprocessed_ds,'U_valid') else None

@@ -90,17 +90,14 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     # pos_calibration_calendar = list(contextual_tensors.keys()).index(f'calendar_{args.calibration_calendar_class}')
     # contextual_positions['calibration_calendar'] = pos_calibration_calendar
     # ==
-
     module_path = f"load_inputs.{args.target_data}"
     module = importlib.import_module(module_path)
     USELESS_DATES = module.USELESS_DATES
     for dataset_name in args.contextual_dataset_names:
         contextual_ds_i = contextual_ds[dataset_name]
 
-
-
             
-        if (dataset_name == 'netmob_image_per_station') or (dataset_name == 'netmob_bidon') or (dataset_name == 'netmob_video_lyon'):
+        if dataset_name in ['netmob_image_per_station','netmob_bidon','netmob_video_lyon']:
              need_local_spatial_attn = False
              contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,dict_pos_node_attr2ds,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
@@ -108,7 +105,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                                                                                                                              dict_pos_node_attr2ds,node_attr_which_need_attn)
              
 
-        elif (dataset_name == 'subway_out') or (dataset_name == 'subway_in') or (dataset_name == 'subway_indiv'):
+        elif dataset_name in ['subway_out','subway_in','subway_indiv','PeMS08_flow','PeMS08_occupancy','PeMS08_speed']:
             need_local_spatial_attn = False
             contextual_tensors,target_ds,ds_which_need_spatial_attn,contextual_positions,dict_pos_node_attr2ds,node_attr_which_need_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,

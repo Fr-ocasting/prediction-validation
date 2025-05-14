@@ -3,6 +3,7 @@ import torch
 from torch import Tensor
 from typing import Optional,Tuple
 import torch.nn as nn
+from torchinfo import summary
 if torch.cuda.is_available():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32  = True
@@ -556,5 +557,9 @@ def load_model(dataset, args):
     if args.model_name == None:
         model = None
 
-    if model is not None : model_memory_cost(model)
+    if model is not None : 
+        model_memory_cost(model)
+        print(summary(model))
+
+
     return(model,args)

@@ -1,7 +1,7 @@
 SEED = 1
 
-config = {'dataset_for_coverage' : ['PeMS08'],
-          'target_data': 'PeMS08',
+config = {'dataset_names' : ['PeMS08_flow','PeMS08_speed','PeMS08_occupancy','calendar'],
+          'target_data': 'PeMS08_flow',
           'dataset_for_coverage': ['PeMS08'],
           'model_name': 'STAEformer',
           'use_target_as_context': False,
@@ -26,14 +26,12 @@ config = {'dataset_for_coverage' : ['PeMS08'],
             'num_layers_m': 1,
 
             'use_mixed_proj': True,
-            "adj_type": 'adj', # choices = ['adj','dist','corr']
-            "adj_normalize_method": 'doubletransition', # choices = ['normlap','scalap','symadj','transition','doubletransition','identity']
-            "threshold": None, # choices = [0.5, 0.7, 0.9] # useless if adj_type = 'adj'
+
             'calendar_types':['dayofweek', 'timeofday'],
 
 
             'batch_size': 16, # 16, 32, 64
-            'epochs':300,
+            'epochs':3,
             'optimizer': 'adam',
             'lr': 0.001,
             'weight_decay': 0.0015,
