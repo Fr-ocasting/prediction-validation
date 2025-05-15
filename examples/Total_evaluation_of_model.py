@@ -167,9 +167,9 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         model_name = 'STAEformer'
 
-        epochs_validation =500# 500
+        epochs_validation =300# 500
         num_samples = 200 # 500
-        HP_max_epochs = 500 # 500
+        HP_max_epochs = 300 # 500
         modification  = {'ray':True,
                         'target_data' :'subway_in',
                         'use_target_as_context': False,
@@ -195,56 +195,58 @@ if __name__ == '__main__':
                         'denoiser_kwargs':{'exponential': {'alpha': 0.7}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
                         }
 
-        modif_choices = {'weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-        'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Web_Weather'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+        modif_choices = {'no_netmob':{'dataset_names' : ['subway_in','calendar']},
+            
+        'weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+                'NetMob_only_epsilon': True,
+                'NetMob_selected_apps': ['Web_Weather'],
+                'NetMob_transfer_mode' :  ['DL'],
+                'NetMob_selected_tags' : ['station_epsilon300'],
+                'NetMob_expanded' : ''},
 
-        'no_netmob':{'dataset_names' : ['subway_in','calendar']},
+
 
         'Deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-            'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Deezer'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+                    'NetMob_only_epsilon': True,
+                    'NetMob_selected_apps': ['Deezer'],
+                    'NetMob_transfer_mode' :  ['DL'],
+                    'NetMob_selected_tags' : ['station_epsilon300'],
+                    'NetMob_expanded' : ''},
 
         'Google_Maps':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-            'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Google_Maps'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+                        'NetMob_only_epsilon': True,
+                        'NetMob_selected_apps': ['Google_Maps'],
+                        'NetMob_transfer_mode' :  ['DL'],
+                        'NetMob_selected_tags' : ['station_epsilon300'],
+                        'NetMob_expanded' : ''},
 
         'weather_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-            'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Web_Weather','Deezer'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+                        'NetMob_only_epsilon': True,
+                        'NetMob_selected_apps': ['Web_Weather','Deezer'],
+                        'NetMob_transfer_mode' :  ['DL'],
+                        'NetMob_selected_tags' : ['station_epsilon300'],
+                        'NetMob_expanded' : ''},
 
         'Google_Maps_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-            'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Google_Maps','Deezer'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+                            'NetMob_only_epsilon': True,
+                            'NetMob_selected_apps': ['Google_Maps','Deezer'],
+                            'NetMob_transfer_mode' :  ['DL'],
+                            'NetMob_selected_tags' : ['station_epsilon300'],
+                            'NetMob_expanded' : ''},
 
         'Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-            'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Google_Maps','Web_Weather'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+                                'NetMob_only_epsilon': True,
+                                'NetMob_selected_apps': ['Google_Maps','Web_Weather'],
+                                'NetMob_transfer_mode' :  ['DL'],
+                                'NetMob_selected_tags' : ['station_epsilon300'],
+                                'NetMob_expanded' : ''},
 
         'Deezer_Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-            'NetMob_only_epsilon': True,
-        'NetMob_selected_apps': ['Deezer','Google_Maps','Web_Weather'],
-        'NetMob_transfer_mode' :  ['DL'],
-        'NetMob_selected_tags' : ['station_epsilon300'],
-        'NetMob_expanded' : ''},
+                                    'NetMob_only_epsilon': True,
+                                    'NetMob_selected_apps': ['Deezer','Google_Maps','Web_Weather'],
+                                    'NetMob_transfer_mode' :  ['DL'],
+                                    'NetMob_selected_tags' : ['station_epsilon300'],
+                                    'NetMob_expanded' : ''},
 
         }
         for name_i,modif_bis in modif_choices.items(): 
