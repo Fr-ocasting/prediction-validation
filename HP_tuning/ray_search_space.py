@@ -11,11 +11,11 @@ if parent_dir not in sys.path:
 
 def get_search_space_ray(args):
     # Common search space
-    config = {"lr": tune.qloguniform(1e-5, 1e-2, 1e-5), # tune.qloguniform(5e-5, 5e-3, 5e-5)
-              "weight_decay" : tune.uniform(0.0005, 0.1),
+    config = {"lr": tune.qloguniform(8e-4, 7e-3, 1e-4), # tune.qloguniform(1e-5, 1e-2, 1e-5), # tune.qloguniform(5e-5, 5e-3, 5e-5)
+              "weight_decay" : tune.uniform(0.03, 0.095),# tune.uniform(0.0005, 0.1)
               #"momentum" : tune.uniform(0.80, 0.99),
               "dropout" : tune.uniform(0,0.2),
-              "scheduler" : {"torch_scheduler_milestone": tune.choice([1,5,10,20]), "torch_scheduler_gamma": tune.uniform(0.98, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.2, 0.8)}
+              "scheduler" :  {"torch_scheduler_milestone": tune.choice([5,10,20]), "torch_scheduler_gamma": tune.uniform(0.98, 0.995), "torch_scheduler_lr_start_factor": tune.uniform(0.3, 0.9)}#{"torch_scheduler_milestone": tune.choice([1,5,10,20]), "torch_scheduler_gamma": tune.uniform(0.98, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.2, 0.8)}
               #tune.choice([{'scheduler':True, "torch_scheduler_milestone": tune.randint(1, 20),
               #                "torch_scheduler_gamma": tune.uniform(0.985, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.1, 1)},
               #                  {'scheduler':None }])
