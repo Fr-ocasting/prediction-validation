@@ -19,9 +19,9 @@ from dl_models.full_model import full_model
 from trainer import Trainer
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
-target_data = 'PeMS08_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA 
-dataset_names = ['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-dataset_for_coverage = ['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+target_data = 'criter' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+dataset_names = ['criter']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_for_coverage = ['criter'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
 model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
@@ -197,10 +197,16 @@ if __name__ == "__main__":
     from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
     import importlib
     
-    config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
-    importlib.reload(config_file)
-    modification = config_file.config
-    SEED = config_file.SEED
+    try: 
+        config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
+        importlib.reload(config_file)
+        modification = config_file.config
+        SEED = config_file.SEED
+
+    except:
+        print(f"No saved configuration for {target_data} with model {model_name}.")
+        SEED = 1
+
     args_init = local_get_args(model_name,
                     args_init = None,
                     dataset_names=dataset_names,
@@ -208,16 +214,7 @@ if __name__ == "__main__":
                     modification = modification)
 
     set_seed(SEED)
-    if False:
-        print(f"\n>>>Error loading configuration for {target_data} with model {model_name}.\n---------------------\n")
-        SEED = 42
-        args_init = local_get_args(model_name,
-                        args_init = None,
-                        dataset_names=dataset_names,
-                        dataset_for_coverage=dataset_for_coverage,
-                        modification = modification)
 
-        set_seed(SEED)
 
     # Run the script
     fold_to_evaluate=[args_init.K_fold-1]

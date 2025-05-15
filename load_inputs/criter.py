@@ -16,27 +16,16 @@ if parent_dir not in sys.path:
 from dataset import DataSet, PersonnalInput
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from utils.utilities import filter_args # Assurez-vous que ce chemin est correct
-# Import de votre fonction spécifique pour CRITER
-try:
-    # Ajustez le chemin si nécessaire
-    from build_inputs.load_raw_data import load_CRITER
-except ImportError:
-    print("ERREUR: Impossible d'importer 'load_CRITER'. Vérifiez le chemin dans 'load_inputs/criter.py'")
-    # Définir une fonction factice pour éviter les erreurs si l'import échoue
-    def load_CRITER(file_path):
-        print(f"AVERTISSEMENT: load_CRITER non trouvé, chargement de {file_path} échouera.")
-        # Retourne un DataFrame vide avec les colonnes attendues pour éviter des erreurs aval
-        return pd.DataFrame(columns=['HORODATE', 'ID_POINT_MESURE', 'DEBIT_HEURE'])
-
+from build_inputs.load_raw_data import load_CRITER
 
 # --- Constantes spécifiques à cette donnée ---
 NAME = 'CRITER'
-FILE_BASE_NAME = 'CRITER'
+FILE_NAME = 'CRITER'
 DATA_SUBFOLDER_PATTERN = 'Comptages_Velo_Routier/CRITER/6 min {year}' # Sera formaté avec l'année
 
-NATIVE_FREQ = '6min' # La fréquence des fichiers bruts
-# Couverture théorique
-START = '2019-01-01' # Exemple basé sur head()
+
+FREQ = '6min' # frequency of raw file 
+START = '2019-01-01' 
 END = '2020-01-01'
 USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
                  'weekday':[]#[5,6],
@@ -57,11 +46,14 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     """
     target_freq = args.freq
     # CRITER a une fréquence native de 6min. On chargera ces fichiers puis on resamplera.
-    native_freq_criter = NATIVE_FREQ
+    native_freq_criter = FREQ
 
     # Déterminer les années couvertes par coverage_period
-    min_date = coverage_period.min()
-    max_date = coverage_period.max()
+    coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
+    indices_dates = [k for k,date in enumerate(coverage_local) if date in coverage_period]
+
+    min_date = coverage_local.min()
+    max_date = coverage_local.max()
     years_to_load = range(min_date.year, max_date.year + 1)
 
     all_files_to_load = []
@@ -71,6 +63,8 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
         # Attention: ceci charge tous les fichiers de l'année, même ceux hors période.
         # Un filtrage plus fin sur les noms de fichiers pourrait être nécessaire si beaucoup de fichiers.
         files_in_year = sorted(glob.glob(os.path.join(criter_path_year, "*.txt")))
+        print(files_in_year)
+        blabla
         if not files_in_year:
              print(f"AVERTISSEMENT: Aucun fichier CRITER trouvé pour l'année {year} dans {criter_path_year}")
         all_files_to_load.extend(files_in_year)
@@ -96,6 +90,10 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     # Concaténer tous les DataFrames chargés
     print("Concaténation des DataFrames CRITER...")
     df = pd.concat(list_df_criter, ignore_index=True)
+    df = df.loc[coverage_local]
+
+    print(df)
+
 
     # --- Prétraitement ---
     try:
@@ -166,7 +164,10 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     processed_input.C = C
     processed_input.periods = None # Pas de périodicité spécifique définie ici
 
-    print(f"Chargement et prétraitement de {FILE_BASE_NAME} terminés.")
+    print(f"Chargement et prétraitement de {FILE_NAME} terminés.")
+
+    print(processed_input.raw_values.shape)
+    blabla
     return processed_input
 
 # --- Point d'entrée pour exécution directe (optionnel, pour tests) ---

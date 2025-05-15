@@ -60,7 +60,7 @@ def load_subway_15_min(txt_path, dates = None):
 
 
 def load_CRITER(txt_path):
-    df = pd.read_csv(txt_path, sep=';',infer_datetime_format=True)
+    df = pd.read_csv(txt_path, sep=';')
     format = "%d/%m/%Y %H:%M:%S"
     format_without_time = "%d/%m/%Y"
     format_hour = pd.to_datetime(df.HORODATE,format=format,errors = 'coerce')
@@ -83,3 +83,16 @@ def load_netmob(txt_path,day):
 
     df = pd.read_csv(txt_path, sep = ' ', names = columns).set_index(['tile_id'])
     return(df)
+
+
+if __name__ == "__main__":
+    # Example Load CRITER
+    import os 
+    root_repository = os.path.expanduser('~') #prediction_validation/
+    save_folder = f"{root_repository}/../../data/rrochas/raw_data/Comptages_Velo_Routier/CRITER"
+    year = 2019
+    months = ['Janvier','Fevrier','Mars','Avril','Mai','Juin','Juillet','Aout','Septembre','Octobre','Novembre','Decembre']
+    nb_month = 6
+    txt_path = f"{save_folder}/6 min {year}/6mn_{str(nb_month+1).zfill(2)}_{months[nb_month]}_{year}.txt"
+    df = load_CRITER(txt_path)
+    print(df.head())
