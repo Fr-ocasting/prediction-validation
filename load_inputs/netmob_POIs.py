@@ -20,7 +20,7 @@ from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 '''
 
 NAME = 'netmob_POIs'
-FILE_NAME = 'netmob_image_per_station'
+#FILE_NAME = 'netmob_image_per_station'
 START = '03/16/2019'
 END = '06/01/2019'
 USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours

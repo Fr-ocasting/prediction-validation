@@ -23,7 +23,7 @@ END = '06/01/2019'
 USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
                  'weekday':[]#[5,6],
                  }
-FREQ = '30min'
+FREQ = '6min'
 list_of_invalid_period = []
 #list_of_invalid_period.append([datetime(2019,1,10,15,30),datetime(2019,1,14,15,30)])
 

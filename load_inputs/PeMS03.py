@@ -2,8 +2,6 @@ import sys
 import os
 import pandas as pd
 import torch
-import numpy as np
-from datetime import datetime
 import h5py
 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
@@ -12,7 +10,6 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # Personnal import
-from dataset import DataSet, PersonnalInput
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from utils.utilities import restrain_df_to_specific_period
 
