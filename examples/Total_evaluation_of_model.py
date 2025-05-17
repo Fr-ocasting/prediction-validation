@@ -161,7 +161,7 @@ if __name__ == '__main__':
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
 
 
-    if True:
+    if False:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
@@ -261,15 +261,15 @@ if __name__ == '__main__':
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
 
-    if False:
+    if True:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         model_name = 'STGCN'
 
-        epochs_validation = 500#100
-        num_samples = 500 # 200
-        HP_max_epochs = 500 #300,#100,
+        epochs_validation = 300#100
+        num_samples = 200 # 200
+        HP_max_epochs = 300 #300,#100,
         modification  = {'ray':True,
                         'target_data' :'subway_in',
                         'use_target_as_context': False,
@@ -291,9 +291,61 @@ if __name__ == '__main__':
                         }
 
         modif_choices = {'no_netmob_no_calendar':{'dataset_names' : ['subway_in']},
-                         'no_netmob_with_calendar':{'dataset_names' : ['subway_in','calendar_embedding'],
-                                                    'embedding_calendar_types': ['dayofweek', 'hour'],}
-                         }
+
+                        'weather':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                'NetMob_only_epsilon': True,
+                                'NetMob_selected_apps': ['Web_Weather'],
+                                'NetMob_transfer_mode' :  ['DL'],
+                                'NetMob_selected_tags' : ['station_epsilon300'],
+                                'NetMob_expanded' : ''},
+
+
+
+                        'Deezer':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                    'NetMob_only_epsilon': True,
+                                    'NetMob_selected_apps': ['Deezer'],
+                                    'NetMob_transfer_mode' :  ['DL'],
+                                    'NetMob_selected_tags' : ['station_epsilon300'],
+                                    'NetMob_expanded' : ''},
+
+                        'Google_Maps':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                        'NetMob_only_epsilon': True,
+                                        'NetMob_selected_apps': ['Google_Maps'],
+                                        'NetMob_transfer_mode' :  ['DL'],
+                                        'NetMob_selected_tags' : ['station_epsilon300'],
+                                        'NetMob_expanded' : ''},
+
+                        'weather_deezer':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                        'NetMob_only_epsilon': True,
+                                        'NetMob_selected_apps': ['Web_Weather','Deezer'],
+                                        'NetMob_transfer_mode' :  ['DL'],
+                                        'NetMob_selected_tags' : ['station_epsilon300'],
+                                        'NetMob_expanded' : ''},
+
+                        'Google_Maps_deezer':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                            'NetMob_only_epsilon': True,
+                                            'NetMob_selected_apps': ['Google_Maps','Deezer'],
+                                            'NetMob_transfer_mode' :  ['DL'],
+                                            'NetMob_selected_tags' : ['station_epsilon300'],
+                                            'NetMob_expanded' : ''},
+
+                        'Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                                'NetMob_only_epsilon': True,
+                                                'NetMob_selected_apps': ['Google_Maps','Web_Weather'],
+                                                'NetMob_transfer_mode' :  ['DL'],
+                                                'NetMob_selected_tags' : ['station_epsilon300'],
+                                                'NetMob_expanded' : ''},
+
+                        'Deezer_Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs'],
+                                                    'NetMob_only_epsilon': True,
+                                                    'NetMob_selected_apps': ['Deezer','Google_Maps','Web_Weather'],
+                                                    'NetMob_transfer_mode' :  ['DL'],
+                                                    'NetMob_selected_tags' : ['station_epsilon300'],
+                                                    'NetMob_expanded' : ''},
+                                                    
+                        'no_netmob_with_calendar':{'dataset_names' : ['subway_in','calendar_embedding'],
+                                                                    'embedding_calendar_types': ['dayofweek', 'hour'],}
+                                        }
         for name_i,modif_bis in modif_choices.items(): 
             modif_bis.update(modification)
             args = local_get_args(model_name,

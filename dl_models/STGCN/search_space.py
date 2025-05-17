@@ -1,6 +1,6 @@
 from ray import tune
 
-config = {#"Kt" : tune.choice([2,3,4]),  # [2,3,4]
+config = {"Kt" : tune.choice([2,3]),  # [2,3,4]
         "stblock_num" : tune.choice([3,4]), # [1,2,3,4]
         #"act_func" : tune.choice(['glu']), # ['glu','gtu']
         #"Ks" :  tune.choice([3]),  #[2,3]
