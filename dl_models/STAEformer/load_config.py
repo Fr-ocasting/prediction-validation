@@ -1,14 +1,14 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='STAEformer')
-parser.add_argument('--input_embedding_dim', type=int, default=8, help='Size of the embedding space for input features')
+parser.add_argument('--input_embedding_dim', type=int, default=12, help='Size of the embedding space for input features')
 parser.add_argument('--tod_embedding_dim', type=int, default=0, help='Size of the Time-Of-Day embedding; set to 0 to disable')
 parser.add_argument('--dow_embedding_dim', type=int, default=0, help='Size of the Day-Of‐Week embedding; set to 0 to disable')
 parser.add_argument('--spatial_embedding_dim', type=int, default=0, help='Size of the spatial embedding; is never used in the model')
-parser.add_argument('--adaptive_embedding_dim', type=int, default=24, help='Size of the adaptive spatial embedding; set to 0 to disable')
-parser.add_argument('--num_heads', type=int, default=2, help='Number of multi-head attention heads')
+parser.add_argument('--adaptive_embedding_dim', type=int, default=20, help='Size of the adaptive spatial embedding; set to 0 to disable')
+parser.add_argument('--num_heads', type=int, default=4, help='Number of multi-head attention heads')
 parser.add_argument('--num_layers', type=int, default=3, help='Number of MLP layers after attention')
-parser.add_argument('--feed_forward_dim', type=int, default=16, help='Size of the feed forward layer after each attention layer (spatial and temporal) ')
+parser.add_argument('--feed_forward_dim', type=int, default=128, help='Size of the feed forward layer after each attention layer (spatial and temporal) ')
 parser.add_argument('--use_mixed_proj', type=bool, default=True, choices=[True, False], help='If True then use a mixed projection (FC on temporal dim  + FC on model dim) at the end of the model')
 args = parser.parse_args(args=[])
 

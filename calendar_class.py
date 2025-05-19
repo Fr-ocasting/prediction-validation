@@ -3,10 +3,9 @@ import pandas as pd
 from datetime import datetime
 import torch
 
-def is_bank_holidays(timestamp,city):
-    if city == 'Lyon':
-        # Liste des jours fériés en 2019 en France
-        bank_holidays = [
+
+BANK_HOLIDAYS = {
+    'Lyon': [
             "2019-01-01",  # Mardi 1er janvier 2019
             "2019-04-22",  # Lundi 22 avril 2019
             "2019-05-01",  # Mercredi 1er mai 2019
@@ -18,10 +17,8 @@ def is_bank_holidays(timestamp,city):
             "2019-11-01",  # Vendredi 1er novembre 2019
             "2019-11-11",  # Lundi 11 novembre 2019
             "2019-12-25",  # Mercredi 25 décembre 2019
-        ]
-    
-    elif 'California' in city:
-        bank_holidays = [
+        ],
+    'California': [
         # 2016
         "2016-01-01",  # New Year's Day
         "2016-01-18",  # Martin Luther King Jr. Day (3ᵉ lundi de janvier)
@@ -74,6 +71,13 @@ def is_bank_holidays(timestamp,city):
         "2019-11-28",  # Thanksgiving Day
         "2019-12-25",  # Christmas Day
     ]
+}
+
+
+
+
+def is_bank_holidays(timestamp,city):
+    bank_holidays = BANK_HOLIDAYS[city]
     date = timestamp.strftime("%Y-%m-%d")
     
     return date in bank_holidays
