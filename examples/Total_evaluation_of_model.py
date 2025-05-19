@@ -159,7 +159,53 @@ if __name__ == '__main__':
         num_samples = 100
         HP_and_valid_one_config(args,epochs_validation,num_samples)
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
+  if True:
 
+        #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
+        dataset_for_coverage = ['subway_in','netmob_POIs'] 
+        model_name = 'STAEformer'
+
+        epochs_validation =300# 500
+        num_samples = 300 # 500
+        HP_max_epochs = 300 # 500
+        modification  = {'ray':True,
+                        'target_data' :'subway_in',
+                        'use_target_as_context': False,
+
+                        'batch_size':128,
+                        'grace_period':20,#20,
+                        'HP_max_epochs':HP_max_epochs,
+                        'step_ahead':4,
+
+                        'evaluate_complete_ds' : True,
+                        'torch_compile':False,
+
+                        'temporal_graph_transformer_encoder': False, # False # True
+                        'compute_node_attr_with_attn' : False, # False # True
+                        'stacked_contextual': True, # True # False
+
+                        'data_augmentation': True, #True,  #False
+                        'DA_method':'rich_interpolation', # 'noise' # 'interpolation
+
+                        'denoising_names':['netmob_POIs'],
+                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                        'denoising_modes':["train","valid","test"],             # par défaut
+                        'denoiser_kwargs':{'exponential': {'alpha': 0.7}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                        }
+
+        modif_choices = {'no_netmob':{'dataset_names' : ['subway_in','calendar']},
+
+        }
+        for name_i,modif_bis in modif_choices.items(): 
+            modif_bis.update(modification)
+            args = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=modif_bis['dataset_names'],
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification =modif_bis
+                                )
+            args.calendar_types = ['dayofweek', 'timeofday']
+            HP_and_valid_one_config(args,epochs_validation,num_samples)
 
     if True:
 
@@ -167,9 +213,9 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         model_name = 'STAEformer'
 
-        epochs_validation =300# 500
-        num_samples = 200 # 500
-        HP_max_epochs = 300 # 500
+        epochs_validation =500# 500
+        num_samples = 300 # 500
+        HP_max_epochs = 500 # 500
         modification  = {'ray':True,
                         'target_data' :'subway_in',
                         'use_target_as_context': False,
@@ -220,26 +266,26 @@ if __name__ == '__main__':
         #                 'NetMob_selected_tags' : ['station_epsilon300'],
         #                 'NetMob_expanded' : ''},
 
-        # 'weather_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-        #                 'NetMob_only_epsilon': True,
-        #                 'NetMob_selected_apps': ['Web_Weather','Deezer'],
-        #                 'NetMob_transfer_mode' :  ['DL'],
-        #                 'NetMob_selected_tags' : ['station_epsilon300'],
-        #                 'NetMob_expanded' : ''},
+        'weather_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+                        'NetMob_only_epsilon': True,
+                        'NetMob_selected_apps': ['Web_Weather','Deezer'],
+                        'NetMob_transfer_mode' :  ['DL'],
+                        'NetMob_selected_tags' : ['station_epsilon300'],
+                        'NetMob_expanded' : ''},
 
-        # 'Google_Maps_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-        #                     'NetMob_only_epsilon': True,
-        #                     'NetMob_selected_apps': ['Google_Maps','Deezer'],
-        #                     'NetMob_transfer_mode' :  ['DL'],
-        #                     'NetMob_selected_tags' : ['station_epsilon300'],
-        #                     'NetMob_expanded' : ''},
+        'Google_Maps_deezer':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+                            'NetMob_only_epsilon': True,
+                            'NetMob_selected_apps': ['Google_Maps','Deezer'],
+                            'NetMob_transfer_mode' :  ['DL'],
+                            'NetMob_selected_tags' : ['station_epsilon300'],
+                            'NetMob_expanded' : ''},
 
-        # 'Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
-        #                         'NetMob_only_epsilon': True,
-        #                         'NetMob_selected_apps': ['Google_Maps','Web_Weather'],
-        #                         'NetMob_transfer_mode' :  ['DL'],
-        #                         'NetMob_selected_tags' : ['station_epsilon300'],
-        #                         'NetMob_expanded' : ''},
+        'Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
+                                'NetMob_only_epsilon': True,
+                                'NetMob_selected_apps': ['Google_Maps','Web_Weather'],
+                                'NetMob_transfer_mode' :  ['DL'],
+                                'NetMob_selected_tags' : ['station_epsilon300'],
+                                'NetMob_expanded' : ''},
 
         # 'Deezer_Google_Maps_weather':{'dataset_names' : ['subway_in','netmob_POIs','calendar'],
         #                             'NetMob_only_epsilon': True,
@@ -267,9 +313,9 @@ if __name__ == '__main__':
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
         model_name = 'STGCN'
 
-        epochs_validation = 300#100
+        epochs_validation = 500#100
         num_samples = 200 # 200
-        HP_max_epochs = 300 #300,#100,
+        HP_max_epochs = 500 #300,#100,
         modification  = {'ray':True,
                         'target_data' :'subway_in',
                         'use_target_as_context': False,
