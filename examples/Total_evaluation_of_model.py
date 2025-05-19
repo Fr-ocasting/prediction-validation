@@ -159,7 +159,8 @@ if __name__ == '__main__':
         num_samples = 100
         HP_and_valid_one_config(args,epochs_validation,num_samples)
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
-  if True:
+        
+    if True:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
@@ -193,9 +194,7 @@ if __name__ == '__main__':
                         'denoiser_kwargs':{'exponential': {'alpha': 0.7}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
                         }
 
-        modif_choices = {'no_netmob':{'dataset_names' : ['subway_in','calendar']},
-
-        }
+        modif_choices = {'no_netmob':{'dataset_names' : ['subway_in','calendar']}}
         for name_i,modif_bis in modif_choices.items(): 
             modif_bis.update(modification)
             args = local_get_args(model_name,
