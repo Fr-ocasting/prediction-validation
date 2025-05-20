@@ -120,8 +120,6 @@ def remove_sparse_sensor(df,limit_max_nan = 200):
     # Input missing data by clusteing:
 
     print('nb sparse_columns : ',len(sparse_columns))
-    print('sparse_columns : ',sparse_columns)
-    print('filtered_df : ',filtered_df)
 
     return filtered_df,sparse_columns
 
