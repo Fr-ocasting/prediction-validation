@@ -26,5 +26,11 @@ class ExponentialSmoother(BaseDenoiser):
         """Applies smoothing along axis 0 (time)."""
         y = series.clone()
         for t in range(1, series.size(0)):
-            y[t] = self.alpha * series[t] + (1 - self.alpha) * y[t - 1]
+            if torch.isnan(y[t - 1]).any().item():
+                raise NotImplementedError('NaN handling not implemented.')
+                mask_isnan = series[t,:].isnan()
+                y[t,~mask_isnan] = (1 - self.alpha) * y[t - 1,mask_isnan]
+                y[t,mask_isnan] = series[t,mask_isnan]
+            else:
+                y[t] = self.alpha * series[t] + (1 - self.alpha) * y[t - 1]
         return y
