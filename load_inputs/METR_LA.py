@@ -81,11 +81,12 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df.columns.tolist()
     processed_input.C = C
-    if args.adj_type == 'dist':
-        adj_mx_name = 'dist.csv'
-    elif args.adj_type == 'adj':
-        raise NotImplementedError('direct Neighborhood Adjacency matrix does not exists for this dataset')
-    processed_input.adj_mx_path = f"{dirname}/adj/{adj_mx_name}"
+    if hasattr(args, 'adj_type'):
+        if args.adj_type == 'dist':
+            adj_mx_name = 'dist.csv'
+        elif args.adj_type == 'adj':
+            raise NotImplementedError('direct Neighborhood Adjacency matrix does not exists for this dataset')
+        processed_input.adj_mx_path = f"{dirname}/adj/{adj_mx_name}"
     processed_input.raw_data_path =f"{dirname}/{file_base_name}.h5"
     processed_input.city = city
     # processed_input.periods = None 

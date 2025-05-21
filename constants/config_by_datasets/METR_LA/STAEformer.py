@@ -1,8 +1,8 @@
 SEED = 1
 
-config = {'dataset_names' : ['PeMS08_flow','PeMS08_speed','PeMS08_occupancy','calendar'],
-          'target_data': 'PeMS08_flow',
-          'dataset_for_coverage': ['PeMS08'],
+config = {'dataset_names' : ['METR_LA'],
+          'target_data': 'METR_LA',
+          'dataset_for_coverage': ['METR_LA'],
           'model_name': 'STAEformer',
           'use_target_as_context': False,
           'data_augmentation': False,

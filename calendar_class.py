@@ -77,7 +77,8 @@ BANK_HOLIDAYS = {
 
 
 def is_bank_holidays(timestamp,city):
-    bank_holidays = BANK_HOLIDAYS[city]
+    city_i = 'California'if  'California' in city else city
+    bank_holidays = BANK_HOLIDAYS[city_i]
     date = timestamp.strftime("%Y-%m-%d")
     
     return date in bank_holidays

@@ -19,21 +19,21 @@ from dl_models.full_model import full_model
 from trainer import Trainer
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
-target_data = 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
-dataset_names = ['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-dataset_for_coverage = ['CRITER_3_4_5_lanes_flow'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+target_data = 'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+dataset_names = ['PeMS08_flow'] #['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_for_coverage = ['PeMS08_flow']#['CRITER_3_4_5_lanes_flow'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
 model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
 # Modif 
 modification = {'target_data': target_data, 
-                    'freq': '5min', #  '5min', 
-                    'step_ahead': 12, # 4
+                    'freq': '15min',#'5min', #  '15min', 
+                    'step_ahead': 4, # 12, # 4
                     'use_target_as_context': False,
                     'data_augmentation': False,
             
-                    'epochs' : 1, #100
+                    'epochs' : 0, #100
 
                     'lr': 0.00105, # 5e-5,# 4e-4,
                     'weight_decay': 0.0188896655584368, # 0.05,
@@ -52,10 +52,10 @@ modification = {'target_data': target_data,
                     'compute_node_attr_with_attn' : False, # True ??
 
                     ### Denoising: 
-                    'denoising_names':['subway_in','subway_out'],
-                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                    'denoising_modes':["train","valid","test"],             # par défaut
-                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+                    #'denoising_names':['subway_in','subway_out'],
+                    #'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                    #'denoising_modes':["train","valid","test"],             # par défaut
+                    #'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
 
                     #
                     #'graph_conv_type': 'graph_conv', # 'cheb_graph_conv', 'graph_conv'
@@ -64,8 +64,8 @@ modification = {'target_data': target_data,
                     ### ========
 
                     ### Time Embedding parameters:
-                    'TE_concatenation_early': False, # True # False
-                    'TE_concatenation_late': True, # True # False
+                    #'TE_concatenation_early': False, # True # False
+                    #'TE_concatenation_late': True, # True # False
 
                     ### Temporal Graph Transfermer Encoder parametrs:
                     #'TGE_num_layers' : 4, #2
@@ -131,8 +131,8 @@ if model_name == 'STGformer':
 if model_name == 'STAEformer':
     dataset_names.append('calendar')
     modification.update({ #"input_embedding_dim": 16, # choices = [16, 24, 32, 48, 64]
-                            "tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
-                            "dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
+                            #"tod_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
+                            #"dow_embedding_dim": 4, # choices = [0, 4, 8, 12, 16]
                             #"adaptive_embedding_dim": 12, # choices = [8, 12, 16, 24, 32] # help = ' has to be < num_nodes.
                             #"spatial_embedding_dim": 8, # choices = [4, 8, 12, 16,32,64]
 
