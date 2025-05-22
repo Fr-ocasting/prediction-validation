@@ -39,7 +39,7 @@ CHANNELS = 'speed' # 1 channel
 
 
 def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
-    return load_data_from_PEMS08(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+    return load_data_from_PEMS08(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=normalize,
               data_subfolder = DATA_SUBFOLDER,
             year = YEAR,
             city = CITY,

@@ -130,7 +130,7 @@ class Normalizer(object):
             #self.mean = inputs.mean(dims)
         if (not(hasattr(self,'std'))): 
             self.std = inputs.std(-1)
-            #self.std = inputs.std(dims)  
+            #self.std = inputs.std(dims) 
 
     def repeat_stats_tensor(self,X,S, feature_vect = False):
         '''
@@ -143,6 +143,7 @@ class Normalizer(object):
         S : statistics (mini,mean...)   >>>> torch.randn(N,H)
         dims : dimension for which we have aggregated >>>> [0,2,4]  # cause we removed T,C,W from 'Train input'
         '''
+        S = S.to(X)
         reshaped_vector, repeat_vector = [1]*X.dim(),[1]*X.dim()
 
         # Dépend de si c'est un Feature Vector (pour lequel on a ajouté une dimension L), ou un Input (comme train_input)

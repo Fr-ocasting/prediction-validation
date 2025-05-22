@@ -77,7 +77,7 @@ def get_intersect_of_coverage_periods(args,coverage_period):
 
 
 
-def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,):
+def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize):
     '''Tackling DataSet to predict : Subway_in data,
     
     outputs:
@@ -95,7 +95,7 @@ def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize=True,)
                                             invalid_dates = invalid_dates,
                                             coverage_period = coverage_period,
                                             args = args,
-                                            normalize= True)
+                                            normalize= normalize)
         
     print(f"   Init Dataset: '{preprocessed_ds.raw_values.size()}. {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")
     print('   TRAIN contextual_ds:',preprocessed_ds.U_train.size())

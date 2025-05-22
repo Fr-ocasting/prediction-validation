@@ -190,7 +190,10 @@ def main(fold_to_evaluate,save_folder,modification):
     model = full_model(ds, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
-    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
+    trainer.train_and_valid(normalizer = ds.normalizer, 
+                            mod = 1000,
+                            mod_plot = None,
+                            unormalize_loss = True,) 
     return trainer,ds,model,args
 
 if __name__ == "__main__":
@@ -231,5 +234,8 @@ if __name__ == "__main__":
     df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_to_evaluate,fold,condition1,condition2,training_mode_list,metric_list)
 
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
-    print("Training completed successfully.")
-    print(trainer.performance)
+
+    test_metrics = trainer.performance['test_metrics']
+    print(f"\n--------- Test ---------\nAll Steps RMSE = {test_metrics['rmse_all']}, MAE = {test_metrics['mae_all']}, MAPE = {test_metrics['mape_all']}")
+    for h in np.arange(1,args.step_ahead+1):
+        print(f"Step {h} RMSE = {test_metrics[f'rmse_h{h}']}, MAE = {test_metrics[f'mae_h{h}']}, MAPE = {test_metrics[f'mape_h{h}']}")

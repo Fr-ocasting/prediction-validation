@@ -1,6 +1,6 @@
 SEED = 1
 
-config = {'dataset_names' : ['PeMS08_flow','PeMS08_speed','PeMS08_occupancy','calendar'],
+config = {'dataset_names' :['PeMS08_flow','calendar'], #['PeMS08_flow','PeMS08_speed','PeMS08_occupancy','calendar'],
           'target_data': 'PeMS08_flow',
           'dataset_for_coverage': ['PeMS08'],
           'model_name': 'STAEformer',
@@ -29,7 +29,7 @@ config = {'dataset_names' : ['PeMS08_flow','PeMS08_speed','PeMS08_occupancy','ca
 
 
             'batch_size': 16, # 16, 32, 64
-            'epochs':3,
+            'epochs':30,
             'optimizer': 'adam',
             'lr': 0.001,
             'weight_decay': 0.0015,

@@ -312,12 +312,12 @@ def get_multi_ds(model_name,
     if save_reproductible:
         ds_i = K_subway_ds[-1]
         path_save = os.path.expanduser('~/prediction-validation/save/data')
-        np.save(open(f'{path_save}/U_train.npy','wb'), ds_i.U_train.detach().cpu().numpy())
-        np.save(open(f'{path_save}/Utarget_train.npy','wb'), ds_i.Utarget_train.detach().cpu().numpy())
-        np.save(open(f'{path_save}/U_valid.npy','wb'), ds_i.U_valid.detach().cpu().numpy())
-        np.save(open(f'{path_save}/Utarget_valid.npy','wb'), ds_i.Utarget_valid.detach().cpu().numpy())
-        np.save(open(f'{path_save}/U_test.npy','wb'), ds_i.U_test.detach().cpu().numpy())
-        np.save(open(f'{path_save}/Utarget_test.npy','wb'), ds_i.Utarget_test.detach().cpu().numpy())
+        np.save(open(f'{path_save}/U_train_scaled.npy','wb'), ds_i.U_train.detach().cpu().numpy())
+        np.save(open(f'{path_save}/Utarget_train_scaled.npy','wb'), ds_i.Utarget_train.detach().cpu().numpy())
+        np.save(open(f'{path_save}/U_valid_scaled.npy','wb'), ds_i.U_valid.detach().cpu().numpy())
+        np.save(open(f'{path_save}/Utarget_valid_scaled.npy','wb'), ds_i.Utarget_valid.detach().cpu().numpy())
+        np.save(open(f'{path_save}/U_test_scaled.npy','wb'), ds_i.U_test.detach().cpu().numpy())
+        np.save(open(f'{path_save}/Utarget_test_scaled.npy','wb'), ds_i.Utarget_test.detach().cpu().numpy())
 
         for contextual_name,contextual_tensors in ds_i.contextual_tensors.items():
             for training_mode,contextual_tensor in contextual_tensors.items():

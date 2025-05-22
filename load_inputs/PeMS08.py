@@ -41,14 +41,15 @@ list_of_invalid_period = []
 
 C = 1 # Nb channels by spatial units
 CHANNELS = ['flow', 'occupancy', 'speed'] # C channels
-
+DIMS = [0,1] # if [0] then Normalisation on temporal dim & Spatial dim
 
 def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
               data_subfolder = DATA_SUBFOLDER,
             year = YEAR,
             city =CITY,
             name=NAME,
-            channel_name='flow'):
+            channel_name='flow',
+            dims = DIMS):
      
     """
     Load data
@@ -84,7 +85,6 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
 
     print(f"   Data loaded with shape: {df.shape}")
     data_T = torch.tensor(df.values).float()
-    dims = [0] # if [0] then Normalisation on temporal dim
 
     processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=name)
 

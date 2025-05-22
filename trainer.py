@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np 
 import time
 from torch.cuda.amp import autocast,GradScaler
+from datetime import datetime
 #if torch.cuda.is_available():
 #    torch.backends.cuda.matmul.allow_tf32 = True
 #    torch.backends.cudnn.allow_tf32  = True
@@ -147,15 +148,15 @@ class Trainer(object):
         return(results_df)
 
 
-    def train_valid_one_epoch(self):
+    def train_valid_one_epoch(self,normalizer=None):
         # Train and Valid each epoch 
         self.training_mode = 'train'
         self.model.train()   #Activate Dropout 
-        self.loop_epoch()
+        self.loop_epoch(normalizer=normalizer)
 
         self.training_mode = 'valid'
         self.model.eval()   # Desactivate Dropout 
-        Preds,Y_true,T_labels = self.loop_epoch() 
+        Preds,Y_true,T_labels = self.loop_epoch(normalizer=normalizer) 
 
         # Update scheduler after each Epoch 
         self.chrono.torch_scheduler()
@@ -221,7 +222,7 @@ class Trainer(object):
         else :
             return None
     
-    def train_and_valid(self,normalizer = None,df_verif_test = None,mod = None, mod_plot = None,station = 0):
+    def train_and_valid(self,normalizer = None,df_verif_test = None,mod = None, mod_plot = None,station = 0,unormalize_loss = True):
         print(f'\nstart training')
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
 
@@ -241,7 +242,7 @@ class Trainer(object):
             t0 = time.time()
             # Train and Valid each epoch 
 
-            self.train_valid_one_epoch()
+            self.train_valid_one_epoch(normalizer=normalizer if unormalize_loss else None)
 
             # Save best model (only if it's not a ray tuning)
             if (self.valid_loss[-1] < self.best_valid) & (not(self.args.ray)):
@@ -277,20 +278,27 @@ class Trainer(object):
             # Keep track on cpu-usage 
             max_memory = get_cpu_usage(max_memory)
 
+            print(f"Epoch: {epoch+1}     Train Loss: {self.train_loss[-1]} Val Loss: {self.valid_loss[-1]}")
+
         # Allow to keep track on the final metrics, and if the trial is 'terminated'
         if (not(self.args.ray)):
             self.chrono.save_model()
+            throughput = f"{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds"
             if hasattr(self,'performance'):
                 self.performance = {'valid_loss': self.best_valid,
                                     'valid_metrics':self.performance['valid_metrics'], 
                                     'test_metrics':self.performance['test_metrics'],
                                     'epoch':self.performance['epoch'], 
                                     'training_over' : True, 
-                                    'fold': self.args.current_fold
+                                    'fold': self.args.current_fold,
+                                    'throughput': throughput,
+                                    'Total_training_time': str(datetime.now()- self.chrono.start_proc),
+                                    'Training_perf': f"{'{:.2f}'.format(np.sum(self.chrono.time_perf_train))}s train" ,
+                                    'Loading_perf' : f"{'{:.2f}'.format(np.sum(self.chrono.time_perf_load))}s loading"
                                     }
                                     
                 self.save_best_model(checkpoint,epoch,self.performance,update_checkpoint = False)
-                print(f"\nTraining Throughput:{'{:.2f}'.format((self.args.epochs * self.nb_train_seq)/np.sum(self.chrono.time_perf_train))} sequences per seconds")
+                print(f"\nTraining Throughput:{throughput}")
             self.chrono.save_model()
 
         self.chrono.stop()
@@ -340,7 +348,7 @@ class Trainer(object):
             
         return(x_b,y_b,contextual_b)
     
-    def loop_batch(self,x_b,y_b,contextual_b,nb_samples,loss_epoch):
+    def loop_batch(self,x_b,y_b,contextual_b,nb_samples,loss_epoch,normalizer = None):
         #print('position of contextual data: ',self.args.contextual_positions)
         #print('contextual_b: ',[c.size() for c in contextual_b])
         
@@ -351,9 +359,15 @@ class Trainer(object):
         if self.args.mixed_precision:
                 with autocast():  #dtype=torch.bfloat16
                     pred = self.model(x_b,contextual_b)
+                    if normalizer is not None: 
+                        pred = normalizer.unormalize_tensor(inputs = pred,feature_vect = True) #  device = self.args.device
+                        y_b = normalizer.unormalize_tensor(inputs=y_b,feature_vect = True) # device = self.args.device
                     loss = self.loss_function(pred.float(),y_b)
         else:
             pred = self.model(x_b,contextual_b)
+            if normalizer is not None: 
+                pred = normalizer.unormalize_tensor(inputs = pred,feature_vect = True) #  device = self.args.device
+                y_b = normalizer.unormalize_tensor(inputs=y_b,feature_vect = True) # device = self.args.device
             loss = self.loss_function(pred.float(),y_b)
         #print('loss: ',loss)
         #print('pred: ', pred.dtype, pred.size())
@@ -383,7 +397,7 @@ class Trainer(object):
             
         return(pred,y_b,t_label,nb_samples,loss_epoch)
         
-    def loop_through_batches(self,loader):
+    def loop_through_batches(self,loader,normalizer = None):
         ''' Small difference whether we first prefetch or not (T_b or *T_b) '''
         nb_samples,loss_epoch = 0,0
         Preds,Y_true,T_labels = [],[],[]
@@ -399,7 +413,7 @@ class Trainer(object):
                 contextual_b = None
 
             x_b,y_b,contextual_b = self.load_to_device(x_b,y_b,contextual_b)
-            pred,y_b,t_label,nb_samples,loss_epoch = self.loop_batch(x_b,y_b,contextual_b,nb_samples,loss_epoch)
+            pred,y_b,t_label,nb_samples,loss_epoch = self.loop_batch(x_b,y_b,contextual_b,nb_samples,loss_epoch,normalizer)
 
             Preds.append(pred)
             Y_true.append(y_b)
@@ -413,7 +427,7 @@ class Trainer(object):
     
         return(Preds,Y_true,T_labels,nb_samples,loss_epoch)
 
-    def loop_epoch(self,track_loss=True):
+    def loop_epoch(self,track_loss=True,normalizer = None):
         if self.training_mode=='valid': 
             if hasattr(self,'chrono'):
                 self.chrono.validation()
@@ -426,7 +440,7 @@ class Trainer(object):
             
         with torch.set_grad_enabled(self.training_mode=='train'):
             loader = self.get_loader()
-            Preds,Y_true,T_labels,nb_samples,loss_epoch = self.loop_through_batches(loader)
+            Preds,Y_true,T_labels,nb_samples,loss_epoch = self.loop_through_batches(loader,normalizer)
 
             if self.training_mode == 'train':
                 self.gradient_tracking()

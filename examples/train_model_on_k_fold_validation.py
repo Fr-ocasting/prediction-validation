@@ -202,12 +202,13 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
     # Metrics K-folds: 
     dict_metrics_on_K_fold = {}
 
-    # TO REMOVE 
-    for metric in metric_list:
-        print(f'\ntest_{metric}')
-        for h in range(1,args.step_ahead+1):  
-            print(dic_results[f'test_{metric}_h{h}'])
-    # TO REMOVE
+    # display metrics values in columns :
+    if False:
+        for metric in metric_list:
+            print(f'\ntest_{metric}')
+            for h in range(1,args.step_ahead+1):  
+                print(dic_results[f'test_{metric}_h{h}'])
+
 
     mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
     var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
@@ -224,13 +225,13 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
 def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id):
     df_results,df_metrics,df_metrics_by_folds =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,dic_results)
     if not os.path.exists(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}"):
-        os.mkdir(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}")
+        os.makedirs(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}")
     df_results.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
     df_loss.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
     df_metrics.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
     df_metrics_by_folds.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_BY_FOLD{trial_id}.csv")
 
-    print('df metrics: ',df_metrics)
+    #print('df metrics: ',df_metrics)
 
 
 def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modification={},add_name_id=''):

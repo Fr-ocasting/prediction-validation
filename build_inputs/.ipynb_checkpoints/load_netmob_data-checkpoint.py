@@ -56,7 +56,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
 
     return NetMob_ds
 
-def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normalize):
+def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,c):
     ''' Load the NetMob input data
 
     args : 
@@ -71,7 +71,7 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,normal
     # if vision_input_type == 'unique_image_through_lyon':
         #NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
         from load_inputs.netmob_video_lyon import load_data
-        NetMob_ds = load_data(dataset,parent_dir,invalid_dates,intesect_coverage_period,args,restricted,normalize= True)
+        NetMob_ds = load_data(dataset,parent_dir,invalid_dates,intesect_coverage_period,args,restricted,normalize= normalize)
         args.vision_input_type = 'unique_image_through_lyon'
         netmob_dataset_name = 'netmob_video_lyon'
 

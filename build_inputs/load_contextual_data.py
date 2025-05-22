@@ -16,7 +16,6 @@ if parent_dir not in sys.path:
 # Personnal inputs:
 from dataset import PersonnalInput
 from constants.paths import FOLDER_PATH
-from build_inputs.load_datasets_to_predict import load_datasets_to_predict
 from utils.utilities import get_time_step_per_hour
 
 def find_positions(applications, file_list):
