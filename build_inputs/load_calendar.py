@@ -50,7 +50,7 @@ def load_calendar(subway_ds):
         date_related_tensors = {calendar_type: pd.DataFrame() for calendar_type in calendar_types}
         for c in subway_ds.df_verif.columns[:-subway_ds.step_ahead]:
             date_i = subway_ds.df_verif[c]
-            df_calendar_i = calendar_inputs(dates,city = subway_ds.city)
+            df_calendar_i = calendar_inputs(date_i,city = subway_ds.city)
             for calendar_type in calendar_types:
                 date_related_tensors[calendar_type][c] = df_calendar_i[calendar_type]
                 

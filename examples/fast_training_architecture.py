@@ -50,7 +50,7 @@ modifications = {'identical_config': {},
                                            'optimizer': 'adamw',
                                            'batch_size': 128,
                                            },
-                'adapted_embedding_dim_and_lr': {'adaptive_embedding_dim': 32,
+                'adaptive32_input_tod_dow_12_b128': {'adaptive_embedding_dim': 32,
                                           'input_embedding_dim': 12,
                                            'tod_embedding_dim': 12,
                                             'dow_embedding_dim': 12,
@@ -66,6 +66,36 @@ modifications = {'identical_config': {},
                                             'torch_scheduler_lr_start_factor': 0.3,
 
                                            },
+                'adaptive32_input_tod_dow_12_b16': {'adaptive_embedding_dim': 32,
+                            'input_embedding_dim': 12,
+                            'tod_embedding_dim': 12,
+                            'dow_embedding_dim': 12,
+                            'optimizer': 'adamw',
+
+                            'batch_size': 16,
+                                'lr': 0.004,
+                                'weight_decay': 0.007,
+                                'dropout': 0.2,
+                            'torch_scheduler_milestone': [20],
+                            'torch_scheduler_gamma':0.9925,
+                            'torch_scheduler_type': 'warmup',
+                            'torch_scheduler_lr_start_factor': 0.3,
+                            },
+                'adaptive20_input_tod_dow_12_b16': {'adaptive_embedding_dim': 20,
+                            'input_embedding_dim': 12,
+                            'tod_embedding_dim': 12,
+                            'dow_embedding_dim': 12,
+                            'optimizer': 'adamw',
+
+                            'batch_size': 16,
+                                'lr': 0.004,
+                                'weight_decay': 0.007,
+                                'dropout': 0.2,
+                            'torch_scheduler_milestone': [20],
+                            'torch_scheduler_gamma':0.9925,
+                            'torch_scheduler_type': 'warmup',
+                            'torch_scheduler_lr_start_factor': 0.3,
+                            },
                 }
 
 
@@ -87,6 +117,8 @@ compilation_modification = {'use_target_as_context': False,
                             'drop_last' : False,  # True
                             'mixed_precision' : False, # True # False
                             'torch_compile' : False, # 'compile' # 'jit_sript'
+
+                            'device': torch.device('cuda:1')
     }
 
 
