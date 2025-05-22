@@ -29,7 +29,7 @@ config = {'dataset_names' :['PeMS08_flow','calendar'], #['PeMS08_flow','PeMS08_s
 
 
             'batch_size': 16, # 16, 32, 64
-            'epochs':30,
+            'epochs':300,
             'optimizer': 'adam',
             'lr': 0.001,
             'weight_decay': 0.0015,
