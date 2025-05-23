@@ -1,8 +1,10 @@
 import numpy as np 
-from bokeh.plotting import figure, show, output_file, save,output_notebook
-from bokeh.models import ColumnDataSource, Toggle, CustomJS,HoverTool, Legend
-from bokeh.layouts import layout,row,column
+import pandas as pd
 import torch
+from bokeh.plotting import figure, show, output_file, save,output_notebook
+from bokeh.models import ColumnDataSource, Toggle, CustomJS,HoverTool, Legend,Band,DatetimeTickFormatter
+from bokeh.layouts import layout,row,column
+from bokeh.io import curdoc
 
 # Relative path:
 import sys 
@@ -286,3 +288,95 @@ def combine_bokeh(p1,p2,p3,save_dir,trial_save,show_figure,save_plot):
             os.makedirs(save_dir)
         output_file(f"{save_dir}{trial_save}.html")
         save(l)
+
+
+
+def plot_sensor_anomaly(df: pd.DataFrame,
+                 df_bool_anomaly: pd.DataFrame,
+                 df_mean: pd.DataFrame,
+                 df_std: pd.DataFrame,
+                 loop_id: str,
+                 alpha: float = 3.0,
+                 height: int = 400,
+                width: int = 1200,
+                df_quantile_per_h = None,
+                df_median_per_h = None,
+                df_isnan = None,
+                freq = '6min'
+                ) -> figure:
+    """
+    Plots a time series with its anomaly envelope and highlights identified anomalies.
+
+    Args:
+        df (pd.DataFrame): DataFrame with time series data.
+        df_bool_anomaly (pd.DataFrame): DataFrame indicating anomalies (True/False).
+        loop_id (str): The column name of the time series (loop) to plot.
+
+    Returns:
+        bokeh.plotting.figure: A Bokeh plot object.
+    """
+
+    series_to_plot = df[loop_id]
+    anomalies_to_plot = df_bool_anomaly[loop_id]
+    plot_lower_bounds = df_mean[loop_id] - alpha * df_std[loop_id]
+    plot_upper_bounds = df_mean[loop_id] + alpha * df_std[loop_id]
+    dict_source = {
+        'time': series_to_plot.index,
+        'value': series_to_plot.values,
+        'lower': plot_lower_bounds.values,
+        'upper': plot_upper_bounds.values,
+        'NaN' : series_to_plot.isna().values
+    }
+    if df_quantile_per_h is not None:
+        quantile_upper = df_quantile_per_h[loop_id]
+        median_lower = df_median_per_h[loop_id]
+        dict_source.update({'quantile_upper': quantile_upper.values,
+                            'median': median_lower.values})
+
+    source_data = pd.DataFrame(dict_source)
+    source = ColumnDataSource(source_data)
+
+    curdoc().clear()
+    p = figure(x_axis_type="datetime", height=height, width=width, title=f"Anomalies for Loop: {loop_id}")
+    p.xgrid.grid_line_color = None
+    p.ygrid.grid_line_alpha = 0.5
+    p.xaxis.axis_label = 'Time'
+    p.yaxis.axis_label = 'Flux'
+
+    # Plot the main series
+    p.line(x='time', y='value', source=source, line_width=2, color="blue", legend_label="Flux")
+
+    # Plot the confidence band
+    band = Band(base="time", lower="lower", upper="upper", source=source,
+            fill_alpha=0.3, fill_color="green", line_color="black") # , legend_label=f"Mean +/- {alpha}*Std")
+    p.add_layout(band)
+
+    # Plot the quantile band if provided
+    if df_quantile_per_h is not None:
+        band_quantile = Band(base="time", lower='median', upper='quantile_upper', source=source,
+                fill_alpha=0.15, fill_color="orange", line_color="black")
+        p.add_layout(band_quantile)
+
+    # Plot the bar plot of NaN Values:
+
+    # Plot vertical infinite area for NaN values
+    if df_isnan is not None: 
+        nan_timestamps = df_isnan[loop_id]
+        nan_timestamps = nan_timestamps[nan_timestamps].index
+        for i in range(len(nan_timestamps)):
+            p.add_layout(Band(base='time', lower='lower', upper='upper', source=ColumnDataSource(pd.DataFrame({'time': [nan_timestamps[i], nan_timestamps[i] + pd.Timedelta(freq)],
+                                                                                        'lower': [-1e5,1e5],
+                                                                                        'upper': [1e5,1e5]})),
+                fill_alpha=0.2, fill_color="grey"))
+            
+
+    p.legend.location = "top_left"
+    p.legend.click_policy="hide"  
+    p.xaxis.formatter=DatetimeTickFormatter(
+              months="%b",
+              days="%a %d %b",
+              hours="%a %d %b %H:%M",
+              minutes="%a %d  %H:%M"
+                     )
+    output_notebook()
+    show(p)
