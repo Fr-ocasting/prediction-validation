@@ -27,29 +27,30 @@ model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DST
 # ...
 
 # Modif 
-modifications = {'identical_config': {},
-                 'fast_training': {'batch_size': 128},
+modifications = {
+    # 'identical_config': {},
+    #              'fast_training': {'batch_size': 128},
 
-                 'optimizer_adamw': {'optimizer': 'adamw',
-                                     'batch_size': 128
-                                     },
+    #              'optimizer_adamw': {'optimizer': 'adamw',
+    #                                  'batch_size': 128
+    #                                  },
 
-                 'MSE_loss': {'loss_function_type':'MSE',
-                              'optimizer': 'adamw',
-                              'batch_size': 128},
+    #              'MSE_loss': {'loss_function_type':'MSE',
+    #                           'optimizer': 'adamw',
+    #                           'batch_size': 128},
 
-                'adapted_adaptive_dim': {'adaptive_embedding_dim': 32,
-                                           'optimizer': 'adamw',
-                                           'batch_size': 128,
-                                           },
+    #             'adapted_adaptive_dim': {'adaptive_embedding_dim': 32,
+    #                                        'optimizer': 'adamw',
+    #                                        'batch_size': 128,
+    #                                        },
 
-                'adapted_embedding_dim': {'adaptive_embedding_dim': 32,
-                                          'input_embedding_dim': 12,
-                                           'tod_embedding_dim': 12,
-                                            'dow_embedding_dim': 12,
-                                           'optimizer': 'adamw',
-                                           'batch_size': 128,
-                                           },
+    #             'adapted_embedding_dim': {'adaptive_embedding_dim': 32,
+    #                                       'input_embedding_dim': 12,
+    #                                        'tod_embedding_dim': 12,
+    #                                         'dow_embedding_dim': 12,
+    #                                        'optimizer': 'adamw',
+    #                                        'batch_size': 128,
+    #                                        },
                 'adaptive32_input_tod_dow_12_b128': {'adaptive_embedding_dim': 32,
                                           'input_embedding_dim': 12,
                                            'tod_embedding_dim': 12,
@@ -60,7 +61,7 @@ modifications = {'identical_config': {},
                                              'lr': 0.004,
                                              'weight_decay': 0.007,
                                              'dropout': 0.2,
-                                            'torch_scheduler_milestone': [20],
+                                            'torch_scheduler_milestone': 20,
                                             'torch_scheduler_gamma':0.9925,
                                             'torch_scheduler_type': 'warmup',
                                             'torch_scheduler_lr_start_factor': 0.3,
@@ -76,7 +77,7 @@ modifications = {'identical_config': {},
                                 'lr': 0.004,
                                 'weight_decay': 0.007,
                                 'dropout': 0.2,
-                            'torch_scheduler_milestone': [20],
+                            'torch_scheduler_milestone': 20,
                             'torch_scheduler_gamma':0.9925,
                             'torch_scheduler_type': 'warmup',
                             'torch_scheduler_lr_start_factor': 0.3,
@@ -91,7 +92,7 @@ modifications = {'identical_config': {},
                                 'lr': 0.004,
                                 'weight_decay': 0.007,
                                 'dropout': 0.2,
-                            'torch_scheduler_milestone': [20],
+                            'torch_scheduler_milestone': 20,
                             'torch_scheduler_gamma':0.9925,
                             'torch_scheduler_type': 'warmup',
                             'torch_scheduler_lr_start_factor': 0.3,
@@ -158,6 +159,7 @@ if __name__ == "__main__":
 
     subfolder = 'STAEformer_architecture'
     for trial_id,modification_i in modifications.items():
+        print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
         modification_model = modification_init.copy()
         modification_model.update(modification_i)
         modification_model.update(compilation_modification)
@@ -188,4 +190,7 @@ if __name__ == "__main__":
         df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_to_evaluate,fold,condition1,condition2,training_mode_list,metric_list)
 
         save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
-        print("Training completed successfully.")
+        test_metrics = trainer.performance['test_metrics']
+        print(f"\n--------- Test ---------\nAll Steps RMSE = {test_metrics['rmse_all']}, MAE = {test_metrics['mae_all']}, MAPE = {test_metrics['mape_all']}")
+        for h in np.arange(1,args.step_ahead+1):
+            print(f"Step {h} RMSE = {test_metrics[f'rmse_h{h}']}, MAE = {test_metrics[f'mae_h{h}']}, MAPE = {test_metrics[f'mape_h{h}']}")

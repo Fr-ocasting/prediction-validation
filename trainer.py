@@ -278,7 +278,8 @@ class Trainer(object):
             # Keep track on cpu-usage 
             max_memory = get_cpu_usage(max_memory)
 
-            print(f"Epoch: {epoch+1}     Train Loss: {self.train_loss[-1]} Val Loss: {self.valid_loss[-1]}")
+            if (epoch in list(map(int,list(np.linspace(0,self.args.epochs,10))))) or (epoch == 2) or (epoch == self.args.epochs - 1):
+                print(f"Epoch: {epoch+1}     Train Loss: {self.train_loss[-1]} Val Loss: {self.valid_loss[-1]}")
 
         # Allow to keep track on the final metrics, and if the trial is 'terminated'
         if (not(self.args.ray)):
