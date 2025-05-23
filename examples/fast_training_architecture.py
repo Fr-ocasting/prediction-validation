@@ -28,29 +28,30 @@ model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DST
 
 # Modif 
 modifications = {
-    # 'identical_config': {},
-    #              'fast_training': {'batch_size': 128},
+                'identical_config': {},
+                
+                 'fast_training': {'batch_size': 128},
 
-    #              'optimizer_adamw': {'optimizer': 'adamw',
-    #                                  'batch_size': 128
-    #                                  },
+                 'optimizer_adamw': {'optimizer': 'adamw',
+                                     'batch_size': 128
+                                     },
 
-    #              'MSE_loss': {'loss_function_type':'MSE',
-    #                           'optimizer': 'adamw',
-    #                           'batch_size': 128},
+                 'MSE_loss': {'loss_function_type':'MSE',
+                              'optimizer': 'adamw',
+                              'batch_size': 128},
 
-    #             'adapted_adaptive_dim': {'adaptive_embedding_dim': 32,
-    #                                        'optimizer': 'adamw',
-    #                                        'batch_size': 128,
-    #                                        },
+                'adapted_adaptive_dim': {'adaptive_embedding_dim': 32,
+                                           'optimizer': 'adamw',
+                                           'batch_size': 128,
+                                           },
 
-    #             'adapted_embedding_dim': {'adaptive_embedding_dim': 32,
-    #                                       'input_embedding_dim': 12,
-    #                                        'tod_embedding_dim': 12,
-    #                                         'dow_embedding_dim': 12,
-    #                                        'optimizer': 'adamw',
-    #                                        'batch_size': 128,
-    #                                        },
+                'adapted_embedding_dim': {'adaptive_embedding_dim': 32,
+                                          'input_embedding_dim': 12,
+                                           'tod_embedding_dim': 12,
+                                            'dow_embedding_dim': 12,
+                                           'optimizer': 'adamw',
+                                           'batch_size': 128,
+                                           },
                 'adaptive32_input_tod_dow_12_b128': {'adaptive_embedding_dim': 32,
                                           'input_embedding_dim': 12,
                                            'tod_embedding_dim': 12,

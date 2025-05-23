@@ -193,7 +193,7 @@ def main(fold_to_evaluate,save_folder,modification):
     trainer.train_and_valid(normalizer = ds.normalizer, 
                             mod = 1000,
                             mod_plot = None,
-                            unormalize_loss = True,) 
+                            unormalize_loss = False,) 
     return trainer,ds,model,args
 
 if __name__ == "__main__":
