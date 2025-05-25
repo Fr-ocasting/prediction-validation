@@ -130,6 +130,7 @@ class Normalizer(object):
             #self.mean = inputs.mean(dims)
         if (not(hasattr(self,'std'))): 
             self.std = inputs.std(-1)
+            #print('self.std: ',self.std)
             #self.std = inputs.std(dims) 
 
     def repeat_stats_tensor(self,X,S, feature_vect = False):

@@ -29,9 +29,9 @@ config = {'dataset_names' :['PeMS08_flow','calendar'],#['PeMS08_flow','calendar'
 
 
             'batch_size': 16, # 16, 32, 64
-            'epochs':300,
+            'epochs':30,
             'optimizer': 'adam',
-            'lr': 0.001,
+            'lr': 0.0005, # 0.001
             'weight_decay': 0.0015,
             'torch_scheduler_type': 'MultiStepLR',
             'loss_function_type':'HuberLoss',
