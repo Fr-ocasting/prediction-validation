@@ -6,6 +6,8 @@ import torch.nn as nn
 import torch
 from typing import Optional,List
 
+
+
 class AttentionLayer(nn.Module):
     """Perform attention across the -2 dim (the -1 dim is `model_dim`).
 

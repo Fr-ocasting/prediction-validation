@@ -130,37 +130,75 @@ if __name__ == '__main__':
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
     from examples.benchmark import local_get_args
 
-    if False:
+    if True:
         model_name = 'STGCN' #'CNN'
-        dataset_for_coverage = ['subway_in','netmob_POIs'] 
-        dataset_names = ['subway_in','netmob_POIs']
+        target_data = 'PeMS08_flow'
+        dataset_for_coverage = [target_data] 
+        dataset_names = [target_data,'calendar_embedding']
         args = local_get_args(model_name,
-                                args_init = None,
-                                dataset_names=dataset_names,
-                                dataset_for_coverage=dataset_for_coverage,
-                                modification = {'ray':True,
-                                                'grace_period':20,
-                                                'HP_max_epochs':100,
-                                                'evaluate_complete_ds' : True,
-                                                'vision_model_name': None,
-                                                'stacked_contextual': True, # True # False
-                                                'temporal_graph_transformer_encoder': False, # False # True
-                                                'compute_node_attr_with_attn' : False, # False # True
-                                                'data_augmentation': True, #True,  #False
-                                                'DA_method':'rich_interpolation', # 'noise' # 'interpolation
-                                                'NetMob_selected_apps':  ['Deezer'], # 'Google_Maps'
-                                                'NetMob_transfer_mode' :  ['DL'],
-                                                'NetMob_selected_tags': ['station_epsilon100'],  #'station_epsilon300'
-                                                'NetMob_expanded' : '',
-                                                })
+                            args_init = None,
+                            dataset_names=dataset_names,
+                            dataset_for_coverage=dataset_for_coverage,
+                            modification = {'target_data' :target_data,
+                                            'ray':True,
+                                            'grace_period':10,
+                                            'HP_max_epochs':300, #300,
+                                            'K_fold': 2,
+                                            'evaluate_complete_ds' : True,
+                                            'vision_model_name': None,
+                                            'stacked_contextual': False, # True # False
+                                            'temporal_graph_transformer_encoder': False, # False # True
+                                            'compute_node_attr_with_attn' : False, # False # True
+                                            'data_augmentation': False, #True,  #False
+
+                                            'use_target_as_context': False,
+                                            'data_augmentation': False,
+
+                                            'loss_function_type':'HuberLoss',
+                                            'torch_scheduler': None,
+
+                                            'step_ahead': 12,
+                                            'freq': '5min',
+                                            'H':12,
+                                            'D':0,
+                                            'W':0,
+                                            
+                                            'standardize': True,
+                                            'minmaxnorm': False,
+
+                                            'Kt': 3, # 2,3,4 # Kernel Size on the Temporal Dimension
+                                            'stblock_num': 3, # 2,3,4 # Number of STConv-blocks
+                                            'Ks': 3,  # 1,2,3 # Number of iteration within the ChebGraphConv ONLY
+                                            'graph_conv_type': 'cheb_graph_conv', # 'graph_conv','cheb_graph_conv' # Type of graph convolution
+                                            'gso_type': 'sym_renorm_adj', # 'sym_norm_lap','rw_norm_lap','sym_renorm_adj','rw_renorm_adj'  # Type of calcul to compute the gso (Weighted Adjacency Matrix)
+                                            'temporal_h_dim': 128,
+                                            'spatial_h_dim': 64,
+                                            'output_h_dim': 256,
+                                            'optimizer': 'adamw',
+                                            'adj_type': 'corr',
+                                            'threshold': 0.8,
+                                            'enable_bias': True, # Enable bias on the output module (FC layers at the output of STGCN)
+                                            'enable_padding': True,  # Enable padding on the Temporal convolution. Suitable for short sequence cause (L' = L-2*(Kt-1)*stblock_num)
+                                            'act_func': 'glu', #'glu', 'gtu', 'silu'  # Type of activation function on the output module (FC layers at the output of STGCN)  
+                                            'batch_size': 128,
+                                            'epochs':300,
+
+                                            'TE_embedding_dim': 64,
+                                            'TE_multi_embedding': True,
+                                            'TE_concatenation_late' : True,
+                                            'TE_concatenation_early' : False,
+                                            'TE_out_h_dim': 32,
+                                            'TE_variable_selection_model_name': 'MLP',
+                                            'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
+                                             })
 
         # Init 
-        epochs_validation = 100
-        num_samples = 100
+        epochs_validation = 300#300
+        num_samples = 200#200
         HP_and_valid_one_config(args,epochs_validation,num_samples)
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
         
-    if True:
+    if False:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 
@@ -206,7 +244,7 @@ if __name__ == '__main__':
             args.calendar_types = ['dayofweek', 'timeofday']
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
-    if True:
+    if False:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 

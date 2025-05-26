@@ -70,6 +70,8 @@ class Trainer(object):
                                         )
         elif args.torch_compile == 'jit_script':
             self.model = torch.jit.script(model)
+        elif args.torch_compile == 'trace':
+            self.model = torch.jit.trace(model)
         elif (args.torch_compile is None) or not(args.torch_compile):
             self.model = model 
         else:

@@ -40,6 +40,10 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
         if key == 'HP_max_epochs':
             if args.epochs < value:
                 args.epochs = value
+   
+        if 'TE_' in key :
+            key = key.replace('TE_','')
+            setattr(args.args_embedding,key,value)
     
 
     # update each modif

@@ -22,7 +22,7 @@ from trainer import Trainer
 target_data = 'PeMS08_flow'#'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
 dataset_names =['PeMS08_flow'] #  ['PeMS08_flow'] #['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
 dataset_for_coverage = ['PeMS08_flow'] #['PeMS08_flow']#['CRITER_3_4_5_lanes_flow','netmob_image_per_station'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
+model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
@@ -166,7 +166,7 @@ modification.update({'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bosse
                         'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                         'drop_last' : False,  # True
                         'mixed_precision' : False, # True # False
-                        'torch_compile' : False, # 'compile' # 'jit_sript'
+                         'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace' # False
     })
 
 
@@ -193,7 +193,7 @@ def main(fold_to_evaluate,save_folder,modification):
     trainer.train_and_valid(normalizer = ds.normalizer, 
                             mod = 1000,
                             mod_plot = None,
-                            unormalize_loss = False,) 
+                            unormalize_loss = True,) 
     return trainer,ds,model,args
 
 if __name__ == "__main__":
@@ -203,15 +203,23 @@ if __name__ == "__main__":
     from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
     import importlib
     
-    try: 
-        config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
-        importlib.reload(config_file)
-        modification = config_file.config
-        SEED = config_file.SEED
 
-    except:
-        print(f"No saved configuration for {target_data} with model {model_name}.")
-        SEED = 1
+    config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
+    importlib.reload(config_file)
+    modification = config_file.config
+    SEED = config_file.SEED
+
+
+    modification.update({'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                        'persistent_workers' : True ,# False 
+                        'pin_memory' : True ,# False 
+                        'prefetch_factor' : 4, # None, 2,3,4,5 ... 
+                        'drop_last' : False,  # True
+                        'mixed_precision' : False, # True # False
+                        'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace' # False
+                        'device': torch.device('cuda:1')
+    })
+
 
     args_init = local_get_args(model_name,
                     args_init = None,

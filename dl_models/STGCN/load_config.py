@@ -1,16 +1,16 @@
 import argparse
 
 parser = argparse.ArgumentParser(description='STGCN')
-parser.add_argument('--Kt', type=int, default=2, choices=[2,3,4], # 3
+parser.add_argument('--Kt', type=int, default=3, choices=[2,3,4], # 3
                     help='Kernel Size on the Temporal Dimension')
 
 parser.add_argument('--stblock_num', type=int, default=3, choices=[2,3,4], # 2
                     help='Number of STConv-blocks')
 
-parser.add_argument('--Ks', type=int, default=2, choices=[1,2,3],
+parser.add_argument('--Ks', type=int, default=3, choices=[1,2,3],
                     help='Number of iteration within the ChebGraphConv ONLY')
 
-parser.add_argument('--graph_conv_type', type=str, default='graph_conv', 
+parser.add_argument('--graph_conv_type', type=str, default='cheb_graph_conv', 
                     choices = ['graph_conv','cheb_graph_conv'],
                     help='Type of graph convolution')
 

@@ -20,7 +20,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
     # Contextual Information: Calendar
     config['calendar_types'] = ['dayofweek','timeofday']  # IF 'calendar' in 'dataset_names': Define the type of calendar information used in the model 
-    config['embedding_calendar_types'] = ['dayofweek', 'hour']  # IF 'calendar_embedding' in ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
+    config['embedding_calendar_types'] = ['dayofweek', 'hour','minute']  # IF 'calendar_embedding' in ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 
     #importlib.reload(data_module)
     #config['num_nodes'] = data_module.num_nodes
@@ -30,7 +30,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
-    config['loss_function_type'] = 'MSE' # 'MSE' #'quantile' # 'masked_mae' 
+    config['loss_function_type'] = 'HuberLoss' # 'HuberLoss' # 'MSE' #'quantile' # 'masked_mae' 
     config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
     config['freq'] = '15min'
 
@@ -203,6 +203,15 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
         args.dropout=0.2
         args.epochs=100
         args.scheduler=None
+
+    if 'calendar_embedding' in args.dataset_names:
+        module_path_TE = f"dl_models.TimeEmbedding.load_config"
+        module_TE = importlib.import_module(module_path_TE)
+        importlib.reload(module_TE)
+        args_embedding = module_TE.args
+        args.args_embedding = args_embedding
+    else:
+        args.args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
     return(args)
 
 def convert_into_parameters(config):

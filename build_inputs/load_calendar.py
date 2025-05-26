@@ -32,6 +32,7 @@ def load_calendar(subway_ds):
     tensor_limits_keeper = subway_ds.tensor_limits_keeper
 
     if 'calendar_embedding' in subway_ds.args.dataset_names:
+        print('\n Loading calendar embedding inputs ...')
         embedding_calendar_types = subway_ds.args.embedding_calendar_types
         # Can be in: ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
         one_hot_dict = one_hot_encode_dataframe(df_calendar, embedding_calendar_types)  # Get one-hot encoded vector for each specific calendar type 
@@ -45,6 +46,7 @@ def load_calendar(subway_ds):
                                                                                             f"{calendar_type}_OHE")
             
     if 'calendar' in subway_ds.args.dataset_names:
+        print('\n Loading calendar inputs ...')
         calendar_types = subway_ds.args.calendar_types
         # Get dates associated to 
         date_related_tensors = {calendar_type: pd.DataFrame() for calendar_type in calendar_types}
@@ -103,20 +105,11 @@ def dim_by_calendar_type(calendar_type):
     else:
         raise NotImplementedError(f"Unknown calendar type: {calendar_type}. Please check the calendar_types list here")
     
-def get_args_embedding(args,dict_calendar_U_train):
+def update_args_embedding(args,dict_calendar_U_train):
     if 'calendar_embedding' in args.dataset_names:
-        module_path = f"dl_models.TimeEmbedding.load_config"
-        module = importlib.import_module(module_path)
-        importlib.reload(module)
-        args_embedding = module.args
         print(dict_calendar_U_train.keys())
-        print('args_embedding.variable_selection_model_name: ',args_embedding.variable_selection_model_name)
-        args_embedding.dic_sizes = [max(2,dict_calendar_U_train[calendar_type].size(-1)) for calendar_type in dict_calendar_U_train.keys()]
-        args_embedding.embedding_dim_calendar_units = [max(1,dim_by_calendar_type(calendar_type)) for calendar_type in dict_calendar_U_train.keys()]
-        args_embedding.device = args.device
-    else:
-        args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
-
-    args.args_embedding = args_embedding
-
+        print('args_embedding.variable_selection_model_name: ',args.args_embedding.variable_selection_model_name)
+        args.args_embedding.dic_sizes = [max(2,dict_calendar_U_train[calendar_type].size(-1)) for calendar_type in dict_calendar_U_train.keys()]
+        args.args_embedding.embedding_dim_calendar_units = [max(1,dim_by_calendar_type(calendar_type)) for calendar_type in dict_calendar_U_train.keys()]
+        args.args_embedding.device = args.device
     return(args)

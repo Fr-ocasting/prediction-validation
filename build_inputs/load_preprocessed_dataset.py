@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 # Personnal inputs:
 from build_inputs.load_contextual_data import tackle_contextual
 from build_inputs.load_datasets_to_predict import load_datasets_to_predict,get_intersect_of_coverage_periods
-from build_inputs.load_calendar import load_calendar,get_args_embedding
+from build_inputs.load_calendar import load_calendar,update_args_embedding
 from utils.utilities import filter_args
 from utils.utilities import get_time_step_per_hour
 from dataset import DataSet
@@ -223,7 +223,7 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
     
     # Calendar data for Calibration : 
     dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test = load_calendar(target_ds)
-    args = get_args_embedding(args,dict_calendar_U_train)
+    args = update_args_embedding(args,dict_calendar_U_train)
 
     # Contextual: 
     args,contextual_ds = tackle_contextual(target_ds,

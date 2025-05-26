@@ -37,13 +37,13 @@ def load_adj(dataset,folder = 'adj',adj_type = 'adj',threshold = None):
             gso = pd.DataFrame(gso, index = dataset.spatial_unit, columns = dataset.spatial_unit)
 
         elif dataset.target_data in ['PeMS08_flow','PeMS08_occupancy','PeMS08_speed']:
-            if type == 'dist':
+            if adj_type == 'dist':
                 raise NotImplementedError('Distance-based adjacency matrix not implemented for this dataset')
                 adj_mx_path = dataset.distance_mx_path
-            if type == 'adj':
+            if adj_type == 'adj':
                 adj_mx_path = dataset.adj_mx_path
-            gso = pd.DataFrame(pickle.load(open("/home/rrochas/DSTRformer/datasets/PEMS08/adj_mx.pkl",'rb')))
-            gso = gso.iloc[dataset.indices_spatial_unit,dataset.indices_spatial_unit]
+                gso = pd.DataFrame(pickle.load(open(adj_mx_path,'rb')))
+                gso = gso.iloc[dataset.indices_spatial_unit,dataset.indices_spatial_unit]
 
         elif dataset.target_data in ['METR_LA']:
             gso = pd.read_csv(dataset.adj_mx_path,index_col=0)
