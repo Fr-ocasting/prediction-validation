@@ -189,7 +189,16 @@ if __name__ == '__main__':
                                             'TE_concatenation_early' : False,
                                             'TE_out_h_dim': 32,
                                             'TE_variable_selection_model_name': 'MLP',
-                                            'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
+                                            'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute'],  # ['dayofweek', 'hour', 'minute']
+
+                                            'num_workers' : 4, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                                            'persistent_workers' : True ,# False 
+                                            'pin_memory' : True ,# False 
+                                            'prefetch_factor' : 4, # None, 2,3,4,5 ... 
+                                            'drop_last' : False,  # True
+                                            'mixed_precision' : False, # True # False
+                                            #'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace'
+
                                              })
 
         # Init 
