@@ -26,8 +26,8 @@ model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRform
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
-# Modif 
-modifications = { 
+# Modif PeMS08 STGCN
+# modifications = { 
     # 'identical_config_e100_adam': {'epochs':100,
     #                                     'loss_function_type':'MSE',
     #                                     'optimizer': 'adam'},
@@ -50,98 +50,98 @@ modifications = {
     #                                   'epochs':100,
     #                                  },   
 
-                 'AdamW_B128_HuberLoss_T128_S64_O256_e100': {'optimizer': 'adamw',
-                                     'loss_function_type':'HuberLoss',
-                                     'batch_size': 128,
-                                      'epochs':100,
+                #  'AdamW_B128_HuberLoss_T128_S64_O256_e100': {'optimizer': 'adamw',
+                #                      'loss_function_type':'HuberLoss',
+                #                      'batch_size': 128,
+                #                       'epochs':100,
                                     
-                                      'temporal_h_dim': 128,
-                                    'spatial_h_dim': 64,
-                                    'output_h_dim': 256,
-                                    },
+                #                       'temporal_h_dim': 128,
+                #                     'spatial_h_dim': 64,
+                #                     'output_h_dim': 256,
+                #                     },
 
-                 'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e100': {'optimizer': 'adamw',
-                                     'loss_function_type':'HuberLoss',
-                                     'batch_size': 128,
-                                      'epochs':100,
+                #  'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e100': {'optimizer': 'adamw',
+                #                      'loss_function_type':'HuberLoss',
+                #                      'batch_size': 128,
+                #                       'epochs':100,
                                     
-                                      'temporal_h_dim': 128,
-                                    'spatial_h_dim': 64,
-                                    'output_h_dim': 256,
+                #                       'temporal_h_dim': 128,
+                #                     'spatial_h_dim': 64,
+                #                     'output_h_dim': 256,
 
-                                    'threshold':0.8,
-                                    'adj_type':'corr',
-                                    },
+                #                     'threshold':0.8,
+                #                     'adj_type':'corr',
+                #                     },
 
-                 'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e100_emb_64_32_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
-                                                                                                    'optimizer': 'adamw',
-                                                                                                    'loss_function_type':'HuberLoss',
-                                                                                                    'batch_size': 128,
-                                                                                                    'epochs':100,
+                #  'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e100_emb_64_32_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                #                                                                                     'optimizer': 'adamw',
+                #                                                                                     'loss_function_type':'HuberLoss',
+                #                                                                                     'batch_size': 128,
+                #                                                                                     'epochs':100,
 
-                                                                                                    'temporal_h_dim': 128,
-                                                                                                    'spatial_h_dim': 64,
-                                                                                                    'output_h_dim': 256,
+                #                                                                                     'temporal_h_dim': 128,
+                #                                                                                     'spatial_h_dim': 64,
+                #                                                                                     'output_h_dim': 256,
 
-                                                                                                    'threshold':0.8,
-                                                                                                    'adj_type':'corr',
+                #                                                                                     'threshold':0.8,
+                #                                                                                     'adj_type':'corr',
 
-                                                                                                    'TE_embedding_dim': 64,
-                                                                                                    'TE_multi_embedding': True,
-                                                                                                    'TE_concatenation_late' : True,
-                                                                                                    'TE_concatenation_early' : False,
-                                                                                                    'TE_out_h_dim': 32,
-                                                                                                    'TE_variable_selection_model_name': 'MLP',
-                                                                                                    'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
-                                                                                                    },  
+                #                                                                                     'TE_embedding_dim': 64,
+                #                                                                                     'TE_multi_embedding': True,
+                #                                                                                     'TE_concatenation_late' : True,
+                #                                                                                     'TE_concatenation_early' : False,
+                #                                                                                     'TE_out_h_dim': 32,
+                #                                                                                     'TE_variable_selection_model_name': 'MLP',
+                #                                                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
+                #                                                                                     },  
 
-                 'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e100_emb_64_32_dow_h_m_lr4e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
-                                                                                                    'optimizer': 'adamw',
-                                                                                                    'loss_function_type':'HuberLoss',
-                                                                                                    'batch_size': 128,
-                                                                                                    'epochs':100,
+                #  'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e100_emb_64_32_dow_h_m_lr4e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                #                                                                                     'optimizer': 'adamw',
+                #                                                                                     'loss_function_type':'HuberLoss',
+                #                                                                                     'batch_size': 128,
+                #                                                                                     'epochs':100,
 
-                                                                                                    'temporal_h_dim': 128,
-                                                                                                    'spatial_h_dim': 64,
-                                                                                                    'output_h_dim': 256,
+                #                                                                                     'temporal_h_dim': 128,
+                #                                                                                     'spatial_h_dim': 64,
+                #                                                                                     'output_h_dim': 256,
 
-                                                                                                    'threshold':0.8,
-                                                                                                    'adj_type':'corr',
+                #                                                                                     'threshold':0.8,
+                #                                                                                     'adj_type':'corr',
 
-                                                                                                    'TE_embedding_dim': 64,
-                                                                                                    'TE_multi_embedding': True,
-                                                                                                    'TE_concatenation_late' : True,
-                                                                                                    'TE_concatenation_early' : False,
-                                                                                                    'TE_out_h_dim': 32,
-                                                                                                    'TE_variable_selection_model_name': 'MLP',
-                                                                                                    'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute'],  # ['dayofweek', 'hour', 'minute']
+                #                                                                                     'TE_embedding_dim': 64,
+                #                                                                                     'TE_multi_embedding': True,
+                #                                                                                     'TE_concatenation_late' : True,
+                #                                                                                     'TE_concatenation_early' : False,
+                #                                                                                     'TE_out_h_dim': 32,
+                #                                                                                     'TE_variable_selection_model_name': 'MLP',
+                #                                                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute'],  # ['dayofweek', 'hour', 'minute']
 
-                                                                                                    'lr': 0.0004,
-                                                                                                    },      
+                #                                                                                     'lr': 0.0004,
+                #                                                                                     },      
 
-                 'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e300_emb_64_32_dow_h_m_lr4e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
-                                                                                                    'optimizer': 'adamw',
-                                                                                                    'loss_function_type':'HuberLoss',
-                                                                                                    'batch_size': 128,
-                                                                                                    'epochs':300,
+                #  'AdamW_B128_HuberLoss_T128_S64_O256_corr_threeshold_08_e300_emb_64_32_dow_h_m_lr4e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                #                                                                                     'optimizer': 'adamw',
+                #                                                                                     'loss_function_type':'HuberLoss',
+                #                                                                                     'batch_size': 128,
+                #                                                                                     'epochs':300,
 
-                                                                                                    'temporal_h_dim': 128,
-                                                                                                    'spatial_h_dim': 64,
-                                                                                                    'output_h_dim': 256,
+                #                                                                                     'temporal_h_dim': 128,
+                #                                                                                     'spatial_h_dim': 64,
+                #                                                                                     'output_h_dim': 256,
 
-                                                                                                    'threshold':0.8,
-                                                                                                    'adj_type':'corr',
+                #                                                                                     'threshold':0.8,
+                #                                                                                     'adj_type':'corr',
 
-                                                                                                    'TE_embedding_dim': 64,
-                                                                                                    'TE_multi_embedding': True,
-                                                                                                    'TE_concatenation_late' : True,
-                                                                                                    'TE_concatenation_early' : False,
-                                                                                                    'TE_out_h_dim': 32,
-                                                                                                    'TE_variable_selection_model_name': 'MLP',
-                                                                                                    'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute'],  # ['dayofweek', 'hour', 'minute']
+                #                                                                                     'TE_embedding_dim': 64,
+                #                                                                                     'TE_multi_embedding': True,
+                #                                                                                     'TE_concatenation_late' : True,
+                #                                                                                     'TE_concatenation_early' : False,
+                #                                                                                     'TE_out_h_dim': 32,
+                #                                                                                     'TE_variable_selection_model_name': 'MLP',
+                #                                                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute'],  # ['dayofweek', 'hour', 'minute']
 
-                                                                                                    'lr': 0.0004,
-                                                                                                    },       
+                #                                                                                     'lr': 0.0004,
+                #                                                                                     },       
 
 
                 #  'MSE_loss': {'loss_function_type':'MSE',
@@ -1018,7 +1018,7 @@ modifications = {
                                                     # 'TE_variable_selection_model_name': 'MLP',
                                                     # 'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     # },   
-                }
+                # }
 
 
 # modifications = {
@@ -1093,6 +1093,174 @@ modifications = {
 #                             'torch_scheduler_lr_start_factor': 0.3,
 #                             },
 #                 }
+
+
+# Modif Subway-in- calednar  STAEformer
+target_data = 'subway_in'
+dataset_names = ['subway_in','netmob_POIs'] 
+dataset_for_coverage = ['subway_in','netmob_POIs']
+model_name = 'STAEformer'
+modifications = { 'adapt_32_emb_dim_12_ff256_h4l3_mse_loss': {
+                        'loss_function_type':'MSE',
+                        'optimizer': 'adamw',
+                        'batch_size': 128,
+                        'epochs':500,
+                        'adaptive_embedding_dim': 32,
+                        'input_embedding_dim': 12,
+                        'tod_embedding_dim': 12,
+                        'dow_embedding_dim': 12,
+                        'feed_forward_dim': 256,
+                        'num_heads': 4,
+                        'num_layers': 3,
+                        'freq': '15min',
+                        'H':6,
+                        'D':1,
+                        'W':0,
+
+                        'optimizer': 'adamw',
+
+                        'batch_size': 128,
+                        'lr': 0.001,
+                        'weight_decay':  0.0015,
+                        'dropout': 0.2,
+                        'torch_scheduler_milestone': 20,
+                        'torch_scheduler_gamma':0.9925,
+                        'torch_scheduler_type': 'warmup',
+                        'torch_scheduler_lr_start_factor': 0.3,
+
+                        'standardize': True,
+                        'minmaxnorm': False,
+                        'calendar_types':['dayofweek', 'timeofday']
+                                    },
+
+              'adapt_32_emb_dim_12_ff256_h4l3_Huber_loss': {
+                        'loss_function_type':'HuberLoss',
+                        'optimizer': 'adamw',
+                        'batch_size': 128,
+                        'epochs':500,
+                        'adaptive_embedding_dim': 32,
+                        'input_embedding_dim': 12,
+                        'tod_embedding_dim': 12,
+                        'dow_embedding_dim': 12,
+                        'feed_forward_dim': 256,
+                        'num_heads': 4,
+                        'num_layers': 3,
+                        'freq': '15min',
+                        'H':6,
+                        'D':1,
+                        'W':0,
+                        'optimizer': 'adamw',
+
+                        'batch_size': 128,
+                        'lr': 0.001,
+                        'weight_decay':  0.0015,
+                        'dropout': 0.2,
+                        'torch_scheduler_milestone': 20,
+                        'torch_scheduler_gamma':0.9925,
+                        'torch_scheduler_type': 'warmup',
+                        'torch_scheduler_lr_start_factor': 0.3,
+
+                         'standardize': True,
+                         'minmaxnorm': False, 
+                         'calendar_types':['dayofweek', 'timeofday']
+                                    },
+
+              'adapt_64_emb_dim_12_ff256_h4l3_Huber_loss': {
+                        'loss_function_type':'HuberLoss',
+                        'optimizer': 'adamw',
+                        'batch_size': 128,
+                        'epochs':500,
+                        'adaptive_embedding_dim': 64,
+                        'input_embedding_dim': 12,
+                        'tod_embedding_dim': 12,
+                        'dow_embedding_dim': 12,
+                        'feed_forward_dim': 256,
+                        'num_heads': 4,
+                        'num_layers': 3,
+                        'freq': '15min',
+                        'H':6,
+                        'D':1,
+                        'W':0,
+                        'optimizer': 'adamw',
+
+                        'batch_size': 128,
+                        'lr': 0.001,
+                        'weight_decay':  0.0015,
+                        'dropout': 0.2,
+                        'torch_scheduler_milestone': 20,
+                        'torch_scheduler_gamma':0.9925,
+                        'torch_scheduler_type': 'warmup',
+                        'torch_scheduler_lr_start_factor': 0.3,
+
+                         'standardize': True,
+                         'minmaxnorm': False, 
+                         'calendar_types':['dayofweek', 'timeofday']
+                                    },
+
+                'adapt_64_emb_dim_24_ff256_h4l3_Huber_loss': {
+                        'loss_function_type':'HuberLoss',
+                        'optimizer': 'adamw',
+                        'batch_size': 128,
+                        'epochs':500,
+                        'adaptive_embedding_dim': 64,
+                        'input_embedding_dim': 24,
+                        'tod_embedding_dim': 24,
+                        'dow_embedding_dim': 24,
+                        'feed_forward_dim': 256,
+                        'num_heads': 4,
+                        'num_layers': 3,
+                        'freq': '15min',
+                        'H':6,
+                        'D':1,
+                        'W':0,
+                        'optimizer': 'adamw',
+
+                        'batch_size': 128,
+                        'lr': 0.001,
+                        'weight_decay':  0.0015,
+                        'dropout': 0.2,
+                        'torch_scheduler_milestone': 20,
+                        'torch_scheduler_gamma':0.9925,
+                        'torch_scheduler_type': 'warmup',
+                        'torch_scheduler_lr_start_factor': 0.3,
+
+                         'standardize': True,
+                         'minmaxnorm': False, 
+                         'calendar_types':['dayofweek', 'timeofday']
+                                    },
+
+                'adapt_64_emb_dim_24_ff256_h4l3_Huber_loss_H6D0W0': {
+                        'loss_function_type':'HuberLoss',
+                        'optimizer': 'adamw',
+                        'batch_size': 128,
+                        'epochs':500,
+                        'adaptive_embedding_dim': 64,
+                        'input_embedding_dim': 24,
+                        'tod_embedding_dim': 24,
+                        'dow_embedding_dim': 24,
+                        'feed_forward_dim': 256,
+                        'num_heads': 4,
+                        'num_layers': 3,
+                        'freq': '15min',
+                        'H':6,
+                        'D':0,
+                        'W':0,
+                        'optimizer': 'adamw',
+
+                        'batch_size': 128,
+                        'lr': 0.001,
+                        'weight_decay':  0.0015,
+                        'dropout': 0.2,
+                        'torch_scheduler_milestone': 20,
+                        'torch_scheduler_gamma':0.9925,
+                        'torch_scheduler_type': 'warmup',
+                        'torch_scheduler_lr_start_factor': 0.3,
+
+                         'standardize': True,
+                         'minmaxnorm': False, 
+                         'calendar_types':['dayofweek', 'timeofday']
+                                    },
+                            }
 
 
 compilation_modification = {'use_target_as_context': False,
