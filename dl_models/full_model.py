@@ -559,7 +559,6 @@ def load_model(dataset, args):
 
     if model is not None : 
         model_memory_cost(model)
-        print(summary(model))
-
+        summary(model)
 
     return(model,args)
