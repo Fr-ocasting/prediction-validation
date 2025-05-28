@@ -43,7 +43,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
     config['contextual_positions'] = {}
     config['quick_vision'] = False #if True then load small NetMob tensor with torch.randn(), instead of big one with pickle.load() and torch concat
-    config['netmob_transfer_mode'] = 'DL' # 'UL' # None # -> Use as NetMob input only 'DL' or 'UL' transfer mode, or both
     config['evaluate_complete_ds'] = False # True  # -> Compute an extra training through the entire complete dataset (with init train/valid/test split)
     config['train_valid_test_split_method'] =  'similar_length_method' # 'iterative_method' #'similar_length_method'
     config['set_spatial_units'] =  None # ['BON','SOI','GER','CHA']  # None -> Select a sub-set of desired spatial-units to work on.
@@ -134,7 +133,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0
-    config['metrics'] = ['mse','mae','mape','mase']
+    config['metrics'] = ['rmse','mse','mae','mape','mase']
     # ===   ===
     config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
 
@@ -236,7 +235,7 @@ def update_out_dim(args):
     args.out_dim = args.out_dim_factor * args.step_ahead
     return args 
 
-def update_modif(args,name_gpu='cuda'):
+def update_modif(args):
     #Update modification:
     args = update_out_dim(args)
     #...
@@ -257,6 +256,44 @@ def update_modif(args,name_gpu='cuda'):
         args.L = 0
     else:
         args.L = args.H+args.D+args.W
+
+
+    # Remove some args that are not used in the model:
+    if hasattr(args,'denoising_names') and len(args.denoising_names) == 0:
+        if hasattr(args,'denoising_modes'): del args.denoising_modes
+        if hasattr(args,'denoiser_kwargs'): del args.denoiser_kwargs
+
+    if not('netmob' in args.target_data) and not ('netmob' in args.dataset_names):
+        if hasattr(args,'NetMob_selected_apps'): del args.NetMob_selected_apps
+        if hasattr(args,'NetMob_transfer_mode'): del args.NetMob_transfer_mode 
+        if hasattr(args,'NetMob_selected_tags'): del args.NetMob_selected_tags
+        if hasattr(args,'NetMob_expanded'): del args.NetMob_expanded 
+        if hasattr(args,'NetMob_only_epsilon'): del args.NetMob_only_epsilon 
+
+    if hasattr(args,'data_augmentation') and not args.data_augmentation:
+        if hasattr(args,'DA_moment_to_focus'): del args.DA_moment_to_focus
+        if hasattr(args,'DA_min_count'): del args.DA_min_count
+        if hasattr(args,'DA_method'): del args.DA_method
+        if hasattr(args,'DA_alpha'): del args.DA_alpha
+        if hasattr(args,'DA_prop'): del args.DA_prop
+        if hasattr(args,'DA_noise_from'): del args.DA_noise_from
+
+    if hasattr(args,'learnable_adj_matrix') and not args.learnable_adj_matrix:
+        if hasattr(args,'learnable_adj_top_k'): del args.learnable_adj_top_k
+        if hasattr(args,'learnable_adj_embd_dim'): del args.learnable_adj_embd_dim
+    
+    if hasattr(args,'temporal_graph_transformer_encoder') and not args.temporal_graph_transformer_encoder:
+        if hasattr(args,'TGE_num_layers'): del args.TGE_num_layers
+        if hasattr(args,'TGE_num_heads'): del args.TGE_num_heads
+        if hasattr(args,'TGE_FC_hdim'): del args.TGE_FC_hdim
+
+    if args.calib_prop is None:
+        if hasattr(args,'conformity_scores_type'): del args.conformity_scores_type
+        if hasattr(args,'quantile_method'): del args.quantile_method
+        if hasattr(args,'calibration_calendar_class'): del args.calibration_calendar_class
+        if hasattr(args,'type_calib'): del args.type_calib
+
+
     return(args)
 
 def modification_contextual_args(args,modification):

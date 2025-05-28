@@ -77,13 +77,13 @@ def load_netmob_per_subway_station(FOLDER_PATH,args,intersect_coverage_period,co
     coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
     indices_dates = [k for k,date in enumerate(coverage_local) if date in intersect_coverage_period]
 
-    if args.netmob_transfer_mode is None: 
+    if args.NetMob_transfer_mode is None: 
         trafic_pos = [2*k for k in trafic_pos] + [2*k+1 for k in trafic_pos]
         print('Transfer Modes: DL and UL')
-    elif args.netmob_transfer_mode == 'DL':
+    elif args.NetMob_transfer_mode == 'DL':
         trafic_pos = [2*k for k in trafic_pos] 
         print('Transfer Modes: DL')
-    elif args.netmob_transfer_mode == 'UL':
+    elif args.NetMob_transfer_mode == 'UL':
         trafic_pos = [2*k+1 for k in trafic_pos]
         print('Transfer Modes: UL')
         

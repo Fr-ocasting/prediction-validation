@@ -23,7 +23,7 @@ from trainer import Trainer
 target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
 dataset_names = ['subway_in','netmob_POIs'] # ['PeMS08_flow'] #['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
 dataset_for_coverage = ['subway_in','netmob_POIs'] # ['PeMS08_flow']#['CRITER_3_4_5_lanes_flow'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
+model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
@@ -33,6 +33,9 @@ if target_data == 'PeMS08_flow' and model_name == 'STGCN':
 
 if target_data == 'subway_in' and model_name == 'STAEformer':
     from examples.reproductibility.config_STAEformer_Subway_in_NetMob_calendar import modifications as modifications
+
+if target_data == 'subway_in' and model_name == 'STGCN':
+    from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar import modifications as modifications
 
 
 
@@ -66,7 +69,7 @@ def set_seed(seed=42):
     torch.backends.cudnn.benchmark = False
 
 
-def main(fold_to_evaluate,save_folder,modification):
+def main(fold_to_evaluate,save_folder,args_init,modification):
     ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     for key,value in vars(args).items():
         print(f"{key}: {value}")
@@ -82,15 +85,23 @@ if __name__ == "__main__":
     from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
     from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
     import importlib
+
+    try: 
+        config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
+        importlib.reload(config_file)
+        modification_init = config_file.config
+        SEED = config_file.SEED
+        
+    except:
+        print('No config file found for this dataset and model. Using default parameters.')
+        SEED = 1
+        modification_init = {}
     
-    config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
-    importlib.reload(config_file)
-    modification_init = config_file.config
-    SEED = config_file.SEED
 
 
 
-    log_final  = ''
+
+    log_final  = f"\n--------- Resume ---------\n"
     subfolder = f'{model_name}_architecture'
     for trial_id,modification_i in modifications.items():
         print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
@@ -124,7 +135,7 @@ if __name__ == "__main__":
             if not os.path.exists(save_folder_with_root):
                 os.makedirs(save_folder_with_root)
 
-        trainer,ds,model,args = main(fold_to_evaluate,save_folder,modification_model)
+        trainer,ds,model,args = main(fold_to_evaluate,save_folder,args_init,modification_model)
 
         condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
         valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
@@ -132,10 +143,10 @@ if __name__ == "__main__":
 
         save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
         test_metrics = trainer.performance['test_metrics']
-        log_final_i = f"All Steps RMSE = {test_metrics['rmse_all']}, MAE = {test_metrics['mae_all']}, MAPE = {test_metrics['mape_all']}"
+        log_final_i = f"All Steps RMSE = {'{:.2f}'.format(test_metrics['rmse_all'])}, MAE = {'{:.2f}'.format(test_metrics['mae_all'])}, MAPE = {'{:.2f}'.format(test_metrics['mape_all'])}, MSE = {'{:.2f}'.format(test_metrics['mse_all'])}"
         log_final = log_final + f"{trial_id}:   {log_final_i}\n"
         print(f"\n--------- Test ---------\n{log_final_i}")
         for h in np.arange(1,args.step_ahead+1):
-            print(f"Step {h} RMSE = {test_metrics[f'rmse_h{h}']}, MAE = {test_metrics[f'mae_h{h}']}, MAPE = {test_metrics[f'mape_h{h}']}")
+            print(f"Step {h} RMSE = {'{:.2f}'.format(test_metrics[f'rmse_h{h}'])}, MAE = {'{:.2f}'.format(test_metrics[f'mae_h{h}'])}, MAPE = {'{:.2f}'.format(test_metrics[f'mape_h{h}'])}, MSE = {'{:.2f}'.format(test_metrics[f'mse_h{h}'])}")
 
 print(log_final)
