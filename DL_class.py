@@ -58,9 +58,8 @@ class TensorLimitsKeeper(object):
             setattr(self,f"df_verif_{training_mode}",self.df_verif[(self.predicted_dates >= self.split_limits[f"first_predicted_{training_mode}_date"]) & 
                                                                    (self.predicted_dates < self.split_limits[f"last_predicted_{training_mode}_date"]) 
                                                                    ])
-
-            #print(f"\ndf_verif_{training_mode}")
-            #print(getattr(self,f"df_verif_{training_mode}"))
+            #print('first/last predicted dates: ',self.split_limits[f"first_predicted_{training_mode}_date"],self.split_limits[f"last_predicted_{training_mode}_date"])
+            #print(getattr(self,f"df_verif_{training_mode}").shape)
 
     def keep_track_on_df_limits(self,training_mode):
         '''Set attribute to keep track on Train/Valid/Test df limits : first_{training_mode}_date and last_{training_mode}_date  '''
@@ -233,6 +232,7 @@ class DatesVerifFeatureVect(object):
                                 ))
 
     def shift_dates(self):
+
         # Weekkly periodic
         Dwt = [self.df_dates.shift((self.Weeks-i)*self.Week_nb_steps) for i in range(self.Weeks)] 
         # Daily periodic

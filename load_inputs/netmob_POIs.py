@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 ## C = 1
 ## num_nodes = 
-def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,tensor_limits_keeper = None): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -59,13 +59,23 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True): #
     netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
 
     # Temporal Aggregation if needed: 
-    if args.freq != FREQ :
-        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
-        netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
-    
-    # Extract only usefull data : [T,R] -> [T',R]
-    coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
-    indices_dates = [k for k,date in enumerate(coverage_local) if date in coverage_period]
+    if False: 
+        if args.freq != FREQ :
+            assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+            netmob_T = netmob_T.view(-1, int(args.freq.replace('min','')) // int(FREQ.replace('min','')), *netmob_T.shape[1:]).sum(dim=1)
+        
+        # Extract only usefull data : [T,R] -> [T',R]
+        coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
+    coverage_local = pd.date_range(start=START, end=END, freq=FREQ)[:-1] 
+
+    # Allow to deal with 2 source with different temporal aggregation
+    if args.freq != FREQ:
+        indices_dates = [k for k,date in enumerate(coverage_local) if date >= min(coverage_period) and date <= max(coverage_period)]
+        coverage_period = pd.date_range(start=min(coverage_period), end=max(coverage_period), freq=FREQ)
+        STEP_AHEAD = args.step_ahead * int(args.freq.replace('min','')) // int(FREQ.replace('min','')) 
+    else:
+        indices_dates = [k for k,date in enumerate(coverage_local) if date in coverage_period]
+
     netmob_T = netmob_T[indices_dates]
     """
     local_df_dates = pd.DataFrame(coverage_local[indices_dates])
@@ -79,7 +89,10 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True): #
 
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=netmob_T,coverage_period = coverage_period,name=NAME) 
+    NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
+                                           args=args,data_T=netmob_T,coverage_period = coverage_period,
+                                           freq = FREQ,step_ahead = STEP_AHEAD,
+                                           name=NAME,tensor_limits_keeper=tensor_limits_keeper) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
 
@@ -94,7 +107,10 @@ def load_data_npy(FOLDER_PATH,args):
         for mode in args.NetMob_transfer_mode:
             for tag in args.NetMob_selected_tags:
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
-                list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))  # [nb-osmid, T]
+                try: 
+                    list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))  # [nb-osmid, T]
+                except:
+                    raise ImportError(f"{folder_path_to_save_agg_data}/data.npy does not exist. NetMob app {app} Might not have been recorded.")
     netmob_T = torch.cat(list_of_data)    # [nb-osmid*(apps*transfer_mode*tags), T]
 
     #print(args.NetMob_selected_apps,args.NetMob_transfer_mode,args.NetMob_selected_tags)

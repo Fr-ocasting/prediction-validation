@@ -80,7 +80,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     
 
     # === NetMob Config ===
-    config['NetMob_selected_apps'] =  ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+    config['NetMob_selected_apps'] =  [] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter'] ['Google_Maps','Deezer','Instagram']
     config['NetMob_transfer_mode'] =  ['DL'] #,['UL'] # ['DL'] # ['UL'] #['DL','UL']
     config['NetMob_selected_tags'] = ['iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
     config['NetMob_expanded'] = '' # '' # '_expanded'
@@ -263,7 +263,7 @@ def update_modif(args):
         if hasattr(args,'denoising_modes'): del args.denoising_modes
         if hasattr(args,'denoiser_kwargs'): del args.denoiser_kwargs
 
-    if not('netmob' in args.target_data) and not ('netmob' in args.dataset_names):
+    if not('netmob' in args.target_data) and not (sum(['netmob' in n.lower() for n in args.dataset_names]) > 0) :
         if hasattr(args,'NetMob_selected_apps'): del args.NetMob_selected_apps
         if hasattr(args,'NetMob_transfer_mode'): del args.NetMob_transfer_mode 
         if hasattr(args,'NetMob_selected_tags'): del args.NetMob_selected_tags

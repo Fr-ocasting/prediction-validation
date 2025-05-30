@@ -17,18 +17,21 @@ from examples.train_and_visu_non_recurrent import evaluate_config,train_the_conf
 from high_level_DL_method import load_optimizer_and_scheduler
 from dl_models.full_model import full_model
 from trainer import Trainer
+from utils.loger import LOG
+from utils.rng import set_seed
+loger = LOG()
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
-target_data = 'PeMS08_flow'#'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
-dataset_names =['PeMS08_flow'] #  ['PeMS08_flow'] #['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-dataset_for_coverage = ['PeMS08_flow'] #['PeMS08_flow']#['CRITER_3_4_5_lanes_flow','netmob_image_per_station'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
-model_name = 'STGCN' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
+target_data = 'CRITER_3_4_5_lanes_flow'#'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+dataset_names =['CRITER_3_4_5_lanes_flow','netmob_POIs'] #  ['PeMS08_flow'] #['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
+dataset_for_coverage = ['CRITER_3_4_5_lanes_flow','netmob_POIs'] #['PeMS08_flow']#['CRITER_3_4_5_lanes_flow','netmob_image_per_station'] #['PeMS08'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+model_name = 'STAEformer' # 'STGCN', 'ASTGCN' # 'STGformer' #'STAEformer' # 'DSTRformer'
 #station = ['BEL','PAR','AMP','SAN','FLA']# ['BEL','PAR','AMP','SAN','FLA']   # 'BON'  #'GER'
 # ...
 
 # Modif 
 modification = {'target_data': target_data, 
-                    'freq': '15min',#'5min', #  '15min', 
+                    'freq': '6min',#'5min', #  '15min', 
                     'step_ahead': 4, # 12, # 4
                     'use_target_as_context': False,
                     'data_augmentation': False,
@@ -73,11 +76,11 @@ modification = {'target_data': target_data,
                     #'TGE_FC_hdim' :  32, #32
 
                     ### Netmob Parametrs: 
-                    #'NetMob_only_epsilon': True,    # True # False
-                    #'NetMob_selected_apps': ['Apple_iMessage','Web_Ads'],# ['Apple_iMessage','Web_Ads'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-                    #'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                    #'NetMob_selected_tags' : ['station_epsilon100'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                    #'NetMob_expanded' : '', # '' # '_expanded
+                    'NetMob_only_epsilon': False,    # True # False
+                    'NetMob_selected_apps': ['Deezer','Web_Weather','Google_Maps'],# ['Apple_iMessage','Web_Ads'], #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
+                    'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                    'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                    'NetMob_expanded' : '', # '' # '_expanded
 
                     ### Compute node with attention parameters: 
                     #'vision_num_heads':6,
@@ -157,30 +160,6 @@ if model_name == 'STGCN':
                         'learnable_adj_embd_dim': 16,                                       # EXIST ONLY IF MODEL = STGCN  
                         })
 
-if 'CRITER_3_4_5_lanes_flow' == target_data:
-    modification.update({'step_ahead' : 10,
-    'freq':'6min'})
-modification.update({'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
-                        'persistent_workers' : True ,# False 
-                        'pin_memory' : True ,# False 
-                        'prefetch_factor' : 4, # None, 2,3,4,5 ... 
-                        'drop_last' : False,  # True
-                        'mixed_precision' : False, # True # False
-                         'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace' # False
-    })
-
-
-
-
-
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 
 def main(fold_to_evaluate,save_folder,modification):
@@ -216,8 +195,8 @@ if __name__ == "__main__":
                         'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                         'drop_last' : False,  # True
                         'mixed_precision' : False, # True # False
-                        'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace' # False
-                        'device': torch.device('cuda:1')
+                        'torch_compile' : False, # 'compile' # 'jit_script' #'trace' # False
+                        'device': torch.device('cuda:0')
     })
 
 
@@ -244,6 +223,15 @@ if __name__ == "__main__":
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
 
     test_metrics = trainer.performance['test_metrics']
-    print(f"\n--------- Test ---------\nAll Steps RMSE = {test_metrics['rmse_all']}, MAE = {test_metrics['mae_all']}, MAPE = {test_metrics['mape_all']}")
-    for h in np.arange(1,args.step_ahead+1):
-        print(f"Step {h} RMSE = {test_metrics[f'rmse_h{h}']}, MAE = {test_metrics[f'mae_h{h}']}, MAPE = {test_metrics[f'mape_h{h}']}")
+    loger.add_log(test_metrics, ['rmse','mae','mape','mse'], trial_id, args.step_ahead)
+
+    # log_final_i = f"All Steps RMSE = {'{:.2f}'.format(test_metrics['rmse_all'])}, MAE = {'{:.2f}'.format(test_metrics['mae_all'])}, MAPE = {'{:.2f}'.format(test_metrics['mape_all'])}, MSE = {'{:.2f}'.format(test_metrics['mse_all'])}"
+    # log_final = log_final + f"{trial_id}:   {log_final_i}\n"
+    # print(f"\n--------- Test ---------\n{log_final_i}")
+    # for h in np.arange(1,args.step_ahead+1):
+    #     print(f"Step {h} RMSE = {'{:.2f}'.format(test_metrics[f'rmse_h{h}'])}, MAE = {'{:.2f}'.format(test_metrics[f'mae_h{h}'])}, MAPE = {'{:.2f}'.format(test_metrics[f'mape_h{h}'])}, MSE = {'{:.2f}'.format(test_metrics[f'mse_h{h}'])}")
+
+
+
+loger.display_log()
+#print(log_final)

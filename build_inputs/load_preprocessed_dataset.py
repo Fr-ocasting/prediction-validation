@@ -198,19 +198,40 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     return(target_ds,args)
 
 
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name):
+def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name,freq = None,step_ahead = None,tensor_limits_keeper=None):
     df_dates = pd.DataFrame(coverage_period)
     df_dates.columns = ['date']
-    args_DataSet = filter_args(DataSet, args)
+
+    print(df_dates.tail(10))
+    args_DataSet = filter_args(DataSet, args,excluded_args = ['step_ahead','time_step_per_hour'])
 
     preprocessed_ds = PersonnalInput(invalid_dates,args,name = name, tensor = data_T, dates = df_dates,
-                            time_step_per_hour = get_time_step_per_hour(args.freq),
+                            time_step_per_hour = get_time_step_per_hour(freq) if freq is not None else get_time_step_per_hour(args.freq),
                            dims =dims,
+                           step_ahead = step_ahead if step_ahead is not None else args.step_ahead,
                            **args_DataSet)
     
     preprocessed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
 
     return preprocessed_ds
+
+def match_contextual_and_target_data(target_ds,contextual_ds,args):
+
+    target_verif_train = target_ds.tensor_limits_keeper.df_verif_train
+    if False:
+        print(target_verif_train.head(2))
+        print(target_verif_train.shape)
+        print(target_ds.U_train.shape)
+
+        for name_i,contextual_ds_i in contextual_ds.items():
+            contextual_verif_train = contextual_ds_i.tensor_limits_keeper.df_verif_train
+
+            print(contextual_verif_train.head(2))
+            print(contextual_verif_train.shape)
+
+            print(contextual_ds_i.U_train.shape)
+        blabla
+    return target_ds,contextual_ds
 
 
 def load_complete_ds(args,coverage_period = None,normalize = True):
@@ -231,6 +252,10 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
                                            coverage_period=intersect_coverage_period,
                                            args=args,
                                            normalize = normalize)
+    
+    # Match Contextual Data and Target Data if Freq dos not correspond:
+    target_ds, contextual_ds = match_contextual_and_target_data(target_ds,contextual_ds,args) 
+
 
     # Add Contextual Tensors and their contextual_positions: 
     target_ds,args = add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)

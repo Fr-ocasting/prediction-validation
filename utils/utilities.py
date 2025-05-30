@@ -26,10 +26,10 @@ def load_inputs_from_dataloader(dataloader,device):
         X_c = [torch.cat([x_c[k] for _,_,x_c in inputs_i]).to(device) for k in range(nb_contextual)]
         return X,Y,X_c,nb_contextual
 
-def filter_args(func, args):
+def filter_args(func, args,excluded_args= []):
     sig = inspect.signature(func)
     #valid_args = {k: v for k, v in args.items() if k in sig.parameters}
-    filered_args = {k: v for k, v in vars(args).items() if k in sig.parameters}
+    filered_args = {k: v for k, v in vars(args).items() if (k in sig.parameters and not (k in excluded_args))}
     return filered_args
 
 def get_higher_quantile(conformity_scores,quantile_order,device = 'cpu'):

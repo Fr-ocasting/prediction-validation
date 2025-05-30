@@ -69,7 +69,47 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,contextual_T,dat
 
     return contrextual_ds
 
-def tackle_input_data(invalid_dates,coverage_period,args,normalize):
+def get_common_dates_between_contextual_and_target(target_ds,contextual_ds,training_mode):
+    L_df_verif =  [getattr(target_ds.tensor_limits_keeper,f'df_verif_{training_mode}')] +[getattr(contextual_ds_i.tensor_limits_keeper,f'df_verif_{training_mode}') for _,contextual_ds_i in contextual_ds.items()]
+    common_dates = list(set.intersection(*map(set, [df_verif_i.iloc[:,-1] for df_verif_i in L_df_verif])))
+    return common_dates
+
+def restrain_to_common_dates(ds,training_mode,common_dates):
+    #print(f"U{training_mode} before: {getattr(ds,f'U_{training_mode}').size()}")
+
+    mask_df = getattr(ds.tensor_limits_keeper,f'df_verif_{training_mode}').iloc[:,-1].isin(common_dates)
+    mask_tensor =  getattr(ds.tensor_limits_keeper,f'df_verif_{training_mode}').reset_index(drop=True).iloc[:,-1].isin(common_dates)
+    mask_tensor = mask_tensor[mask_tensor].index 
+    #print('mask_df:',mask_df.shape)
+    #print(mask_df.head(5))
+    #print('mask_tensor:',mask_tensor.shape)
+    #print(mask_tensor[:5])
+    setattr(ds.tensor_limits_keeper,f'df_verif_{training_mode}',getattr(ds.tensor_limits_keeper,f'df_verif_{training_mode}')[mask_df])
+    setattr(ds,f'U_{training_mode}',getattr(ds,f'U_{training_mode}')[mask_tensor])
+    setattr(ds,f'Utarget_{training_mode}',getattr(ds,f'Utarget_{training_mode}')[mask_tensor])
+
+    #print(f"U{training_mode} after: {getattr(ds,f'U_{training_mode}').size()}")
+    return ds 
+
+def restrain_all_ds_to_common_dates(target_ds,contextual_ds):
+    ''' Restrain all datasets to the common dates '''
+    for training_mode in ['train','valid','test']:
+        if hasattr(target_ds,f'U_{training_mode}'):
+            locals()[f'common_dates_{training_mode}'] = get_common_dates_between_contextual_and_target(target_ds,contextual_ds,training_mode)
+
+            if locals()[f'common_dates_{training_mode}'] != len(getattr(target_ds.tensor_limits_keeper,f'df_verif_{training_mode}').iloc[:,-1].unique()):
+                print(f"Restraining all datasets to {training_mode} common dates: {len(locals()[f'common_dates_{training_mode}'])} dates")
+                
+                # Apply to Target Data:
+                target_ds = restrain_to_common_dates(target_ds,training_mode,locals()[f'common_dates_{training_mode}'])
+
+                # Apply to Contextual Data
+                for name_i,contextual_ds_i in contextual_ds.items():
+                    contextual_ds[name_i] = restrain_to_common_dates(contextual_ds_i,training_mode,locals()[f'common_dates_{training_mode}'])
+
+    return target_ds,contextual_ds
+    
+def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
     ''' Load the contextual data
 
     args : 
@@ -89,9 +129,15 @@ def tackle_input_data(invalid_dates,coverage_period,args,normalize):
                                         coverage_period = coverage_period,
                                         invalid_dates=invalid_dates,
                                         args=args,
-                                        normalize=normalize
+                                        normalize=normalize,
+                                        tensor_limits_keeper = target_ds.tensor_limits_keeper if hasattr(target_ds,'tensor_limits_keeper') else None,
                                         )
         contextual_ds[dataset_name] = contextual_ds_i
+
+
+    ### Match the dates of the contextual datasets with the target dataset if differents: 
+    target_ds,contextual_ds = restrain_all_ds_to_common_dates(target_ds,contextual_ds)
+
     return(contextual_ds,args)
         
 
@@ -138,7 +184,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
     # USE CONTEXTUAL DATA
     if len(args.contextual_dataset_names) > 0: 
 
-        contextual_ds,args = tackle_input_data(invalid_dates,coverage_period,args,normalize)
+        contextual_ds,args = tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize)
 
         # TACKLE THE FEATURE EXTRACTOR MODULE 
         if args.vision_model_name is None: 
