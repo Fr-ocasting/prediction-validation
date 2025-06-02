@@ -53,7 +53,7 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
         setattr(args,f"pos_{dataset_name}",pos_contextual_i)
     else:
         dict_pos_node_attr2ds[pos_contextual_i] = dataset_name
-        if args.compute_node_attr_with_attn:
+        if args.contextual_kwargs[dataset_name]['compute_node_attr_with_attn']:
             node_attr_which_need_attn.append(dataset_name)
 
     
@@ -66,9 +66,12 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     >>> ex: subway-out which has 40 Nodes, and each of them is directly related to an information in the graph 
 
     We have to add in 'ds_which_need_spatial_attn', all the dataset which need a spatial aggregation before being add as a new channel.
-    >>> ex : Selection of P pois around a station and then attention to reduce the P time serie to a unique channel. 
+    >>> ex : Selection of P pois and then attention to reduce the P time serie to a N*C_pois tmie-serie.
 
     We have to add f"pos_{ds_name_i}" a list of N tensor positions, for each dataset  'ds_name_i' which is inside 'ds_which_need_spatial_attn'.
+
+    We have to add in 'node_attr_which_need_attn' each dataset which need a sub-attention module at each spatial unit. 
+    >>> ex:  Selection of Pi pois around a station i  and then attention to reduce the Pi time serie to a unique channel.
     '''
     # === Define DataLoader : 
     ds_which_need_spatial_attn = []
@@ -201,8 +204,6 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name,freq = None,step_ahead = None,tensor_limits_keeper=None):
     df_dates = pd.DataFrame(coverage_period)
     df_dates.columns = ['date']
-
-    print(df_dates.tail(10))
     args_DataSet = filter_args(DataSet, args,excluded_args = ['step_ahead','time_step_per_hour'])
 
     preprocessed_ds = PersonnalInput(invalid_dates,args,name = name, tensor = data_T, dates = df_dates,
@@ -214,24 +215,6 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_
     preprocessed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
 
     return preprocessed_ds
-
-def match_contextual_and_target_data(target_ds,contextual_ds,args):
-
-    target_verif_train = target_ds.tensor_limits_keeper.df_verif_train
-    if False:
-        print(target_verif_train.head(2))
-        print(target_verif_train.shape)
-        print(target_ds.U_train.shape)
-
-        for name_i,contextual_ds_i in contextual_ds.items():
-            contextual_verif_train = contextual_ds_i.tensor_limits_keeper.df_verif_train
-
-            print(contextual_verif_train.head(2))
-            print(contextual_verif_train.shape)
-
-            print(contextual_ds_i.U_train.shape)
-        blabla
-    return target_ds,contextual_ds
 
 
 def load_complete_ds(args,coverage_period = None,normalize = True):
@@ -252,9 +235,6 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
                                            coverage_period=intersect_coverage_period,
                                            args=args,
                                            normalize = normalize)
-    
-    # Match Contextual Data and Target Data if Freq dos not correspond:
-    target_ds, contextual_ds = match_contextual_and_target_data(target_ds,contextual_ds,args) 
 
 
     # Add Contextual Tensors and their contextual_positions: 

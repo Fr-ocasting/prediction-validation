@@ -30,8 +30,9 @@ def get_trial_id(args):
     dataset_names = '_'.join(args.dataset_names)
 
     models_names = [args.model_name] if args.model_name is not None else []
-    if len(vars(args.args_vision))>0: #hasattr(args,'args_vision') and hasattr(args.args_vision,'model_name'):
-        models_names.append(args.args_vision.model_name)
+    for dataset in args.dataset_names:
+        if dataset in args.contextual_kwargs.keys() and 'args_vision' in args.contextual_kwargs[dataset].keys() and len(vars(args.contextual_kwargs[dataset]['args_vision']))>0: 
+            models_names.append(args.contextual_kwargs[dataset]['args_vision'].model_name)
     if len(vars(args.args_embedding))>0:
         models_names.append('TE') 
 

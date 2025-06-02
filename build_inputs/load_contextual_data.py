@@ -173,8 +173,6 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
 def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = True):
 
     # Define contextual tensors
-
-
     contextual_dataset_names = [ds_name for ds_name in args.dataset_names if not (ds_name in (['calendar','calendar_embedding']+ [target_ds.target_data]))]
     if args.use_target_as_context:
         if target_ds.target_data not in contextual_dataset_names:
@@ -183,53 +181,58 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
 
     # USE CONTEXTUAL DATA
     if len(args.contextual_dataset_names) > 0: 
-
         contextual_ds,args = tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize)
 
-        # TACKLE THE FEATURE EXTRACTOR MODULE 
-        if args.vision_model_name is None: 
-            if not args.stacked_contextual:
-                raise ValueError("You are using contextual data but you did not defined 'args.vision_model_name'. It needs to be set ")
-            else:
-                args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
-                if (args.compute_node_attr_with_attn) or (sum(['per_station' in contextual_ds_i.name for name_i,contextual_ds_i in contextual_ds.items()])>0): 
-                    scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
-                    importlib.reload(scrip_args)
-                    latent_dim = scrip_args.args.latent_dim 
-                    raise NotImplementedError(f"VA PRENDRE EN COMPTE UNE SPATIAL ATTENTION MAIS NE SAIS PAS POUR QUEL DONNEE LA FAIRE")
-                else:
-                    latent_dim = 1
+        for name_i,contextual_ds_i in contextual_ds.items():
+            kwargs_i = args.contextual_kwargs[name_i]
 
-                add_C = 0
-                for name_i,contextual_ds_i in contextual_ds.items():
-                    if ('netmob_POIs' in name_i) and (args.stacked_contextual) and (not args.compute_node_attr_with_attn):
-                        add_C = add_C+len(args.NetMob_selected_apps)*len(args.NetMob_transfer_mode)*len(args.NetMob_selected_tags) 
+            print('kwargs_i:',kwargs_i)
+
+            # If the contextual dataset does not need a feature extractor model:
+            if kwargs_i['vision_model_name'] is None: 
+                kwargs_i['args_vision'] = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
+                # Case 1: We don't stack contextual Data
+                if not kwargs_i['stacked_contextual']:
+                    raise ValueError("You are using contextual data but you did not defined 'args.vision_model_name'. It needs to be set ")
+                
+                # Case 2: We stack contextual Data
+                else:
+                    # Case 2.i:   in case we compute node attributes with attention or in case 'per_station' is in the name of the contextual dataset:
+                    if (kwargs_i['compute_node_attr_with_attn']) or ('per_station' in name_i): 
+                        scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
+                        importlib.reload(scrip_args)
+                        latent_dim = scrip_args.args.latent_dim 
+                    
+                    # Case 2.ii:
+                    else:
+                        latent_dim = 1
+
+                    # For both of them, update channel number: 
+                    add_C = 0
+                    if ('netmob_POIs' in name_i) and (kwargs_i['stacked_contextual']) and (not kwargs_i['compute_node_attr_with_attn']):
+                        add_C = add_C+len(kwargs_i['NetMob_selected_apps'])*len(kwargs_i['NetMob_transfer_mode'])*len(kwargs_i['NetMob_selected_tags']) 
                     else:
                         add_C = add_C + latent_dim*contextual_ds_i.C 
-                args.C = args.C + add_C
+                    args.C = args.C + add_C
 
-        else:
-            if args.stacked_contextual:
-                raise ValueError("You defined a feature extractor model from your contextual data but you plan to stack the contextual in a channel.\n\
-                                  It's not consistent as with 'stacked_contextual' you are not supposed to extract feature information before the core model.\n\
-                                 Otherwise, set 'stacked_contextual' to False\
-                                 ")
+            # In case the contextual daatset need a feature extractor model: 
             else:
-                print('   vision_input_type', args.vision_input_type)
-                print('   vision_model_name', args.vision_model_name)
-                args_vision = Namespace(**{'dataset_name': [contextual_ds_i.name for  name_i,contextual_ds_i in contextual_ds.items()], 'model_name':args.vision_model_name,'input_type':args.vision_input_type})
-                args_vision = tackle_config_of_feature_extractor_module(contextual_ds,args_vision)
-                args.args_vision = args_vision
+                if kwargs_i['stacked_contextual']:
+                    raise ValueError(f"You defined a feature extractor model from your contextual data {name_i} but you plan to stack the contextual in a channel.\n\
+                                    It's not consistent as with 'stacked_contextual' you are not supposed to extract feature information before the core model.\n\
+                                    Otherwise, set 'stacked_contextual' to False\
+                                    ")
+                else:
+                    print('   vision_input_type', kwargs_i['vision_input_type'])
+                    print('   vision_model_name', kwargs_i['vision_model_name'])
+                    args_vision = Namespace(**{'dataset_name': name_i, 'model_name':kwargs_i['vision_model_name'],'input_type':kwargs_i['vision_input_type']})
+                    args_vision = tackle_config_of_feature_extractor_module(contextual_ds,args_vision)
+                    kwargs_i['args_vision'] = args_vision
         print(f"   Init Dataset: '{[c_i.raw_values.size()for _,c_i in contextual_ds.items()]}. {[torch.isnan(c_i.raw_values).sum()for _,c_i in contextual_ds.items()]} Nan values")
         print('   TRAIN contextual_ds:',[c_i.U_train.size() for _,c_i in contextual_ds.items()])
         print('   VALID contextual_ds:',[c_i.U_valid.size() for  _,c_i in contextual_ds.items()]) if hasattr(target_ds,'U_valid') else None
         print('   TEST contextual_ds:',[c_i.U_test.size() for  _,c_i in contextual_ds.items()]) if hasattr(target_ds,'U_test') else None
-
-
-    else:
-        contextual_ds = None
-        args.args_vision = argparse.ArgumentParser(description='args_vision').parse_args(args=[])
-
-
+    else: 
+        contextual_ds = {}
 
     return args,contextual_ds

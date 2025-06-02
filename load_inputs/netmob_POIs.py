@@ -101,11 +101,20 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
 
 
 def load_data_npy(FOLDER_PATH,args):
-    save_folder = f"{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.NetMob_expanded}/Inputs/agg_TS"
+    save_folder = f"{FOLDER_PATH}/POIs/netmob_POI_Lyon{args.contextual_kwargs['netmob_POIs']['NetMob_expanded']}/Inputs/agg_TS"
     list_of_data = []
-    for app in args.NetMob_selected_apps:
-        for mode in args.NetMob_transfer_mode:
-            for tag in args.NetMob_selected_tags:
+
+    if len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_apps']) == 0:
+        raise ImportError("No NetMob apps selected. Please check the configuration of netmob_POIs in the arguments.")
+    if len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']) == 0:
+        raise ImportError("No NetMob tags selected. Please check the configuration of netmob_POIs in the arguments.")
+    if len(args.contextual_kwargs['netmob_POIs']['NetMob_transfer_mode']) == 0:
+        raise ImportError("No NetMob transfer mode selected. Please check the configuration of netmob_POIs in the arguments.")
+    
+    # Load data for each app, transfer mode and tag
+    for app in args.contextual_kwargs['netmob_POIs']['NetMob_selected_apps']:
+        for mode in args.contextual_kwargs['netmob_POIs']['NetMob_transfer_mode']:
+            for tag in args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']:
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
                 try: 
                     list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))  # [nb-osmid, T]

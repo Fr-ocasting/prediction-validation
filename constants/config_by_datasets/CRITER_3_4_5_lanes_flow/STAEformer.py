@@ -6,6 +6,8 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
           'model_name': 'STAEformer',
           'use_target_as_context': False,
           'data_augmentation': False,
+          'stacked_contextual': False,
+
           'step_ahead': 10,
             'station' : [],
             'freq': '6min',
@@ -44,10 +46,31 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
             'standardize': True,
             'minmaxnorm': False,
             'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
+            
+            'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                                   'stacked_contextual': True,
+                                                   'NetMob_selected_apps' : ['Google_Maps','Deezer'],
+                                                    'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                    'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                    'NetMob_expanded' : '', # '' # '_expanded'
+                                                    'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                    'vision_model_name' : None
+                                        },
+                                    # 'netmob_POIs': {'compute_node_attr_with_attn':False, 
+                                    #                 'stacked_contextual': True,
+                                    #                 'NetMob_selected_apps' : ['Deezer','Google_Maps'],
+                                    #                   'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                    #                   'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                    #                   'NetMob_expanded' : '', # '' # '_expanded'
+                                    #                   'NetMob_only_epsilon': True, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                    #                 'vision_model_name' : None
+                                    #                  },
 
-            'NetMob_only_epsilon': True,    # True # False
-            'NetMob_selected_apps': ['Deezer','Google_Maps'],# ['Apple_iMessage','Web_Ads'], #,'Web_Weather','Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
-            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-            'NetMob_expanded' : '', # '' # '_expanded
-            }
+                                    'subway_out': {'compute_node_attr_with_attn':False, 
+                                                   'stacked_contextual': True,
+                                                   'vision_model_name': None, # Define the type of model used to extract contextual information from NetMob
+                                                   'vision_input_type': None, # 'image_per_stations' # 'unique_image_through_lyon'  
+                                                   'grn_out_dim': 0, # If >0 then stack a GRN layer to the output module
+                                        },
+                                    }
+}

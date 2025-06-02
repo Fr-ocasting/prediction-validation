@@ -75,16 +75,43 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['denoiser_names'] = ["median"]   # Apply chaining denoising. Default: ``["median"]``. choices: ['median','savitzky_golay_causal','exponential']
     config['denoising_modes'] = ["train"]             # Apply denoisin on a specific datasets (train, valid, test)
     config['denoiser_kwargs'] = {"median": {"kernel_size": 5}}  # Apply denoising function with specific config .
-    
 
-    
+
+    # === Contextual Data Kwargs:
+    config['contextual_kwargs'] = {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                                   'stacked_contextual': True,
+                                                   'NetMob_selected_apps' : [],
+                                                    'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                    'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                    'NetMob_expanded' : '', # '' # '_expanded'
+                                                    'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                        },
+                                    'subway_out': {'compute_node_attr_with_attn':False, 
+                                                   'stacked_contextual': True,
+                                                   'model_name': None, # Define the type of model used to extract contextual information from NetMob
+                                                   'input_type': None, # 'image_per_stations' # 'unique_image_through_lyon'  
+                                                   'grn_out_dim': 0, # If >0 then stack a GRN layer to the output module
+                                        },
+                                    }
+
+                                       
+
+    # Vision Model:
+    # config['vision_model_name'] =  None  # -> Define the type of model used to extract contextual information from NetMob
+    # config['vision_input_type'] =  None  # 'image_per_stations' # 'unique_image_through_lyon'  
+    #             #'''
+    #             #if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
+    #             #if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
+    #             #'''
+    # config['stacked_contextual'] = True # If True then stack contextual information to the channel dim. Does not consider anymore contextual tensors but an input tensor.
+    # config['compute_node_attr_with_attn'] = False # If 'True' then compute an attention layer for the full dataset (subway-out or NetMob POIs) without spatial assignment before 
 
     # === NetMob Config ===
-    config['NetMob_selected_apps'] =  [] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter'] ['Google_Maps','Deezer','Instagram']
-    config['NetMob_transfer_mode'] =  ['DL'] #,['UL'] # ['DL'] # ['UL'] #['DL','UL']
-    config['NetMob_selected_tags'] = ['iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-    config['NetMob_expanded'] = '' # '' # '_expanded'
-    config['NetMob_only_epsilon'] = False # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'  
+    #config['NetMob_selected_apps'] =  [] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter'] ['Google_Maps','Deezer','Instagram']
+    #config['NetMob_transfer_mode'] =  ['DL'] #,['UL'] # ['DL'] # ['UL'] #['DL','UL']
+    #config['NetMob_selected_tags'] = ['iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+    #config['NetMob_expanded'] = '' # '' # '_expanded'
+    #config['NetMob_only_epsilon'] = False # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'  
 
     # === Ray config ===
     config['ray'] = False # True
@@ -145,17 +172,10 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['out_dim_factor'] = out_dim_factor
     # ...
 
-    # Vision Model:
-    '''None cause need to be set. Might be defined after if we use NetMob Data as input'''
-    #'''
-    #if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
-    #if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
-    #'''
-    config['vision_model_name'] =  None  # -> Define the type of model used to extract contextual information from NetMob
-    config['vision_input_type'] =  None  # 'image_per_stations' # 'unique_image_through_lyon'  
-    config['stacked_contextual'] = True # If True then stack contextual information to the channel dim. Does not consider anymore contextual tensors but an input tensor.
+    # Temporal Graph Transformer Encoder: 
     config['temporal_graph_transformer_encoder'] = False # if 'True' then change the temporal-conv of the output module to a TemporalGraph Transformer Encoder
-    config['compute_node_attr_with_attn'] = False # If 'True' then compute an attention layer for the full dataset (subway-out or NetMob POIs) without spatial assignment before 
+
+
 
     return(config)
 

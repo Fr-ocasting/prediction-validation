@@ -591,9 +591,9 @@ class DataSet(object):
         self.set_train_valid_test_tensor_attribute('Utarget',self.Utarget)
 
 
-        print('self.df_verif_train: ',self.tensor_limits_keeper.df_verif_train)
-        print('self.U_train: ',self.U_train.size())
-        print('self.Utarget_train: ',self.Utarget_train.size())
+        #print('self.df_verif_train: ',self.tensor_limits_keeper.df_verif_train)
+        #print('self.U_train: ',self.U_train.size())
+        #print('self.Utarget_train: ',self.Utarget_train.size())
 
 
         #self.display_info_on_inputs()
