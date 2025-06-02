@@ -271,7 +271,7 @@ class DataSet(object):
     def __init__(self,df=None,tensor = None, dates = None, init_df = None, 
                  normalized = False,time_step_per_hour = None,
                  train_df = None,cleaned_df = None,W = None, D = None, 
-                 H = None,step_ahead = None,
+                 H = None,step_ahead = None, horizon_step = None,
                  standardize = None, minmaxnorm = None,dims = None,
                  spatial_unit = None,indices_spatial_unit = None,city = None,
                  data_augmentation=False,
@@ -340,6 +340,7 @@ class DataSet(object):
         self.remaining_dates = None
         self.time_slots_labels = None
         self.step_ahead = step_ahead
+        self.horizon_step = horizon_step
         self.out_dim_factor = out_dim_factor
         self.W = W
         self.D = D
@@ -386,6 +387,15 @@ class DataSet(object):
         # Apply mask 
         self.U = self.U[mask_U]
         self.Utarget = self.Utarget[mask_U]
+
+        if self.horizon_step > 1:
+            self.predicted_indices = torch.arange(self.horizon_step - 1, self.step_ahead, self.horizon_step)
+            self.Utarget = torch.index_select(self.Utarget, dim=-1, index=self.predicted_indices)
+            self.df_verif = self.df_verif.drop(columns=[f"t+{sa}" for sa in range(self.step_ahead) if not sa in  (self.predicted_indices)])
+
+            print('\nself.step_ahead: ',self.step_ahead)
+            print('df_verif: ',self.df_verif.head(2))
+
 
 
 

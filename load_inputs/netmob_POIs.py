@@ -73,6 +73,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
         indices_dates = [k for k,date in enumerate(coverage_local) if date >= min(coverage_period) and date <= max(coverage_period)]
         coverage_period = pd.date_range(start=min(coverage_period), end=max(coverage_period), freq=FREQ)
         STEP_AHEAD = args.step_ahead * int(args.freq.replace('min','')) // int(FREQ.replace('min','')) 
+        HORIZON_STEP = args.horizon_step * int(args.freq.replace('min','')) // int(FREQ.replace('min',''))
     else:
         indices_dates = [k for k,date in enumerate(coverage_local) if date in coverage_period]
 
@@ -91,7 +92,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
     NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
                                            args=args,data_T=netmob_T,coverage_period = coverage_period,
-                                           freq = FREQ,step_ahead = STEP_AHEAD,
+                                           freq = FREQ,step_ahead = STEP_AHEAD, horizon_step = HORIZON_STEP,
                                            name=NAME,tensor_limits_keeper=tensor_limits_keeper) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))

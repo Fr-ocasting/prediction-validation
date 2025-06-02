@@ -9,6 +9,7 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
           'stacked_contextual': False,
 
           'step_ahead': 10,
+          'horizon_step':5, # 
             'station' : [],
             'freq': '6min',
             'H':10,
@@ -31,7 +32,7 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
 
 
             'batch_size': 128, # 16, 32, 64
-            'epochs':300,
+            'epochs':3, # 300
             'optimizer': 'adam',
             'lr': 0.001,
             'weight_decay': 0.0015,
@@ -54,7 +55,10 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
                                                     'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
                                                     'NetMob_expanded' : '', # '' # '_expanded'
                                                     'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                    'vision_model_name' : None
+                                                    'vision_model_name' : None,
+                                                    #'H' : ,
+                                                    #'D': ,
+                                                    #'W': , 
                                         },
                                     # 'netmob_POIs': {'compute_node_attr_with_attn':False, 
                                     #                 'stacked_contextual': True,

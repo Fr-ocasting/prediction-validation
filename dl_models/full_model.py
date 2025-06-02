@@ -409,13 +409,13 @@ class full_model(nn.Module):
             #x = torch.Tensor().to(x)
             x = torch.empty(0, device=x.device, dtype=x.dtype)
 
-        print('\nx before stacking new channels:',x.size())
-        print('Contextual size : ',[c_i.size() for c_i in contextual])
+        #print('\nx before stacking new channels:',x.size())
+        #print('Contextual size : ',[c_i.size() for c_i in contextual])
         # Spatial Attention and attributing node information: 
         L_node_attributes = self.spatial_attention(x,contextual)
-        print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
+        #print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
         L_node_attributes = self.add_other_node_attributes(L_node_attributes,x,contextual)
-        print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
+        #print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
 
         # [B,N,L] -> [B,1,N,L]
         if x.dim() == 3:
@@ -425,7 +425,7 @@ class full_model(nn.Module):
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attribute(x,L_node_attributes)
 
-        print('x after attributing node information: ',x.size())
+        #print('x after attributing node information: ',x.size())
         """ #A retirer 
         x,extracted_feature = self.forward_feature_extractor_model(x,contextual)        # Tackle NetMob (if exists):
         """
@@ -433,7 +433,7 @@ class full_model(nn.Module):
         #print('extracted_feature: ',extracted_feature.size() if extracted_feature is not None else None)
         x,time_elt = self.forward_calendar_model(x,contextual)         # Tackle Calendar Data (if exists)
 
-        print('x after Calendar model: ',x.size())
+        #print('x after Calendar model: ',x.size())
         #print('CalendarEmbedded Vector: ',time_elt.size() if time_elt is not None else None)
 
         # Core model 

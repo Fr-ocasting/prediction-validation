@@ -67,6 +67,7 @@ def update_json(args,json_file,trial_id,performance,json_save_path):
     json_file['model'][trial_id] = {'args': dic_args,'performance': performance}
 
     # Save Json_file (write binary)
+    #os.chmod(json_save_path, 0o644)
     with open(json_save_path, 'wb') as f:
         pickle.dump(json_file, f)
 

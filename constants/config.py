@@ -143,6 +143,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['W'] = 0
     config['D'] = 1
     config['step_ahead'] = 4
+    config['horizon_step'] = 1 # If >1 then model will predict until config['step_ahead'] by horizon_step. Ex: step_ahead = 4 and horizon_step = 2, then model will step_ahead 2 and step_ahead 4.
     config['L'] = config['H']+config['W']+config['D']
 
     # Split proportion
