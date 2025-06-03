@@ -216,7 +216,9 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
                                       height = height,
                                       bool_show = False,
                                       out_dim_factor=trainer.out_dim_factor,
-                                      nb_step_ahead=trainer.step_ahead)
+                                      nb_step_ahead=trainer.step_ahead,
+                                      horizon_step = trainer.horizon_step,
+                                      freq=trainer.args.freq,)
     
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
 

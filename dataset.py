@@ -393,8 +393,8 @@ class DataSet(object):
             self.Utarget = torch.index_select(self.Utarget, dim=-1, index=self.predicted_indices)
             self.df_verif = self.df_verif.drop(columns=[f"t+{sa}" for sa in range(self.step_ahead) if not sa in  (self.predicted_indices)])
 
-            print('\nself.step_ahead: ',self.step_ahead)
-            print('df_verif: ',self.df_verif.head(2))
+            #print('\nself.step_ahead: ',self.step_ahead)
+            #print('df_verif: ',self.df_verif.head(2))
 
 
 

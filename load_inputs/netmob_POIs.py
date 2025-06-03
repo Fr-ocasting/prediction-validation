@@ -76,6 +76,8 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
         HORIZON_STEP = args.horizon_step * int(args.freq.replace('min','')) // int(FREQ.replace('min',''))
     else:
         indices_dates = [k for k,date in enumerate(coverage_local) if date in coverage_period]
+        STEP_AHEAD = args.step_ahead
+        HORIZON_STEP = args.horizon_step
 
     netmob_T = netmob_T[indices_dates]
     """

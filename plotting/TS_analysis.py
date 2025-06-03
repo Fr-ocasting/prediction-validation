@@ -72,7 +72,7 @@ def drag_selection_box(df,p1,p2=None,p3=None, width=1500, height=150):
     return(select)
 
 
-def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False,out_dim_factor=1,nb_step_ahead=1):
+def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_off_time = [], range = None,width=1500,height=400,bool_show=False,out_dim_factor=1,nb_step_ahead=1,horizon_step=1,freq='6min'):
        '''
        args:
        ------
@@ -95,11 +95,24 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
               df_prediction = []
        if not type(df_prediction) == list:
               df_prediction = [df_prediction]
-              
+
+       if 'min' in freq:
+             freq_num = int(freq.replace('min','')) 
+             freq_label = 'min'
+       elif 'h' in freq:
+             freq_num = int(freq.replace('h','')) 
+             freq_label = 'h'
+       elif 'd' in freq:
+             freq_num = int(freq.replace('D',''))
+             freq_label = 'D'
+       else:
+             raise ValueError(f"Frequency {freq} not recognized. Use 'min', 'h', or 'd'.")
+       
+
        for df_prediction_i in df_prediction:
               for column_i in df_prediction_i.columns:
                      station_i = column_i[0]
-                     horizon = int(column_i[1][1:])
+                     horizon = int(column_i[1][1:])*horizon_step
                      q_i = int(column_i[2][1:])
                      ind_station = station.index(station_i)
 
@@ -112,7 +125,8 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
                             color = Plasma256[int(ind_station*255/len(station))])
 
                      # Add legend
-                     legend_str = f'Pred_{station_i}_h{horizon}'
+
+                     legend_str = f'Pred_{station_i}_{horizon*freq_num}{freq_label}'
                      if out_dim_factor>1: legend_str = f"{legend_str}_q{q_i}"
                      legend_it.append((legend_str, [c]))
 
@@ -202,14 +216,16 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
               legend = Legend(items=legend_it)
               p.add_layout(legend, 'below')
 
-              if trainer.args.loss_function_type in ['MSE','masked_mae','masked_mse','huber_loss','masked_huber_loss']:
-                     test_mae = ' // '.join([str_valeur(trainer.performance['test_metrics'][f'mae_h{h+1}']) for h in range(trainer.args.step_ahead)])
-                     test_mse =' // '.join([str_valeur(trainer.performance['test_metrics'][f'mse_h{h+1}']) for h in range(trainer.args.step_ahead)])
+              if trainer.args.loss_function_type in ['MSE','masked_mae','masked_mse','HuberLoss','huber_loss','masked_huber_loss']:
+                     test_mae = ' // '.join([str_valeur(trainer.performance['test_metrics'][f'mae_h{h}']) for h in range(trainer.args.horizon_step,trainer.args.step_ahead+1,trainer.args.horizon_step)])
+                     test_mse =' // '.join([str_valeur(trainer.performance['test_metrics'][f'mse_h{h}']) for h in range(trainer.args.horizon_step,trainer.args.step_ahead+1,trainer.args.horizon_step)])
                      text = Div(text = f"<b>Test MAE:</b> {test_mae} <br> <b>Test MSE:</b> {test_mse}", width=width, height=height//3)
               elif trainer.args.loss_function_type == 'quantile':
                      test_mpiw = str_valeur(trainer.performance['test_metrics']['MPIW'])
                      test_picp =  "{:.2%}".format(trainer.performance['test_metrics']['PICP'])
                      text = Div(text = f"<b>Test MPIW:</b> {test_mpiw} <br> <b>Test PICP:</b> {test_picp}", width=width, height=height//3)
+              else:
+                    raise NotImplementedError(f"Loss function {trainer.args.loss_function_type} not implemented for plotting")
               layout = column(p, text)
 
        if bool_show:

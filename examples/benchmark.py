@@ -67,6 +67,7 @@ def train_on_ds(ds,args,trial_id,save_folder,df_loss):
     print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
     print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
     model = full_model(ds, args)
+    
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
     trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
