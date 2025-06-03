@@ -111,9 +111,9 @@ def iterative_method(dataset,df_verif,train_prop,valid_prop,test_prop):
 
 def similar_length_method(dataset,df_verif,train_prop,valid_prop,test_prop):
     # Init:
-    print('\nsimilar_length_method')
-    print('dataset.step_ahead: ',dataset.step_ahead)
-    print(df_verif.head(2))
+    #print('\nsimilar_length_method')
+    #print('dataset.step_ahead: ',dataset.step_ahead)
+    #print(df_verif.head(2))
     predicted_serie = df_verif[f't+{dataset.step_ahead-1}']
     split_train_valid = int(len(predicted_serie)*train_prop)
     split_valid_test =  int(len(predicted_serie)*(train_prop+valid_prop))

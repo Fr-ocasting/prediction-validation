@@ -223,7 +223,7 @@ if __name__ == "__main__":
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
 
     test_metrics = trainer.performance['test_metrics']
-    loger.add_log(test_metrics, ['rmse','mae','mape','mse'], trial_id, args.step_ahead)
+    loger.add_log(test_metrics, ['rmse','mae','mape','mse'], trial_id, args.step_ahead,args.horizon_step)
 
     # log_final_i = f"All Steps RMSE = {'{:.2f}'.format(test_metrics['rmse_all'])}, MAE = {'{:.2f}'.format(test_metrics['mae_all'])}, MAPE = {'{:.2f}'.format(test_metrics['mape_all'])}, MSE = {'{:.2f}'.format(test_metrics['mse_all'])}"
     # log_final = log_final + f"{trial_id}:   {log_final_i}\n"

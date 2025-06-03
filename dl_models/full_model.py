@@ -69,19 +69,20 @@ class full_model(nn.Module):
     dict_pos_node_attr2ds:       Dict[int, str]
     contextual_positions:        Dict[str, int]
     pos_calendar:                Dict[str,int]    
-    ds_which_need_spatial_attn:  List[str]
-    node_attr_which_need_attn:   List[str]
+    ds_which_need_spatial_attn_per_station:  List[str]
+    ds_which_need_global_attn:   List[str]
     dict_pos_node_attr2ds:       Dict[int, str]
     dict_ds_which_need_attn2pos: Dict[str, List[int]]
     nb_add_channel:              int
 
 
     """
-    ds_which_need_spatial_attn: List of dataset names which need spatial attention.
-        >>> ex : Selection of P pois and then attention to reduce the P time serie to a N*C_pois tmie-serie. 
-
-    node_attr_which_need_attn:  List of dataset names which need sub-attention module at each spatial unit.
+    ds_which_need_spatial_attn_per_station: List of dataset names which need sub-attention module at each spatial unit.
         >>> ex:  Selection of Pi pois around a station i  and then attention to reduce the Pi time serie to a unique channel.
+
+
+    ds_which_need_global_attn:  List of dataset names which need a spatial attention
+        >>> ex : Selection of P spatiaal units and then attention to reduce the P time-series to a N*Cp tmie-serie. 
     """
 
     def __init__(self,dataset, args):
@@ -91,14 +92,14 @@ class full_model(nn.Module):
         self.nb_add_channel = torch.jit.Attribute(0, int)
 
         # Init for the model
-        self.ds_which_need_spatial_attn = list(args.ds_which_need_spatial_attn)
-        self.node_attr_which_need_attn  = list(args.node_attr_which_need_attn)
+        self.ds_which_need_spatial_attn_per_station = list(args.ds_which_need_spatial_attn_per_station)
+        self.ds_which_need_global_attn  = list(args.ds_which_need_global_attn)
         self.dict_pos_node_attr2ds     = args.dict_pos_node_attr2ds
         self.dict_ds_which_need_attn2pos = {}
         self.netmob_vision= None 
         self.te= None        
 
-        self.spatial_attn_by_station = nn.ModuleDict()   # même nom conservé
+        self.spatial_attn_per_station = nn.ModuleDict()   # même nom conservé
         self.spatial_attn_poi        = nn.ModuleDict()
 
         #___ Add positions for each dataset which need spatial attention:
@@ -109,22 +110,9 @@ class full_model(nn.Module):
 
         #___ Add correspondance of position for each couple dataset/ list of positions:
         for pos,ds_name in self.dict_pos_node_attr2ds.items():     # ex: (pos,ds_name) = (2,'subway_out')
-            if ds_name in self.node_attr_which_need_attn:        
+            if ds_name in self.ds_which_need_global_attn:        
                 self.dict_ds_which_need_attn2pos[ds_name]= pos
 
-        # Init Attention modules: 
-        for ds_name in self.ds_which_need_spatial_attn:
-            if ('netmob' in ds_name) or ('subway_out' in ds_name):
-                init_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(self.contextual_positions[ds_name]))]
-                self.spatial_attn_by_station[ds_name] = nn.ModuleList([ load_spatial_attn_model(args, query_dim=1, init_spatial_dim=d) for d in init_dims ])
-            else:
-                raise NotImplementedError(f"Dataset {ds_name} has not been implemented for spatial selection / spatial attention")
-
-        for ds_name_i in self.node_attr_which_need_attn:
-            init_dim = getattr(args, f"n_units_{ds_name_i}")
-            self.spatial_attn_poi[ds_name_i] = load_spatial_attn_model(args, query_dim=args.num_nodes, init_spatial_dim=init_dim )
-        # ...
-        
 
         if dataset.target_data in args.dataset_names :
             self.remove_trafic_inputs = False
@@ -290,33 +278,35 @@ class full_model(nn.Module):
     """
     
     def tackle_node_attributes(self,args):
-        for dataset_name in self.ds_which_need_spatial_attn:
+        for dataset_name in self.ds_which_need_spatial_attn_per_station:
             position_i = getattr(args,f"pos_{dataset_name}")
             setattr(self,f"pos_{dataset_name}",position_i)
             for k,pos_i in enumerate(getattr(self,f"pos_{dataset_name}")):
                 setattr(self,f"n_units_{dataset_name}_{k}",getattr(args,f"n_units_{dataset_name}_{k}"))
 
-        for dataset_name_i in self.node_attr_which_need_attn: 
+        for dataset_name_i in self.ds_which_need_global_attn: 
             setattr(self,f"n_units_{dataset_name_i}", getattr(args,f"n_units_{dataset_name_i}"))
 
-        if ('netmob_POIs' in args.dataset_names) and (args.contextual_kwargs['netmob_POIs']['stacked_contextual']) and (not args.contextual_kwargs['netmob_POIs']['compute_node_attr_with_attn']):
+        if ('netmob_POIs' in args.contextual_dataset_names) and \
+            (args.contextual_kwargs['netmob_POIs']['stacked_contextual']) and \
+                (not args.contextual_kwargs['netmob_POIs']['compute_node_attr_with_attn']):
             self.nb_add_channel = len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_apps'])*len(args.contextual_kwargs['netmob_POIs']['NetMob_transfer_mode'])*len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']) 
 
     def build_spatial_attn_modules(self,args):
 
-        for ds_name in self.ds_which_need_spatial_attn:
+        for ds_name in self.ds_which_need_spatial_attn_per_station:
             if ('netmob' in ds_name) or ('subway_out' in ds_name):
-                init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))]
-                self.spatial_attn_by_station[ds_name] = nn.ModuleList([
+                init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))] # range(len(self.contextual_positions[ds_name]))
+                self.spatial_attn_per_station[ds_name] = nn.ModuleList([
                     load_spatial_attn_model(args, query_dim=1, init_spatial_dim=init_spatial_dim)
                     for init_spatial_dim in init_spatial_dims
                 ])
             else:
                 raise NotImplementedError(f"Dataset {ds_name} has not been implemented for spatial selection / spatial attention")
-
-        for ds in self.node_attr_which_need_attn:
-            init_spatial_dim = getattr(args, f"n_units_{ds}")
-            self.spatial_attn_poi[ds] = load_spatial_attn_model(args, query_dim=args.num_nodes, init_spatial_dim=init_spatial_dim)
+            
+        for ds_name_i in self.ds_which_need_global_attn:
+            init_spatial_dim = getattr(args, f"n_units_{ds_name_i}")
+            self.spatial_attn_poi[ds_name_i] = load_spatial_attn_model(args, query_dim=args.num_nodes, init_spatial_dim=init_spatial_dim)
 
             
     def stack_node_attribute(self,x: torch.Tensor, 
@@ -339,8 +329,8 @@ class full_model(nn.Module):
 
         #print('Spatial Attention for Node Attributes')
         L_node_attributes: List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
-        #print('ds_which_need_spatial_attn: ',self.ds_which_need_spatial_attn)
-        for ds_name, attn_list in self.spatial_attn_by_station.items():
+        #print('ds_which_need_spatial_attn_per_station: ',self.ds_which_need_spatial_attn_per_station)
+        for ds_name, attn_list in self.spatial_attn_per_station.items():
             print('Dataset: ',ds_name)
             pos_list = self.contextual_positions[ds_name] 
 
@@ -368,8 +358,9 @@ class full_model(nn.Module):
         It is as example the case for 'subway-out' as contextual data for 'subway-in'. 
         We directly can attribute an attribute  
         '''
+        print('\nAdd Other Node Attributes')
         for pos_i,ds_name_i in self.dict_pos_node_attr2ds.items():
-            if not ds_name_i in self.node_attr_which_need_attn:
+            if not ds_name_i in self.ds_which_need_global_attn:
                 node_attr = contextual[pos_i] 
                 if ds_name_i == 'netmob_POIs':
                     #permute [B,P,L] ->  [B,L,P]  // reshape : [B,L,P] ->  [B,L,N,C]
@@ -382,16 +373,23 @@ class full_model(nn.Module):
                 L_node_attributes.append(node_attr)
             
 
-        for ds_name_i,attetion_module_i in self.spatial_attn_poi.items():
+        for ds_name_i,attention_module_i in self.spatial_attn_poi.items():
+            print('ds_name_i: ',ds_name_i)
+            print('Attention Module: ',attention_module_i)
             pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
             node_attr = contextual[pos_i] 
-            node_attr = attetion_module_i(x.permute(0, 2, 1),node_attr.permute(0, 2, 1))   # [B,L,Z*N]
+            print('node_attr size before attention: ',node_attr.size())
+            print('Query / Key - Values: ',x.permute(0, 2, 1).size(),node_attr.permute(0, 2, 1).size())
+            node_attr = attention_module_i(x.permute(0, 2, 1),node_attr.permute(0, 2, 1))   # [B,L,Z*N]
+            print('node_attr size after attention: ',node_attr.size())
             node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.num_nodes, -1)  # [B,L,N,Z]
             node_attr = node_attr.permute(0, 3, 2, 1)    # [B,C,N,L]
+            print('node_attr size after reshape/permute: ',node_attr.size())
             if node_attr is not None:
                 if node_attr.dim() == 3:
                     node_attr = node_attr.unsqueeze(1)
                 L_node_attributes.append(node_attr)
+        blabla
         return L_node_attributes
 
     def forward(self,x: Tensor,
@@ -404,18 +402,18 @@ class full_model(nn.Module):
             >>>> contextual[netmob_position]: [B,N,C,H,W,L]
             >>>> contextual[calendar]: [B]
         '''
-        #print('\nx size before forward: ',x.size())
+        print('\nx size before forward: ',x.size())
         if self.remove_trafic_inputs:
             #x = torch.Tensor().to(x)
             x = torch.empty(0, device=x.device, dtype=x.dtype)
 
         #print('\nx before stacking new channels:',x.size())
-        #print('Contextual size : ',[c_i.size() for c_i in contextual])
+        print('Contextual size : ',[c_i.size() for c_i in contextual])
         # Spatial Attention and attributing node information: 
         L_node_attributes = self.spatial_attention(x,contextual)
-        #print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
+        print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
         L_node_attributes = self.add_other_node_attributes(L_node_attributes,x,contextual)
-        #print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
+        print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
 
         # [B,N,L] -> [B,1,N,L]
         if x.dim() == 3:
@@ -425,7 +423,7 @@ class full_model(nn.Module):
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attribute(x,L_node_attributes)
 
-        #print('x after attributing node information: ',x.size())
+        print('x after stacking node attribute: ',x.size())
         """ #A retirer 
         x,extracted_feature = self.forward_feature_extractor_model(x,contextual)        # Tackle NetMob (if exists):
         """

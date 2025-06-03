@@ -50,6 +50,7 @@ class Trainer(object):
         self.loss_function = loss_function
         self.out_dim_factor = dataset.out_dim_factor
         self.step_ahead = dataset.step_ahead
+        self.horizon_step = dataset.horizon_step
         self.metrics = args.metrics
 
         if args.loss_function_type in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']:
@@ -255,13 +256,13 @@ class Trainer(object):
                 # Keep Track on Test Metrics
                 Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False,normalizer=normalizer)
                 test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = self.metrics,
-                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {})
+                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {},horizon_step = self.horizon_step)
                 self.performance.update({'test_metrics': test_metrics})
 
                 # Keep Track on Valid Metrics:
                 Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid',track_loss=False,normalizer=normalizer)
                 valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = self.metrics,
-                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {})
+                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {},horizon_step = self.horizon_step)
                 self.performance.update({'valid_metrics': valid_metrics})    
                 # ...
 

@@ -1,6 +1,6 @@
 SEED = 1
 
-config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'],
+config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'], # ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'],
           'target_data': 'CRITER_3_4_5_lanes_flow',
           'dataset_for_coverage': ['CRITER_3_4_5_lanes_flow','netmob_POIs'],
           'model_name': 'STAEformer',
@@ -50,12 +50,13 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
             
             'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
                                                    'stacked_contextual': True,
-                                                   'NetMob_selected_apps' : ['Google_Maps','Deezer'],
+                                                   'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
                                                     'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
                                                     'NetMob_expanded' : '', # '' # '_expanded'
                                                     'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
                                                     'vision_model_name' : None,
+                                                    'use_only_for_common_dates': False # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
                                                     #'H' : ,
                                                     #'D': ,
                                                     #'W': , 
@@ -75,6 +76,7 @@ config = {'dataset_names' : ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs']
                                                    'vision_model_name': None, # Define the type of model used to extract contextual information from NetMob
                                                    'vision_input_type': None, # 'image_per_stations' # 'unique_image_through_lyon'  
                                                    'grn_out_dim': 0, # If >0 then stack a GRN layer to the output module
+                                                    'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
                                         },
                                     }
 }

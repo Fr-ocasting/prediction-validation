@@ -308,6 +308,14 @@ def update_modif(args):
         if hasattr(args,'TGE_num_heads'): del args.TGE_num_heads
         if hasattr(args,'TGE_FC_hdim'): del args.TGE_FC_hdim
 
+    if hasattr(args,'contextual_kwargs'):
+        remove_from_dict = []
+        for ds_name in args.contextual_kwargs.keys():
+            if ds_name not in args.dataset_names:
+                remove_from_dict.append(ds_name)
+        for ds_name in remove_from_dict:
+            del args.contextual_kwargs[ds_name]
+
     if args.calib_prop is None:
         if hasattr(args,'conformity_scores_type'): del args.conformity_scores_type
         if hasattr(args,'quantile_method'): del args.quantile_method

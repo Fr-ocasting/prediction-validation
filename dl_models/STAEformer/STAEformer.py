@@ -132,7 +132,8 @@ class STAEformer(nn.Module):
         num_layers=3,
         dropout=0.1,
         use_mixed_proj=True,
-        contextual_positions = {}
+        contextual_positions = {},
+        horizon_step = 1,
     ):
         super().__init__()
 
@@ -142,6 +143,7 @@ class STAEformer(nn.Module):
         self.steps_per_day = 24*time_step_per_hour
         self.input_dim = C
         self.output_dim = out_dim_factor
+        self.horizon_step = horizon_step 
         self.input_embedding_dim = input_embedding_dim
         self.tod_embedding_dim = tod_embedding_dim
         self.dow_embedding_dim = dow_embedding_dim
@@ -186,11 +188,11 @@ class STAEformer(nn.Module):
             self.adaptive_embedding = None
 
         if use_mixed_proj:
-            self.output_proj = nn.Linear(self.in_steps * self.model_dim, self.out_steps * self.output_dim)
+            self.output_proj = nn.Linear(self.in_steps * self.model_dim, self.out_steps * self.output_dim// self.horizon_step)
             self.temporal_proj = None
         else:
-            self.temporal_proj = nn.Linear(self.in_steps, self.out_steps)
-            self.output_proj = nn.Linear(self.model_dim, self.output_dim)
+            self.temporal_proj = nn.Linear(self.in_steps, self.out_steps// self.horizon_step)
+            self.output_proj = nn.Linear(self.model_dim, self.out_steps * self.output_dim// self.horizon_step)
 
         self.attn_layers_t = nn.ModuleList(
             [
@@ -212,6 +214,8 @@ class STAEformer(nn.Module):
     def forward(self,  x: Tensor,
                 x_vision: Optional[Tensor] = None, 
                 x_calendar: Optional[Tensor] = None) -> Tensor:
+        
+        #print('x shape before input_proj:', x.shape)
         if x_vision is not None:
             raise NotImplementedError("tackling x_vision has not been implemented")
         
@@ -228,10 +232,13 @@ class STAEformer(nn.Module):
             # x: (batch_size, in_steps, num_nodes, input_dim+tod+dow=3)
             batch_size = x.shape[0]
             x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
+            #print('x shape after input_proj:', x.shape)
+            #print('x_calendar shape:', x_calendar.shape)
             
             # Init features with empty tensor with 0 channels
             features = torch.empty(x.size(0), x.size(1), x.size(2), 0,dtype=x.dtype, device=x.device)  
 
+            #print('features shape:', features.shape)
             if self.tod_embedding is not None:
                 tod = x_calendar[..., self.pos_tod]
                 tod_emb = self.tod_embedding( (tod * self.steps_per_day).long() )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
@@ -262,14 +269,14 @@ class STAEformer(nn.Module):
             if self.temporal_proj is None:
                 out = x.transpose(1, 2)  # (batch_size, num_nodes, in_steps, model_dim)
                 out = out.reshape( batch_size, self.num_nodes, self.in_steps * self.model_dim)
-                out = self.output_proj(out).view(batch_size, self.num_nodes, self.out_steps, self.output_dim)
-                out = out.transpose(1, 2)  # (batch_size, out_steps, num_nodes, output_dim)
+                out = self.output_proj(out).view(batch_size, self.num_nodes, self.out_steps//self.horizon_step, self.output_dim)
+                out = out.transpose(1, 2)  # (batch_size, self.out_steps//self.horizon_step, num_nodes, output_dim)
             else:
                 out = x.transpose(1, 3)  # (batch_size, model_dim, num_nodes, in_steps)
-                out = self.temporal_proj(out)  # (batch_size, model_dim, num_nodes, out_steps)
-                out = self.output_proj(out.transpose(1, 3) )  # (batch_size, out_steps, num_nodes, output_dim)
+                out = self.temporal_proj(out)  # (batch_size, model_dim, num_nodes, self.out_steps//self.horizon_step)
+                out = self.output_proj(out.transpose(1, 3) )  # (batch_size, self.out_steps//self.horizon_step, num_nodes, output_dim)
             
-            out = out.permute(0,3,2,1)  #  (batch_size, output_dim, num_nodes, out_steps )
+            out = out.permute(0,3,2,1)  #  (batch_size, output_dim, num_nodes, self.out_steps//self.horizon_step )
 
             return out
 

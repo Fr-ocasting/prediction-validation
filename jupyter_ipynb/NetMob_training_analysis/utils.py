@@ -88,7 +88,7 @@ def load_trained_model(model_args,ds,model_fold_i,folder_name):
 
 def get_metrics_from_test(trainer,ds,metric_list = ['mse','mae','mape','mase']):
     Preds,Y_true,T_labels = trainer.testing(ds.normalizer)
-    dic_pred_metrics = evaluate_metrics(Preds,Y_true,metric_list)
+    dic_pred_metrics = evaluate_metrics(Preds,Y_true,metric_list,horizon_step = ds.horizon_step)
     return dic_pred_metrics
 
 def load_model_args(folder_name):

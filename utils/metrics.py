@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 from PI.PI_object import PI_object
 from utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape,RMSELoss
 
-def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None):
+def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None, horizon_step = None):
     '''
     Args:
     ------
@@ -41,10 +41,10 @@ def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_m
     if ('PICP' in metrics) or ('MPIW' in metrics): 
         dic_metric,metrics  = evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics)
 
-    dic_metric  = evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=previous)
+    dic_metric  = evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous,horizon_step)
     return(dic_metric)
 
-def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=None):
+def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous,horizon_step):
     '''
     Tackle the case of single point prediction
     '''
@@ -59,10 +59,10 @@ def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous=None)
             else:
                 fun = load_fun(metric,previous=previous)
                 error = fun(Preds_i,Y_true_i).item()
-            dic_metric[f"{metric}_h{out_dim+1}"] = error
+            dic_metric[f"{metric}_h{(out_dim+1)*horizon_step}"] = error
 
     for metric in metrics:
-        dic_metric[f"{metric}_all"] = np.mean(np.array([dic_metric[f"{metric}_h{out_dim+1}"] for out_dim in range(Preds.size(-1))]))
+        dic_metric[f"{metric}_all"] = np.mean(np.array([dic_metric[f"{metric}_h{(out_dim+1)*horizon_step}"] for out_dim in range(Preds.size(-1))]))
     return dic_metric
 
 def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):

@@ -68,7 +68,7 @@ def init_metrics(args):
     dic_results = {}
     for training_mode in training_mode_list:
         for metric in metric_list:
-            for h in range(1,args.step_ahead+1):  
+            for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step):  
                 dic_results[f'{training_mode}_{metric}_h{h}'] = []
     # ...
     return valid_losses,df_loss,training_mode_list,metric_list,dic_results
@@ -130,7 +130,7 @@ def keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_i,f
     # Keep track on metrics :
     for training_mode in training_mode_list:
         for metric in metric_list: 
-            for h in range(1,args.step_ahead+1):       
+            for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step):       
                 l = trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"]   
                 dic_results[f'{training_mode}_{metric}_h{h}'].append(l)
 
@@ -185,7 +185,7 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
     # ...
 
     # Metrics Test :
-    model_metrics =  dic_results[f'{training_mode_list[0]}_{metric_list[0]}_h1']
+    model_metrics =  dic_results[f'{training_mode_list[0]}_{metric_list[0]}_h{args.horizon_step}']
     nb_folds = len(model_metrics)
     multi_cols =  pd.MultiIndex.from_product([metric_list, range(nb_folds),range(args.step_ahead)], 
                                             names=["metric", "fold","horizon"])
@@ -194,7 +194,7 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
 
     for training_mode in training_mode_list:
         for metric in metric_list:
-            for h in range(1,args.step_ahead+1):  
+            for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step):  
                 model_metrics = dic_results[f'{training_mode}_{metric}_h{h}']
                 for fold_idx, value in enumerate(model_metrics):
                     df_metrics_by_folds.loc[training_mode, (metric, fold_idx,h)] = value
@@ -206,16 +206,16 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
     if False:
         for metric in metric_list:
             print(f'\ntest_{metric}')
-            for h in range(1,args.step_ahead+1):  
+            for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step):  
                 print(dic_results[f'test_{metric}_h{h}'])
 
 
-    mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
-    var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(1,args.step_ahead+1)}
+    mean_on_K_fold = {f"{metric}_h{h}" : [np.mean(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step)}
+    var_on_K_fold = {f"VAR_{metric}_h{h}" : [np.var(dic_results[f'{training_mode}_{metric}_h{h}']) for training_mode in training_mode_list] for metric in metric_list for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step)}
     dict_metrics_on_K_fold.update(mean_on_K_fold)
     dict_metrics_on_K_fold.update(var_on_K_fold)
     if (args.evaluate_complete_ds):
-        dict_metrics_on_K_fold.update({f'{metric}_h{h}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"] for training_mode in training_mode_list ] for metric in metric_list for h in range(1,args.step_ahead+1)})
+        dict_metrics_on_K_fold.update({f'{metric}_h{h}_complete_ds':[trainer.performance[f'{training_mode}_metrics'][f"{metric}_h{h}"] for training_mode in training_mode_list ] for metric in metric_list for h in range(args.horizon_step,args.step_ahead+1,args.horizon_step)})
     df_metrics = pd.DataFrame(index = training_mode_list, 
                             data = dict_metrics_on_K_fold
                             )   

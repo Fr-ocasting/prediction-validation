@@ -25,6 +25,7 @@ def load_calendar(subway_ds):
         keep these information into 'dict_calendar_U_{training_mode}'
     """
     # Get date associated to last step ahead of prediction:
+
     dates = subway_ds.df_verif[f"t+{subway_ds.step_ahead-1}"]
     df_calendar = calendar_inputs(dates,city = subway_ds.city)
 
@@ -44,13 +45,15 @@ def load_calendar(subway_ds):
                                                                                             calendar_tensor,
                                                                                             tensor_limits_keeper,
                                                                                             f"{calendar_type}_OHE")
+        raise ImportError("Je crois que y a une erreur dans cette partie. On utilise uniquement subway_ds.step_ahead-1. \
+                          Alors qu'il faudrait utiliser [subway_ds.step_ahead- 1,..., subway_ds.step_ahead- step_ahead]")
             
     if 'calendar' in subway_ds.args.dataset_names:
         print('\n Loading calendar inputs ...')
         calendar_types = subway_ds.args.calendar_types
         # Get dates associated to 
         date_related_tensors = {calendar_type: pd.DataFrame() for calendar_type in calendar_types}
-        for c in subway_ds.df_verif.columns[:-subway_ds.step_ahead]:
+        for c in subway_ds.df_verif.columns[:-subway_ds.step_ahead//subway_ds.horizon_step]:
             date_i = subway_ds.df_verif[c]
             df_calendar_i = calendar_inputs(date_i,city = subway_ds.city)
             for calendar_type in calendar_types:
