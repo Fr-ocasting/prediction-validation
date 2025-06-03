@@ -3,7 +3,8 @@ from plotting.plotting_bokeh import plot_bokeh
 from trainer import Trainer
 from utils.utilities_DL import choose_optimizer, load_scheduler,get_loss
 from K_fold_validation.K_fold_validation import KFoldSplitter
-
+from torchinfo import summary
+from profiler.profiler import model_memory_cost
 # =======================================================================================================================
 # =======================================================================================================================
 
@@ -26,6 +27,8 @@ def load_everything(args):
     model = full_model(subway_ds, args).to(args.device)
     print('number of total parameters: {}'.format(sum([p.numel() for p in model.parameters()])))
     print('number of trainable parameters: {}'.format(sum([p.numel() for p in model.parameters() if p.requires_grad])))
+    model_memory_cost(model)
+    summary(model)
     
     # Load Optimizer, Scheduler, Loss function: 
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)

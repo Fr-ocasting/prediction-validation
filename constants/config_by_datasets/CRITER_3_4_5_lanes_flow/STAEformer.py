@@ -1,6 +1,6 @@
 SEED = 1
 
-config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'], # ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'],
+config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar'], # ['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'], # ['CRITER_3_4_5_lanes_flow','calendar'],
           'target_data': 'CRITER_3_4_5_lanes_flow',
           'dataset_for_coverage': ['CRITER_3_4_5_lanes_flow','netmob_POIs'],
           'model_name': 'STAEformer',
@@ -32,8 +32,8 @@ config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'],
 
 
             'batch_size': 128, # 16, 32, 64
-            'epochs':3, # 300
-            'optimizer': 'adam',
+            'epochs':100, # 300
+            'optimizer': 'adamw',
             'lr': 0.001,
             'weight_decay': 0.0015,
             'torch_scheduler_type': 'MultiStepLR',
@@ -56,7 +56,11 @@ config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar','netmob_POIs'],
                                                     'NetMob_expanded' : '', # '' # '_expanded'
                                                     'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
                                                     'vision_model_name' : None,
-                                                    'use_only_for_common_dates': False # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                    'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                    'attn_kwargs': {'latent_dim' : 4 ,
+                                                                    'dim_feedforward' : 64,
+                                                                    'num_heads' : 3 ,
+                                                                    'dim_model' : 48,}  
                                                     #'H' : ,
                                                     #'D': ,
                                                     #'W': , 

@@ -93,5 +93,4 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
     return processed_input
 
 if __name__ == "__main__":
-    # blabla
-    blabla
+    print('Main vide')

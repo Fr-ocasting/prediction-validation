@@ -137,7 +137,6 @@ class TemporalConvLayer(nn.Module):
         #print('x after align: ',x_in.size()) 
         x_causal_conv = self.causal_conv(x)
         #print('x after causal conv: ',x_causal_conv.size())
-        #blabla 
 
         if self.act_func == 'glu' or self.act_func == 'gtu':
             x_p = x_causal_conv[:, : self.c_out, :, :]
@@ -327,7 +326,6 @@ class STConvBlock(nn.Module):
         x = self.tc2_ln(x.permute(0, 2, 3, 1)).permute(0, 3, 1, 2)
         x = self.dropout(x)
         #print('\nShape en sortie du STConvBlock: ',x.size(),'\n')
-        #blabla
 
         return x
 
@@ -438,7 +436,6 @@ class OutputBlock(nn.Module):
             x = self.tc1_ln(x.permute(0, 2, 3, 1)) 
     
         #print('x after norm and permute: ',x.size())
-        #blabla
         return x
 
 
@@ -477,6 +474,5 @@ class OutputBlock(nn.Module):
         #print('x.size after fc2: ',x.size())
         x = x.permute(0, 3, 1, 2)
         #print('output (after permute): ',x.size())
-        #blabla
 
         return x

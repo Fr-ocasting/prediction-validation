@@ -34,24 +34,24 @@ class model(nn.Module):
     ):
         super().__init__()
         #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
+        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout)
         self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
         #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
         #self.outputs = feed_forward(dim_model,dim_feedforward)
-        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout)
 
         #self.avgpool = nn.AvgPool3d((node_ids,1,1))
         #self.avgpool = nn.AvgPool2d((node_ids,1))
     def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
         """
         inputs: 
-        >>> x_flow_station [B,L,1] or [B,L,N]   (= Query)  
-        >>> x_contextual [B,L,CP] (= Key = Values)  
+        >>> x_flow_station [B,L,1] or [B,L,N]   (= QUERY)  
+        >>> x_contextual [B,L,CP] (= KEY = VALUES)  
 
-        Apply Spatial Attention on values 'x_contextual' and is spatial axis of dimension 'P'
+        Apply Spatial Attention on values 'x_contextual' and its spatial axis of dimension 'P'
         >>> x_mha : [B,L,d]  # multi-head attention   
         >>> x_fc : [B,L,z]   # Reduce to dimension z (expect z << d)
 
-        outputs: x_fc [B,L,z]  
+        outputs: x_fc [B,L,z*1]   or [B,L,z*N]  (where z is the output dimension of the feedforward layer)
         """
         #print('\nFoward Spatial Attention: ')
         #print('Query (x_flow_station):',x_flow_station.size())

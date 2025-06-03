@@ -34,6 +34,8 @@ from PI.PI_object import PI_object
 from PI.PI_calibration import Calibrator
 from constants.paths import SAVE_DIRECTORY
 
+from torchinfo import summary
+from profiler.profiler import model_memory_cost
 
 
 class Trainer(object):
@@ -62,6 +64,9 @@ class Trainer(object):
             self.alpha = args.alpha
         else:
             raise NotImplementedError(f"metrics associated to {args.loss_function_type} has not been implemented")
+        
+        model_memory_cost(model)
+        summary(model)
         
         if args.torch_compile == 'compile':
             self.model = torch.compile(model,

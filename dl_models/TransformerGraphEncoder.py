@@ -95,7 +95,6 @@ class AttentionHead(nn.Module):
         x=self.attention(Q,K,V).transpose(1,2).contiguous().view(batch_size,seq_length,graph_size, self.d_k)
         
         #print('x after attention: ',x.size())
-        #blabla
         return x
 
 class MultiHeadAttention(nn.Module):
@@ -238,6 +237,5 @@ class TransformerGraphEncoder(nn.Module):
             #print('x.size after layer: ', x.size())
 
         #print('output from the temporal MHA (before output FC layer): ',x.size())
-        #blabla
 
         return x
