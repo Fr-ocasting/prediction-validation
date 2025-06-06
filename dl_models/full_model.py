@@ -55,6 +55,7 @@ def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim):
     args_ds_i.dropout = args.dropout
     args_ds_i.query_dim = query_dim  # input dim of Query 
     args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
+    args_ds_i.keep_topk = True # Keep only 10% of the best weights in the attention module
     
     if hasattr(args.contextual_kwargs[ds_name], 'attn_kwargs') :
         for key,value in vars(args.contextual_kwargs[ds_name]['attn_kwargs']).items():
@@ -153,7 +154,7 @@ class full_model(nn.Module):
         args.time_step_per_hour = int(dataset.time_step_per_hour)
         core_model, args = load_model(dataset, args)
         self.core_model = core_model
-
+        self.L = args.L
         self.num_nodes = args.num_nodes
 
     """ #A retirer 
@@ -311,7 +312,8 @@ class full_model(nn.Module):
             
         for ds_name in self.ds_which_need_global_attn:
             init_spatial_dim = getattr(args, f"n_units_{ds_name}")
-            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.num_nodes, init_spatial_dim=init_spatial_dim)
+            #self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.num_nodes, init_spatial_dim=init_spatial_dim)
+            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, init_spatial_dim=args.L)
 
             
     def stack_node_attribute(self,x: torch.Tensor, 
@@ -383,12 +385,23 @@ class full_model(nn.Module):
             #print('Attention Module: ',attention_module_i)
             pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
             node_attr = contextual[pos_i] 
+
+
+
+            # Temporal Attention : Query [B,N,L] and Key/Values [B,P,L]
             #print('node_attr size before attention: ',node_attr.size())
             #print('Query / Key - Values: ',x.permute(0, 2, 1).size(),node_attr.permute(0, 2, 1).size())
-            node_attr = attention_module_i(x.permute(0, 2, 1),node_attr.permute(0, 2, 1))   # [B,L,Z*N]
-            #print('node_attr size after attention: ',node_attr.size())
-            node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.num_nodes, -1)  # [B,L,N,Z]
-            node_attr = node_attr.permute(0, 3, 2, 1)    # [B,C,N,L]
+            # node_attr = attention_module_i(x.permute(0, 2, 1),node_attr.permute(0, 2, 1))   # [B,L,Z*N]
+            # node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.num_nodes, -1)  # [B,L,N,Z]
+            # node_attr = node_attr.permute(0, 3, 2, 1)    # [B,Z,N,L]
+
+            # Spatial Attention : Query [B,N,L] and Key/Values [B,P,L]
+            # print('attention_module_i: ',attention_module_i)
+            # print('Query / Key - Values: ',x.size(),node_attr.size())
+            node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
+            node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
+            node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
+
             #print('node_attr size after reshape/permute: ',node_attr.size())
             if node_attr is not None:
                 if node_attr.dim() == 3:

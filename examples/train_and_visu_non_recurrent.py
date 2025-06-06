@@ -5,9 +5,10 @@ import pandas as pd
 import numpy as np 
 import geopandas as gpd 
 import torch
-#if torch.cuda.is_available():
-#    torch.backends.cuda.matmul.allow_tf32 = True
-#    torch.backends.cudnn.allow_tf32  = True
+if torch.cuda.is_available():
+   torch.backends.cuda.matmul.allow_tf32 = True
+   torch.backends.cudnn.allow_tf32  = True
+   
 from argparse import Namespace
 # Get Parent folder : 
 current_path = os.getcwd()
@@ -238,7 +239,7 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
             col1 = column(p1,p3,select)   
         else:
             col1 = column(p1,select) 
-    height_loss = (2+1/3)*height if p2 is not None else height
+    height_loss = int((2+1/3)*height) if p2 is not None else height
     col2 = plot_loss_from_trainer(trainer,width=width//2,height=height_loss,bool_show=False)
     grid = row(col1,col2)
 

@@ -1,8 +1,8 @@
 SEED = 1
 
-config = {'dataset_names' : ['subway_in','calendar'],
+config = {'dataset_names' : ['subway_in','calendar','netmob_POIs'],
           'target_data': 'subway_in',
-          'dataset_for_coverage': ['subway_in','netmob_image_per_station'],
+          'dataset_for_coverage': ['subway_in','netmob_POIs'],
           'model_name': 'STAEformer',
           'use_target_as_context': False,
           'data_augmentation': False,
@@ -30,13 +30,20 @@ config = {'dataset_names' : ['subway_in','calendar'],
 
             'batch_size': 16, # 16, 32, 64
             'epochs':3,
-            'optimizer': 'adam',
+            'optimizer': 'adamw', #adam
             'lr': 0.001,
             'weight_decay': 0.0015,
-            'torch_scheduler_type': 'MultiStepLR',
             'loss_function_type':'HuberLoss',
-            'torch_scheduler_milestone': [25, 45, 65],
-            'torch_scheduler_gamma':0.1,
+
+            # 'torch_scheduler_type': 'MultiStepLR',
+            # 'torch_scheduler_milestone': [25, 45, 65],
+            # 'torch_scheduler_gamma':  0.1,
+
+            'torch_scheduler_milestone': 20,
+            'torch_scheduler_gamma':0.9925,
+            'torch_scheduler_type': 'warmup',
+            'torch_scheduler_lr_start_factor': 0.3,
+
             'train_prop': 0.6,
             'valid_prop': 0.2,
             'test_prop': 0.2,
@@ -44,4 +51,40 @@ config = {'dataset_names' : ['subway_in','calendar'],
             'standardize': True,
             'minmaxnorm': False,
             'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
+
+            'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                        'stacked_contextual': True,
+                                        'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
+                                        'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                        'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                        'NetMob_expanded' : '', # '' # '_expanded'
+                                        'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                        'attn_kwargs': {'latent_dim' : 4 ,
+                                                        'dim_feedforward' : 64,
+                                                        'num_heads' : 3 ,
+                                                        'dim_model' : 48,}  
+                                        #'H' : ,
+                                        #'D': ,
+                                        #'W': , 
+                            },
+                        # 'netmob_POIs': {'compute_node_attr_with_attn':False, 
+                        #                 'stacked_contextual': True,
+                        #                 'NetMob_selected_apps' : ['Deezer','Google_Maps'],
+                        #                   'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                        #                   'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                        #                   'NetMob_expanded' : '', # '' # '_expanded'
+                        #                   'NetMob_only_epsilon': True, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                        #                 'vision_model_name' : None
+                        #                  },
+
+                        'subway_out': {'compute_node_attr_with_attn':False, 
+                                        'stacked_contextual': True,
+                                        'vision_model_name': None, # Define the type of model used to extract contextual information from NetMob
+                                        'vision_input_type': None, # 'image_per_stations' # 'unique_image_through_lyon'  
+                                        'grn_out_dim': 0, # If >0 then stack a GRN layer to the output module
+                                        'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                            },
+                        }
             }

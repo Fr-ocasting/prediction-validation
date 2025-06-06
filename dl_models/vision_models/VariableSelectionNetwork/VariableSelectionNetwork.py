@@ -337,9 +337,9 @@ class ScaledDotProduct(nn.Module):
         K = K.permute(0,2,1)
 
         #[B, P, P]
-        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
+        scaled_compact = torch.matmul(Q,K)*1.0/math.sqrt(self.d_model)
 
-        attn_weights = self.softmax(scaled_compat)
+        attn_weights = self.softmax(scaled_compact)
 
         #[B, P, P] x [B, P, d] ->   [B, P, d]
         context = torch.matmul(attn_weights,V)
@@ -378,7 +378,7 @@ class AttentionGRU(nn.Module):
     
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout):
+    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout,keep_topk=False):
         super(MultiHeadAttention, self).__init__()
 
         self.d_model = d_model
@@ -398,6 +398,7 @@ class MultiHeadAttention(nn.Module):
         nn.init.xavier_uniform_(self.W_v)
 
         self.layer_norm = nn.LayerNorm(self.d_k)
+        self.keep_topk = keep_topk  # If True then keep only the top 10% of the attention weights
 
     def align_axis(self,query,key,values):
         # Case where only 1 traffic time-serie for P contextual data
@@ -427,11 +428,28 @@ class MultiHeadAttention(nn.Module):
         K = K.transpose(-2, -1)
 
         #[B,n_heads, nb_units, d_k]x[B,n_heads, d_k, P] -> [B,n_heads, nb_units, P]
-        scaled_compat = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
+        scaled_compact = torch.matmul(Q,K)*1.0/math.sqrt(self.d_k)
 
-        # Softmax  ([B,n_heads, nb_units, P]) -> [B,n_heads,nb_units,P]: 
-        attn_weights = self.dropout(self.softmax(scaled_compat))
-        #print('scaled_compat.size: ',scaled_compat.size())
+        # Keep only 10% of the best attention weights: 
+        if self.keep_topk:
+            if scaled_compact.size(-1)>10:
+                nb_of_values = 10 #max(10,int(scaled_compact.size(-1)*0.1) )
+                _, topk_idx = torch.topk(scaled_compact, nb_of_values, dim=-1) 
+                mask = torch.ones_like(scaled_compact) * (-1e6)  # -inf
+                mask.scatter_(-1, topk_idx, 0)                           # add 0 on the top k 
+                scaled_compact = scaled_compact + mask                    # on garde, le reste = 0
+                attn_weights = self.softmax(scaled_compact)  
+            else:
+                attn_weights = self.softmax(scaled_compact)  
+                self.dropout(attn_weights)
+        else:
+            attn_weights = self.softmax(scaled_compact)  
+            self.dropout(attn_weights)
+
+
+
+
+        #print('scaled_compact.size: ',scaled_compact.size())
         #print('attn_weights: ',attn_weights.size())
         #print('attn_weights sum on each head: ',[attn_weights[:,h,nb_unit,:].sum(-1)[0] for h in range(Q.size(1)) for nb_unit in range(Q.size(2))])
 
@@ -455,12 +473,14 @@ class MultiHeadAttention(nn.Module):
         #Projection to a laten space of dimenison d: [B,n_heads, P, d_k]
         #   query x    self.W_q   -->     QxW_q     
         # [B,1,L] x [B,L,d_model] --> [B,1,d_model] --split_head--> [B,n_heads,1,d_model//n_heads] 
+        #print('query,key,values before split_heads: ',query.size(),key.size(),values.size())
+        #print('W_q,W_k,W_v: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
         Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
         K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))
         V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
 
-
         context,attn_weights = self.compute_scaled_dot_product(Q,K,V)
+        #print('context,attn_weights: ',context.size(),attn_weights.size())
 
         #[B,n_heads, nb_units, d_k] -> [B, nb_units, d_models]     
         context = self.combine_heads(context)

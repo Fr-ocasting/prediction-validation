@@ -31,10 +31,12 @@ class model(nn.Module):
         num_heads: int = 3,
         dim_feedforward: int = 32,
         dropout: float = 0.1,
+        keep_topk: bool = False,
     ):
         super().__init__()
         #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
-        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout)
+        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout,keep_topk)
+        #print('query_dim,key_dim,dim_model,num_heads: ',query_dim,key_dim,dim_model,num_heads)
         self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
         #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
         #self.outputs = feed_forward(dim_model,dim_feedforward)
@@ -57,6 +59,8 @@ class model(nn.Module):
         #print('Query (x_flow_station):',x_flow_station.size())
         #print('Key/Values (x_contextual):',x_contextual.size())
         x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
+        self.attn_weight = attn_weight
+
         #print('After MHA:',x_mha.size())
         x_fc = self.feedforward(x_mha)
         #print('After FC:',x_fc.size())
