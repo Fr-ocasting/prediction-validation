@@ -33,6 +33,8 @@ def load_calendar(subway_ds):
     tensor_limits_keeper = subway_ds.tensor_limits_keeper
 
     if 'calendar_embedding' in subway_ds.args.dataset_names:
+        """ When we use calendar embedding, we only considere the calendar information of the element we would like to predict.
+          The embedding of this information is then concatenated to the input / or just before th eoutput module (ie FC layer)"""
         print('\n Loading calendar embedding inputs ...')
         embedding_calendar_types = subway_ds.args.embedding_calendar_types
         # Can be in: ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
@@ -45,8 +47,6 @@ def load_calendar(subway_ds):
                                                                                             calendar_tensor,
                                                                                             tensor_limits_keeper,
                                                                                             f"{calendar_type}_OHE")
-        raise ImportError("Je crois que y a une erreur dans cette partie. On utilise uniquement subway_ds.step_ahead-1. \
-                          Alors qu'il faudrait utiliser [subway_ds.step_ahead- 1,..., subway_ds.step_ahead- step_ahead]")
             
     if 'calendar' in subway_ds.args.dataset_names:
         print('\n Loading calendar inputs ...')

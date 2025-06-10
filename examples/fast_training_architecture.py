@@ -55,7 +55,7 @@ compilation_modification = {'use_target_as_context': False,
                             'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                             'drop_last' : False,  # True
                             'mixed_precision' : False, # True # False
-                            'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace'
+                            'torch_compile' : 'compile' , # 'compile' # 'jit_script' #'trace' # False
 
                             'device': torch.device('cuda:1')
     }
@@ -88,6 +88,8 @@ if __name__ == "__main__":
         print('No config file found for this dataset and model. Using default parameters.')
         SEED = 1
         modification_init = {}
+
+    set_seed(SEED)
     
 
 
@@ -113,7 +115,6 @@ if __name__ == "__main__":
                         dataset_for_coverage=dataset_for_coverage,
                         modification = modification_model)
 
-        set_seed(SEED)
 
 
         # Run the script

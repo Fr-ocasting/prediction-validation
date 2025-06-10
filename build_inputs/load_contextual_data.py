@@ -203,10 +203,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                     else:
                         # Case 2.i:   in case we compute node attributes with attention or in case 'per_station' is in the name of the contextual dataset:
                         if (kwargs_i['compute_node_attr_with_attn']) or ('per_station' in name_i): 
-                            scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
-                            importlib.reload(scrip_args)
-                            latent_dim = scrip_args.args.latent_dim 
-                        
+                            latent_dim = kwargs_i['attn_kwargs']['latent_dim']
                         # Case 2.ii:
                         else:
                             latent_dim = 1

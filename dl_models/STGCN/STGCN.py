@@ -67,12 +67,12 @@ class STGCN(nn.Module):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, args.num_nodes, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding,self.g_constructor))
         self.st_blocks = nn.Sequential(*modules)
 
-        self.vision_concatenation_late = args.args_vision.concatenation_late if hasattr(args.args_vision,'concatenation_late') else False
+        self.vision_concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
         self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
 
         self.Ko = Ko
         self.num_nodes = args.num_nodes
-        if hasattr(args.args_vision,'out_dim'):
+        if  (hasattr(args,'args_vision') and hasattr(args.args_vision,'out_dim')):
             extracted_feature_dim = args.args_vision.out_dim 
         else:
             extracted_feature_dim = None
