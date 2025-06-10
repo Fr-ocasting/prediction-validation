@@ -184,7 +184,27 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
     if len(args.contextual_dataset_names) > 0: 
         contextual_ds,args = tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize)
         for name_i,contextual_ds_i in contextual_ds.items():
-            kwargs_i = args.contextual_kwargs[name_i]
+            if hasattr(args,'contextual_kwargs'):
+                kwargs_i = args.contextual_kwargs[name_i]
+
+            # --- Just to correspond with old version: 
+            else:
+                kwargs_i = {'use_only_for_common_dates':False,
+                            'vision_model_name':args.vision_model_name,
+                            'stacked_contextual':args.stacked_contextual,
+                            'compute_node_attr_with_attn':args.compute_node_attr_with_attn,
+                            'vision_input_type':args.vision_input_type,
+                            'vision_model_name': args.vision_model_name,
+                            }
+                if 'netmob_POIs' in name_i:
+                    kwargs_i['NetMob_selected_apps'] = args.NetMob_selected_apps
+                    kwargs_i['NetMob_transfer_mode'] = args.NetMob_transfer_mode
+                    kwargs_i['NetMob_selected_tags'] = args.NetMob_selected_tags
+                    
+                if not hasattr(args,'contextual_kwargs'):
+                    args.contextual_kwargs = {}
+                args.contextual_kwargs[name_i] = kwargs_i
+            # --- ...
 
             if kwargs_i['use_only_for_common_dates']:
                 remove_from_dict.append(name_i)
