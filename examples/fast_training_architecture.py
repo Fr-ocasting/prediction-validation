@@ -56,6 +56,7 @@ compilation_modification = {'use_target_as_context': False,
                             'drop_last' : False,  # True
                             'mixed_precision' : False, # True # False
                             'torch_compile' : 'compile' , # 'compile' # 'jit_script' #'trace' # False
+                            'unormalize_loss' : True, # False
 
                             'device': torch.device('cuda:1')
     }
@@ -68,7 +69,7 @@ def main(fold_to_evaluate,save_folder,args_init,modification):
     model = full_model(ds, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
-    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None,unormalize_loss = True) 
+    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None,unormalize_loss = args.unormalize_loss) 
     return trainer,ds,model,args
 
 if __name__ == "__main__":
@@ -100,8 +101,9 @@ if __name__ == "__main__":
     for trial_id,modification_i in modifications.items():
         print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
         modification_model = modification_init.copy()
-        modification_model.update(modification_i)
         modification_model.update(compilation_modification)
+        modification_model.update(modification_i)
+
 
         if 'dataset_names' in modification_model.keys():
             dataset_names = modification_model['dataset_names']

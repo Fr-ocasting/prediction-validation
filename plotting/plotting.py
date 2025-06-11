@@ -20,7 +20,7 @@ from PI.PI_object import PI_object
 from utils.utilities_DL import get_associated__df_verif_index
 from utils.metrics import error_along_ts
 
-def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14)):
+def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
     if not(type(Datasets) == list):
         Datasets = [Datasets]
     fig,ax = plt.subplots(figsize=figsize)
@@ -124,6 +124,9 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14)):
 
     #ax.legend()
     ax.legend(bbox_to_anchor=(0.5, -0.05), loc='upper center',fontsize=fontsize) #loc='upper left'
+
+    if save_path is not None:
+        plt.savefig(save_path, format='pdf', bbox_inches='tight')
     plt.show()
 
 def plot_loss(trainer,test_pred,Y_true,window_pred = None):
@@ -150,6 +153,8 @@ def plot_loss(trainer,test_pred,Y_true,window_pred = None):
     ax2.legend()
 
     plt.show()
+
+
 
 
 def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embedding,plot2D = True,plot3D=False):
