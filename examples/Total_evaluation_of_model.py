@@ -287,7 +287,7 @@ if __name__ == '__main__':
                                                     'loss_function_type':'HuberLoss',
                                                     'optimizer': 'adamw',
                                                     'adaptive_embedding_dim': 32,
-                                                    'input_embedding_dim': 12,
+
                                                     'tod_embedding_dim': 6,
                                                     'dow_embedding_dim': 6,
                                                     'feed_forward_dim': 256,

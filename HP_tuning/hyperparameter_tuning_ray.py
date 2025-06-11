@@ -171,7 +171,7 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
     # Get Trial ID (Name of the entire HP-tuning)
     date_id = get_date_id()
     datasets_names = '_'.join(args.dataset_names)
-    model_names = '_'.join([args.model_name,args.args_vision.model_name]) if hasattr(args.args_vision,'model_name')  else args.model_name
+    model_names = '_'.join([args.model_name,args.args_vision.model_name]) if (hasattr(args,'args_vision') and hasattr(args.args_vision,'model_name') ) else args.model_name
     trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
 
     # Keep track only on successfull trials:
