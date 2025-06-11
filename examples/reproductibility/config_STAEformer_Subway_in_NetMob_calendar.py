@@ -603,531 +603,62 @@ modifications = {
                         #                                                                     },
                         #                                                             },   
                         #     },  
-                         'calendar_Google_Maps_Deezer_IRIS_input_dim24_attn_dim64_ff64_h2_ldim2_HP0': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr': 0.00144143,
-                                                                'weight_decay': 0.00685895,
-                                                                'dropout': 0.1,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma': 0.988808,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor': 0.499934,
-                                                                'epochs':500,
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-                                                    
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 24,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                                                                                            },   
-
-                    'calendar_Google_Maps_Deezer_IRIS_input_dim12_attn_dim64_ff64_h2_ldim2_HP0': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr': 0.00144143,
-                                                                'weight_decay': 0.00685895,
-                                                                'dropout': 0.1,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma': 0.988808,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor': 0.499934,
-                                                                'epochs':500,
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-                                                    
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 12,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },
-
-                 'calendar_Google_Maps_Deezer_IRIS_input_dim12_attn_dim64_ff64_h2_ldim2_HP2': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr': 0.00178889,
-                                                                'weight_decay':0.00812294,
-                                                                'dropout': 0.05   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':  0.99079,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor': 0.457083,
-                                                                'epochs':500,
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 12,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },
-
-      'calendar_Google_Maps_Deezer_IRIS_input_dim24_attn_dim64_ff64_h2_ldim2_HP2': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr': 0.00178889,
-                                                                'weight_decay':0.00812294,
-                                                                'dropout': 0.05   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':  0.99079,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor': 0.457083,
-                                                                'epochs':500,
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 24,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },
-
-      'calendar_Google_Maps_Deezer_IRIS_input_dim12_attn_dim64_ff64_h2_ldim2_HP3': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr':  0.00175035,
-                                                                'weight_decay':0.00203832,
-                                                                'dropout': 0.1   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':   0.98754,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor': 0.552248 ,
-                                                                'epochs':500,
-
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 12,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },
+        
 
 
-      'calendar_Google_Maps_Deezer_IRIS_input_dim24_attn_dim64_ff64_h2_ldim2_HP3': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr':  0.00175035,
-                                                                'weight_decay':0.00203832,
-                                                                'dropout': 0.1   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':   0.98754,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor': 0.552248 ,
-                                                                'epochs':500,
+    #   'calendar_Google_Maps_Deezer_IRIS_input_dim24_attn_dim64_ff64_h2_ldim2_HP3': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
+    #                                                             'denoising_names':[],
+    #                                                             'lr':  0.00175035,
+    #                                                             'weight_decay':0.00203832,
+    #                                                             'dropout': 0.1   ,
+    #                                                             'torch_scheduler_milestone': 5,
+    #                                                             'torch_scheduler_gamma':   0.98754,
+    #                                                             'torch_scheduler_type': 'warmup',
+    #                                                             'torch_scheduler_lr_start_factor': 0.552248 ,
+    #                                                             'epochs':500,
 
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
+    #                                                 'loss_function_type':'HuberLoss',
+    #                                                 'optimizer': 'adamw',
+    #                                                 'adaptive_embedding_dim': 32,
+    #                                                 'tod_embedding_dim': 6,
+    #                                                 'dow_embedding_dim': 6,
+    #                                                 'feed_forward_dim': 256,
 
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
+    #                                                 'num_heads': 4,
+    #                                                 'num_layers': 3,
 
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
+    #                                                 'use_mixed_proj': True,
+    #                                                 'freq': '15min',
+    #                                                 'H':6,
+    #                                                 'D':1,
+    #                                                 'W':0,
 
-                                                    'input_embedding_dim': 24,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },
+    #                                                 'input_embedding_dim': 24,
+    #                                                 'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+    #                                                                                             'stacked_contextual': True,
+    #                                                                                             'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
+    #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+    #                                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+    #                                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+    #                                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+    #                                                                                             'vision_model_name' : None,
+    #                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+    #                                                                                             'attn_kwargs': {'latent_dim' : 2 ,
+    #                                                                                                             'dim_feedforward' : 64,
+    #                                                                                                             'num_heads' : 2 ,
+    #                                                                                                             'dim_model' : 64
+    #                                                                                                             }  
+    #                                                                                             #'H' : ,
+    #                                                                                             #'D': ,
+    #                                                                                             #'W': , 
+    #                                                                                 },
+    #                                                                         },  
+    #                                                     'denoising_names':['netmob_POIs'],
+    #                                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+    #                                                     'denoising_modes':["train","valid","test"],             # par défaut
+    #                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+    #                       },
 
-
-      'calendar_Google_Maps_Deezer_IRIS_input_dim12_attn_dim64_ff64_h2_ldim2_HP4': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr':  0.00124175,
-                                                                'weight_decay':0.00962615,
-                                                                'dropout': 0.1   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':   0.986409,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor':0.346245 ,
-                                                                'epochs':500,
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 12,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },   
-                              'calendar_Google_Maps_Deezer_IRIS_input_dim24_attn_dim64_ff64_h2_ldim2_HP4': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr':  0.00124175,
-                                                                'weight_decay':0.00962615,
-                                                                'dropout': 0.1   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':   0.986409,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor':0.346245 ,
-                                                                'epochs':500,
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 24,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          },   
-
-
-     'calendar_Google_Maps_Deezer_IRIS_input_dim24_attn_dim64_ff64_h2_ldim2_HP5': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr':  0.00250536 ,
-                                                                'weight_decay':0.00192661,
-                                                                'dropout': 0.0   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':   0.985426,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor':0.628773 ,
-                                                                'epochs':500,
-
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 24,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          }, 
-
- 'calendar_Google_Maps_Deezer_IRIS_input_dim12_attn_dim64_ff64_h2_ldim2_HP5': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                                                'denoising_names':[],
-                                                                'lr':  0.00250536 ,
-                                                                'weight_decay':0.00192661,
-                                                                'dropout': 0.0   ,
-                                                                'torch_scheduler_milestone': 5,
-                                                                'torch_scheduler_gamma':   0.985426,
-                                                                'torch_scheduler_type': 'warmup',
-                                                                'torch_scheduler_lr_start_factor':0.628773 ,
-                                                                'epochs':500,
-
-                                                    'loss_function_type':'HuberLoss',
-                                                    'optimizer': 'adamw',
-                                                    'adaptive_embedding_dim': 32,
-                                                    'tod_embedding_dim': 6,
-                                                    'dow_embedding_dim': 6,
-                                                    'feed_forward_dim': 256,
-
-                                                    'num_heads': 4,
-                                                    'num_layers': 3,
-
-                                                    'use_mixed_proj': True,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'input_embedding_dim': 12,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
-                                                                                                'stacked_contextual': True,
-                                                                                                'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
-                                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                                'vision_model_name' : None,
-                                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                                'dim_feedforward' : 64,
-                                                                                                                'num_heads' : 2 ,
-                                                                                                                'dim_model' : 64
-                                                                                                                }  
-                                                                                                #'H' : ,
-                                                                                                #'D': ,
-                                                                                                #'W': , 
-                                                                                    },
-                                                                            },  
-                                                        'denoising_names':['netmob_POIs'],
-                                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-                          }, 
 # 0.000831384      0.00340202         0.15                        1                 0.982239                 0.359437      500 
 # 0.0017567        0.00819653         0.05                       10                 0.982889                 0.897474      500
 # 0.00149806       0.00146675         0.05                        1                 0.985742                 0.382134      500 
