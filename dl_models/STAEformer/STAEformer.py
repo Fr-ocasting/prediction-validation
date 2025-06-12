@@ -69,6 +69,7 @@ class AttentionLayer(nn.Module):
             attn_score.masked_fill_(~mask, -torch.inf)  # fill in-place
 
         attn_score = torch.softmax(attn_score, dim=-1)
+        self.attn_score = attn_score
         out = attn_score @ value  # (num_heads * batch_size, ..., tgt_length, head_dim)
         out = torch.cat(
             torch.split(out, batch_size, dim=0), dim=-1
