@@ -4,9 +4,9 @@ import numpy as np
 import time
 from torch.cuda.amp import autocast,GradScaler
 from datetime import datetime
-#if torch.cuda.is_available():
-#    torch.backends.cuda.matmul.allow_tf32 = True
-#    torch.backends.cudnn.allow_tf32  = True
+if torch.cuda.is_available():
+   torch.backends.cuda.matmul.allow_tf32 = True
+   torch.backends.cudnn.allow_tf32  = True
 
 try :
     from plotting.plotting_bokeh import generate_bokeh
