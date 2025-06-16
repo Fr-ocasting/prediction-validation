@@ -29,7 +29,7 @@ config = {'dataset_names' :['PeMS08_flow','calendar'],#['PeMS08_flow','calendar'
 
 
             'batch_size': 16, # 16, 32, 64
-            'epochs':30,
+            'epochs':300,
             'optimizer': 'adam',
             'lr': 0.001, # 0.001
             'weight_decay': 0.0015,
@@ -44,4 +44,5 @@ config = {'dataset_names' :['PeMS08_flow','calendar'],#['PeMS08_flow','calendar'
             'standardize': True,
             'minmaxnorm': False,
             'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
+            'unormalize_loss' : True
             }

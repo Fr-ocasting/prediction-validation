@@ -19,6 +19,7 @@ from dl_models.full_model import full_model
 from trainer import Trainer
 from utils.loger import LOG
 from utils.rng import set_seed
+from examples.train_model import main 
 
 loger = LOG()
 # Init:
@@ -61,16 +62,6 @@ compilation_modification = {'use_target_as_context': False,
                             'device': torch.device('cuda:1')
     }
 
-
-def main(fold_to_evaluate,save_folder,args_init,modification):
-    ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
-    for key,value in vars(args).items():
-        print(f"{key}: {value}")
-    model = full_model(ds, args).to(args.device)
-    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
-    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None,unormalize_loss = args.unormalize_loss) 
-    return trainer,ds,model,args
 
 if __name__ == "__main__":
     import numpy as np 
@@ -141,15 +132,6 @@ if __name__ == "__main__":
 
         loger.add_log(test_metrics,['rmse','mae','mape','mse'],trial_id, args.step_ahead,args.horizon_step)
 
-        # log_final_i = f"All Steps RMSE = {'{:.2f}'.format(test_metrics['rmse_all'])}, MAE = {'{:.2f}'.format(test_metrics['mae_all'])}, MAPE = {'{:.2f}'.format(test_metrics['mape_all'])}, MSE = {'{:.2f}'.format(test_metrics['mse_all'])}"
-        # log_final = log_final + f"{trial_id}:   {log_final_i}\n"
-        # print(f"\n--------- Test ---------\n{log_final_i}")
-        # for h in np.arange(1,args.step_ahead+1):
-        #     print(f"Step {h} RMSE = {'{:.2f}'.format(test_metrics[f'rmse_h{h}'])}, MAE = {'{:.2f}'.format(test_metrics[f'mae_h{h}'])}, MAPE = {'{:.2f}'.format(test_metrics[f'mape_h{h}'])}, MSE = {'{:.2f}'.format(test_metrics[f'mse_h{h}'])}")
-
-
-
     loger.display_log()
-    #print(log_final)
 
 

@@ -284,7 +284,9 @@ class DataSet(object):
                  DA_noise_from = None,
                  DA_magnitude_max_scale = None,
                  target_data = None,
-                 out_dim_factor = None
+                 out_dim_factor = None,
+                 train_pourcent = None,
+
                  ):
         
         if df is not None:
@@ -347,6 +349,7 @@ class DataSet(object):
         self.H = H
         self.cleaned_df = cleaned_df
         self.target_data = target_data
+        self.train_pourcent = train_pourcent
 
         # Data Augmentation: 
         self.data_augmentation = data_augmentation
@@ -562,6 +565,16 @@ class DataSet(object):
         
         
         train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(normalizer = self.normalizer)
+
+        if self.train_pourcent != 100:
+            print('\n>>>>>>>')
+            print(train_tensor_ds.tensor.size())
+            size_t = train_tensor_ds.tensor.size(0)
+            train_tensor_ds.tensor = train_tensor_ds.tensor[int(size_t*(1-self.train_pourcent/100)):] 
+
+            print(train_tensor_ds.tensor.size())
+            print('>>>>>>>>>>>\n')
+
 
         # Tackle Train Tensor:
         setattr(self,f"{name}_train", train_tensor_ds.tensor)

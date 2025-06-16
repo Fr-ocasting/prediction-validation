@@ -367,7 +367,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
 
-                                                                'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                             'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -385,7 +385,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                      'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_32_64_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                      'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_32_64_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -403,7 +403,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     }, 
-                                                      'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_64_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                       'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_64_dow_h_m': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -421,7 +421,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     }, 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                        'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -440,7 +440,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },  
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr2e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                      'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr2e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -460,7 +460,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr3e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                        'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr3e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -480,7 +480,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                       'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -500,7 +500,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },  
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr9e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr9e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -520,7 +520,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr8e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                 'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr8e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -540,7 +540,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     }, 
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                     'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -560,7 +560,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr6e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                          'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr6e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -580,7 +580,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },    
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr5e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                        'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr5e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -600,7 +600,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },     
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                   'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -621,7 +621,7 @@ modifications = {
                                                     },  
 
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w5e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w5e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -641,7 +641,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w4e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                  'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w4e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -662,7 +662,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w3e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w3e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -683,7 +683,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     }, 
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w2e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                  'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w2e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -704,7 +704,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },  
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w1e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                               'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w1e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -724,7 +724,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w9e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                 'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w9e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -744,7 +744,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w8e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                  'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w8e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -764,7 +764,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w7e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w7e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -784,7 +784,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w6e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                               'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr7e4_w6e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -807,7 +807,7 @@ modifications = {
                                       
 
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w5e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                               'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w5e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -827,7 +827,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w4e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                               'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w4e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -848,7 +848,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w3e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                               'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w3e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -869,7 +869,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     }, 
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w2e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                 'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w2e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -890,7 +890,7 @@ modifications = {
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },  
 
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w1e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                       'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w1e2': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -910,7 +910,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w9e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                       'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w9e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -930,7 +930,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w8e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                          'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w8e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -950,7 +950,7 @@ modifications = {
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w7e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                         'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w7e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
@@ -969,13 +969,23 @@ modifications = {
                                                     'TE_out_h_dim': 32,
                                                     'TE_variable_selection_model_name': 'MLP',
                                                     'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
+                                                    'act_func': 'glu',
+                                                    'gso_type':'sym_renorm_adj',
+                                                    'graph_conv_type':'cheb_graph_conv',
                                                     },   
-                                                    'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w6e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
+                                          'T128_S64_O256_corr_threeshold_0.8_epochs30_calendar_emb_64_32_dow_h_m_300_lr4e4_w6e3': {'dataset_names': ['PeMS08_flow','calendar_embedding'],
                                                     'temporal_h_dim': 128,
                                                     'spatial_h_dim': 64,
                                                     'output_h_dim': 256,
                                                     'optimizer': 'adamw',
                                                     'adj_type': 'corr',
+
+                                                    'act_func': 'glu',
+                                                    'gso_type':'sym_renorm_adj',
+                                                    'graph_conv_type':'cheb_graph_conv',
+
+
+
                                                     'threshold': 0.8,
                                                     'batch_size': 128,
                                                     'lr': 0.0004,
