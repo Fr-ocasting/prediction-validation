@@ -86,6 +86,10 @@ def load_DataSet(args,FOLDER_PATH,coverage_period = None,filename=None):
     periods = [weekly_period,daily_period]  
 
     args_DataSet = filter_args(DataSet, args)
+    if 'time_step_per_hour' in args_DataSet.keys():
+        del args_DataSet['time_step_per_hour']
+    
+
 
     dataset = DataSet(df,
                       time_step_per_hour=time_step_per_hour, 

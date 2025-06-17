@@ -59,7 +59,7 @@ compilation_modification = {'use_target_as_context': False,
                             'torch_compile' : 'compile' , # 'compile' # 'jit_script' #'trace' # False
                             'unormalize_loss' : True, # False
 
-                            'device': torch.device('cuda:1')
+                            'device': torch.device('cuda:0')
     }
 
 
@@ -83,8 +83,6 @@ if __name__ == "__main__":
 
     set_seed(SEED)
     
-
-
 
 
     log_final  = f"\n--------- Resume ---------\n"
@@ -113,15 +111,17 @@ if __name__ == "__main__":
         # Run the script
         fold_to_evaluate=[args_init.K_fold-1]
 
-       
-        save_folder = f"K_fold_validation/training_wo_HP_tuning/{subfolder}/{trial_id}"
-        if True: 
-            save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/K_fold_validation/training_wo_HP_tuning/{subfolder}/{trial_id}"
-            print(f"Save folder: {save_folder_with_root}")
-            if not os.path.exists(save_folder_with_root):
-                os.makedirs(save_folder_with_root)
 
-        trainer,ds,model,args = main(fold_to_evaluate,save_folder,args_init,modification_model)
+            
+        weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
+        save_folder = f"{weights_save_folder}/{subfolder}/{trial_id}"
+        save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
+        print(f"Save folder: {save_folder_with_root}")
+        if not os.path.exists(save_folder_with_root):
+            os.makedirs(save_folder_with_root)
+
+
+        trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification_model)
 
         condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
         valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)

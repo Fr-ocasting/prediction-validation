@@ -418,6 +418,7 @@ class full_model(nn.Module):
             >>>> contextual[netmob_position]: [B,N,C,H,W,L]
             >>>> contextual[calendar]: [B]
         '''
+        B = x.size(0)
         #print('\nx size before forward: ',x.size())
         if self.remove_trafic_inputs:
             #x = torch.Tensor().to(x)
@@ -461,7 +462,8 @@ class full_model(nn.Module):
                                x_calendar = time_elt )
             #print('x after Core Model: ',x.size())
         # ...
-        x = reshaping(x)
+
+        x = reshaping(x,B)
         #print('x after reshaping: ',x.size())
         return(x)
     
@@ -503,9 +505,11 @@ class full_model(nn.Module):
     ## ==========================================================================
     # =========================================================================== #
     """
-def reshaping(x):
+def reshaping(x,B):
     if x.dim()==4:
         x = x.squeeze()
+        if B == 1:
+            x = x.unsqueeze(0)
 
     # Tackle the case when C=1 and output_dim = 1  
     if x.dim()==2:

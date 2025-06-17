@@ -107,7 +107,45 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     return(args)
 
 
-def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modification,fold_to_evaluate = None):
+def load_trainer_ds_from_saved_trial(args,model_save_path,modification={}):
+
+    fold_to_evaluate = [args['K_fold']-1]
+    args_init = Namespace(**args)
+    args_init.ray = False
+
+
+    ds,_,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)
+    model = full_model(ds, args_init).to(args_init.device)
+
+
+    model_param = torch.load(f"{model_save_path}")
+
+    ## Load state dict : 
+    prefix = "_orig_mod."
+    model_param['state_dict'] = {k[len(prefix):] if k.startswith(prefix) else k: v    #Needed here to remove the prefix added by torch.compile
+                for k, v in model_param['state_dict'].items()}
+    model.load_state_dict(model_param['state_dict'],strict=True)
+    model = model.to(args_init.device)
+    ## 
+    
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args_init)
+    trainer = Trainer(ds,model,args_init,optimizer,loss_function,scheduler = scheduler)
+
+    return trainer, ds, args_init
+
+
+def get_trainer_and_ds_from_saved_trial(trial_id = None,
+                                        add_name_id = '',
+                                        args = None,
+                                        save_folder = None,
+                                        model_save_path = None,
+                                        modification = {},fold_to_evaluate = None):
+    
+
+
+
+
+    
     # Load Data and Init Model:
     if fold_to_evaluate is None:
         fold_name = 'complete_dataset'
@@ -115,18 +153,28 @@ def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modific
         fold_name = fold_to_evaluate[0]
 
     #args,_ = load_configuration(trial_id1,load_config=True)
-    args = load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name)
+    if args is None: 
+        args = load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name)
+    else:
+        args = Namespace(**args)
+        args.ray = False
+    
 
     if fold_to_evaluate is None:  fold_to_evaluate = [args.K_fold-1]
 
-    
            
     ds,_,_,_,_ =  get_ds(args_init=args,modification = modification,fold_to_evaluate=fold_to_evaluate)
     model = full_model(ds, args).to(args.device)
 
 
     # Load Trained Weights 
-    model_param = torch.load(f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
+    if save_folder is not None:
+        model_param = torch.load(f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
+    elif model_save_path is not None:
+        model_param = torch.load(f"{model_save_path}")
+    else: 
+        raise NotImplementedError("Either 'save_folder' or 'model_save_path' must be provided to load the model parameters.")
+    
     model.load_state_dict(model_param['state_dict'],strict=True)
 
 

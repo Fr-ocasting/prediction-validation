@@ -460,6 +460,10 @@ class DataSet(object):
         tensor_limits_keeper = TensorLimitsKeeper(split_limits,self.df_dates,self.df_verif,train_prop,valid_prop, test_prop,self.step_ahead)
         for training_mode in ['train','valid','test']:
             tensor_limits_keeper.get_local_df_verif(training_mode)   # Build DataFrame Verif associated to each training mode
+
+            if (self.train_pourcent != 100) and (training_mode == 'train'):
+                size_t = len(tensor_limits_keeper.df_verif_train)
+                tensor_limits_keeper.df_verif_train =  tensor_limits_keeper.df_verif_train.iloc[:int(size_t*(1-self.train_pourcent/100)):]  # Keep only the lasts 'train_pourcent' of the training set
             #print(f"df_verif_{training_mode}: {getattr(tensor_limits_keeper,f'df_verif_{training_mode}')}")
             tensor_limits_keeper.keep_track_on_df_limits(training_mode)   # Keep track on DataFrame Limits (dates)
             tensor_limits_keeper.get_raw_values_indices(training_mode)
@@ -567,7 +571,7 @@ class DataSet(object):
         train_tensor_ds,valid_tensor_ds,test_tensor_ds = splitter.split_normalize_tensor_datasets(normalizer = self.normalizer)
 
         if self.train_pourcent != 100:
-            print('\n>>>>>>>')
+            print('\n>>>>>>> Reduction of train tensor. Keeping only the last ',self.train_pourcent,'%')
             print(train_tensor_ds.tensor.size())
             size_t = train_tensor_ds.tensor.size(0)
             train_tensor_ds.tensor = train_tensor_ds.tensor[int(size_t*(1-self.train_pourcent/100)):] 

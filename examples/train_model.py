@@ -162,12 +162,16 @@ if model_name == 'STGCN':
 
 
 def main(fold_to_evaluate,save_folder,args_init,modification):
-    ds,args,trial_id,save_folder,df_loss = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
+    ds,args,trial_id,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     for key,value in vars(args).items():
         print(f"{key}: {value}")
     model = full_model(ds, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
+    if len(fold_to_evaluate) == 1: 
+        fold = fold_to_evaluate[0]
+    else:
+        raise ValueError("fold_to_evaluate should contain only one fold cause only one training will be done here.")
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
     trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None,unormalize_loss = args.unormalize_loss) 
     return trainer,ds,model,args
 
@@ -207,10 +211,19 @@ if __name__ == "__main__":
 
     # Run the script
     fold_to_evaluate=[args_init.K_fold-1]
+
+    weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
     trial_id = f"{args_init.model_name}_{'_'.join(args_init.dataset_names)}_fold_{str(fold_to_evaluate[0])}_epochs_{args_init.epochs}"
-    save_folder = f"K_fold_validation/training_wo_HP_tuning/{trial_id}"
-    print(f"Save folder: {save_folder}")
-    trainer,ds,model,args = main(fold_to_evaluate,save_folder,modification)
+    save_folder = f"{weights_save_folder}/{trial_id}"
+    save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
+
+    print(f"Save folder: {save_folder_with_root}")
+    if not os.path.exists(save_folder_with_root):
+        os.makedirs(save_folder_with_root)
+
+
+
+    trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification)
 
     condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
     valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)

@@ -33,13 +33,14 @@ modification_compute = {'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bo
                             'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace' # False
                             'device': torch.device('cuda:1')
                             }
-modifications = {'10p': {'train_pourcent' : 10},
-                '15p': {'train_pourcent' : 15},
-                '25p':  {'train_pourcent' : 25},
-                '35p':  {'train_pourcent' : 35},
-                '50p':  {'train_pourcent' : 50},
-                 '75p':  {'train_pourcent' : 75},
-                 '100p': {'train_pourcent': 100},
+modifications = {
+    '10p': {'train_pourcent' : 10},
+    '15p': {'train_pourcent' : 15},
+    '25p':  {'train_pourcent' : 25},
+    '35p':  {'train_pourcent' : 35},
+    '50p':  {'train_pourcent' : 50},
+    '75p':  {'train_pourcent' : 75},
+    #'100p': {'train_pourcent': 100},
                  }
 
 if __name__ == "__main__":
@@ -50,7 +51,7 @@ if __name__ == "__main__":
 
 
     
-    for model_name in ['STGCN','STAEformer']:
+    for model_name in ['STAEformer','STGCN']: # ,
 
         subfolder = f'comparison_accuracy_per_size_{model_name}'
         config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
@@ -64,8 +65,10 @@ if __name__ == "__main__":
             
             ## Set save path :
             trial_id = f"{target_data}_{add_trial_id}"
-            save_folder = f"K_fold_validation/training_wo_HP_tuning/{subfolder}/{trial_id}"
-            save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/K_fold_validation/training_wo_HP_tuning/{subfolder}/{trial_id}"
+            
+            weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
+            save_folder = f"{weights_save_folder}/{subfolder}/{trial_id}"
+            save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
             print(f"Save folder: {save_folder_with_root}")
             if not os.path.exists(save_folder_with_root):
                 os.makedirs(save_folder_with_root)
@@ -83,7 +86,7 @@ if __name__ == "__main__":
             
             fold_to_evaluate=[args_init.K_fold-1]
 
-            trainer,ds,model,args = main(fold_to_evaluate,save_folder,args_init,modification)
+            trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification)
 
             condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
             valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)

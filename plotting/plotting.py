@@ -19,6 +19,7 @@ if parent_dir not in sys.path:
 from PI.PI_object import PI_object
 from utils.utilities_DL import get_associated__df_verif_index
 from utils.metrics import error_along_ts
+from calendar_class import is_morning_peak,is_evening_peak,is_weekday
 
 def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
     if not(type(Datasets) == list):
@@ -217,6 +218,7 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
         # ...
 
         plt.show()
+
 
 
 
@@ -730,8 +732,26 @@ def get_df_error(ds1,dic_error,metric,error_name,training_mode):
     df_error_station = add_calendar_columns(df_error_station)
     return df_error_station
 
+
 def temporal_agg_for_matshow(df_error_station,column,index_matshow):
+    '''
+    From a df_error_station, return the temporal aggregation of the column
+    args:
+    -----
+    df_error_station : pd.DataFrame with columns ['datetime',column]
+    column : str, name of the column to aggregate
+    index_matshow : str, type of aggregation to apply on the index of the df_error_station
+    >>> e.g. 'hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'morning_peak', 'evening_peak', 'off_peak', 'working_day_hour'
+    '''
+
     df_error_station['new_hour'] = df_error_station['datetime'].dt.hour
+    df_error_station['time'] = df_error_station['datetime'].dt.time
+    s = df_error_station['datetime']
+    df_error_station['is_weekday'] = is_weekday(s)
+    df_error_station['evening_peak'] = is_evening_peak(s)
+    df_error_station['morning_peak'] =  is_morning_peak(s)
+
+
     if index_matshow == 'hour':
         df_agg = df_error_station[[column,'new_hour']].groupby(['new_hour']).mean()
     elif index_matshow == 'date':
@@ -744,6 +764,15 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow):
         df_agg = df_error_station[[column,'weekday','new_hour']].groupby(['weekday','new_hour']).mean()
     elif index_matshow == 'weekday_hour_minute':
         df_agg = df_error_station[[column,'weekday','hour']].groupby(['weekday','hour']).mean()
+    elif index_matshow == 'daily_period':
+        df_agg_morning = df_error_station[df_error_station['morning_peak'] & df_error_station['is_weekday']][column].mean()
+        df_agg_evening =  df_error_station[df_error_station['evening_peak']& df_error_station['is_weekday']][column].mean()
+        df_agg_off_peak =  df_error_station[~df_error_station['evening_peak'] & 
+                                    ~df_error_station['evening_peak'] &
+                                    df_error_station['is_weekday']][column].mean()
+        df_agg = pd.DataFrame({column:[df_agg_morning,df_agg_evening,df_agg_off_peak]},index=['morning_peak','evening_peak','off_peak'])
+    elif index_matshow == 'working_day_hour':
+        df_agg = df_error_station[[column,'is_weekday','new_hour']].groupby(['is_weekday','new_hour']).mean()
     else:
         raise NotImplementedError
     return df_agg 
@@ -769,6 +798,18 @@ def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations):
         df_gain21.update({column:gain_mase[column]})
     return df_mase1,df_mase2,df_gain21   
 
+def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
+    df_error1 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred1',training_mode=training_mode)
+    df_error2 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred2',training_mode=training_mode)
+    df_gain21 = {}
+
+    for column in stations: 
+        error_pred1_agg = temporal_agg_for_matshow(df_error1,column,temporal_agg)
+        error_pred2_agg = temporal_agg_for_matshow(df_error2,column,temporal_agg)   
+        gain = 100*(error_pred2_agg/error_pred1_agg-1)
+
+        df_gain21.update({column:gain[column]})
+    return df_gain21   
 
 if __name__ == '__main__':
     # Exemple with 'plot_coverage_matshow':

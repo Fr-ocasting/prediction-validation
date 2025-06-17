@@ -1,7 +1,17 @@
 import torch
 import pandas as pd
-from datetime import datetime
+import datetime 
 import torch
+
+
+def is_morning_peak(predicted_dates_h):
+    return (predicted_dates_h.dt.time >= datetime.time(7, 30)) & (predicted_dates_h.dt.time <= datetime.time(9, 00))
+
+def is_evening_peak(predicted_dates_h):
+    return (predicted_dates_h.dt.time >= datetime.time(17, 00)) & (predicted_dates_h.dt.time <= datetime.time(19, 00))
+
+def is_weekday(predicted_dates_h):
+    return (predicted_dates_h.dt.dayofweek < 5)
 
 
 BANK_HOLIDAYS = {
@@ -94,8 +104,8 @@ def is_school_holidays(timestamp,city):
         school_holidays = []
 
     for start, end in school_holidays:
-        start_date = datetime.strptime(start, "%Y-%m-%d")
-        end_date = datetime.strptime(end, "%Y-%m-%d")
+        start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
+        end_date = datetime.datetime.strptime(end, "%Y-%m-%d")
         if start_date <= timestamp < end_date:
             # remaining days before the end of the holidays
             days_to_end = (end_date - timestamp).days
