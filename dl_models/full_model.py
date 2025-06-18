@@ -55,7 +55,6 @@ def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim):
     args_ds_i.dropout = args.dropout
     args_ds_i.query_dim = query_dim  # input dim of Query 
     args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
-    args_ds_i.keep_topk = True # Keep only 10% of the best weights in the attention module
     
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)

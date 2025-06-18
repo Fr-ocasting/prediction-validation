@@ -87,9 +87,13 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
 
     # Reduce dimensionality : [T',R] -> [T',R']
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
-    # netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.epsilon_clustering)
+    if 'epsilon_clustering' in args.contextual_kwargs['netmob_POIs'].keys() and args.contextual_kwargs['netmob_POIs']['epsilon_clustering'] is not None:
+        print('>>>>>> ATTENTION: Dimension reduction by clustering is applied on the entire dataset. This should be done only on the training set.')
+        initial_size = netmob_T.size(-1)
+        netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.contextual_kwargs['netmob_POIs']['epsilon_clustering'])
+        print(f"Netmob_T.size(): {netmob_T.size()}. Dimensionality reduced by {'{:.1%}'.format(netmob_T.size(-1)/initial_size)}")
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
-
+    
     # dimension on which we want to normalize: 
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
     NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
@@ -99,7 +103,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
 
-    print('Netmob_T.size(): ',netmob_T.size())
+    
     return(NetMob_POI)
 
 

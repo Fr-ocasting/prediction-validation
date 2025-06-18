@@ -86,7 +86,7 @@ if __name__ == "__main__":
             
             fold_to_evaluate=[args_init.K_fold-1]
 
-            trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification)
+            trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification,trial_id)
 
             condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
             valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)

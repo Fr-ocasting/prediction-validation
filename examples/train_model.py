@@ -161,8 +161,8 @@ if model_name == 'STGCN':
                         })
 
 
-def main(fold_to_evaluate,save_folder,args_init,modification):
-    ds,args,trial_id,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
+def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):
+    ds,args,_,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     for key,value in vars(args).items():
         print(f"{key}: {value}")
     model = full_model(ds, args).to(args.device)

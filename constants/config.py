@@ -31,7 +31,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['optimizer'] = 'adamw' #['sgd','adam','adamw']
     config['single_station']= False
     config['loss_function_type'] = 'HuberLoss' # 'HuberLoss' # 'MSE' #'quantile' # 'masked_mae' 
-    config['epsilon_clustering'] = 0.05 # Distance max for Agglomerative Cluster based on distance correlation 
     config['freq'] = '15min'
     config['train_pourcent'] = 100 # Int between ]0:100]. Determine the pourcentage of remaining training set. Has to be 100% by default.
 
