@@ -813,6 +813,7 @@ def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
     df_error1 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred1',training_mode=training_mode)
     df_error2 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred2',training_mode=training_mode)
     df_gain21 = {}
+    df_error_pred1_agg,df_error_pred2_agg = {},{}
 
     for column in stations: 
         error_pred1_agg = temporal_agg_for_matshow(df_error1,column,temporal_agg)
@@ -820,7 +821,9 @@ def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
         gain = 100*(error_pred2_agg/error_pred1_agg-1)
 
         df_gain21.update({column:gain[column]})
-    return df_gain21   
+        df_error_pred1_agg.update({column:error_pred1_agg[column]})
+        df_error_pred2_agg.update({column:error_pred2_agg[column]})
+    return df_gain21,df_error_pred1_agg,df_error_pred2_agg
 
 if __name__ == '__main__':
     # Exemple with 'plot_coverage_matshow':
