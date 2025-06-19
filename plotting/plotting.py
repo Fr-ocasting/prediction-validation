@@ -222,7 +222,10 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
 
 
 
-def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False,v_min=None,v_max=None):
+def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, 
+                          cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False
+                          ,v_min=None,v_max=None,
+                          display_values = False):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
 
@@ -264,6 +267,12 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, c
     # Add a colorbar to the right of the figure
     cbar = plt.colorbar(cax, aspect=10)
     cbar.set_label(cbar_label)  # You can customize the label as needed
+
+    ## Plot values if needed: 
+    if display_values:
+        for (i, j), val in np.ndenumerate(data.values):
+            if not np.isnan(val):
+                plt.text(j, i, f'{val:.2f}', ha='center', va='center', color='black', fontsize=6)
 
     if save is not None: 
             plt.savefig(save, format="pdf")
@@ -741,13 +750,14 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow):
     df_error_station : pd.DataFrame with columns ['datetime',column]
     column : str, name of the column to aggregate
     index_matshow : str, type of aggregation to apply on the index of the df_error_station
-    >>> e.g. 'hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'morning_peak', 'evening_peak', 'off_peak', 'working_day_hour'
+    >>> e.g. 'hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour'
     '''
 
     df_error_station['new_hour'] = df_error_station['datetime'].dt.hour
     df_error_station['time'] = df_error_station['datetime'].dt.time
     s = df_error_station['datetime']
     df_error_station['is_weekday'] = is_weekday(s)
+    df_error_station['is_weekday'] = df_error_station['is_weekday'].replace({True: 'Weekday', False: 'Weekend'})
     df_error_station['evening_peak'] = is_evening_peak(s)
     df_error_station['morning_peak'] =  is_morning_peak(s)
 
@@ -770,7 +780,8 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow):
         df_agg_off_peak =  df_error_station[~df_error_station['evening_peak'] & 
                                     ~df_error_station['evening_peak'] &
                                     df_error_station['is_weekday']][column].mean()
-        df_agg = pd.DataFrame({column:[df_agg_morning,df_agg_evening,df_agg_off_peak]},index=['morning_peak','evening_peak','off_peak'])
+        df_agg_all = df_error_station[column].mean()
+        df_agg = pd.DataFrame({column:[df_agg_all,df_agg_morning,df_agg_evening,df_agg_off_peak]},index=['all_day','morning_peak','evening_peak','off_peak'])
     elif index_matshow == 'working_day_hour':
         df_agg = df_error_station[[column,'is_weekday','new_hour']].groupby(['is_weekday','new_hour']).mean()
     else:
