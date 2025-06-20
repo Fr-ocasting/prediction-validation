@@ -463,7 +463,7 @@ class DataSet(object):
 
             if (self.train_pourcent != 100) and (training_mode == 'train'):
                 size_t = len(tensor_limits_keeper.df_verif_train)
-                tensor_limits_keeper.df_verif_train =  tensor_limits_keeper.df_verif_train.iloc[:int(size_t*(1-self.train_pourcent/100)):]  # Keep only the lasts 'train_pourcent' of the training set
+                tensor_limits_keeper.df_verif_train =  tensor_limits_keeper.df_verif_train.iloc[int(size_t*(1-self.train_pourcent/100)):,:]  # Keep only the lasts 'train_pourcent' of the training set
             #print(f"df_verif_{training_mode}: {getattr(tensor_limits_keeper,f'df_verif_{training_mode}')}")
             tensor_limits_keeper.keep_track_on_df_limits(training_mode)   # Keep track on DataFrame Limits (dates)
             tensor_limits_keeper.get_raw_values_indices(training_mode)
@@ -572,11 +572,10 @@ class DataSet(object):
 
         if self.train_pourcent != 100:
             print('\n>>>>>>> Reduction of train tensor. Keeping only the last ',self.train_pourcent,'%')
-            print(train_tensor_ds.tensor.size())
+            print('    Before reduction: ',train_tensor_ds.tensor.size())
             size_t = train_tensor_ds.tensor.size(0)
             train_tensor_ds.tensor = train_tensor_ds.tensor[int(size_t*(1-self.train_pourcent/100)):] 
-
-            print(train_tensor_ds.tensor.size())
+            print('    After reduction: ',train_tensor_ds.tensor.size())
             print('>>>>>>>>>>>\n')
 
 

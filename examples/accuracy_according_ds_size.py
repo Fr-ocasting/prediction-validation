@@ -34,16 +34,16 @@ modification_compute = {'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bo
                             'device': torch.device('cuda:1')
                             }
 modifications = {
-    # '10p': {'train_pourcent' : 10},
+    '10p': {'train_pourcent' : 10},
     # '15p': {'train_pourcent' : 15},
     # '25p':  {'train_pourcent' : 25},
     # '35p':  {'train_pourcent' : 35},
-    # '50p':  {'train_pourcent' : 50},
+    '50p':  {'train_pourcent' : 50},
     # '75p':  {'train_pourcent' : 75},
-    '80p':  {'train_pourcent' : 80},
-    '85p':  {'train_pourcent' : 85},
+    # '80p':  {'train_pourcent' : 80},
+    # '85p':  {'train_pourcent' : 85},
     '90p':  {'train_pourcent' : 90},
-    '95p':  {'train_pourcent' : 95},
+    # '95p':  {'train_pourcent' : 95},
     #'100p': {'train_pourcent': 100},
                  }
 

@@ -161,7 +161,7 @@ if model_name == 'STGCN':
                         })
 
 
-def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):
+def load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modification,trial_id):
     ds,args,_,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     for key,value in vars(args).items():
         print(f"{key}: {value}")
@@ -172,6 +172,10 @@ def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):
     else:
         raise ValueError("fold_to_evaluate should contain only one fold cause only one training will be done here.")
     trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
+    return trainer,ds,model,args
+
+def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):
+    trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modification,trial_id)
     trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None,unormalize_loss = args.unormalize_loss) 
     return trainer,ds,model,args
 
