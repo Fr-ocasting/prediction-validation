@@ -968,7 +968,7 @@ modifications = {
                                                     'TE_concatenation_early' : False,
                                                     'TE_out_h_dim': 32,
                                                     'TE_variable_selection_model_name': 'MLP',
-                                                    'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute']  # ['dayofweek', 'hour', 'minute']
+                                                    'TE_embedding_calendar_types' : ['dayofweek', 'hour','minute'],  # ['dayofweek', 'hour', 'minute']
                                                     'act_func': 'glu',
                                                     'gso_type':'sym_renorm_adj',
                                                     'graph_conv_type':'cheb_graph_conv',

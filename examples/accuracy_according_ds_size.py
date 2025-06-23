@@ -24,81 +24,110 @@ from examples.train_model import main
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 
-modification_compute = {'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+modification_compute = {'use_target_as_context': False,
+    'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
                             'persistent_workers' : True ,# False 
                             'pin_memory' : True ,# False 
                             'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                             'drop_last' : False,  # True
                             'mixed_precision' : False, # True # False
-                            'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace' # False
-                            'device': torch.device('cuda:1')
+                            'torch_compile' : 'compile' , #'compile', # 'compile' # 'jit_script' #'trace' # False
+                            'device': torch.device('cuda:0')
                             }
+# modifications = {
+#     '10p': {'train_pourcent' : 10,
+#             'batch_size':16},
+#     '15p': {'train_pourcent' : 15,
+#             'batch_size':16},
+#     '25p':  {'train_pourcent' : 25,
+#              'batch_size':16},
+#     '35p':  {'train_pourcent' : 35,
+#              'batch_size':32},
+#     '50p':  {'train_pourcent' : 50,
+#             'batch_size':64},
+#     '75p':  {'train_pourcent' : 75,
+#             'batch_size':64},
+#     '80p':  {'train_pourcent' : 80},
+#     '85p':  {'train_pourcent' : 85},
+#     '90p':  {'train_pourcent' : 90},
+#     '95p':  {'train_pourcent' : 95},
+#     '100p': {'train_pourcent': 100},
+#                  }
+
 modifications = {
-    '10p': {'train_pourcent' : 10},
-    # '15p': {'train_pourcent' : 15},
-    # '25p':  {'train_pourcent' : 25},
-    # '35p':  {'train_pourcent' : 35},
-    '50p':  {'train_pourcent' : 50},
-    # '75p':  {'train_pourcent' : 75},
-    # '80p':  {'train_pourcent' : 80},
-    # '85p':  {'train_pourcent' : 85},
-    '90p':  {'train_pourcent' : 90},
-    # '95p':  {'train_pourcent' : 95},
-    #'100p': {'train_pourcent': 100},
+    '10p': {'calib_prop' : 0.90,
+            'batch_size':16},
+    '15p': {'calib_prop' : 0.85,
+            'batch_size':16},
+    '25p':  {'calib_prop' : 0.75,
+             'batch_size':16},
+    '35p':  {'calib_prop' : 0.65,
+             'batch_size':32},
+    '50p':  {'calib_prop' : 0.5,
+            'batch_size':64},
+    '75p':  {'calib_prop' : 0.25,
+            'batch_size':64},
+    '80p':  {'calib_prop' : 0.2},
+    '85p':  {'calib_prop' : 0.15},
+    '90p':  {'calib_prop' : 0.1},
+    '95p':  {'calib_prop' : 0.05},
+    '100p': {'calib_prop': None},
                  }
 
 if __name__ == "__main__":
     loger = LOG()
-    target_data = 'PeMS08_flow'#'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
-    dataset_names = ['PeMS08_flow'] # ['CRITER_3_4_5_lanes_flow','netmob_POIs']  #['CRITER_3_4_5_lanes_flow']#['PeMS08_flow','PeMS08_occupancy','PeMS08_speed'] # ['subway_in','calendar_embedding'] #['PeMS03'] #['subway_in'] ['subway_in','subway_indiv'] #["subway_in","subway_out"] # ['subway_in','netmob_POIs_per_station'],["subway_in","subway_out"],["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']
-    dataset_for_coverage =['PeMS08_flow'] # ['CRITER_3_4_5_lanes_flow','netmob_POIs'] #['PeMS08_flow'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+    target_data = 'subway_in'#'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+    dataset_for_coverage =['subway_in','netmob_POIs'] # ['CRITER_3_4_5_lanes_flow','netmob_POIs'] #['PeMS08_flow'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+
+    dic_dataset_names = {'STAEformer':[['subway_in'],['subway_in','calendar'], ['subway_in','calendar','netmob_POIs']],
+                        'STGCN':[['subway_in'], ['subway_in','calendar_embedding'],['subway_in', 'calendar_embedding','netmob_POIs']]
+                        }
+    for model_name in ['STAEformer','STGCN']: # '', 'STAEformer',
+        for dataset_names in dic_dataset_names[model_name]:
+            subfolder = f'comparison_accuracy_per_size_{model_name}'
+            #config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
+            config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}.{'_'.join(dataset_names)}")
+            importlib.reload(config_file)
+            modification = config_file.config
+            SEED = config_file.SEED
+
+            modification.update(modification_compute)
+
+            for add_trial_id,modification_i in modifications.items():
+                
+                ## Set save path :
+                trial_id = f"{target_data}_{model_name}.{'_'.join(dataset_names)}_{add_trial_id}"
+                
+                weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
+                save_folder = f"{weights_save_folder}/{subfolder}/{trial_id}"
+                save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
+                print(f"Save folder: {save_folder_with_root}")
+                if not os.path.exists(save_folder_with_root):
+                    os.makedirs(save_folder_with_root)
+                ## ..
+
+                set_seed(SEED)
 
 
-    
-    for model_name in ['STAEformer','STGCN']: # ,
+                modification.update(modification_i)
+                args_init = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=dataset_names,
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = modification)
 
-        subfolder = f'comparison_accuracy_per_size_{model_name}'
-        config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
-        importlib.reload(config_file)
-        modification = config_file.config
-        SEED = config_file.SEED
+                
+                fold_to_evaluate=[args_init.K_fold-1]
 
-        modification.update(modification_compute)
+                trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification,trial_id)
 
-        for add_trial_id,modification_i in modifications.items():
-            
-            ## Set save path :
-            trial_id = f"{target_data}_{add_trial_id}"
-            
-            weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
-            save_folder = f"{weights_save_folder}/{subfolder}/{trial_id}"
-            save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
-            print(f"Save folder: {save_folder_with_root}")
-            if not os.path.exists(save_folder_with_root):
-                os.makedirs(save_folder_with_root)
-            ## ..
+                condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
+                valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
+                df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_to_evaluate,fold,condition1,condition2,training_mode_list,metric_list)
 
-            set_seed(SEED)
+                save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
+                test_metrics = trainer.performance['test_metrics']
 
-            modification.update(modification_i)
-            args_init = local_get_args(model_name,
-                            args_init = None,
-                            dataset_names=dataset_names,
-                            dataset_for_coverage=dataset_for_coverage,
-                            modification = modification)
+                loger.add_log(test_metrics,['rmse','mae','mape','mse'],trial_id, args.step_ahead,args.horizon_step)
 
-            
-            fold_to_evaluate=[args_init.K_fold-1]
-
-            trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification,trial_id)
-
-            condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
-            valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
-            df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_to_evaluate,fold,condition1,condition2,training_mode_list,metric_list)
-
-            save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
-            test_metrics = trainer.performance['test_metrics']
-
-            loger.add_log(test_metrics,['rmse','mae','mape','mse'],trial_id, args.step_ahead,args.horizon_step)
-
-        loger.display_log()
+            loger.display_log()

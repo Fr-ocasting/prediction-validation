@@ -530,7 +530,6 @@ class DataSet(object):
 
 
     def split_normalize_load_feature_vect(self,invalid_dates,train_prop,valid_prop,test_prop,train_valid_test_split_method,normalize = True,tensor_limits_keeper = None,
-                                          #,calib_prop,batch_size,calendar_class
                                           ):
         self.get_shift_from_first_elmt()   # get shift indice and shift date from the first element / between each dataset 
         self.get_feature_vect(invalid_dates)  # Removed the forbidden dates, Build 'df_verif' and the Feature Vector Tensor masked by the forbidden indices.

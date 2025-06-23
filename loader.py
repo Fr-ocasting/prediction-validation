@@ -29,20 +29,25 @@ class calib_prop_splitter(object):
         indices = torch.randperm(self.U.size(0)) 
         split = int(self.U.size(0)*self.calib_prop)
 
-        self.indices_cal  = indices[split:]
-        self.indices_train = indices[:split]
+        self.indices_train = indices[split:]
+        self.indices_cal  = indices[:split] 
 
     def split_proper_calib(self):
         ''' Split the training set in Proper and Calibration set '''
         # Proper Set
-        self.proper_set_x = self.U[self.indices_train]
-        self.proper_contextual = {name_ds: tensor[self.indices_train] for name_ds,tensor in self.contextual_tensors.items()}
-        self.proper_set_y = self.U_target[self.indices_train]
+        self.proper_set_x = self.U[self.indices_train]   # torch.index_select(self.U,0,self.indices_train)
+        self.proper_contextual = {name_ds: tensor[self.indices_train]   # torch.index_select(tensor[self.indices_train],0,self.indices_train)
+                                  for name_ds,tensor in self.contextual_tensors.items()}
+        self.proper_set_y = self.U_target[self.indices_train]   # torch.index_select(self.U_target,0,self.indices_train)
 
         # Calib Set : 
         self.calib_set_x = self.U[self.indices_cal]
         self.calib_contextual = {name_ds: tensor[self.indices_cal] for name_ds,tensor in self.contextual_tensors.items()}
         self.calib_set_y = self.U_target[self.indices_cal]
+
+        print('\nSplitting Train into Training and Calibration Dataset:')
+        print('     Size of Proper Training Set: ',self.proper_set_x.size())
+        print('     Size of Calibration Set: ',self.calib_set_x.size())
 
 
 class CustomDataLoder(object):

@@ -392,6 +392,7 @@ def get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse'
             error_pred1[mask] = 100 * (torch.abs(real[mask] - predict1[mask]) / real[mask]) 
             error_pred2[mask] = 100 * (torch.abs(real[mask] - predict2[mask]) / real[mask]) 
             local_acceptable_error = mape_acceptable_error
+            
         else:
             raise NotImplementedError
         dic_error[metric] = {'error_pred1':error_pred1,
@@ -807,7 +808,7 @@ def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations):
         df_mase1.update({column:mase1[column]})
         df_mase2.update({column:mase2[column]})
         df_gain21.update({column:gain_mase[column]})
-    return df_mase1,df_mase2,df_gain21   
+    return df_gain21,df_mase1,df_mase2
 
 def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
     df_error1 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred1',training_mode=training_mode)
