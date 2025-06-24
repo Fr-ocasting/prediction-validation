@@ -13,6 +13,7 @@ from dataset import PersonnalInput
 import glob
 import pickle
 from build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set num_nodes as it's a contextual data 
@@ -36,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 ## C = 1
 ## num_nodes = 
 
-def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
+def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,minmaxnorm,standardize,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -50,7 +51,7 @@ def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,n
     else:
         raise NotImplementedError
 
-    NetMob_ds = load_input_and_preprocess(dims = [0,3,4],normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME)
+    NetMob_ds = load_input_and_preprocess(dims = [0,3,4],normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME,minmaxnorm=minmaxnorm,standardize=standardize)
     return(NetMob_ds)
 
 
@@ -106,7 +107,7 @@ def load_netmob_per_subway_station(FOLDER_PATH,args,intersect_coverage_period,co
 
     return(netmob_T)
 
-
+"""
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset):
 
     print('\nInit NetMob Dataset: ', netmob_T.size())
@@ -126,3 +127,4 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,netmob_T,dataset
     NetMob_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
 
     return NetMob_ds
+    """

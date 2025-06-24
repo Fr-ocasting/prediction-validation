@@ -44,7 +44,7 @@ def replace_heure_d_ete(tensor,start = 572, end = 576):
         raise NotImplementedError(f'dim {tensor.dim()} has not been implemented')
     return tensor
 
-
+"""  # A supprimer ?????
 def load_input_and_preprocess(dims,normalize,invalid_dates,args,contextual_T,dataset=None,df_dates=None):
 
     print('\nInit contextual_ds Dataset: ', contextual_T.size())
@@ -68,6 +68,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,contextual_T,dat
     contrextual_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
 
     return contrextual_ds
+"""
 
 def get_common_dates_between_contextual_and_target(target_ds,contextual_ds,training_mode):
     L_df_verif =  [getattr(target_ds.tensor_limits_keeper,f'df_verif_{training_mode}')] +[getattr(contextual_ds_i.tensor_limits_keeper,f'df_verif_{training_mode}') for _,contextual_ds_i in contextual_ds.items()]
@@ -125,10 +126,33 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
         module_path = f"load_inputs.{dataset_name}"
         module = importlib.import_module(module_path)
         importlib.reload(module)
+
+        ## ---
+        # Init 
+        standardize,minmaxnorm = args.standardize, args.minmaxnorm
+
+        # If specific normalisation for a contextual ds:
+        if hasattr(args,'contextual_kwargs') and (dataset_name in args.contextual_kwargs.keys()):
+            if 'standardize' in args.contextual_kwargs[dataset_name].keys():
+                standardize = args.contextual_kwargs[dataset_name]['standardize']
+            else:
+                standardize = False
+            if 'minmaxnorm' in args.contextual_kwargs[dataset_name].keys():
+                minmaxnorm = args.contextual_kwargs[dataset_name]['minmaxnorm']
+            else:
+                minmaxnorm = False
+            # If no specific normalisation, go back to Init
+            if not(minmaxnorm) and not(standardize):
+                standardize,minmaxnorm = args.standardize, args.minmaxnorm
+        ## ---
+
+
         contextual_ds_i = module.load_data(FOLDER_PATH,
                                         coverage_period = coverage_period,
                                         invalid_dates=invalid_dates,
                                         args=args,
+                                        minmaxnorm = minmaxnorm,
+                                        standardize = standardize,
                                         normalize=normalize,
                                         tensor_limits_keeper = target_ds.tensor_limits_keeper if hasattr(target_ds,'tensor_limits_keeper') else None,
                                         )

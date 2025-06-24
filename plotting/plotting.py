@@ -784,6 +784,9 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow):
         df_agg_all = df_error_station[column].mean()
         df_agg = pd.DataFrame({column:[df_agg_all,df_agg_morning,df_agg_evening,df_agg_off_peak]},index=['all_day','morning_peak','evening_peak','off_peak'])
     elif index_matshow == 'working_day_hour':
+        working_days = df_error_station[df_error_station.is_weekday == 'Weekday'].copy()
+        df_agg = working_days[[column,'new_hour']].groupby(['new_hour']).mean()
+    elif index_matshow == 'working_weekday_weekend_hour':
         df_agg = df_error_station[[column,'is_weekday','new_hour']].groupby(['is_weekday','new_hour']).mean()
     else:
         raise NotImplementedError

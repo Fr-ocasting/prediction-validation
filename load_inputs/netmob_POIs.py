@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 ## C = 1
 ## num_nodes = 
-def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,tensor_limits_keeper = None): # args,FOLDER_PATH,coverage_period = None
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True,tensor_limits_keeper = None,): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -99,7 +99,10 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,ten
     NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
                                            args=args,data_T=netmob_T,coverage_period = coverage_period,
                                            freq = FREQ,step_ahead = STEP_AHEAD, horizon_step = HORIZON_STEP,
-                                           name=NAME,tensor_limits_keeper=tensor_limits_keeper) 
+                                           name=NAME,
+                                           minmaxnorm=minmaxnorm,
+                                           standardize=standardize,
+                                           tensor_limits_keeper=tensor_limits_keeper) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
 

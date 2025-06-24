@@ -40,7 +40,7 @@ DATE_COL = 'HORODATE'
 LOCATION_COL = 'ID_POINT_MESURE'
 VALUE_COL = 'DEBIT_HEURE' # Ou une autre colonne pertinente retournée par load_CRITER
 
-def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True):
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args,minmaxnorm,standardize, normalize=True):
     """
     Charge, concatène, pivote, filtre et pré-traite les données CRITER.
     """
@@ -157,7 +157,8 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True)
     print("Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME,
+                                                minmaxnorm=minmaxnorm,standardize=standardize)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df_filtered.columns.tolist()

@@ -41,7 +41,7 @@ USELESS_DATES = {'hour':[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
                  'weekday':[]#[5,6],
                  }
 
-def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=True,
               data_subfolder = DATA_SUBFOLDER,
             file_base_name = FILE_BASE_NAME):
      
@@ -123,7 +123,8 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, normalize=True,
     #print("   Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME)
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME,
+                                                minmaxnorm=minmaxnorm,standardize=standardize)
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df_reindexed.columns.tolist()

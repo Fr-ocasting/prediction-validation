@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 #num_nodes = 40
 
-def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize,tensor_limits_keeper = None):
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize,tensor_limits_keeper = None):
     dims = [0]
     subway_out = load_data_from_subway_in_py(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= normalize,filename = FILE_NAME,name=NAME)
     T_subway_out = torch.Tensor(subway_out.raw_values.float())
@@ -46,7 +46,10 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize,tensor_li
     #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
     #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
     preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=T_subway_out,
-                                                            coverage_period=coverage_period,name=NAME,tensor_limits_keeper=tensor_limits_keeper)
+                                                            coverage_period=coverage_period,name=NAME,
+                                                            minmaxnorm=minmaxnorm,standardize=standardize,
+                                                            tensor_limits_keeper=tensor_limits_keeper
+                                                              )
     preprocessed_personal_input.periods = subway_out.periods
     preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
     preprocessed_personal_input.C = C

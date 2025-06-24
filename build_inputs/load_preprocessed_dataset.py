@@ -202,16 +202,20 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     return(target_ds,args)
 
 
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name,freq = None,step_ahead = None,horizon_step =None, tensor_limits_keeper=None):
+def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name,minmaxnorm,standardize,freq = None,step_ahead = None,horizon_step =None, tensor_limits_keeper=None):
     df_dates = pd.DataFrame(coverage_period)
     df_dates.columns = ['date']
-    args_DataSet = filter_args(DataSet, args,excluded_args = ['step_ahead','time_step_per_hour','horizon_step'])
+    args_DataSet = filter_args(DataSet, args,excluded_args = ['step_ahead','time_step_per_hour','horizon_step','minmaxnorm','standardize'])
 
     preprocessed_ds = PersonnalInput(invalid_dates,args,name = name, tensor = data_T, dates = df_dates,
-                            time_step_per_hour = get_time_step_per_hour(freq) if freq is not None else get_time_step_per_hour(args.freq),
+
                            dims =dims,
                            step_ahead = step_ahead if step_ahead is not None else args.step_ahead,
+                           time_step_per_hour = get_time_step_per_hour(freq) if freq is not None else get_time_step_per_hour(args.freq),
                            horizon_step = horizon_step if horizon_step is not None else args.horizon_step,
+                           minmaxnorm = minmaxnorm,
+                           standardize = standardize,
+
                            **args_DataSet)
     
     preprocessed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)

@@ -60,7 +60,7 @@ def load_csvs(args,FOLDER_PATH,coverage_period,limit_max_nan=200,taux_heure_limi
     return df_loop_occupancy_rate_full,df_flow_full,idptm_list
 
 
-def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True):
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True):
     # Load df: 
     df_loop_occupancy_rate,df_flow,idptm_list = load_csvs(args,FOLDER_PATH,coverage_period=coverage_period,limit_max_nan = 200)
 

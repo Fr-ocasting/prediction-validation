@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 ## num_nodes = 
 
 
-def load_data(dataset,FOLDER_PATH,invalid_dates,args,restricted,normalize= True): # args,FOLDER_PATH,coverage_period = None
+def load_data(dataset,FOLDER_PATH,invalid_dates,args,minmaxnorm,standardize,restricted,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -54,7 +54,7 @@ def load_data(dataset,FOLDER_PATH,invalid_dates,args,restricted,normalize= True)
     else:
         raise NotImplementedError
 
-    NetMob_ds = load_input_and_preprocess(dims = [0,2,3],normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME)
+    NetMob_ds = load_input_and_preprocess(dims = [0,2,3],normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME,minmaxnorm=minmaxnorm,standardize=standardize)
     return(NetMob_ds)
 
    

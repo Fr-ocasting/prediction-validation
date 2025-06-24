@@ -40,7 +40,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 ## C = 1
 ## num_nodes = 
 
-def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,normalize= True): # args,FOLDER_PATH,coverage_period = None
+def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,minmaxnorm,standardize,normalize= True): # args,FOLDER_PATH,coverage_period = None
     '''
     args:
     ------
@@ -92,7 +92,8 @@ def load_data(dataset,FOLDER_PATH,invalid_dates,intersect_coverage_period,args,n
 
         # dimension on which we want to normalize: 
         dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-        NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME)
+        NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=netmob_T,dataset=dataset,name=NAME,
+                                               minmaxnorm=minmaxnorm,standardize=standardize)
         NetMob_POI.station_name = id_station
         NetMob_POI.periods = None # dataset.periods
         NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))

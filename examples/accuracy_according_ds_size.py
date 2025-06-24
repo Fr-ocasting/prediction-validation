@@ -54,35 +54,52 @@ modification_compute = {'use_target_as_context': False,
 #     '100p': {'train_pourcent': 100},
 #                  }
 
+# modifications = {
+#     '10p': {'calib_prop' : 0.90,
+#             'batch_size':16},
+#     '15p': {'calib_prop' : 0.85,
+#             'batch_size':16},
+#     '25p':  {'calib_prop' : 0.75,
+#              'batch_size':16},
+#     '35p':  {'calib_prop' : 0.65,
+#              'batch_size':32},
+#     '50p':  {'calib_prop' : 0.5,
+#             'batch_size':64},
+#     '75p':  {'calib_prop' : 0.25,
+#             'batch_size':64},
+#     '80p':  {'calib_prop' : 0.2},
+#     '85p':  {'calib_prop' : 0.15},
+#     '90p':  {'calib_prop' : 0.1},
+#     '95p':  {'calib_prop' : 0.05},
+#     '100p': {'calib_prop': None},
+#                  }
+
 modifications = {
-    # '10p': {'calib_prop' : 0.90,
-    #         'batch_size':16},
-    # '15p': {'calib_prop' : 0.85,
-    #         'batch_size':16},
-    '25p':  {'calib_prop' : 0.75,
-             'batch_size':16},
-    '35p':  {'calib_prop' : 0.65,
-             'batch_size':32},
-    '50p':  {'calib_prop' : 0.5,
-            'batch_size':64},
-    '75p':  {'calib_prop' : 0.25,
-            'batch_size':64},
-    '80p':  {'calib_prop' : 0.2},
-    '85p':  {'calib_prop' : 0.15},
-    '90p':  {'calib_prop' : 0.1},
-    '95p':  {'calib_prop' : 0.05},
-    '100p': {'calib_prop': None},
+    '10p': {'calib_prop' : 0.90},
+    # '15p': {'calib_prop' : 0.85},
+    # '25p':  {'calib_prop' : 0.75},
+    # '35p':  {'calib_prop' : 0.65},
+    '50p':  {'calib_prop' : 0.5},
+    # '75p':  {'calib_prop' : 0.25},
+    # '80p':  {'calib_prop' : 0.2},
+    # '85p':  {'calib_prop' : 0.15},
+    # '90p':  {'calib_prop' : 0.1},
+    # '95p':  {'calib_prop' : 0.05},
+    # '100p': {'calib_prop': None},
                  }
 
 if __name__ == "__main__":
     loger = LOG()
-    target_data = 'subway_in'#'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
-    dataset_for_coverage =['subway_in','netmob_POIs'] # ['CRITER_3_4_5_lanes_flow','netmob_POIs'] #['PeMS08_flow'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
+    target_data = 'PeMS08_flow'#'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+    dataset_for_coverage =['PeMS08_flow'] # ['subway_in','netmob_POIs'] # ['CRITER_3_4_5_lanes_flow','netmob_POIs'] #['PeMS08_flow'] # ['subway_in','netmob_image_per_station']#['subway_in','subway_indiv'] # ['subway_in','netmob_image_per_station'] #  ['data_bidon','netmob'] #  ['subway_in','netmob']  # ['METR_LA'] # ['PEMS_BAY']
 
-    dic_dataset_names = {'STAEformer':[['subway_in'],['subway_in','calendar'], ['subway_in','calendar','netmob_POIs']],
-                        'STGCN':[['subway_in'], ['subway_in','calendar_embedding'],['subway_in', 'calendar_embedding','netmob_POIs']]
+    # dic_dataset_names = {'STAEformer':[['subway_in'],['subway_in','calendar'], ['subway_in','calendar','netmob_POIs']],
+    #                     'STGCN':[['subway_in'], ['subway_in','calendar_embedding'],['subway_in', 'calendar_embedding','netmob_POIs']]
+    #                     }
+    dic_dataset_names = {'STAEformer':[['PeMS08_flow'],['PeMS08_flow','calendar']],
+                        'STGCN':[['PeMS08_flow'], ['PeMS08_flow','calendar_embedding']]
                         }
-    for model_name in ['STGCN']: # '', 'STAEformer',
+    for model_name in ['STGCN','STAEformer']: # '', 'STAEformer',
         for dataset_names in dic_dataset_names[model_name]:
             subfolder = f'comparison_accuracy_per_size_{model_name}'
             #config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")

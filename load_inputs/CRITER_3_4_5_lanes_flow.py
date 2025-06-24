@@ -41,10 +41,14 @@ CHANNEL = 'DEBIT_HEURE'
 NIGHT_HOUR = [0,1,2,3,4,5,6,21,22,23]
 
 
-def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,
+             minmaxnorm,
+              standardize,
+              normalize= True,
               data_subfolder = DATA_SUBFOLDER,
               name=NAME,
               channel = CHANNEL,
+
               city = CITY,
                 limit_max_nan=200,
                 taux_heure_limit = 100,
@@ -79,7 +83,8 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,normalize= True,
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
 
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period = coverage_period,name=f"{DATA_SUBFOLDER}_{name}") 
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period = coverage_period,name=f"{DATA_SUBFOLDER}_{name}",
+                                                minmaxnorm=minmaxnorm,standardize=standardize) 
 
     # --- Finalisation Métadonnées ---
     processed_input.spatial_unit = df.columns.tolist()

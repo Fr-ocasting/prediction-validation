@@ -95,6 +95,8 @@ def load_datasets_to_predict(args,invalid_dates,coverage_period,normalize):
                                             invalid_dates = invalid_dates,
                                             coverage_period = coverage_period,
                                             args = args,
+                                            minmaxnorm = args.minmaxnorm,
+                                            standardize = args.standardize,
                                             normalize= normalize)
         
     print(f"   Init Dataset: '{preprocessed_ds.raw_values.size()}. {torch.isnan(preprocessed_ds.raw_values).sum()} Nan values")

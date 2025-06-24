@@ -37,7 +37,7 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 num_nodes = 40
 
-def load_data(dataset,args,FOLDER_PATH,intersect_coverage_period,normalize,invalid_dates):
+def load_data(dataset,args,FOLDER_PATH,intersect_coverage_period,minmaxnorm,standardize,normalize,invalid_dates):
     id_stations = dataset.spatial_unit
     contextual_subway_out = []
 
@@ -50,7 +50,8 @@ def load_data(dataset,args,FOLDER_PATH,intersect_coverage_period,normalize,inval
         #print("\n>>>>> ICI ON UTILISE LE SUBWAY IN FUTURE !!!!")
         #netmob_T = torch.roll(torch.Tensor(subway_out.raw_values), shifts=-1, dims=0)
 
-        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset,name=NAME)
+        preprocessed_personal_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,netmob_T=T_subway_out,dataset=dataset,name=NAME,
+                                                                minmaxnorm=minmaxnorm,standardize=standardize)
         preprocessed_personal_input.station_name = id_station
         preprocessed_personal_input.periods = subway_out.periods
         preprocessed_personal_input.spatial_unit = subway_out.spatial_unit
