@@ -17,7 +17,7 @@
 constant_name = ''
 constant_modif = {'dataset_for_coverage': ['subway_in','netmob_POIs'],
                   'target_data': 'subway_in',
-    'loss_function_type':'HuberLoss',
+                  'loss_function_type':'HuberLoss',
                         'optimizer': 'adamw',
                         'batch_size': 128,
                         'epochs':300,

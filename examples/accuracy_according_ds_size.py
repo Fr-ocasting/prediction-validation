@@ -31,8 +31,8 @@ modification_compute = {'use_target_as_context': False,
                             'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                             'drop_last' : False,  # True
                             'mixed_precision' : False, # True # False
-                            'torch_compile' : 'compile' , #'compile', # 'compile' # 'jit_script' #'trace' # False
-                            'device': torch.device('cuda:0')
+                            'torch_compile' : False , #'compile', # 'compile' # 'jit_script' #'trace' # False
+                            'device': torch.device('cuda:1')
                             }
 # modifications = {
 #     '10p': {'train_pourcent' : 10,
@@ -55,10 +55,10 @@ modification_compute = {'use_target_as_context': False,
 #                  }
 
 modifications = {
-    '10p': {'calib_prop' : 0.90,
-            'batch_size':16},
-    '15p': {'calib_prop' : 0.85,
-            'batch_size':16},
+    # '10p': {'calib_prop' : 0.90,
+    #         'batch_size':16},
+    # '15p': {'calib_prop' : 0.85,
+    #         'batch_size':16},
     '25p':  {'calib_prop' : 0.75,
              'batch_size':16},
     '35p':  {'calib_prop' : 0.65,
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     dic_dataset_names = {'STAEformer':[['subway_in'],['subway_in','calendar'], ['subway_in','calendar','netmob_POIs']],
                         'STGCN':[['subway_in'], ['subway_in','calendar_embedding'],['subway_in', 'calendar_embedding','netmob_POIs']]
                         }
-    for model_name in ['STAEformer','STGCN']: # '', 'STAEformer',
+    for model_name in ['STGCN']: # '', 'STAEformer',
         for dataset_names in dic_dataset_names[model_name]:
             subfolder = f'comparison_accuracy_per_size_{model_name}'
             #config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
