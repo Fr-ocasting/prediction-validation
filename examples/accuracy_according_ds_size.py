@@ -75,17 +75,18 @@ modification_compute = {'use_target_as_context': False,
 #                  }
 
 modifications = {
-    '10p': {'calib_prop' : 0.90},
-    # '15p': {'calib_prop' : 0.85},
-    # '25p':  {'calib_prop' : 0.75},
-    # '35p':  {'calib_prop' : 0.65},
-    '50p':  {'calib_prop' : 0.5},
-    # '75p':  {'calib_prop' : 0.25},
-    # '80p':  {'calib_prop' : 0.2},
+    '5p': {'calib_prop' : 0.95},
+    # '10p': {'calib_prop' : 0.90},
+    '15p': {'calib_prop' : 0.85},
+    '25p':  {'calib_prop' : 0.75},
+    '35p':  {'calib_prop' : 0.65},
+    # '50p':  {'calib_prop' : 0.5},
+    '75p':  {'calib_prop' : 0.25},
+    '80p':  {'calib_prop' : 0.2},
     # '85p':  {'calib_prop' : 0.15},
-    # '90p':  {'calib_prop' : 0.1},
+    '90p':  {'calib_prop' : 0.1},
     # '95p':  {'calib_prop' : 0.05},
-    # '100p': {'calib_prop': None},
+    '100p': {'calib_prop': None},
                  }
 
 if __name__ == "__main__":
