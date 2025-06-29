@@ -90,10 +90,19 @@ if __name__ == '__main__':
 
     #  Def apps : 
     #apps = [app for app in os.listdir(netmob_data_FOLDER_PATH) if ((app != 'Lyon.geojson') and (not app.startswith('.'))) ]   # Avoid hidden folder and Lyon.geojson
-    apps = ['Instagram','Facebook','Uber','Google_Maps','Waze','Spotify','Deezer','Telegram','Facebook_Messenger','Snapchat','WhatsApp','Twitter', 'Pinterest']
+    ## 1st definition of apps: 
+    if False:
+        apps = ['Instagram','Facebook','Uber','Google_Maps','Waze','Spotify','Deezer','Telegram','Facebook_Messenger','Snapchat','WhatsApp','Twitter', 'Pinterest']
+        list_gdf = [gdf,gdf_expanded]
+        gdf_names = ['netmob_POI_Lyon','netmob_POI_Lyon_expanded']
+    ## 2nd definition of apps: 
+    if True:
+        apps = ['Web_Weather','Web_Downloads']
+        list_gdf = [gdf,gdf_expanded]
+        gdf_names = ['netmob_POI_Lyon','netmob_POI_Lyon_expanded']
 
     # Build NetMob Data around POI: 
-    for gdf_i,name_folder_i in zip([gdf,gdf_expanded],['netmob_POI_Lyon','netmob_POI_Lyon_expanded']):
+    for gdf_i,name_folder_i in zip(list_gdf,gdf_names):
         # Build dictionnary POI2tile_ids:
         for tag in gdf_i.tag.unique():
             gdf_ii = gdf_i[gdf_i.tag == tag]
