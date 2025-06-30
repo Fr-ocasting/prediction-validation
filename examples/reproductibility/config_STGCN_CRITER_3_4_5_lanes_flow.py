@@ -6,7 +6,7 @@ constant_modif = {'dataset_for_coverage': ['CRITER_3_4_5_lanes_flow','netmob_POI
                   'model_name': 'STGCN',
                         'optimizer': 'adamw',
                         'batch_size': 128,
-                        'epochs': 500,
+                        'epochs': 1000,
                         'step_ahead' : 10,
                         'horizon_step' : 5,
                         'freq': '6min',
