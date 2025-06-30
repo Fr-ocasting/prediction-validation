@@ -109,8 +109,12 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
 
 def load_trainer_ds_from_saved_trial(args,model_save_path,modification={}):
 
-    fold_to_evaluate = [args['K_fold']-1]
-    args_init = Namespace(**args)
+    try: 
+        fold_to_evaluate = [args['K_fold']-1]
+        args_init = Namespace(**args)
+    except:
+        fold_to_evaluate = [args.K_fold-1]
+        args_init = Namespace(**vars(args)) 
     args_init.ray = False
 
 

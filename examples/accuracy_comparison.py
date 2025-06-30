@@ -86,9 +86,16 @@ def plot_daily_profile(profil_real_station_i,daily_profil1_station_i,daily_profi
     show(p)
 
 def get_working_day_daily_profile_on_h(h,full_predict1,df_verif,ds1,args_init1):
-        dates = df_verif.iloc[:,-(args_init1.step_ahead+1-h)].copy()
-        #print('df verif at iloc: ',-(args_init1.step_ahead+1-h))
-        #display(dates.head(2))
+        h_idx = h//args_init1.horizon_step -1
+        h_idx_max = args_init1.step_ahead//args_init1.horizon_step
+
+        dates = df_verif.iloc[:,-(h_idx_max-h_idx)].copy()
+        # print('\n')
+        # print(' Prediction horizon: ',h)
+        # print(' Prediction horizon max: ',h_idx_max)
+        # print('df_verif:')
+        # display(df_verif.head(2))
+        # print(' Dates shape: ',dates.head(2))
         dates.reset_index(drop=True,inplace=True)
 
         ## Select Only Working Days : 
@@ -102,7 +109,7 @@ def get_working_day_daily_profile_on_h(h,full_predict1,df_verif,ds1,args_init1):
                     })
         
 
-        df_horizon = pd.DataFrame(full_predict1[:,:,h-1].detach().cpu().numpy(),columns = ds1.spatial_unit)
+        df_horizon = pd.DataFrame(full_predict1[:,:,h_idx].detach().cpu().numpy(),columns = ds1.spatial_unit)
         # print('Iloc: ',h-1)
         df_horizon = pd.concat([df_dates.copy(),df_horizon],axis=1)
         df_horizon['hour'] = df_horizon['date'].dt.hour
@@ -130,6 +137,7 @@ def working_day_daily_profile(full_predict1,ds1,args_init1):
                                                                      ds1,
                                                                      args_init1)
     return profil_per_horizon
+
 
 
 def get_profil_per_horizon(full_predict1,full_predict2,Y_true,ds1,ds2,args_init1,args_init2):
@@ -208,17 +216,31 @@ def get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode):
     """ 
     full_predict1,Y_true,_ = trainer1.testing(ds1.normalizer, training_mode =training_mode)
     full_predict2,_,_ = trainer2.testing(ds2.normalizer, training_mode =training_mode)
-
-    inputs = [[x,y,x_c] for  x,y,x_c in ds1.dataloader[training_mode]]
-    X = torch.cat([x for x,_,_ in inputs],0)
+    try: 
+        inputs = [[x,y,x_c] for  x,y,x_c in ds1.dataloader[training_mode]]
+        X = torch.cat([x for x,_,_ in inputs],0)
+    except:
+        inputs = [[x,y] for  x,y in ds1.dataloader[training_mode]]
+        X = torch.cat([x for x,_ in inputs],0)
+        
     X = ds1.normalizer.unormalize_tensor(inputs = X,feature_vect = True) # unormalize input cause prediction is unormalized 
     return(full_predict1,full_predict2,Y_true,X)
 
-def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,step_ahead,step_ahead_max):
-    previous = X[:,:,-(step_ahead_max+1-step_ahead)]
-    predict1 = full_predict1[:,:,step_ahead-1]
-    predict2 = full_predict2[:,:,step_ahead-1]
-    real = Y_true[:,:,step_ahead-1]
+# def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,step_ahead,step_ahead_max):
+#     previous = X[:,:,-(step_ahead_max+1-step_ahead)]
+#     predict1 = full_predict1[:,:,step_ahead-1]
+#     predict2 = full_predict2[:,:,step_ahead-1]
+#     real = Y_true[:,:,step_ahead-1]
+#     return previous,predict1,predict2,real
+
+def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx):
+    predict1 = full_predict1[:,:,h_idx-1]
+    predict2 = full_predict2[:,:,h_idx-1]
+    real = Y_true[:,:,h_idx-1]
+    try: 
+        previous = Y_true[...,h_idx-2]
+    except:
+        previous = X[...,-1]
     return previous,predict1,predict2,real
 
 
@@ -315,7 +337,7 @@ def load_trainer_ds_from_1_args(args_init,modification = {},save_folder = None,t
 def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1):
     print('Model1 correspond to : ',trial_id1)
     print('Model2 correspond to : ',trial_id2)
-    horizon_list = f"{'/'.join(list(map(str,np.arange(1,ds1.step_ahead+1))))}"
+    horizon_list = f"{'/'.join(list(map(str,np.arange(ds1.horizon_step,ds1.step_ahead+1,ds1.horizon_step))))}"
     for metric in ['mae','mse','rmse']:
         for horizon_group in ['per','all']:
             if horizon_group == 'all': axis = None

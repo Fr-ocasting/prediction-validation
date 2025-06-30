@@ -377,6 +377,7 @@ class Trainer(object):
             if normalizer is not None: 
                 pred = normalizer.unormalize_tensor(inputs = pred,feature_vect = True) #  device = self.args.device
                 y_b = normalizer.unormalize_tensor(inputs=y_b,feature_vect = True) # device = self.args.device
+
             loss = self.loss_function(pred.float(),y_b)
         #print('loss: ',loss)
         #print('pred: ', pred.dtype, pred.size())

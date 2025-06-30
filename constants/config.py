@@ -253,7 +253,7 @@ def update_out_dim(args):
     else: 
         raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
     
-    args.out_dim = args.out_dim_factor * args.step_ahead
+    args.out_dim = args.out_dim_factor * (args.step_ahead // args.horizon_step)
     return args 
 
 def update_modif(args):

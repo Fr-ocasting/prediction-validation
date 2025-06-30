@@ -16,16 +16,15 @@ from dataset import DataSet, PersonnalInput
 from utils.utilities import filter_args # Assurez-vous que ce chemin est correct
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 # --- Constantes spécifiques à cette donnée ---
-NAME = 'velov'
+NAME = 'bike_in'
 FILE_BASE_NAME = 'velov'
-DIRECTION = 'emitted'
+DIRECTION = 'attracted' # attracted
 FILE_PATTERN = f'velov_{DIRECTION}_by_station' # Sera complété par args.freq
 DATA_SUBFOLDER = 'agg_data/velov' # Sous-dossier dans FOLDER_PATH
 
-# Fréquence native la plus fine disponible (pour info)
-NATIVE_FREQ = '2min' # A vérifier, basé sur votre commentaire
+
 # Couverture théorique
-START = '2019-01-01' # Exemple basé sur head()
+START = '2019-01-01' 
 END = '2020-01-01'
 USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
                  'weekday':[]#[5,6],
@@ -36,25 +35,33 @@ list_of_invalid_period = []
 C = 1 # Nombre de canaux/features par unité spatiale
 
 # Colonnes attendues dans le CSV
-DATE_COL = 'date_sortie' # Ou 'date_entree' pour 'attracted'?
-LOCATION_COL = 'id_sortie' # Ou 'id_entree' pour 'attracted'?
+DATE_COL = 'date_retour' 
+LOCATION_COL = 'id_retour' # Ou 'id_entree' pour 'attracted'?
 VALUE_COL = 'volume'
 
-def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=True):
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=True,
+              file_pattern = FILE_PATTERN,
+              data_subfolder = DATA_SUBFOLDER,
+              date_col = DATE_COL,
+              location_col = LOCATION_COL,
+              value_col = VALUE_COL,
+              direction = DIRECTION,
+              name = NAME,
+              file_base_name = FILE_BASE_NAME):
     """
     Charge, pivote, filtre et pré-traite les données velov (emitted).
     """
     target_freq = args.freq
     # Construction spécifique du nom de fichier pour velov
-    file_name = f"{FILE_PATTERN}{target_freq}"
-    data_file_path = os.path.join(FOLDER_PATH, DATA_SUBFOLDER, f"{file_name}.csv")
+    file_name = f"{file_pattern}{target_freq}"
+    data_file_path = os.path.join(FOLDER_PATH, data_subfolder, f"{file_name}.csv")
 
     print(f"Chargement des données depuis : {data_file_path}")
     try:
         df = pd.read_csv(data_file_path)
     except FileNotFoundError:
         print(f"ERREUR : Le fichier {data_file_path} n'a pas été trouvé.")
-        print(f"Vérifiez que la fréquence '{target_freq}' existe pour velov_{DIRECTION} et que les chemins sont corrects.")
+        print(f"Vérifiez que la fréquence '{target_freq}' existe pour velov_{direction} et que les chemins sont corrects.")
         return None
     except Exception as e:
         print(f"ERREUR lors du chargement du fichier {file_name}.csv: {e}")
@@ -66,11 +73,11 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,stan
         # df = df.rename(columns={'date_sortie': DATE_COL, 'id_sortie': LOCATION_COL, 'volume': VALUE_COL})
 
         # Convertir en datetime
-        df[DATE_COL] = pd.to_datetime(df[DATE_COL])
+        df[date_col] = pd.to_datetime(df[date_col])
 
         # Pivoter le DataFrame
         print("Pivotage du DataFrame...")
-        df_pivoted = df.pivot_table(index=DATE_COL, columns=LOCATION_COL, values=VALUE_COL, aggfunc='sum')
+        df_pivoted = df.pivot_table(index=date_col, columns=location_col, values=value_col, aggfunc='sum')
 
         # Remplacer les NaN par 0
         df_pivoted = df_pivoted.fillna(0)
@@ -81,7 +88,6 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,stan
         # Filtrage temporel basé sur l'intersection
         print(f"Filtrage temporel sur {len(coverage_period)} dates...")
         df_filtered = df_pivoted[df_pivoted.index.isin(coverage_period)].copy()
-        local_df_dates = pd.DataFrame(df_filtered.index, columns=['date'])
 
         if df_filtered.empty:
              print(f"ERREUR : Aucune donnée restante après filtrage temporel pour {file_name}.csv")
@@ -104,7 +110,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,stan
     print("Création et prétraitement de l'objet PersonnalInput...")
     dims = [0] # if [0] then Normalisation on temporal dim
 
-    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=NAME,
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name=name,
                                                 minmaxnorm=minmaxnorm,standardize=standardize)
 
     # --- Finalisation Métadonnées ---
@@ -112,7 +118,7 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,stan
     processed_input.C = C
     processed_input.periods = None # Pas de périodicité spécifique définie ici
 
-    print(f"Chargement et prétraitement de {FILE_BASE_NAME} terminés.")
+    print(f"Chargement et prétraitement de {file_base_name} terminés.")
     return processed_input
 
 # --- Point d'entrée pour exécution directe (optionnel, pour tests) ---

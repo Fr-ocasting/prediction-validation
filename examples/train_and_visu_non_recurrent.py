@@ -254,9 +254,9 @@ def get_ds(model_name=None,dataset_names=None,dataset_for_coverage=None,
     args_with_contextual,K_subway_ds = get_multi_ds(model_name if model_name is not None else args_init.model_name,
                                                     dataset_names if dataset_names is not None else args_init.dataset_names,
                                                     dataset_for_coverage if dataset_for_coverage is not None else args_init.dataset_for_coverage,
-                                                    modification,
-                                                    args_init,
-                                                    fold_to_evaluate)
+                                                    modification=modification,
+                                                    args_init=args_init,
+                                                    fold_to_evaluate=fold_to_evaluate)
     ds = K_subway_ds[-1]
     trial_id = get_trial_id(args_with_contextual)
     save_folder = None
