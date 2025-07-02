@@ -32,14 +32,23 @@ class model(nn.Module):
         dim_feedforward: int = 32,
         dropout: float = 0.1,
         keep_topk: bool = False,
+        output_temporal_dim: int = None,
     ):
         super().__init__()
+        self.query_dim = query_dim
+        self.key_dim = key_dim
+        self.latent_dim = latent_dim
         #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
         self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout,keep_topk)
         #print('query_dim,key_dim,dim_model,num_heads: ',query_dim,key_dim,dim_model,num_heads)
+
         self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
         #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
         #self.outputs = feed_forward(dim_model,dim_feedforward)
+        if output_temporal_dim is None:
+            self.temporal_proj = None
+        else:
+            self.temporal_proj = nn.Linear(key_dim,output_temporal_dim)
 
         #self.avgpool = nn.AvgPool3d((node_ids,1,1))
         #self.avgpool = nn.AvgPool2d((node_ids,1))
@@ -61,8 +70,13 @@ class model(nn.Module):
         x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
 
-        #print('After MHA:',x_mha.size())
+        # print('After MHA:',x_mha.size())
         x_fc = self.feedforward(x_mha)
-        #print('After FC:',x_fc.size())
+        # print('After FC:',x_fc.size())
+        if self.temporal_proj is not None:
+            # print(x_fc[0,0,:])
+            x_fc = self.temporal_proj(x_fc.reshape(x_fc.size(0),x_fc.size(1),self.latent_dim,self.query_dim))  # [B,N,z] -> [B,N,z1,L] -> [B,N,z1,r] -> [B,N,z']
+            x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),-1)
+            # print('After Temporal Projection:',x_fc.size())
 
         return x_fc

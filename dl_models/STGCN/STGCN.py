@@ -67,15 +67,22 @@ class STGCN(nn.Module):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, args.num_nodes, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding,self.g_constructor))
         self.st_blocks = nn.Sequential(*modules)
 
-        self.vision_concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
+        ## Tackle Input if concatenated Late: 
+        # self.vision_concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
+        if (hasattr(args,'contextual_kwargs')) and ('netmob_POIs' in args.contextual_kwargs.keys()):
+            self.vision_concatenation_late = not(args.contextual_kwargs['netmob_POIs']['stacked_contextual']) 
+            extracted_feature_dim = args.contextual_kwargs['netmob_POIs']['out_dim']* args.contextual_kwargs['netmob_POIs']['attn_kwargs']['L_out']
+        else:
+            self.vision_concatenation_late = False
+            extracted_feature_dim = None
+        ## ...
+
+
         self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
 
         self.Ko = Ko
         self.num_nodes = args.num_nodes
-        if  (hasattr(args,'args_vision') and hasattr(args.args_vision,'out_dim')):
-            extracted_feature_dim = args.args_vision.out_dim 
-        else:
-            extracted_feature_dim = None
+            
 
         if hasattr(args.args_embedding,'embedding_dim'):
             embedding_dim = args.args_embedding.embedding_dim 
@@ -134,6 +141,7 @@ class STGCN(nn.Module):
             1st step: reshape permute input for first st_blocks : [B,C,L,N] 
             
             '''
+            # print('\nx.size: ',x.size())
             # Tackle case where we only want to use the output module (and not the core-model STGCN
             if not (x.numel() == 0):
                 # Reshape and permute : [B,N,L] or [B,C,N,L] ->  [B,C,L,N]
@@ -146,15 +154,15 @@ class STGCN(nn.Module):
                     x = x.permute(0,1,3,2)
                     # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
                     x = self.st_blocks(x)
-
                 ### ---
-            #print('self.Ko:', self.Ko)
+            # print('x.size after st_blocks: ',x.size())
+            # print('self.Ko:', self.Ko)
             if self.Ko >= 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
                 x = self.output(x,x_vision,x_calendar)
             elif self.Ko == 0:
                 # [B,C_out,L',N] = [B,1,L',N] actually 
-                if self.vision_concatenation_late and x_vision is not None:
+                if x_vision is not None:
                     # [B,C_out,N,L'] -> [B,C_out,L',N] 
                     x_vision = x_vision.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C_out,L',N]

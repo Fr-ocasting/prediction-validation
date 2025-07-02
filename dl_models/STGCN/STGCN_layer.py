@@ -442,28 +442,33 @@ class OutputBlock(nn.Module):
     def forward(self,x: Tensor,
                 x_vision: Optional[Tensor] = None, 
                 x_calendar: Optional[Tensor] = None) -> Tensor:
-        #print("\nEntry Output Block:")
-        #print('x.size(): ',x.size())   #->  [B,C,N,1]
+        # print("\nEntry Output Block:")
+        # print('x.size(): ',x.size())   #->  [B,C,N,1]
         x = self.forward_temporal_agg(x)
 
-        #print('x.size after temporal conv + permute: ',x.size())
+        # print('x.size after temporal conv + permute: ',x.size())
 
         ## Concatenate Late if exists:
         cat_list: List[Tensor] = []
         if self.vision_concatenation_late and x_vision is not None:
             #assert x_vision is not None
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
+            # print('x_vision.size(): ',x_vision.size())
+            x_vision = x_vision.unsqueeze(1)  # [B,N,Z] -> [B,1,N,Z] 
             cat_list.append(x_vision) 
         if self.TE_concatenation_late and x_calendar is not None:
             # Reduce channel dim of calendar to 1 (cause correspond to repeated channel and x channel has been reduce to 1)
+            # print('x_calendar.size(): ',x_calendar.size())
             x_calendar = x_calendar[:,0:1,:,:]  # [B,C,N,L_calendar] -> [B,1,N,L_calendar]
+            # print('keep only one dimension (all identical): x_calendar.size(): ',x_calendar.size())
             # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,1,N,Z+L_calendar]
             cat_list.append(x_calendar)
         if len(cat_list) > 0:
             x = torch.cat([x]+cat_list,dim=-1) 
+        
         ## ...
 
-        #print('x.size after concatenation late if exists: ',x.size())
+        # print('x.size after concatenation late if exists: ',x.size())
         #print("\nforward output module:")
         #print('fc1: ',self.fc1)
         x = self.fc1(x)

@@ -38,16 +38,16 @@ from utils.utilities import filter_args
 from build_inputs.load_adj import load_adj
 import importlib
 
-def load_feature_extractor_model(args_vision):
-    script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}")
-    importlib.reload(script)
-    func = script.model
-    filered_args = filter_args(func, args_vision)
+# def load_feature_extractor_model(args_vision):
+#     script = importlib.import_module(f"dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}")
+#     importlib.reload(script)
+#     func = script.model
+#     filered_args = filter_args(func, args_vision)
 
-    return func(**filered_args) 
+#     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim):
+def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_temporal_dim = None):
     script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
     scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
     importlib.reload(scrip_args)
@@ -55,6 +55,7 @@ def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim):
     args_ds_i.dropout = args.dropout
     args_ds_i.query_dim = query_dim  # input dim of Query 
     args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
+    args_ds_i.output_temporal_dim = output_temporal_dim 
     
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
@@ -78,6 +79,7 @@ class full_model(nn.Module):
     dict_pos_node_attr2ds:       Dict[int, str]
     dict_ds_which_need_attn2pos: Dict[str, List[int]]
     nb_add_channel:              int
+    dic_stacked_contextual:      Dict[str,bool]
 
 
     """
@@ -105,6 +107,7 @@ class full_model(nn.Module):
 
         self.spatial_attn_per_station = nn.ModuleDict()   # même nom conservé
         self.spatial_attn_poi        = nn.ModuleDict()
+        self.dic_stacked_contextual = {}
 
         #___ Add positions for each dataset which need spatial attention:
         self.contextual_positions = args.contextual_positions
@@ -131,6 +134,9 @@ class full_model(nn.Module):
         args = self.update_vision_args(args)
         self.tackle_netmob(args)
         """
+        # === Tackle Feature Extractor:
+        for ds_name,kwargs in args.contextual_kwargs.items():
+            self.dic_stacked_contextual[ds_name] = kwargs['stacked_contextual']
 
         # === Tackle Node Graphe Attributes):
         self.tackle_node_attributes(args)
@@ -148,12 +154,39 @@ class full_model(nn.Module):
             self.TE_concatenation_late = False
         if ((self.te is not None) and not(args.args_embedding.concatenation_early) and not(args.args_embedding.concatenation_late)):
                  raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
+        
         # === Trafic Model ===
         args.time_step_per_hour = int(dataset.time_step_per_hour)
         core_model, args = load_model(dataset, args)
         self.core_model = core_model
         self.L = args.L
         self.num_nodes = args.num_nodes
+
+    # def load_feature_extractor(self,args):
+    #     if hasattr(args,'args_vision'):
+    #         self.feature_extractor_model = load_feature_extractor_model(args.args_vision)
+    #     else:
+    #         self.feature_extractor_model = None
+
+    # def forward_feature_extractor_model(self,x: Tensor,
+    #                                     contextual: List[Tensor])->Tuple[Tensor,Optional[Tensor]]:
+
+    #     if self.feature_extractor_model is not None:
+    #         kwargs_i = getattr(self,f"kwargs_netmob_POIs")
+    #         netmob_T = contextual[self.pos_netmob]
+    #         extracted_features = self.feature_extractor_model(x,netmob_T) 
+
+    #         if kwargs_i['concatenation_early']:
+    #             # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
+    #             x = torch.cat([x,extracted_features],dim = -1)
+
+    #         # No concatenation late: we do not keep the extracted features
+    #         if not(('concatenation_late' in kwargs_i.keys()) and (kwargs_i['concatenation_late'])):
+    #             extracted_features = None
+    #         # ... 
+
+    #     return x,extracted_features  
+
 
     """ #A retirer 
     def tackle_contextual_data_to_extract(self,args):
@@ -309,9 +342,11 @@ class full_model(nn.Module):
                 raise NotImplementedError(f"Dataset {ds_name} has not been implemented for spatial selection / spatial attention")
             
         for ds_name in self.ds_which_need_global_attn:
-            init_spatial_dim = getattr(args, f"n_units_{ds_name}")
-            #self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.num_nodes, init_spatial_dim=init_spatial_dim)
-            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, init_spatial_dim=args.L)
+            if ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()):
+                L_out = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out']
+            else:
+                L_out = None
+            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, init_spatial_dim=args.L,output_temporal_dim = L_out)
 
             
     def stack_node_attribute(self,x: torch.Tensor, 
@@ -329,12 +364,16 @@ class full_model(nn.Module):
         '''
         x:  [B,N,L]
         Some DataSet are not directly available as node attribute. 
-        As example about POIs, we need spatial attention to reduce the channel dim to 1. 
+        As example about POIs, we need spatial attention to reduce the spatial dim to N 
         '''
 
         #print('Spatial Attention for Node Attributes')
-        L_node_attributes: List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
+        L_node_attributes   : List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
+        L_extracted_feature : List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
+
         #print('ds_which_need_spatial_attn_per_station: ',self.ds_which_need_spatial_attn_per_station)
+        # print('self.spatial_attn_per_station.keys(): ',self.spatial_attn_per_station.keys())
+        # print('self.dic_stacked_contextual:', self.dic_stacked_contextual)
         for ds_name, attn_list in self.spatial_attn_per_station.items():
             print('Dataset: ',ds_name)
             pos_list = self.contextual_positions[ds_name] 
@@ -350,11 +389,20 @@ class full_model(nn.Module):
             # MultiHead-CrossAttention on Spatial Channel  between x[k] ([B,L]) and contextual_tensor[k] ([B,P,L]) -> Return [B,L,Z]
             # Spatial channel then need to unsqueeze and permute.
             extracted_feature_for_spatial_unit_i = torch.stack(extracted_feature_for_spatial_unit_i, dim=-1).permute(0,2,3,1)
-            L_node_attributes.append(extracted_feature_for_spatial_unit_i)
-        return L_node_attributes
+
+            if self.dic_stacked_contextual[ds_name]:
+                L_node_attributes.append(extracted_feature_for_spatial_unit_i)
+            else:
+                L_extracted_feature.append(extracted_feature_for_spatial_unit_i)
+        if len(L_extracted_feature) > 0:
+            extracted_features = torch.cat(L_extracted_feature)
+        else:
+            extracted_features = None
+        return L_node_attributes,extracted_features
 
     def add_other_node_attributes(self, 
                                   L_node_attributes: List[torch.Tensor], 
+                                  extracted_features: torch.Tensor,
                                     x: torch.Tensor,
                                     contextual: List[torch.Tensor]
                                   )-> List[torch.Tensor]:
@@ -397,15 +445,20 @@ class full_model(nn.Module):
             # print('attention_module_i: ',attention_module_i)
             # print('Query / Key - Values: ',x.size(),node_attr.size())
             node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
-            node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
-            node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
+
 
             #print('node_attr size after reshape/permute: ',node_attr.size())
             if node_attr is not None:
-                if node_attr.dim() == 3:
-                    node_attr = node_attr.unsqueeze(1)
-                L_node_attributes.append(node_attr)
-        return L_node_attributes
+                if self.dic_stacked_contextual[ds_name_i]:
+                    node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
+                    node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
+                    L_node_attributes.append(node_attr)
+                else:
+                    if extracted_features is not None:
+                        extracted_features = torch.cat([extracted_features,node_attr])
+                    else:
+                        extracted_features = node_attr
+        return L_node_attributes,extracted_features
 
     def forward(self,x: Tensor,
                 contextual: List[Tensor])->Tensor:
@@ -418,18 +471,20 @@ class full_model(nn.Module):
             >>>> contextual[calendar]: [B]
         '''
         B = x.size(0)
-        #print('\nx size before forward: ',x.size())
+        # print('\nx size before forward: ',x.size())
         if self.remove_trafic_inputs:
             #x = torch.Tensor().to(x)
             x = torch.empty(0, device=x.device, dtype=x.dtype)
 
-        #print('\nx before stacking new channels:',x.size())
-        #print('Contextual size : ',[c_i.size() for c_i in contextual])
+        # print('\nx before stacking new channels:',x.size())
+        # print('Contextual size : ',[c_i.size() for c_i in contextual])
         # Spatial Attention and attributing node information: 
-        L_node_attributes = self.spatial_attention(x,contextual)
-        #print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
-        L_node_attributes = self.add_other_node_attributes(L_node_attributes,x,contextual)
-        #print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
+        L_node_attributes,extracted_features = self.spatial_attention(x,contextual)
+        # print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
+        # print('extracted_features after spatial attn: ',extracted_features.size() if extracted_features is not None else None)
+        L_node_attributes,extracted_features = self.add_other_node_attributes(L_node_attributes,extracted_features,x,contextual)
+        # print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
+        # print('extracted_features after add_other_node_attributes: ',extracted_features.size() if extracted_features is not None else None)
 
         # [B,N,L] -> [B,1,N,L]
         if x.dim() == 3:
@@ -438,11 +493,13 @@ class full_model(nn.Module):
         if len(L_node_attributes) > 0:
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attribute(x,L_node_attributes)
-
-        #print('x after stacking node attribute: ',x.size())
+            
+        # print('x after stacking node attribute: ',x.size())
         """ #A retirer 
         x,extracted_feature = self.forward_feature_extractor_model(x,contextual)        # Tackle NetMob (if exists):
         """
+
+
         #print('x after NetMob model: ',x.size())
         #print('extracted_feature: ',extracted_feature.size() if extracted_feature is not None else None)
         x,time_elt = self.forward_calendar_model(x,contextual)         # Tackle Calendar Data (if exists)
@@ -457,7 +514,7 @@ class full_model(nn.Module):
 
         if self.core_model is not None:
             x= self.core_model(x,
-                               # extracted_feature if vision_late else None,
+                               x_vision = extracted_features,
                                x_calendar = time_elt )
             #print('x after Core Model: ',x.size())
         # ...
@@ -539,6 +596,10 @@ def load_model(dataset, args):
         L_add = 0
         vision_concatenation_late = False
         vision_out_dim = None
+
+    for name_i in args.contextual_kwargs.keys():
+        if 'out_dim' in args.contextual_kwargs[name_i].keys():
+            L_add = L_add + args.contextual_kwargs[name_i]['out_dim']
 
     if 'calendar_embedding' in args.dataset_names: #if not empty 
         # IF Early concatenation : 

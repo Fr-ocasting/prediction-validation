@@ -407,6 +407,19 @@ class MultiHeadAttention(nn.Module):
         if values.dim() == 2: values = values.unsqueeze(1)
         return query,key,values
     
+    def padding_sequence_length(self,query,key,values):
+        ''' Case where sequence length is not the same for query and key/values 
+        Pad 0 at the first dimension and keep the last dimension the same:
+        '''
+        if query.size(-1) != key.size(-1):
+            if query.size(-1) < key.size(-1):
+                query = torch.nn.functional.pad(query, (key.size(-1) - query.size(-1),0), mode='constant', value=0)
+
+            else:
+                key = torch.nn.functional.pad(key, (query.size(-1) - key.size(-1),0), mode='constant', value=0)
+                values = torch.nn.functional.pad(values, (query.size(-1) - values.size(-1),0), mode='constant', value=0)
+        return query,key,values
+
     def split_heads(self,x):
         B, P, d_model = x.size()
         return x.view(B, P, self.num_heads, self.d_k).transpose(1, 2)
@@ -465,9 +478,14 @@ class MultiHeadAttention(nn.Module):
         values: From x_dynamic    -> [B,P,L]  --|---> Same object
         '''
         batch_size = key.size(0)
+        # print('\nquery,key,values before align: ',query.size(),key.size(),values.size())
         query,key,values = self.align_axis(query,key,values)
-        #print('query,key,values after align: ',query.size(),key.size(),values.size())
-        #print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
+        query,key,values = self.padding_sequence_length(query,key,values)
+        # print('query,key,values after align: ',query.size(),key.size(),values.size())
+        # print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
+        # print('query values: ',query[0,0,:])
+        # print('key values: ',key[0,0,:])
+
 
 
         #Projection to a laten space of dimenison d: [B,n_heads, P, d_k]

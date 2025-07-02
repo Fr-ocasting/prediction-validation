@@ -24,7 +24,7 @@ from examples.train_model_on_k_fold_validation import save_model_metrics,get_con
 
 if __name__ == "__main__":
 
-    target_data = 'CRITER_3_4_5_lanes_flow' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+    target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     
     for model_name in ['STGCN']: # ,'STAEformer'
         loger = LOG()
@@ -69,7 +69,7 @@ if __name__ == "__main__":
                                     'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                     'drop_last' : False,  # True
                                     'mixed_precision' : False, # True # False
-                                    'torch_compile' : 'compile' , # 'compile' # 'jit_script' #'trace' # False
+                                    'torch_compile' : False , # 'compile' # 'jit_script' #'trace' # False
                                     'unormalize_loss' : True, # False
 
                                     'device': torch.device('cuda:0')
