@@ -22,7 +22,7 @@ from examples.train_model_on_k_fold_validation import save_model_metrics,get_con
 
 
 compilation_modification = {
-    'epochs': 1,
+    'epochs': 20,
     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
     'persistent_workers' : True ,# False 
     'pin_memory' : True ,# False 
@@ -38,8 +38,8 @@ compilation_modification = {
 if __name__ == "__main__":
 
     target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
-    
-    for model_name in ['RNN','LSTM','GRU','DCRNN','ASTGCN','MTGNN','DSTRformer','STGformer','STGCN','STAEformer']:
+    # 'ASTGCN','MTGNN','DSTRformer','STGformer',
+    for model_name in ['RNN','LSTM','GRU','DCRNN','STGCN','STAEformer']:
         print('>>> Tackle model:',model_name)
         loger = LOG()
 
@@ -58,7 +58,6 @@ if __name__ == "__main__":
                     module = importlib.import_module(config_path)
                 except: 
                     raise FileNotFoundError(f"Configuration file for {target_data} and {model_name} not found in {config_path}.")
-        importlib.reload(module)
 
         config = module.config
         config.update(compilation_modification)

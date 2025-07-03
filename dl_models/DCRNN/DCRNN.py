@@ -74,14 +74,34 @@ class DecoderModel(nn.Module, Seq2SeqAttrs):
         nn.Module.__init__(self)
         Seq2SeqAttrs.__init__(self, adj_mx, **model_kwargs)
         self.device = model_kwargs.get('device')
-        self.output_dim = int(model_kwargs.get('out_dim'))
+        # self.output_dim = int(model_kwargs.get('out_dim'))
         self.horizon = int(model_kwargs.get('step_ahead'))  # for the decoder
-        self.projection_layer = nn.Linear(self.rnn_units, self.output_dim)
+
         self.dcgru_layers = nn.ModuleList(
             [DCGRUCell(self.rnn_units, adj_mx, self.max_diffusion_step, self.num_nodes,
                        filter_type=self.filter_type,device = self.device) for _ in range(self.num_rnn_layers)])
+        
 
-    def forward(self, inputs, hidden_state=None):
+        self.out_dim_factor = int(model_kwargs.get('out_dim_factor'))
+        self.step_ahead = int(model_kwargs.get('step_ahead'))
+
+        # Tackle Calendar Embedding: 
+        if ('calendar_embedding' in model_kwargs.get('dataset_names')):
+            self.TE_concatenation_late = model_kwargs.get('args_embedding').concatenation_late 
+        else :
+            self.TE_concatenation_late = False
+        
+        if self.TE_concatenation_late:
+            self.TE_embedding_dim = model_kwargs.get('args_embedding').embedding_dim 
+            self.in_channel_fc1 = self.rnn_units + self.TE_embedding_dim
+        else:
+            self.in_channel_fc1 = self.rnn_units
+        # ...
+
+        self.projection_layer = nn.Linear(self.in_channel_fc1, self.out_dim_factor)
+
+
+    def forward(self, inputs, hidden_state=None,x_calendar=None):
         """
         Decoder forward pass.
 
@@ -99,8 +119,20 @@ class DecoderModel(nn.Module, Seq2SeqAttrs):
             hidden_states.append(next_hidden_state)
             output = next_hidden_state
 
-        projected = self.projection_layer(output.view(-1, self.rnn_units))
-        output = projected.view(-1, self.num_nodes * self.output_dim)
+        reshaped_output = output.view(-1, self.rnn_units)
+        # print('\nBefore concatenation: ')
+        if self.TE_concatenation_late:
+            # print('reshaped_output: ',reshaped_output.size())
+            # print('x_calendar: ',x_calendar.size())
+            x_calendar = x_calendar.reshape(-1,x_calendar.size(-1)) # [B,C,N,Z]
+            reshaped_output = torch.cat([reshaped_output,x_calendar],dim = -1)
+
+        
+        # print('reshaped_output: ',reshaped_output.size())
+        projected = self.projection_layer(reshaped_output) #[B*N,rnn_unit] ->  [B*N,out_dim_factor]
+        # print('projecteded output: ',projected.size())
+        output = projected.view(-1, self.num_nodes * self.out_dim_factor)#  [B*N,out_dim_factor] ->  [B,N*out_dim_factor]
+        # print('reshaped output: ',output.size())
 
         return output, torch.stack(hidden_states)
 
@@ -115,8 +147,9 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         self.encoder_model = EncoderModel(adj_mx, **model_kwargs)
         self.decoder_model = DecoderModel(adj_mx, **model_kwargs)
         self.cl_decay_steps = int(model_kwargs.get('cl_decay_steps', 1000))
-        self.use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False))
-        self.TE_concatenation_late = model_kwargs.get('args_embedding').concatenation_late if 'calendar_embedding' in model_kwargs.get('dataset_names') else False 
+        self.use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False)) 
+        self.out_dim_factor =  int(model_kwargs.get('out_dim_factor')) 
+        self.step_ahead = int(model_kwargs.get('step_ahead')) 
         #self._logger = logger
 
     def _compute_sampling_threshold(self, batches_seen):
@@ -136,7 +169,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
 
         return encoder_hidden_state
 
-    def decoder(self, encoder_hidden_state, labels=None, batches_seen=None):
+    def decoder(self, encoder_hidden_state, labels=None, batches_seen=None,x_calendar=None):
         """
         Decoder forward pass
         :param encoder_hidden_state: (num_layers, batch_size, self.hidden_state_size)
@@ -145,7 +178,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         :return: output: (self.horizon, batch_size, self.num_nodes * self.output_dim)
         """
         batch_size = encoder_hidden_state.size(1)
-        go_symbol = torch.zeros((batch_size, self.num_nodes * self.decoder_model.output_dim),
+        go_symbol = torch.zeros((batch_size, self.num_nodes * self.decoder_model.out_dim_factor),
                                 device=self.device)
         decoder_hidden_state = encoder_hidden_state
         decoder_input = go_symbol
@@ -154,7 +187,8 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
 
         for t in range(self.decoder_model.horizon):
             decoder_output, decoder_hidden_state = self.decoder_model(decoder_input,
-                                                                      decoder_hidden_state)
+                                                                      decoder_hidden_state,
+                                                                      x_calendar=x_calendar)
             decoder_input = decoder_output
             outputs.append(decoder_output)
             if self.training and self.use_curriculum_learning:
@@ -164,7 +198,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         outputs = torch.stack(outputs)
         return outputs
 
-    def forward(self, inputs, labels=None, batches_seen=None):
+    def forward(self, inputs, labels=None, batches_seen=None,x_calendar = None,x_vision = None):
         """
         seq2seq forward pass
         :param inputs: shape (seq_len, batch_size, num_sensor * input_dim)   #i.e [L,B,C*N]
@@ -172,6 +206,8 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         :param batches_seen: batches seen till now
         :return: output: (self.horizon, batch_size, self.num_nodes * self.output_dim)
         """ 
+        if x_vision is not None:
+            raise NotImplementedError('x_vision has not been implemented')
         # Ajout pour matcher mon framework avec le dcrnn :
         if len(inputs.size())<4:
             inputs = inputs.unsqueeze(1)
@@ -181,7 +217,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         # ...
         encoder_hidden_state = self.encoder(inputs)
         #self._logger.debug("Encoder complete, starting decoder")
-        outputs = self.decoder(encoder_hidden_state, labels, batches_seen=batches_seen)  # outputs -> [horizon, B, N*out_dim] 
+        outputs = self.decoder(encoder_hidden_state, labels, batches_seen=batches_seen,x_calendar=x_calendar)  # outputs -> [B*N, out_dim] 
         #self._logger.debug("Decoder complete")
         #if batches_seen == 0:
         #    self._logger.info(
@@ -189,9 +225,12 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         #    )
 
         # Ajout pour matcher mon framework avec le dcrnn 
-        outputs = outputs.permute(1,0,2)   #[horizon, B, N*out_dim]  -> [B, horizon, N*out_dim] 
-        outputs = outputs.squeeze()  # if horizon == 1 , squeeze ->  [B, N*out_dim] 
-        outputs = outputs.reshape(outputs.size(0),N,self.decoder_model.output_dim)  # [B, N*out_dim] -> [B, N,out_dim] 
+        # Outputs: [out_dim,B,N*out_dim_factor]
+        # print('outputs.size: ',outputs.size())
+        outputs = outputs.permute(1,0,2)  # [out_dim,B,N*out_dim_factor] -> [B,out_dim,N*out_dim_factor]
+        outputs = outputs.reshape(B,self.step_ahead,N,self.out_dim_factor) # [B,out_dim,N*out_dim_factor] -> [B,out_dim,N,out_dim_factor]
+        outputs = outputs.permute(0,3,2,1) # [B,out_dim,N,out_dim_factor] -> [B,out_dim_factor,N,out_dim,N]
+        # print('outputs.size: ',outputs.size())
         # ...
         return outputs
 

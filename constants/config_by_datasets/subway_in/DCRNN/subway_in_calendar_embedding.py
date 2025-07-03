@@ -22,17 +22,17 @@ config =  {'target_data': 'subway_in',
             'max_diffusion_step': 3,
             'filter_type': 'random_walk', # 'laplacian' # 'dual_random_walk'
             'num_rnn_layers': 2,
-            'rnn_units': 32,
+            'rnn_units': 128,
             'threshold': 0.3, 
 
 
             # Hyperparameters
             'loss_function_type':'HuberLoss',
             'optimizer': 'adamw',
-            'weight_decay': 0.0014517707449388,
+            'weight_decay': 0.0015,
             'batch_size': 128,
-            'lr': 0.00071,
-            'dropout': 0.145169206052754,
+            'lr': 0.0007,
+            'dropout': 0.15,
             'epochs':500,
             'standardize': False,
             'minmaxnorm': True,
