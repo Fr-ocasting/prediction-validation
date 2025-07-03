@@ -34,6 +34,7 @@ config =  { 'target_data': 'subway_in',
             'TE_concatenation_early':False,
 
             'optimizer': 'adamw',
+            'batch_size': 128,
             'freq': '15min',
             'H':6,
             'D':1,

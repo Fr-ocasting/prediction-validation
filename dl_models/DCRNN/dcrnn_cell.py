@@ -97,6 +97,11 @@ class DCGRUCell(torch.nn.Module):
 
         :return
         - Output: A `2-D` tensor with shape `(B, num_nodes * rnn_units)`.
+
+        Visualisation of the process:
+        (Input, hidden-state) --> [Graph Conv] --> [Activation (sigmoid)] --> [split]  --> [Graph Conv] --> [Activation (tanh or  ReLU)]
+                    |                                                                          |
+                    |------------>------------------------------->------------------->---------|
         """
         
         output_size = 2 * self._num_units

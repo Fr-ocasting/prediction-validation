@@ -52,6 +52,13 @@ class RNN(nn.Module):
     
 
     def forward(self,x,x_vision=None,x_calendar = None):
+
+        # print('x.size: ',x.size())
+        # if x_vision is not None:
+        #     print('x_vision.size: ',x_vision.size())
+        # if x_calendar is not None:
+        #     print('x_calendar.size: ',x_calendar.size())
+
         ''' x.shape : [B,C,N,L]
         
         has to be transformed in [B',L,C] to return [B',L,D*C']  
@@ -96,11 +103,15 @@ class RNN(nn.Module):
             else:
                 x = x_vision
         if self.TE_concatenation_late:
+
+            # print('x_calendar.size before transformation: ',x_calendar.size())
             # [B,1,N,L_calendar]  -> [B,N,L_calendar,1]  
             x_calendar = x_calendar.permute(0,2,3,1)
             # [B,N,L_calendar,1]-> [B*N,L_calendar]
-            x_calendar = x_calendar.reshape(x_calendar.size(0)*x_calendar.size(-1),-1)          
+            x_calendar = x_calendar.reshape(x_calendar.size(0)*x_calendar.size(1),-1)          
             # Concat   [B*N,L*D*H] + [B*N,L_calendar]  ->   [B*N,H*L+L_calendar]
+            # print('x.size before concat: ',x.size())
+            # print('x_calendar.size before concat: ',x_calendar.size())
             if not (x.numel() == 0):
                 x = torch.cat([x,x_calendar],dim=1)
             else:

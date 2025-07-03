@@ -1,14 +1,13 @@
 constant_name = ''
-constant_modif = {}
+constant_modif = {
+                        }
+
 SEED = 1
 
-
-
 config =  {'target_data': 'subway_in',
-            'dataset_names': ['subway_in', 'calendar_embedding'],
+            'dataset_names': ['subway_in'],
             'dataset_for_coverage': ['subway_in', 'netmob_POIs'],
-            'embedding_calendar_types': ['dayofweek', 'hour'],
-            'use_target_as_context': False,
+             'use_target_as_context': False,
             'loss_function_type':'HuberLoss',
             'Kt': 2,
             'stblock_num': 4,
@@ -30,16 +29,12 @@ config =  {'target_data': 'subway_in',
             'epochs':500,
             'standardize': False,
             'minmaxnorm': True,
-            'unormalize_loss' : True,
-
-            'TE_embedding_dim': 64,
-            'TE_out_h_dim': 64,
-            'TE_concatenation_late': True,
-            'TE_concatenation_early':False,
+             'unormalize_loss' : True,
 
             'optimizer': 'adamw',
+            'batch_size': 128,
             'freq': '15min',
             'H':6,
             'D':1,
             'W':0,
-              }
+            }

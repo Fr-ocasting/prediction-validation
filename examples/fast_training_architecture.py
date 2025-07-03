@@ -55,13 +55,7 @@ if __name__ == "__main__":
                 from examples.reproductibility.config_STAEformer_CRITER_3_4_5_lanes_flow import modifications as modifications
 
 
-        compilation_modification = {'use_target_as_context': False,
-                                    'data_augmentation': False,
-                                    'stacked_contextual': True, # True # False
-                                    'temporal_graph_transformer_encoder': False,
-                                    'compute_node_attr_with_attn' : False,
-
-                                    #'epochs' : 500, #100
+        compilation_modification = { #'epochs' : 500, #100
 
                                     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
                                     'persistent_workers' : True ,# False 

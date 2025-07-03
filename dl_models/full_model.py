@@ -673,8 +673,6 @@ def load_model(dataset, args):
                     ).to(args.device)
         
     if args.model_name == 'DCRNN':
-        if TE_concatenation_late or vision_concatenation_late:
-            raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         adj,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
         model = DCRNN(adj, **vars(args)).to(args.device)
         

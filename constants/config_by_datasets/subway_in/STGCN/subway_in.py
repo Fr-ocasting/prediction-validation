@@ -6,6 +6,8 @@ SEED = 1
 
 config =  {'target_data': 'subway_in',
             'dataset_names': ['subway_in'],
+            'dataset_for_coverage': ['subway_in', 'netmob_POIs'],
+             'use_target_as_context': False,
             'loss_function_type':'HuberLoss',
             'Kt': 2,
             'stblock_num': 4,
@@ -30,7 +32,6 @@ config =  {'target_data': 'subway_in',
              'unormalize_loss' : True,
 
             'optimizer': 'adamw',
-            'batch_size': 128,
             'freq': '15min',
             'H':6,
             'D':1,

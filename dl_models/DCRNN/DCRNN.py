@@ -116,6 +116,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         self.decoder_model = DecoderModel(adj_mx, **model_kwargs)
         self.cl_decay_steps = int(model_kwargs.get('cl_decay_steps', 1000))
         self.use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False))
+        self.TE_concatenation_late = model_kwargs.get('args_embedding').concatenation_late if 'calendar_embedding' in model_kwargs.get('dataset_names') else False 
         #self._logger = logger
 
     def _compute_sampling_threshold(self, batches_seen):
