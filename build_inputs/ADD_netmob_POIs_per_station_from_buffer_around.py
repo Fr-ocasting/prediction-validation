@@ -68,7 +68,7 @@ ts_stations_epsilons_transfers_apps = ts_stations_epsilons_transfers_apps.transp
 print('All Data Generated')
 
 """ Create a new 'InputsEpsilon' with not any POIs. Only app data distant from an epsilon to the station """
-if True: 
+if False: 
     for NetMob_expanded in ['','_expanded']:
         save_folder = f"{ROOT}/{FOLDER_PATH}/POIs/netmob_POI_Lyon{NetMob_expanded}/InputsEpsilon/"
         if not os.path.exists(save_folder):

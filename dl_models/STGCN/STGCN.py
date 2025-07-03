@@ -71,7 +71,10 @@ class STGCN(nn.Module):
         # self.vision_concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
         if (hasattr(args,'contextual_kwargs')) and ('netmob_POIs' in args.contextual_kwargs.keys()):
             self.vision_concatenation_late = not(args.contextual_kwargs['netmob_POIs']['stacked_contextual']) 
-            extracted_feature_dim = args.contextual_kwargs['netmob_POIs']['out_dim']* args.contextual_kwargs['netmob_POIs']['attn_kwargs']['L_out']
+            if self.vision_concatenation_late:
+                extracted_feature_dim = args.contextual_kwargs['netmob_POIs']['out_dim']* args.contextual_kwargs['netmob_POIs']['attn_kwargs']['L_out']
+            else:
+                extracted_feature_dim = None
         else:
             self.vision_concatenation_late = False
             extracted_feature_dim = None

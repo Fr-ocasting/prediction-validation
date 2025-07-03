@@ -56,7 +56,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     netmob_T = netmob_T.permute(1,0)
 
     # Extract only usefull data, and replace "heure d'été"
-    netmob_T = replace_heure_d_ete(netmob_T,start = 572, end = 576)
+    netmob_T = replace_heure_d_ete(netmob_T,start = 1532, end = 1536)  # start = 1532, end = 1536  # start = 572, end = 576
 
     # Temporal Aggregation if needed: 
     if False: 
