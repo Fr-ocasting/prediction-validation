@@ -81,6 +81,22 @@ class DCGRUCell(torch.nn.Module):
         self._fc_params = LayerParams(self, 'fc',device)
         self._gconv_params = LayerParams(self, 'gconv',device)
 
+        ''' NEW '''
+        # Pré-création des paramètres pour torchinfo (teacher-forcing & candidate)
+        # On suppose ici input_size = num_units (inputs) + num_units (état)
+        input_size = self._num_units + self._num_units
+        num_matrices = len(self._supports) * self._max_diffusion_step + 1
+
+        # Gates (reset & update) → sortie de taille 2 * num_units
+        self._fc_params.get_weights((input_size, 2 * self._num_units))
+        self._fc_params.get_biases(2 * self._num_units, bias_start=1.0)
+
+        # Candidate (via gconv) → sortie de taille num_units
+        self._gconv_params.get_weights((input_size * num_matrices, self._num_units))
+        self._gconv_params.get_biases(self._num_units)
+        ''' END NEW '''
+
+
     @staticmethod
     def _build_sparse_matrix(L,device):
         L = L.tocoo()
@@ -134,9 +150,19 @@ class DCGRUCell(torch.nn.Module):
         state = torch.reshape(state, (batch_size * self._num_nodes, -1))
         inputs_and_state = torch.cat([inputs, state], dim=-1)
         input_size = inputs_and_state.shape[-1]
+
+        # ''' NEW '''
+        # # On utilise directement les paramètres pré-créés
+        # weights = self._fc_params._params_dict[(input_size, output_size)]
+        # biases  = self._fc_params._biases_dict[output_size]
+        # ''' END NEW '''
+
+        ''' REMOVE '''
         weights = self._fc_params.get_weights((input_size, output_size))
-        value = torch.sigmoid(torch.matmul(inputs_and_state, weights))
         biases = self._fc_params.get_biases(output_size, bias_start)
+        ''' END REMOVE '''
+
+        value = torch.sigmoid(torch.matmul(inputs_and_state, weights))
         value += biases
         return value
 
@@ -173,11 +199,18 @@ class DCGRUCell(torch.nn.Module):
         x = x.permute(3, 1, 2, 0)  # (batch_size, num_nodes, input_size, order)
         x = torch.reshape(x, shape=[batch_size * self._num_nodes, input_size * num_matrices])
 
-        weights = self._gconv_params.get_weights((input_size * num_matrices, output_size))
-        x = torch.matmul(x, weights)  # (batch_size * self._num_nodes, output_size)
+        # ''' NEW '''
+        # # On utilise directement les paramètres pré-créés
+        # weights = self._gconv_params._params_dict[(input_size * num_matrices, output_size)]
+        # biases  = self._gconv_params._biases_dict[output_size]
+        # ''' END NEW '''
 
+        ''' REMOVE '''
+        weights = self._gconv_params.get_weights((input_size * num_matrices, output_size))
+        biases  = self._gconv_params.get_biases(output_size, bias_start)
+        ''' END REMOVE '''
         
-        biases = self._gconv_params.get_biases(output_size, bias_start)
+        x = torch.matmul(x, weights)  # (batch_size * self._num_nodes, output_size)
         x += biases
         # Reshape res back to 2D: (batch_size, num_node, state_dim) -> (batch_size, num_node * state_dim)
         return torch.reshape(x, [batch_size, self._num_nodes * output_size])

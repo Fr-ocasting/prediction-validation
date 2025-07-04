@@ -130,6 +130,72 @@ if __name__ == '__main__':
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
     from examples.benchmark import local_get_args
 
+    if True:
+        model_name = 'RNN' #'CNN'
+        target_data = 'subway_in'
+        dataset_for_coverage = [target_data,'netmob_POIs'] 
+        dataset_names = [target_data,'calendar_embedding']
+        args = local_get_args(model_name,
+                            args_init = None,
+                            dataset_names=dataset_names,
+                            dataset_for_coverage=dataset_for_coverage,
+                            modification = {'target_data' :target_data,
+                                            'ray':True,
+                                            'grace_period':40,
+                                            'HP_max_epochs':1000, #300,
+                                            'K_fold': 2,
+                                            'evaluate_complete_ds' : True,
+                                            'vision_model_name': None,
+                                            'stacked_contextual': False, # True # False
+
+                                            # Preprocess
+                                            'standardize': False,
+                                            'minmaxnorm': True,
+                                            'data_augmentation': False, #True,  #False
+
+                                            # Other Module: 
+                                            'compute_node_attr_with_attn' : False, # False # True
+                                            'use_target_as_context': False,
+                                            'temporal_graph_transformer_encoder': False, # False # True
+
+                                            # Optim
+                                            'optimizer': 'adamw',
+                                            'loss_function_type':'HuberLoss',
+                                            'torch_scheduler': None,
+                                            'batch_size': 128,
+                                            'step_ahead': 4,
+                                            'freq': '15min',
+                                            'H':6,
+                                            'D':1,
+                                            'W':0,
+
+                                            # Time Embedding: 
+                                            'TE_embedding_dim': 64,
+                                            'TE_out_h_dim': 64,
+                                            'TE_multi_embedding': True,
+                                            'TE_concatenation_late' : True,
+                                            'TE_concatenation_early' : False,
+                                            'TE_variable_selection_model_name': 'MLP',
+                                            'embedding_calendar_types': ['dayofweek', 'hour'],
+
+                                            # # Computation Ressources: 
+                                            # 'num_workers' : 4, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                                            # 'persistent_workers' : True ,# False 
+                                            # 'pin_memory' : True ,# False 
+                                            # 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
+                                            # 'drop_last' : False,  # True
+                                            # 'mixed_precision' : False, # True # False
+                                            # #'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace'
+
+                                            #  
+                                            })
+
+        # Init 
+        epochs_validation = 1000#300
+        num_samples = 300#200
+        HP_and_valid_one_config(args,epochs_validation,num_samples)
+        #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
+        
     if False:
         model_name = 'STGCN' #'CNN'
         target_data = 'PeMS08_flow'
@@ -253,7 +319,7 @@ if __name__ == '__main__':
             args.calendar_types = ['dayofweek', 'timeofday']
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
-    if True:
+    if False:
 
         #model_name = 'ASTGCN' #'CNN' # 'STGCN' # ASTGCN # STGformer
         dataset_for_coverage = ['subway_in','netmob_POIs'] 

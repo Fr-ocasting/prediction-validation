@@ -10,9 +10,9 @@ if parent_dir not in sys.path:
 from datetime import datetime 
 from sklearn.cluster import AgglomerativeClustering
 import numpy as np 
+import pickle
 from build_inputs.load_contextual_data import replace_heure_d_ete
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
-
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
  - >>>> No Need to set num_nodes as it's a contextual data 
@@ -91,7 +91,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
         print('    ATTENTION: Dimension reduction by clustering is applied on the entire dataset. This should be done only on the training set.')
         initial_size = netmob_T.size(-1)
         netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.contextual_kwargs['netmob_POIs']['epsilon_clustering'])
-        print(f"    Netmob_T.size(): {netmob_T.size()}. Dimensionality reduced by {'{:.1%}'.format(netmob_T.size(-1)/initial_size)}")
+        print(f"    Netmob_T.size(): {netmob_T.size()}. Dimensionality reduced by {'{:.1%}'.format(1-netmob_T.size(-1)/initial_size)}")
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
     
     # dimension on which we want to normalize: 
@@ -127,7 +127,21 @@ def load_data_npy(FOLDER_PATH,args):
             for tag in args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']:
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
                 try: 
-                    list_of_data.append(torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb"))))  # [nb-osmid, T]
+                    loaded_data = torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb")))
+                    if tag == 'iris':
+                        if ('agg_iris_target_n' in args.contextual_kwargs['netmob_POIs'].keys()) and (args.contextual_kwargs['netmob_POIs']['agg_iris_target_n'] is not None):
+                            target_n = args.contextual_kwargs['netmob_POIs']['agg_iris_target_n']
+                            dic_path = f"{FOLDER_PATH}/dic_lyon_iris_agg{target_n}.pkl"
+                            dictionnary_aggregated_iris = pickle.load(open(dic_path,'rb'))
+                            loaded_data_bis = torch.empty(target_n,loaded_data.size(-1))
+
+                            for k,(key,list_idx) in enumerate(dictionnary_aggregated_iris.items()):
+                                loaded_data_bis[k] = torch.index_select(loaded_data,0,torch.tensor(list_idx).long()).mean(0)
+                            list_of_data.append(loaded_data_bis)
+                        else:
+                            list_of_data.append(loaded_data)  # [nb-osmid, T]
+                    else:
+                        list_of_data.append(loaded_data)  # [nb-osmid, T]
                 except:
                     raise ImportError(f"{folder_path_to_save_agg_data}/data.npy does not exist. NetMob app {app} Might not have been recorded.")
     netmob_T = torch.cat(list_of_data)    # [nb-osmid*(apps*transfer_mode*tags), T]

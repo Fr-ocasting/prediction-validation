@@ -66,7 +66,7 @@ if __name__ == "__main__":
                                     'torch_compile' : 'compile' , # 'compile' # 'jit_script' #'trace' # False
                                     'unormalize_loss' : True, # False
 
-                                    'device': torch.device('cuda:0')
+                                    'device': torch.device('cuda:1')
             }
 
         try: 

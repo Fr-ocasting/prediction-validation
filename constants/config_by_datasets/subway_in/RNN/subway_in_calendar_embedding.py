@@ -2,7 +2,7 @@ constant_name = ''
 constant_modif = { }
 SEED = 1
 
-
+#    All Steps RMSE = 45.90, MAE = 26.63, MAPE = 29.56, MSE = 2113.09
 config =  {'target_data': 'subway_in',
             'dataset_names': ['subway_in','calendar_embedding'],
             'dataset_for_coverage': ['subway_in', 'netmob_POIs'],
@@ -22,9 +22,9 @@ config =  {'target_data': 'subway_in',
 
             'epochs':500,
             'input_dim' : 1,
-            'h_dim' : 32,
-            'C_outs' : [16,16],
-            'num_layers' : 2,
+            'h_dim' : 128, # 32 # 256
+            'C_outs' : [128,32], # [32,16],# [16,16],
+            'num_layers' : 4,
             'bias' : True,
             'lstm' : False,
             'gru' : False,
@@ -36,7 +36,7 @@ config =  {'target_data': 'subway_in',
             'TE_concatenation_early':False,
 
 
-            'lr': 0.0005,
+            'lr': 0.001,
             'weight_decay':  0.0015,
             'dropout': 0.1,
             }

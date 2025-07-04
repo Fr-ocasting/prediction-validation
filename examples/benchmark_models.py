@@ -22,7 +22,7 @@ from examples.train_model_on_k_fold_validation import save_model_metrics,get_con
 
 
 compilation_modification = {
-    'epochs': 20,
+    'epochs': 100,
     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
     'persistent_workers' : True ,# False 
     'pin_memory' : True ,# False 
@@ -39,9 +39,10 @@ if __name__ == "__main__":
 
     target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     # 'ASTGCN','MTGNN','DSTRformer','STGformer',
-    for model_name in ['RNN','LSTM','GRU','DCRNN','STGCN','STAEformer']:
+    loger = LOG()
+    for model_name in ["RNN"]: # 'RNN','LSTM','GRU','DCRNN','STGCN','STAEformer', 'DCRNN'
         print('>>> Tackle model:',model_name)
-        loger = LOG()
+
 
         # Get Config: 
         
@@ -103,5 +104,5 @@ if __name__ == "__main__":
                            trial_id = subfolder)
         test_metrics = trainer.performance['test_metrics']
         loger.add_log(test_metrics,['rmse','mae','mape','mse'],subfolder, args.step_ahead,args.horizon_step)
-        loger.display_log()
-        # ...
+    loger.display_log()
+    # ...

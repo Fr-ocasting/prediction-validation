@@ -9,7 +9,7 @@ class RNN(nn.Module):
         super().__init__()
 
         # Parameters
-        self.C_outs = C_outs + [out_dim]
+        self.C_outs = list(C_outs) + [out_dim]
         self.num_layers = num_layers
         self.batch_first = batch_first
         self.lstm = lstm
