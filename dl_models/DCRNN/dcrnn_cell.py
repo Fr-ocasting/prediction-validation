@@ -184,13 +184,15 @@ class DCGRUCell(torch.nn.Module):
         else:
             # Support is a Weighted Adjacency Matrix
             for support in self._supports:
-                #print('support:  dtype: ',support.dtype, ' is sparse: ', support.is_sparse, 'device: ',support.device)
-                #print('x0: ',x0.size(),' dtype:', x0.dtype, ' is sparse: ', x0.is_sparse, 'device: ',x0.device)
-
-                x1 = torch.sparse.mm(support, x0)
+                # print('support:  dtype: ',support.dtype, ' is sparse: ', support.is_sparse, 'device: ',support.device)
+                # print('x0: ',x0.size(),' dtype:', x0.dtype, ' is sparse: ', x0.is_sparse, 'device: ',x0.device)
+                # x1 = torch.sparse.mm(support.to(torch.float32), x0.to(torch.float32))
+                x1 = torch.mm(support,x0)
+                # print('x1: ',x1.size(),' dtype:', x1.dtype, ' is sparse: ', x1.is_sparse, 'device: ',x1.device)
                 x = self._concat(x, x1)
                 for k in range(2, self._max_diffusion_step + 1):
-                    x2 = 2 * torch.sparse.mm(support, x1) - x0
+                    # x2 = 2 * torch.sparse.mm(support.to(torch.float32), x1.to(torch.float32)) - x0
+                    x2 = 2 * torch.mm(support, x1) - x0
                     x = self._concat(x, x2)
                     x1, x0 = x2, x1
 

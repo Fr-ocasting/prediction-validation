@@ -1,5 +1,6 @@
 from torch import nn
 import torch
+import ast
 
 class RNN(nn.Module):
     def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,
@@ -9,6 +10,8 @@ class RNN(nn.Module):
         super().__init__()
 
         # Parameters
+        if type(C_outs) == str:
+            C_outs = list(ast.literal_eval(C_outs))
         self.C_outs = list(C_outs) + [out_dim]
         self.num_layers = num_layers
         self.batch_first = batch_first
@@ -16,17 +19,24 @@ class RNN(nn.Module):
         self.h_dim = h_dim
         self.device = device
 
+        bidirectional = bool(bidirectional)
+        dropout = float(dropout)
         # Architecture
         if lstm: 
             self.rnn = nn.LSTM(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
         elif gru:
             self.rnn = nn.GRU(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
         else : 
-            self.rnn = nn.RNN(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)  # tanh or ReLU as non linear activation
+            self.rnn = nn.RNN(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,
+            nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,
+            dropout=dropout,bidirectional=bidirectional)  # tanh or ReLU as non linear activation
+
+            # self.rnn.flatten_parameters()
           
         self.D =  2 if bidirectional else 1
 
         ## ======= Tackle Output Module if concatenation with contextual data: 
+
         L_outs_in = [self.D*h_dim*L]+self.C_outs[:-1]
         self.vision_concatenation_late = vision_concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
@@ -35,7 +45,6 @@ class RNN(nn.Module):
         if self.TE_concatenation_late:
             L_outs_in[0] = L_outs_in[0]+ TE_embedding_dim
         ## =======
-
         self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip(L_outs_in, self.C_outs)])
         self.relu = nn.ReLU()
         self.flatten = nn.Flatten()

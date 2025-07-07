@@ -75,6 +75,7 @@ class CustomDataLoder(object):
         self.pin_memory = args.pin_memory 
         self.prefetch_factor = args.prefetch_factor 
         self.drop_last = args.drop_last 
+        self.SEED = args.SEED if hasattr(args,'SEED') else 1
         # ...
 
     def call_dataloader(self,training_mode):
@@ -90,7 +91,8 @@ class CustomDataLoder(object):
                                         persistent_workers=self.persistent_workers,
                                         pin_memory=self.pin_memory,
                                         prefetch_factor=self.prefetch_factor,
-                                        drop_last=self.drop_last
+                                        drop_last=self.drop_last,
+                                        generator=torch.Generator().manual_seed(self.SEED)
                                         ) 
         except:
 
@@ -101,7 +103,8 @@ class CustomDataLoder(object):
                             num_workers=self.num_workers,
                             persistent_workers=self.persistent_workers,
                             pin_memory=self.pin_memory,
-                            drop_last=self.drop_last
+                            drop_last=self.drop_last,
+                            generator=torch.Generator().manual_seed(self.SEED)
                             ) 
             self.exception = True
     
@@ -244,3 +247,6 @@ if __name__ == '__main__':
     x_b,y_b,contextual_data_b  = next(iter(train_loader)) #x_b,y_b,*contextual_data_b
 
     print(x_b.size(),y_b.size(), contextual_data_b[0].size(),contextual_data_b[1].size())
+
+
+    

@@ -37,6 +37,7 @@ class EncoderModel(nn.Module, Seq2SeqAttrs):
         self.input_dim = int(model_kwargs.get('L'))
         self.seq_len = int(model_kwargs.get('L'))  # for the encoder
         self.device = model_kwargs.get('device')
+        self.dropout = model_kwargs.get('dropout')
 
         self.dcgru_layers = nn.ModuleList(
             [DCGRUCell(self.rnn_units, adj_mx, self.max_diffusion_step, self.num_nodes,
@@ -150,6 +151,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         self.use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False)) 
         self.out_dim_factor =  int(model_kwargs.get('out_dim_factor')) 
         self.step_ahead = int(model_kwargs.get('step_ahead')) 
+        self.dropout = model_kwargs.get('dropout')
         #self._logger = logger
 
     def _compute_sampling_threshold(self, batches_seen):

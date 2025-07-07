@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     
-    for model_name in ['STGCN']: # ,'STAEformer'
+    for model_name in ['STGCN']: # ,'STAEformer' 'STGCN'
         loger = LOG()
         # Init:
         #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
@@ -68,59 +68,44 @@ if __name__ == "__main__":
 
                                     'device': torch.device('cuda:1')
             }
-
-        try: 
-            config_file = importlib.import_module(f"constants.config_by_datasets.{target_data}.{model_name}")
-            importlib.reload(config_file)
-            modification_init = config_file.config
-            SEED = config_file.SEED
-            
-        except:
-            print('No config file found for this dataset and model. Using default parameters.')
-            SEED = 1
-            modification_init = {}
-
-        set_seed(SEED)
         
+        SEED = 1
+        modification_init = {}
+        set_seed(SEED)
 
 
         log_final  = f"\n--------- Resume ---------\n"
         subfolder = f'{target_data}_{model_name}'
         for trial_id,modification_i in modifications.items():
             print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
-            modification_model = modification_init.copy()
-            modification_model.update(compilation_modification)
-            modification_model.update(modification_i)
+            config = modification_init.copy()
+            config.update(compilation_modification)
+            config.update(modification_i)
 
-
-            if 'dataset_names' in modification_model.keys():
-                dataset_names = modification_model['dataset_names']
-            if 'dataset_for_coverage' in modification_model.keys():
-                dataset_for_coverage = modification_model['dataset_for_coverage']
-
-            
             args_init = local_get_args(model_name,
                             args_init = None,
-                            dataset_names=dataset_names,
-                            dataset_for_coverage=dataset_for_coverage,
-                            modification = modification_model)
+                            dataset_names=config['dataset_names'],
+                            dataset_for_coverage=config['dataset_for_coverage'],
+                            modification = config)
+            fold_to_evaluate=[args_init.K_fold-1]
 
 
 
             # Run the script
-            fold_to_evaluate=[args_init.K_fold-1]
-
-
-                
             weights_save_folder = f"K_fold_validation/training_wo_HP_tuning/optim/{subfolder}"
             save_folder = f"{weights_save_folder}/{trial_id}"
             save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
             print(f"Save folder: {save_folder_with_root}")
             if not os.path.exists(save_folder_with_root):
                 os.makedirs(save_folder_with_root)
-
-
-            trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification_model,trial_id)
+                
+            # Train Model
+            trainer,ds,model,args = main(fold_to_evaluate,
+                                         save_folder = weights_save_folder,
+                                         args_init = args_init,
+                                         modification =config,
+                                         trial_id = trial_id)
+        
 
             condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
             valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
@@ -132,5 +117,3 @@ if __name__ == "__main__":
             loger.add_log(test_metrics,['rmse','mae','mape','mse'],trial_id, args.step_ahead,args.horizon_step)
 
         loger.display_log()
-
-

@@ -269,7 +269,7 @@ if __name__ == '__main__':
 
     # Case 2. We just need to test some configuration, where we set the configuration from 'load_random_config.py:
     # ----------
-    if True: 
+    if False: 
         save_folder = 'K_fold_validation/traing_without_HP_tuning'
         if not os.path.exists(f"{SAVE_DIRECTORY}/{save_folder}"):
             os.mkdir(f"{SAVE_DIRECTORY}/{save_folder}")
@@ -278,5 +278,14 @@ if __name__ == '__main__':
         trial_id = 'train_random_config'
         epochs = 200
         train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,hp_tuning_on_first_fold=False)
+    # Case 2. We just need to test some configuration, where we set the configuration from 'load_random_config.py:
+
+    # ----------
+    if True: 
+        save_folder = 'K_fold_validation/training_with_HP_tuning'
+        load_config = True
+        trial_id = 'subway_in_calendar_embedding_RNN_HuberLossLoss_2025_07_04_21_04_52162'
+        epochs = 1000
+        train_model_on_k_fold_validation(trial_id,load_config,save_folder,modification={'epochs':epochs},add_name_id='')
 
 

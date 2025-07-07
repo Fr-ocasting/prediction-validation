@@ -17,6 +17,7 @@ from examples.train_and_visu_non_recurrent import evaluate_config,train_the_conf
 from high_level_DL_method import load_optimizer_and_scheduler
 from dl_models.full_model import full_model
 from trainer import Trainer
+from ML_trainer import ML_trainer
 from utils.loger import LOG
 from utils.rng import set_seed
 loger = LOG()
@@ -165,13 +166,18 @@ def load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modificati
     ds,args,_,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
     for key,value in vars(args).items():
         print(f"{key}: {value}")
-    model = full_model(ds, args).to(args.device)
-    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    if len(fold_to_evaluate) == 1: 
-        fold = fold_to_evaluate[0]
+    if args.model_name in ['SARIMAX','XGBoost']:
+        trainer,model = ML_trainer(ds,args)
     else:
-        raise ValueError("fold_to_evaluate should contain only one fold cause only one training will be done here.")
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
+        model = full_model(ds, args).to(args.device)
+        optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+        if len(fold_to_evaluate) == 1: 
+            fold = fold_to_evaluate[0]
+        else:
+            raise ValueError("fold_to_evaluate should contain only one fold cause only one training will be done here.")
+        
+
+        trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
     return trainer,ds,model,args
 
 def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):

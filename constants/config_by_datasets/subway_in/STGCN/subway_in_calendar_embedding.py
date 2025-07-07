@@ -3,7 +3,6 @@ constant_modif = {}
 SEED = 1
 
 
-
 config =  {'target_data': 'subway_in',
             'dataset_names': ['subway_in', 'calendar_embedding'],
             'dataset_for_coverage': ['subway_in', 'netmob_POIs'],

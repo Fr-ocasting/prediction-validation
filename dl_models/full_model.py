@@ -32,7 +32,8 @@ from dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
 from dl_models.STGformer.STGformer import STGformer
 from dl_models.STAEformer.STAEformer import STAEformer
 from dl_models.DSTRformer.DSTRformer import DSTRformer
-
+from dl_models.SARIMAX.SARIMAX import SARIMAX
+from dl_models.XGBoost.XGBoost import XGBoost
 from utils.utilities import filter_args
 
 from build_inputs.load_adj import load_adj
@@ -696,6 +697,30 @@ def load_model(dataset, args):
         print(f'>>>>Also Stupid model. Input_dim = h_dim = L+L_add. Output_dim = {args.out_dim}')
         input_dim = args.L+L_add
         model = MLP_output(input_dim=input_dim,out_h_dim=input_dim,num_nodes=None,embedding_dim=args.out_dim,multi_embedding=False,dropout=args.dropout).to(args.device)
+
+    if args.model_name == 'ARIMA':
+        # on instancie directement le module SARIMAXModule
+        model = SARIMAX(
+            order=args.order,
+            seasonal_order=args.seasonal_order,
+            enforce_stationarity=args.enforce_stationarity,
+            enforce_invertibility=args.enforce_invertibility
+        ).to(args.device)
+
+    if args.model_name == 'XgBoost':
+        # on instancie directement le module XGBoostModule
+        model = XGBoost(
+            n_estimators=args.n_estimators,
+            max_depth=args.max_depth,
+            subsample=args.subsample,
+            colsample_bytree=args.colsample_bytree,
+            gamma=args.gamma,
+            # learning_rate=args.learning_rate,
+            # reg_alpha=args.reg_alpha,
+            # reg_lambda=args.reg_lambda,
+            # objective=args.objective,
+            # eval_metric=args.eval_metric
+        ).to(args.device)
 
     if args.model_name == None:
         model = None
