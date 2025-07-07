@@ -4,6 +4,7 @@ import pandas as pd
 import torch
 import numpy as np
 from datetime import datetime
+import pickle 
 
 # --- Gestion de l'arborescence ---
 current_file_path = os.path.abspath(os.path.dirname(__file__))
@@ -105,6 +106,34 @@ def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,stan
     except Exception as e:
         print(f"ERREUR pendant le prétraitement des données {file_name}.csv: {e}")
         return None
+    
+    if ('agg_iris_target_n' in args.contextual_kwargs[NAME].keys()) and (args.contextual_kwargs[NAME]['agg_iris_target_n'] is not None):
+        target_n = args.contextual_kwargs[NAME]['agg_iris_target_n']
+        dic_path = f"{FOLDER_PATH}/dic_lyon_iris_agg{target_n}.pkl"
+        dictionnary_aggregated_iris = pickle.load(open(dic_path,'rb'))
+        data_T_bis = torch.empty(target_n,data_T.size(-1))
+
+        for k,(key,list_idx) in enumerate(dictionnary_aggregated_iris.items()):
+            data_T_bis[k] = torch.index_select(data_T,0,torch.tensor(list_idx).long()).mean(0) 
+
+        ## NE PAS LOAD DE IRIS AGG MAIS PRODUIRE UN .PY ou .IPYNB QUI GENERE LE dic_lyon_iris_agg{target_n}.pkl directement adapté au BIKE_IN
+        ## LANCER CE TRUC ET FAIRE L AGGREGATION BIKE IN COMME CA
+        ## FAIRE ATTENTION A L ORDRE DES IRIS. 
+        station_ids = iris_agg['STATION'][~iris_agg['STATION'].isna()]
+        station_ids
+
+        agg_df_pivoted = pd.DataFrame(columns = station_ids.index)
+        for idx,station_id in station_ids.items():
+            columns = list(map(int,station_id.split(' ')))
+            effective_columns = [c for c in columns if c in df_pivoted.columns]
+            agg_df_pivoted[idx] = df_pivoted[effective_columns].sum(axis=1)
+        agg_df_pivoted
+
+
+
+    mask_min = 1 
+    mask = agg_df_pivoted.mean() > mask_min
+    agg_df_pivoted = agg_df_pivoted.T[mask].T
 
     # --- Création et Prétraitement avec PersonnalInput ---
     print("Création et prétraitement de l'objet PersonnalInput...")
