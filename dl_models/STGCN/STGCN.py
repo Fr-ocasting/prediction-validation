@@ -68,16 +68,15 @@ class STGCN(nn.Module):
         self.st_blocks = nn.Sequential(*modules)
 
         ## Tackle Input if concatenated Late: 
-        # self.vision_concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
-        if (hasattr(args,'contextual_kwargs')) and ('netmob_POIs' in args.contextual_kwargs.keys()):
-            self.vision_concatenation_late = not(args.contextual_kwargs['netmob_POIs']['stacked_contextual']) 
-            if self.vision_concatenation_late:
-                extracted_feature_dim = args.contextual_kwargs['netmob_POIs']['out_dim']* args.contextual_kwargs['netmob_POIs']['attn_kwargs']['L_out']
-            else:
-                extracted_feature_dim = None
-        else:
-            self.vision_concatenation_late = False
-            extracted_feature_dim = None
+        # self.concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
+        self.concatenation_late = False
+        extracted_feature_dim = 0
+        if (hasattr(args,'contextual_kwargs')):
+            for key in args.contextual_kwargs.keys():
+                local_concatenation_late = not(args.contextual_kwargs[key]['stacked_contextual']) 
+                self.concatenation_late = self.concatenation_late or local_concatenation_late
+                if local_concatenation_late:
+                    extracted_feature_dim = extracted_feature_dim + args.contextual_kwargs[key]['out_dim']* args.contextual_kwargs[key]['attn_kwargs']['L_out']
         ## ...
 
 
@@ -104,7 +103,7 @@ class STGCN(nn.Module):
             #print('blocks: ',blocks)
             #print('in_feature_fc1: ',in_feature_fc1)
             self.output = layers.OutputBlock(self.Ko, in_feature_fc1, blocks[-2], blocks[-1][0], args.num_nodes, args.act_func, args.enable_bias, args.dropout,
-                                             self.vision_concatenation_late,extracted_feature_dim,
+                                             self.concatenation_late,extracted_feature_dim,
                                              self.TE_concatenation_late,embedding_dim,args.temporal_graph_transformer_encoder,
                                              TGE_num_layers=args.TGE_num_layers if args.temporal_graph_transformer_encoder else None, 
                                              TGE_num_heads=args.TGE_num_heads if args.temporal_graph_transformer_encoder else None,  

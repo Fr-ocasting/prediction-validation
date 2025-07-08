@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 from examples.reproductibility.config_STAEformer_CRITER_3_4_5_lanes_flow import modifications as modifications
 
 
-        compilation_modification = { #'epochs' : 500, #100
+        compilation_modification = { 'epochs' : 1, #100
 
                                     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
                                     'persistent_workers' : True ,# False 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
                                     'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                     'drop_last' : False,  # True
                                     'mixed_precision' : False, # True # False
-                                    'torch_compile' : 'compile' , # 'compile' # 'jit_script' #'trace' # False
+                                    'torch_compile' : False , # 'compile' # 'jit_script' #'trace' # False
                                     'unormalize_loss' : True, # False
 
                                     'device': torch.device('cuda:1')

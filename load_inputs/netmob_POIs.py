@@ -99,8 +99,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     NetMob_POI = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
                                            args=args,data_T=netmob_T,coverage_period = coverage_period,
                                            freq = FREQ,step_ahead = STEP_AHEAD, horizon_step = HORIZON_STEP,
-                                           name=NAME,
-                                           minmaxnorm=minmaxnorm,
+                                           name=NAME, minmaxnorm=minmaxnorm,
                                            standardize=standardize,
                                            tensor_limits_keeper=tensor_limits_keeper) 
     NetMob_POI.periods = None # dataset.periods

@@ -337,7 +337,7 @@ class OutputBlock(nn.Module):
     # F: Fully-Connected Layer
 
     def __init__(self, Ko, last_block_channel, channels, end_channel, num_nodes, act_func, bias, dropout,
-                 vision_concatenation_late,extracted_feature_dim,
+                 concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
                  TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None,
                  ):
@@ -366,12 +366,12 @@ class OutputBlock(nn.Module):
 
         # Design Input Dimension according to contextual data integration or not: 
         in_channel_fc1 = channels[0]  #blocks[-2][0]
-        if vision_concatenation_late:
+        if concatenation_late:
             in_channel_fc1 = in_channel_fc1 + extracted_feature_dim
         if TE_concatenation_late:
             in_channel_fc1 = in_channel_fc1 +embedding_dim
 
-        self.vision_concatenation_late = vision_concatenation_late
+        self.concatenation_late = concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
         # ...
         if False:
@@ -450,7 +450,7 @@ class OutputBlock(nn.Module):
 
         ## Concatenate Late if exists:
         cat_list: List[Tensor] = []
-        if self.vision_concatenation_late and x_vision is not None:
+        if self.concatenation_late and x_vision is not None:
             #assert x_vision is not None
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
             # print('x_vision.size(): ',x_vision.size())
@@ -469,8 +469,8 @@ class OutputBlock(nn.Module):
         ## ...
 
         # print('x.size after concatenation late if exists: ',x.size())
-        #print("\nforward output module:")
-        #print('fc1: ',self.fc1)
+        # print("\nforward output module:")
+        # print('fc1: ',self.fc1)
         x = self.fc1(x)
         #print('x after fc1: ',x.size())
         x = self.relu(x)

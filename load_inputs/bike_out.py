@@ -20,7 +20,7 @@ from load_inputs.bike_in import load_data as load_data_in
 NAME = 'bike_out'
 FILE_BASE_NAME = 'velov'
 DIRECTION = 'emitted' # attracted
-FILE_PATTERN = f'velov_{DIRECTION}_by_station' # Sera complété par args.freq
+FILE_PATTERN = f'{FILE_BASE_NAME}_{DIRECTION}_by_station' # Sera complété par args.freq
 DATA_SUBFOLDER = 'agg_data/velov' # Sous-dossier dans FOLDER_PATH
 
 
@@ -42,13 +42,13 @@ VALUE_COL = 'volume'
 
 
 
-def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=True):
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=True,tensor_limits_keeper = None,):
     return load_data_in(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=normalize,
+                        tensor_limits_keeper = tensor_limits_keeper,
             file_pattern = FILE_PATTERN,
               data_subfolder = DATA_SUBFOLDER,
               date_col = DATE_COL,
               location_col = LOCATION_COL,
               value_col = VALUE_COL,
               direction = DIRECTION,
-              name = NAME,
-              file_base_name = FILE_BASE_NAME)
+              name = NAME)

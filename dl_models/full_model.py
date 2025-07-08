@@ -376,7 +376,7 @@ class full_model(nn.Module):
         # print('self.spatial_attn_per_station.keys(): ',self.spatial_attn_per_station.keys())
         # print('self.dic_stacked_contextual:', self.dic_stacked_contextual)
         for ds_name, attn_list in self.spatial_attn_per_station.items():
-            print('Dataset: ',ds_name)
+            # print('Dataset: ',ds_name)
             pos_list = self.contextual_positions[ds_name] 
 
             extracted_feature_for_spatial_unit_i: List[torch.Tensor] = []
