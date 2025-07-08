@@ -61,9 +61,6 @@ def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_tempo
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
 
-    print('Spatial Attn module args: \n',vars(args_ds_i))
-
-
     importlib.reload(script)
     func = script.model
     filered_args = filter_args(func, args_ds_i)
@@ -331,7 +328,6 @@ class full_model(nn.Module):
             self.nb_add_channel = len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_apps'])*len(args.contextual_kwargs['netmob_POIs']['NetMob_transfer_mode'])*len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']) 
 
     def build_spatial_attn_modules(self,args):
-
         for ds_name in self.ds_which_need_spatial_attn_per_station:
             if ('netmob' in ds_name) or ('subway_out' in ds_name):
                 init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))] # range(len(self.contextual_positions[ds_name]))
@@ -360,7 +356,7 @@ class full_model(nn.Module):
         return x
     
 
-    def spatial_attention(self, x: torch.Tensor, 
+    def local_spatial_attention(self, x: torch.Tensor, 
                           contextual: List[torch.Tensor])-> List[torch.Tensor]:
         '''
         x:  [B,N,L]
@@ -396,15 +392,57 @@ class full_model(nn.Module):
             else:
                 L_extracted_feature.append(extracted_feature_for_spatial_unit_i)
         if len(L_extracted_feature) > 0:
-            extracted_features = torch.cat(L_extracted_feature)
+            extracted_features = torch.cat(L_extracted_feature,dim= -1)
         else:
             extracted_features = None
         return L_node_attributes,extracted_features
+    
 
-    def add_other_node_attributes(self, 
+    def global_spatial_attention(self, 
                                   L_node_attributes: List[torch.Tensor], 
                                   extracted_features: torch.Tensor,
                                     x: torch.Tensor,
+                                    contextual: List[torch.Tensor]
+                                  )-> List[torch.Tensor]:
+        '''
+        Compute Spatial Attention on Datasets with Heterogenous spatial units.
+        Args:
+        -----
+        L_node_attributes: List of node attributes [B,1,N,L] for each dataset i which need spatial attention
+        extracted_features: [B,N,Z]  (or None if no dataset need global attention) 
+        x: input related to target data [B,N,L] 
+        contextual: List of tensors related to contextual datasets.
+
+        Returns:
+        -------
+        For each dataset which need global attention:
+        >>> it can be stacked on x (on the channel dimension)
+        >>> or it can be concatenated to extracted_features (on the last dimension), in order to be concatenated at the end of the core model.
+        '''
+
+        for ds_name_i,attention_module_i in self.spatial_attn_poi.items():
+            #print('ds_name_i: ',ds_name_i)
+            #print('Attention Module: ',attention_module_i)
+            pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
+            node_attr = contextual[pos_i] 
+            # Spatial Attention: 
+            node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
+
+
+            #print('node_attr size after reshape/permute: ',node_attr.size())
+            if node_attr is not None:
+                if self.dic_stacked_contextual[ds_name_i]:
+                    node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
+                    node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
+                    L_node_attributes.append(node_attr)
+                else:
+                    if extracted_features is not None:
+                        extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
+                    else:
+                        extracted_features = node_attr
+        return L_node_attributes,extracted_features
+    
+    def stack_node_attributes(self, L_node_attributes: List[torch.Tensor], 
                                     contextual: List[torch.Tensor]
                                   )-> List[torch.Tensor]:
         '''
@@ -425,41 +463,7 @@ class full_model(nn.Module):
                     node_attr = node_attr.unsqueeze(1)
 
                 L_node_attributes.append(node_attr)
-            
-
-        for ds_name_i,attention_module_i in self.spatial_attn_poi.items():
-            #print('ds_name_i: ',ds_name_i)
-            #print('Attention Module: ',attention_module_i)
-            pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
-            node_attr = contextual[pos_i] 
-
-
-
-            # Temporal Attention : Query [B,N,L] and Key/Values [B,P,L]
-            #print('node_attr size before attention: ',node_attr.size())
-            #print('Query / Key - Values: ',x.permute(0, 2, 1).size(),node_attr.permute(0, 2, 1).size())
-            # node_attr = attention_module_i(x.permute(0, 2, 1),node_attr.permute(0, 2, 1))   # [B,L,Z*N]
-            # node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.num_nodes, -1)  # [B,L,N,Z]
-            # node_attr = node_attr.permute(0, 3, 2, 1)    # [B,Z,N,L]
-
-            # Spatial Attention : Query [B,N,L] and Key/Values [B,P,L]
-            # print('attention_module_i: ',attention_module_i)
-            # print('Query / Key - Values: ',x.size(),node_attr.size())
-            node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
-
-
-            #print('node_attr size after reshape/permute: ',node_attr.size())
-            if node_attr is not None:
-                if self.dic_stacked_contextual[ds_name_i]:
-                    node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
-                    node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
-                    L_node_attributes.append(node_attr)
-                else:
-                    if extracted_features is not None:
-                        extracted_features = torch.cat([extracted_features,node_attr])
-                    else:
-                        extracted_features = node_attr
-        return L_node_attributes,extracted_features
+        return L_node_attributes
 
     def forward(self,x: Tensor,
                 contextual: List[Tensor])->Tensor:
@@ -480,10 +484,11 @@ class full_model(nn.Module):
         # print('\nx before stacking new channels:',x.size())
         # print('Contextual size : ',[c_i.size() for c_i in contextual])
         # Spatial Attention and attributing node information: 
-        L_node_attributes,extracted_features = self.spatial_attention(x,contextual)
+        L_node_attributes,extracted_features = self.local_spatial_attention(x,contextual)
         # print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after spatial attn: ',extracted_features.size() if extracted_features is not None else None)
-        L_node_attributes,extracted_features = self.add_other_node_attributes(L_node_attributes,extracted_features,x,contextual)
+        L_node_attributes,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual)
+        L_node_attributes = self.stack_node_attributes(L_node_attributes,contextual)
         # print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after add_other_node_attributes: ',extracted_features.size() if extracted_features is not None else None)
 
@@ -495,14 +500,14 @@ class full_model(nn.Module):
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attribute(x,L_node_attributes)
             
-        # print('x after stacking node attribute: ',x.size())
+
         """ #A retirer 
         x,extracted_feature = self.forward_feature_extractor_model(x,contextual)        # Tackle NetMob (if exists):
         """
 
 
-        #print('x after NetMob model: ',x.size())
-        #print('extracted_feature: ',extracted_feature.size() if extracted_feature is not None else None)
+        # print('x after stacking node attribute: ',x.size())
+        # print('extracted_feature: ',extracted_features.size() if extracted_features is not None else None)
         x,time_elt = self.forward_calendar_model(x,contextual)         # Tackle Calendar Data (if exists)
 
         #print('x after Calendar model: ',x.size())
@@ -512,7 +517,6 @@ class full_model(nn.Module):
         """ #A retirer 
         vision_late = self.vision_concatenation_late
         """
-
         if self.core_model is not None:
             x= self.core_model(x,
                                x_vision = extracted_features,

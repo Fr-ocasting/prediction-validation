@@ -155,7 +155,8 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
         ## ---
 
         
-        
+        # print('len coverage period: ',coverage_period)
+        # print('len invalid_dates: ',invalid_dates)
         contextual_ds_i = module.load_data(FOLDER_PATH,
                                         coverage_period = coverage_period,
                                         invalid_dates=invalid_dates,

@@ -21,7 +21,7 @@ NAME = 'bike_in'
 FILE_BASE_NAME = 'velov'
 DIRECTION = 'attracted' # attracted
 FILE_PATTERN = f'{FILE_BASE_NAME}_{DIRECTION}_by_station' # Sera complété par args.freq
-DATA_SUBFOLDER = 'agg_data/velov' # Sous-dossier dans FOLDER_PATH
+DATA_SUBFOLDER = f'agg_data/{FILE_BASE_NAME}' # Sous-dossier dans FOLDER_PATH
 
 
 # Couverture théorique
@@ -74,9 +74,13 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
 
     # Convert into Datetime
     df_pivoted.index = pd.to_datetime(df_pivoted.index)
-
+    print('df pivoted: ',df_pivoted.shape)
+    df_pivoted = df_pivoted.reindex(pd.date_range(start =START, end = END, freq=target_freq)[:-1]).fillna(0)
+    print('df reindexed : ',df_pivoted.shape)
+    print('Len coverage period: ',len(coverage_period))
     # Temporal filtering on 'coverage_period'
     df_filtered = df_pivoted[df_pivoted.index.isin(coverage_period)].copy()
+    print('df filtered: ',df_filtered.shape)
 
     if df_filtered.empty:
             raise ImportError(f"ERRROR : not any remaining data after temporal filtering on {file_name}.csv.\nPlease check dataset_coverage: {args.dataset_coverage} and dataset_names {args.dataset_names}")

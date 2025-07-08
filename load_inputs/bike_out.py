@@ -21,7 +21,7 @@ NAME = 'bike_out'
 FILE_BASE_NAME = 'velov'
 DIRECTION = 'emitted' # attracted
 FILE_PATTERN = f'{FILE_BASE_NAME}_{DIRECTION}_by_station' # Sera complété par args.freq
-DATA_SUBFOLDER = 'agg_data/velov' # Sous-dossier dans FOLDER_PATH
+DATA_SUBFOLDER = f'agg_data/{FILE_BASE_NAME}' # Sous-dossier dans FOLDER_PATH
 
 
 # Couverture théorique
@@ -42,8 +42,9 @@ VALUE_COL = 'volume'
 
 
 
-def load_data(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=True,tensor_limits_keeper = None,):
-    return load_data_in(FOLDER_PATH, invalid_dates, coverage_period, args, minmaxnorm,standardize, normalize=normalize,
+def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,standardize, normalize=True,
+              tensor_limits_keeper = None):
+    return load_data_in(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,standardize, normalize=normalize,
                         tensor_limits_keeper = tensor_limits_keeper,
             file_pattern = FILE_PATTERN,
               data_subfolder = DATA_SUBFOLDER,

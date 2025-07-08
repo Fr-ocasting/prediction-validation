@@ -46,21 +46,26 @@ def add_noise(preprocesed_ds,args):
 def get_intersect_of_coverage_periods(args,coverage_period):
      # Load the Intersection of all the coverage period of each dataset_name:
     list_of_list_coverage_period,list_of_list_invalid_dates = [],[]
+    # if coverage_period is not None: 
+    #     print('Len init coverage period: ',len(coverage_period))
     for ds_name in list(set(args.dataset_for_coverage)|set(args.dataset_names)):
         if not(ds_name in ['calendar','calendar_embedding']):  # These contextual data are not concerned by the coverage period
             data_module = importlib.import_module(f"load_inputs.{ds_name}")
             importlib.reload(data_module) 
             
             coverage_i = pd.date_range(start=data_module.START, end=data_module.END, freq=args.freq)[:-1]
+            # print(f'Len coverage period of {ds_name} : ',len(coverage_i))
             list_of_list_coverage_period.append(coverage_i)
 
             invalid_dates_i = get_INVALID_DATES(data_module.list_of_invalid_period,args.freq)
             list_of_list_invalid_dates.append(invalid_dates_i)
 
     intersect_coverage_period = sorted(list(set.intersection(*map(set, list_of_list_coverage_period))))
+    # print(f'Len coverage period of intersection: ',len(intersect_coverage_period))
     # ___Intersection between the expected coverage_period and the limits from datasets:
     if coverage_period is not None: 
         intersect_coverage_period = sorted(list(set(coverage_period)&set(intersect_coverage_period)))
+    # print(f'Len coverage period of intersection and init coverage : ',len(intersect_coverage_period))
     # ...
        
     # Load the union of all the invalid_dates: 
