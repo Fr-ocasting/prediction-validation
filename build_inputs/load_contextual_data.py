@@ -296,8 +296,11 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
         for name_i in remove_from_dict:
             del contextual_ds[name_i]
         args.contextual_dataset_names =  [name_i for name_i in args.contextual_dataset_names if name_i not in remove_from_dict]
-        print('\n   Contextual datasets:')
-        print(f"   Init Dataset: '{[c_i.raw_values.size()for _,c_i in contextual_ds.items()]}. {[torch.isnan(c_i.raw_values).sum().item() for _,c_i in contextual_ds.items()]} Nan values")
+        print('\nSize of Contextual datasets:')
+        print(f"   Init Dataset: '{[c_i.raw_values.size()for _,c_i in contextual_ds.items()]}")
+        nan_values = [torch.isnan(c_i.raw_values).sum().item() for _,c_i in contextual_ds.items()]
+        if sum(nan_values) > 0:
+            print(f"{nan_values} Nan values")
         print('   TRAIN contextual_ds:',[c_i.U_train.size() for _,c_i in contextual_ds.items()])
         print('   VALID contextual_ds:',[c_i.U_valid.size() for  _,c_i in contextual_ds.items()]) if hasattr(target_ds,'U_valid') else None
         print('   TEST contextual_ds:',[c_i.U_test.size() for  _,c_i in contextual_ds.items()]) if hasattr(target_ds,'U_test') else None
