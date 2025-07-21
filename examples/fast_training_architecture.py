@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     
-    for model_name in ['STGCN']: # ,'STAEformer' 'STGCN'
+    for model_name in ['STAEformer']: # ,'STAEformer' 'STGCN'
         loger = LOG()
         # Init:
         #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']
@@ -55,7 +55,7 @@ if __name__ == "__main__":
                 from examples.reproductibility.config_STAEformer_CRITER_3_4_5_lanes_flow import modifications as modifications
 
 
-        compilation_modification = { 'epochs' : 1, #100
+        compilation_modification = {#'epochs' : 1, #100
 
                                     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
                                     'persistent_workers' : True ,# False 
@@ -63,10 +63,10 @@ if __name__ == "__main__":
                                     'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                     'drop_last' : False,  # True
                                     'mixed_precision' : False, # True # False
-                                    'torch_compile' : False, # 'compile' , # 'compile' # 'jit_script' #'trace' # False
+                                    'torch_compile' :'compile', # 'compile' , # 'compile' # 'jit_script' #'trace' # False
                                     'unormalize_loss' : True, # False
 
-                                    'device': torch.device('cuda:1')
+                                    'device': torch.device('cuda:0')
             }
         
         SEED = 1

@@ -49,7 +49,7 @@ def get_output_kernel_size(args):
                     Ko = Ko + vision_out_dim
             print('MODIFIER AUSSI ICI REMETTRE TRUE dl_models.STGCN.get_gso.py line 49')
             Ko = 14
-    
+
     return(Ko)
 
 def load_blocks(c_in,stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):

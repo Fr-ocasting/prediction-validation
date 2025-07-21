@@ -33,6 +33,7 @@ class model(nn.Module):
         dropout: float = 0.1,
         keep_topk: bool = False,
         output_temporal_dim: int = None,
+        stack_consistent_datasets = False,
     ):
         super().__init__()
         self.query_dim = query_dim
@@ -45,6 +46,7 @@ class model(nn.Module):
         self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
         #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
         #self.outputs = feed_forward(dim_model,dim_feedforward)
+        self.stack_consistent_datasets = stack_consistent_datasets
         if output_temporal_dim is None:
             self.temporal_proj = None
         else:
@@ -68,17 +70,23 @@ class model(nn.Module):
         # print('\nFoward Spatial Attention: ')
         # print('Query (x_flow_station):',x_flow_station.size())
         # print('Key/Values (x_contextual):',x_contextual.size())
-        x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
+        projected_x_flow,x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
 
-        # print('After MHA:',x_mha.size()) #[B,N,dim_model]
-        x_fc = self.feedforward(x_mha)
-        # print('After FC:',x_fc.size()) #[B,N,ff_dim*L] where L = query_dim
-        if self.temporal_proj is not None:
-            # print(x_fc[0,0,:])
-            reshaped_x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),self.latent_dim,self.query_dim)
-            x_fc = self.temporal_proj(self.relu(reshaped_x_fc))  # [B,N,z] -> [B,N,z1,L] -> [B,N,z1,r] -> [B,N,z']
-            x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),-1)
-            # print('After Temporal Projection:',x_fc.size()) #  [B,N,ff_dim] 
+        # --------Case where we don't want to project again the MHA output, and we keep the long projection (dim_model)
+        if self.stack_consistent_datasets:
+            return projected_x_flow,x_mha
+        
+        # --------Case where we want to project the MHA output in order to go back to the original temporal dimension:
+        else: 
+            # print('After MHA:',x_mha.size()) #[B,N,dim_model]
+            x_fc = self.feedforward(x_mha)
+            # print('After FC:',x_fc.size()) #[B,N,ff_dim*L] where L = query_dim
+            if self.temporal_proj is not None:
+                # print(x_fc[0,0,:])
+                reshaped_x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),self.latent_dim,self.query_dim)
+                x_fc = self.temporal_proj(self.relu(reshaped_x_fc))  # [B,N,z] -> [B,N,z1,L] -> [B,N,z1,r] -> [B,N,z']
+                x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),-1)
+                # print('After Temporal Projection:',x_fc.size()) #  [B,N,ff_dim] 
 
-        return x_fc
+        return projected_x_flow,x_fc

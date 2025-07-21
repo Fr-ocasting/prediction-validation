@@ -502,6 +502,7 @@ class MultiHeadAttention(nn.Module):
 
         #[B,n_heads, nb_units, d_k] -> [B, nb_units, d_models]     
         context = self.combine_heads(context)
+        combined_Q = self.combine_heads(Q)
 
         #[B, nb_units, d_models] -> [B,d_models] if 'per_station'. Otherwise  do nothing
         #context = torch.sum(context, dim=-2)
@@ -510,7 +511,7 @@ class MultiHeadAttention(nn.Module):
         if batch_size==1:
             context = context.unsqueeze(0)
 
-        return context,attn_weights
+        return combined_Q,context,attn_weights
 
 
 class model(nn.Module):

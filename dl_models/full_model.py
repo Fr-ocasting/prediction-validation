@@ -48,7 +48,7 @@ import importlib
 #     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_temporal_dim = None):
+def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_temporal_dim = None,stack_consistent_datasets = False):
     script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
     scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
     importlib.reload(scrip_args)
@@ -57,10 +57,12 @@ def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_tempo
     args_ds_i.query_dim = query_dim  # input dim of Query 
     args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
     args_ds_i.output_temporal_dim = output_temporal_dim 
+    args_ds_i.stack_consistent_datasets = stack_consistent_datasets
     
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
 
+    print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets)
     importlib.reload(script)
     func = script.model
     filered_args = filter_args(func, args_ds_i)
@@ -106,6 +108,7 @@ class full_model(nn.Module):
         self.spatial_attn_per_station = nn.ModuleDict()   # même nom conservé
         self.spatial_attn_poi        = nn.ModuleDict()
         self.dic_stacked_contextual = {}
+        self.dic_stacked_consistant_contextual = {}
 
         #___ Add positions for each dataset which need spatial attention:
         self.contextual_positions = args.contextual_positions
@@ -135,6 +138,7 @@ class full_model(nn.Module):
         # === Tackle Feature Extractor:
         for ds_name,kwargs in args.contextual_kwargs.items():
             self.dic_stacked_contextual[ds_name] = kwargs['stacked_contextual']
+            self.dic_stacked_consistant_contextual[ds_name] = kwargs['stack_consistent_datasets'] if 'stack_consistent_datasets' in kwargs.keys() else False
 
         # === Tackle Node Graphe Attributes):
         self.tackle_node_attributes(args)
@@ -343,16 +347,28 @@ class full_model(nn.Module):
                 L_out = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out']
             else:
                 L_out = None
-            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, init_spatial_dim=args.L,output_temporal_dim = L_out)
+            condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
+            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, 
+                                                                     init_spatial_dim=args.L,
+                                                                     output_temporal_dim = L_out,
+                                                                     stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if condition_i else False
+                                                                     )
 
             
-    def stack_node_attribute(self,x: torch.Tensor, 
-                             L_node_attributes: List[torch.Tensor])-> Tensor:
+    def stack_node_attributes_from_attn(self,x: torch.Tensor, 
+                             L_node_attributes: List[torch.Tensor],
+                             L_projected_x:List[torch.Tensor], )-> Tensor:
+    
         ''' Concat node attributed to the channel dim of x'''
 
-        #print('x.size: ',x.size())
-        #print('node attributes size: ',[c.size() for c in L_node_attributes])
-        x = torch.cat([x]+L_node_attributes, dim=1)
+        # print('x.size: ',x.size())
+        # print('node attributes size: ',[c.size() for c in L_node_attributes])
+        if len(L_projected_x) != 0:
+            x = torch.cat(L_projected_x,dim = 1)
+            
+        if len(L_node_attributes) != 0:
+            x = torch.cat([x]+L_node_attributes, dim=1)
+        # print('x.size: ',x.size())
         return x
     
 
@@ -402,7 +418,8 @@ class full_model(nn.Module):
                                   L_node_attributes: List[torch.Tensor], 
                                   extracted_features: torch.Tensor,
                                     x: torch.Tensor,
-                                    contextual: List[torch.Tensor]
+                                    contextual: List[torch.Tensor],
+                                    L_projected_x: List[torch.Tensor]
                                   )-> List[torch.Tensor]:
         '''
         Compute Spatial Attention on Datasets with Heterogenous spatial units.
@@ -421,28 +438,39 @@ class full_model(nn.Module):
         '''
 
         for ds_name_i,attention_module_i in self.spatial_attn_poi.items():
-            #print('ds_name_i: ',ds_name_i)
+            # print('\nds_name_i: ',ds_name_i)
             #print('Attention Module: ',attention_module_i)
             pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
             node_attr = contextual[pos_i] 
             # Spatial Attention: 
-            node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
+            projected_x,node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
+            # print('projected_x size: ',projected_x.size())
+            # print('node_attr size: ',node_attr.size())
 
 
             #print('node_attr size after reshape/permute: ',node_attr.size())
             if node_attr is not None:
                 if self.dic_stacked_contextual[ds_name_i]:
-                    node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
-                    node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
-                    L_node_attributes.append(node_attr)
+                    if self.dic_stacked_consistant_contextual[ds_name_i]:
+                        if node_attr.dim() == 3:
+                            node_attr = node_attr.unsqueeze(1)
+                        if projected_x.dim() == 3:
+                            projected_x = projected_x.unsqueeze(1)
+
+                        L_projected_x.append(projected_x)
+                        L_node_attributes.append(node_attr)
+                    else:
+                        node_attr = node_attr.reshape(node_attr.size(0),node_attr.size(1),self.L, -1)  # [B,N,L,Z]
+                        node_attr = node_attr.permute(0, 3, 1, 2)    # [B,Z,N,L]
+                        L_node_attributes.append(node_attr)
                 else:
                     if extracted_features is not None:
                         extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
                     else:
                         extracted_features = node_attr
-        return L_node_attributes,extracted_features
+        return L_node_attributes,L_projected_x,extracted_features
     
-    def stack_node_attributes(self, L_node_attributes: List[torch.Tensor], 
+    def stack_direct_node_attributes(self, L_node_attributes: List[torch.Tensor], 
                                     contextual: List[torch.Tensor]
                                   )-> List[torch.Tensor]:
         '''
@@ -475,6 +503,7 @@ class full_model(nn.Module):
             >>>> contextual[netmob_position]: [B,N,C,H,W,L]
             >>>> contextual[calendar]: [B]
         '''
+        L_projected_x: List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
         B = x.size(0)
         # print('\nx size before forward: ',x.size())
         if self.remove_trafic_inputs:
@@ -487,8 +516,8 @@ class full_model(nn.Module):
         L_node_attributes,extracted_features = self.local_spatial_attention(x,contextual)
         # print('L_node_attributes after spatial attn: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after spatial attn: ',extracted_features.size() if extracted_features is not None else None)
-        L_node_attributes,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual)
-        L_node_attributes = self.stack_node_attributes(L_node_attributes,contextual)
+        L_node_attributes,L_projected_x,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual,L_projected_x)
+        L_node_attributes = self.stack_direct_node_attributes(L_node_attributes,contextual)
         # print('L_node_attributes after add_other_node_attributes: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after add_other_node_attributes: ',extracted_features.size() if extracted_features is not None else None)
 
@@ -498,7 +527,7 @@ class full_model(nn.Module):
         
         if len(L_node_attributes) > 0:
             # [B,1,N,L] -> [B,C,N,L]
-            x = self.stack_node_attribute(x,L_node_attributes)
+            x = self.stack_node_attributes_from_attn(x,L_node_attributes,L_projected_x)
             
 
         """ #A retirer 
@@ -683,6 +712,17 @@ def load_model(dataset, args):
         
     if args.model_name == 'STGCN':
         from dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
+        former_L = None
+        for key in args.contextual_kwargs.keys():
+            if 'stack_consistent_datasets' in args.contextual_kwargs[key].keys() and args.contextual_kwargs[key]['stack_consistent_datasets']:
+                    L_new = args.contextual_kwargs[key]['attn_kwargs']['dim_model']
+                    if former_L is not None:
+                        if former_L != L_new:
+                            raise ValueError(f'Inconsistent L_add_2 for {key} contextual dataset: {former_L} != {L_new}')
+                    else: 
+                        former_L = L_new
+
+        args.L = former_L if former_L is not None else args.L
         Ko = get_output_kernel_size(args)
         args = get_block_dims(args,Ko)
         gso,_ = get_gso_from_adj(dataset, args)
