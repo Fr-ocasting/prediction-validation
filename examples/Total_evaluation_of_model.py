@@ -155,7 +155,7 @@ if __name__ == '__main__':
                                             'data_augmentation': False, #True,  #False
 
                                             # Other Module: 
-                                            'compute_node_attr_with_attn' : False, # False # True
+                                            'need_global_attn' : False, # False # True
                                             'use_target_as_context': False,
                                             'temporal_graph_transformer_encoder': False, # False # True
 
@@ -213,7 +213,7 @@ if __name__ == '__main__':
                                             'data_augmentation': False, #True,  #False
 
                                             # Other Module: 
-                                            'compute_node_attr_with_attn' : False, # False # True
+                                            'need_global_attn' : False, # False # True
                                             'use_target_as_context': False,
                                             'temporal_graph_transformer_encoder': False, # False # True
 
@@ -273,7 +273,7 @@ if __name__ == '__main__':
                                             'vision_model_name': None,
                                             'stacked_contextual': False, # True # False
                                             'temporal_graph_transformer_encoder': False, # False # True
-                                            'compute_node_attr_with_attn' : False, # False # True
+                                            'need_global_attn' : False, # False # True
                                             'data_augmentation': False, #True,  #False
 
                                             'use_target_as_context': False,
@@ -354,7 +354,7 @@ if __name__ == '__main__':
                         'torch_compile':False,
 
                         'temporal_graph_transformer_encoder': False, # False # True
-                        'compute_node_attr_with_attn' : False, # False # True
+                        'need_global_attn' : False, # False # True
                         'stacked_contextual': True, # True # False
 
                         'data_augmentation': True, #True,  #False
@@ -400,7 +400,7 @@ if __name__ == '__main__':
                         'torch_compile':False,
 
                         'temporal_graph_transformer_encoder': False, # False # True
-                        'compute_node_attr_with_attn' : False, # False # True
+                        'need_global_attn' : False, # False # True
 
                         'data_augmentation': False, #True,  #False
                         'DA_method':'rich_interpolation', # 'noise' # 'interpolation
@@ -427,7 +427,7 @@ if __name__ == '__main__':
                                                     'W':0,
 
                                                     'input_embedding_dim': 24,
-                                                    'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                                                                 'stacked_contextual': True,
                                                                                                 'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
                                                                                                 'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -541,7 +541,7 @@ if __name__ == '__main__':
                         'torch_compile':False,
 
                         'temporal_graph_transformer_encoder': False, # False # True
-                        'compute_node_attr_with_attn' : False, # False # True
+                        'need_global_attn' : False, # False # True
                         'stacked_contextual': True, # True # False
 
                         'data_augmentation': True, #True,  #False

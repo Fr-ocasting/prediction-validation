@@ -134,7 +134,7 @@ modification = {'target_data': target_data,
                 'learnable_adj_matrix' : False, # True      
                 'stacked_contextual': False, # True # False
                 'temporal_graph_transformer_encoder': False,
-                'compute_node_attr_with_attn' : False, # True ??
+                'need_global_attn' : False, # True ??
                 }
                  
 modification.update(config2update[target_data])

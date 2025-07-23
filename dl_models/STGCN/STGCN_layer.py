@@ -464,8 +464,23 @@ class OutputBlock(nn.Module):
             # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,1,N,Z+L_calendar]
             cat_list.append(x_calendar)
         if len(cat_list) > 0:
-            x = torch.cat([x]+cat_list,dim=-1) 
-        
+            x = [x]+cat_list
+            # x = torch.cat(x,dim=-1) 
+
+            # ------ torch.cat does not work with torch dynamo compile, so we use a workaround
+
+            # print('x.size(): ',[x_i.size() for x_i in x])
+            last_dims = [p.size(-1) for p in x]
+            sizes = list(x[0].size())[:-1] + [sum(last_dims)]
+            out = torch.empty(sizes, 
+                              dtype=x[0].dtype, 
+                              device=x[0].device)
+            offset = 0
+            for p, s in zip(x, last_dims):
+                out[..., offset:offset + s] = p
+                offset += s
+            x = out
+            # ------ end workaround for torch.cat
         ## ...
 
         # print('x.size after concatenation late if exists: ',x.size())
@@ -478,6 +493,6 @@ class OutputBlock(nn.Module):
         x = self.fc2(x)
         #print('x.size after fc2: ',x.size())
         x = x.permute(0, 3, 1, 2)
-        #print('output (after permute): ',x.size())
+        # print('output (after permute): ',x.size())
 
         return x

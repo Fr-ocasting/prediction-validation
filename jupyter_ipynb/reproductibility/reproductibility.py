@@ -50,7 +50,7 @@ def get_modification(dataset_names):
         'threshold': 0.7,
         'stacked_contextual': True,
         'target_data': 'subway_in',
-        'compute_node_attr_with_attn': False,
+        'need_global_attn': False,
         'use_target_as_context': False,
     }
 

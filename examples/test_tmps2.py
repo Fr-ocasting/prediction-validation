@@ -31,7 +31,7 @@ if True:
                     'learnable_adj_matrix' : False,
                     'stacked_contextual': True,
                     'temporal_graph_transformer_encoder': False,
-                    'compute_node_attr_with_attn': False,
+                    'need_global_attn': False,
                     }
     
     config_diffs = {'_1':{},  
@@ -101,7 +101,7 @@ if False:
                                                 
                                                 'stacked_contextual': True,
                                                 'temporal_graph_transformer_encoder': False,
-                                                'compute_node_attr_with_attn': False,
+                                                'need_global_attn': False,
                                                 }
                                     })
                             
@@ -132,7 +132,7 @@ if False:
                     'stacked_contextual': True,
 
                     'temporal_graph_transformer_encoder': False,
-                    'compute_node_attr_with_attn': False,
+                    'need_global_attn': False,
                     #'vision_concatenation_early' : True,
                     #'vision_concatenation_late' : False,
                     #'vision_model_name': 'VariableSelectionNetwork',

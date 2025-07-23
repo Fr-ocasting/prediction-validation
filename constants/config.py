@@ -78,7 +78,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
 
 
     # === Contextual Data Kwargs:
-    config['contextual_kwargs'] = {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+    config['contextual_kwargs'] = {'netmob_POIs': {'need_global_attn':True, 
                                                    'stacked_contextual': True,
                                                    'NetMob_selected_apps' : [],
                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -86,7 +86,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
                                                     'NetMob_expanded' : '', # '' # '_expanded'
                                                     'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
                                         },
-                                    'subway_out': {'compute_node_attr_with_attn':False, 
+                                    'subway_out': {'need_global_attn':False, 
                                                    'stacked_contextual': True,
                                                    'model_name': None, # Define the type of model used to extract contextual information from NetMob
                                                    'input_type': None, # 'image_per_stations' # 'unique_image_through_lyon'  
@@ -104,7 +104,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     #             #if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
     #             #'''
     # config['stacked_contextual'] = True # If True then stack contextual information to the channel dim. Does not consider anymore contextual tensors but an input tensor.
-    # config['compute_node_attr_with_attn'] = False # If 'True' then compute an attention layer for the full dataset (subway-out or NetMob POIs) without spatial assignment before 
+    # config['need_global_attn'] = False # If 'True' then compute an attention layer for the full dataset (subway-out or NetMob POIs) without spatial assignment before 
 
     # === NetMob Config ===
     #config['NetMob_selected_apps'] =  [] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter'] ['Google_Maps','Deezer','Instagram']

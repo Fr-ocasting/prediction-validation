@@ -51,7 +51,7 @@ modifications = { 'Init': {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar
                             'minmaxnorm': False,
                             'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
                             
-                            'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                            'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                                                             'stacked_contextual': True,
                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
                                                                                               'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -109,7 +109,7 @@ modifications = { 'Init': {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar
                               'minmaxnorm': False,
                               'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
                               
-                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                                                             'stacked_contextual': True,
                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
                                                                                               'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -168,7 +168,7 @@ modifications = { 'Init': {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar
                                                       'minmaxnorm': False,
                                                       'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
                                                       
-                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                                                             'stacked_contextual': True,
                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
                                                                                               'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

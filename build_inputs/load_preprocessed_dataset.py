@@ -53,7 +53,7 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
         setattr(args,f"pos_{dataset_name}",pos_contextual_i)
     else:
         dict_pos_node_attr2ds[pos_contextual_i] = dataset_name
-        if args.contextual_kwargs[dataset_name]['compute_node_attr_with_attn']:
+        if args.contextual_kwargs[dataset_name]['need_global_attn']:
             ds_which_need_global_attn.append(dataset_name)
 
     

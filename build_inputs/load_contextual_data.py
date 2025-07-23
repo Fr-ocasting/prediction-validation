@@ -233,7 +233,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                 kwargs_i = {'use_only_for_common_dates':False,
                             'vision_model_name':args.vision_model_name,
                             'stacked_contextual':args.stacked_contextual,
-                            'compute_node_attr_with_attn':args.compute_node_attr_with_attn,
+                            'need_global_attn':args.need_global_attn,
                             'vision_input_type':args.vision_input_type,
                             'vision_model_name': args.vision_model_name,
                             }
@@ -257,16 +257,17 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
 
                     ## Get the new added dimension: 
                     #    Case 2.i:   in case we compute node attributes with attention or in case 'per_station' is in the name of the contextual dataset:
-                    if (kwargs_i['compute_node_attr_with_attn']) or ('per_station' in name_i): 
+                    if (kwargs_i['need_global_attn']) or ('per_station' in name_i): 
                         latent_dim = kwargs_i['attn_kwargs']['latent_dim']
                     #     Case 2.ii:
                     else:
                         latent_dim = 1
 
-                    if ('netmob_POIs' in name_i) and (not kwargs_i['compute_node_attr_with_attn']):
+                    if ('netmob_POIs' in name_i) and (not kwargs_i['need_global_attn']):
                         add_dim = len(kwargs_i['NetMob_selected_apps'])*len(kwargs_i['NetMob_transfer_mode'])*len(kwargs_i['NetMob_selected_tags']) 
                     else:
                         add_dim =  latent_dim*contextual_ds_i.C 
+                    args.contextual_kwargs[name_i]['added_dim'] = add_dim
 
 
                     ##  Case 1: We don't stack contextual Data

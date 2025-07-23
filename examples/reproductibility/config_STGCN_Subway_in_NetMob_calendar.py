@@ -31,6 +31,53 @@ constant_modif = {'dataset_for_coverage': ['subway_in','netmob_POIs'],
 modifications = {
 
 
+# [Subway-In]
+# # All Steps RMSE = 38.34, MAE = 21.38, MAPE = 24.99, MSE = 1471.33
+# # All Steps RMSE = 38.86, MAE = 21.69, MAPE = 25.01, MSE = 1512.77
+# # All Steps RMSE = 38.81, MAE = 21.71, MAPE = 25.13, MSE = 1508.92
+# 'subway_in_calendar_emb64_out64_Huber_MinMax': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding'],
+#                                                   'dataset_for_coverage': ['subway_in','netmob_POIs'],
+#                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
+#                                                   'loss_function_type':'HuberLoss',
+#                                                    'Kt': 2,
+#                                                     'stblock_num': 4,
+#                                                     'Ks': 2,
+#                                                     'graph_conv_type': 'graph_conv',
+#                                                     'gso_type': 'sym_renorm_adj',
+#                                                     'enable_bias': True,
+#                                                     'adj_type': 'corr',
+#                                                     'enable_padding': True,
+#                                                     'threshold': 0.3,
+#                                                     'act_func': 'glu',
+#                                                     'temporal_h_dim': 64,
+#                                                     'spatial_h_dim': 256,
+#                                                     'output_h_dim': 64,
+#                                                     'weight_decay': 0.0014517707449388,
+#                                                     'batch_size': 128,
+#                                                     'lr': 0.00071,
+#                                                     'dropout': 0.145169206052754,
+#                                                     'epochs': 500,
+#                                                     'standardize': False,
+#                                                     'minmaxnorm': True,
+
+#                                                     'TE_embedding_dim': 64,
+#                                                     'TE_out_h_dim': 64,
+#                                                     'TE_concatenation_late': True,
+#                                                     'TE_concatenation_early':False,
+
+#                                                     'optimizer': 'adamw',
+#                                                     'batch_size': 128,
+#                                                     'freq': '15min',
+#                                                     'H':6,
+#                                                     'D':1,
+#                                                     'W':0,
+
+#                                                     'contextual_kwargs' : {},
+#                                                     'denoising_names':[],
+#                                                     }, 
+
+
 
 ######==========================================================================
 #        ONE YEAR DATA
@@ -121,7 +168,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_in': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_in': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -137,7 +184,7 @@ modifications = {
 #                                                                                             #'D': ,
 #                                                                                             #'W': , 
 #                                                                                 },
-#                                                                             'bike_out': {'compute_node_attr_with_attn':True, 
+#                                                                             'bike_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -198,7 +245,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -258,7 +305,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_in': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_in': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -321,7 +368,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_in': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_in': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -337,7 +384,7 @@ modifications = {
 #                                                                                             #'D': ,
 #                                                                                             #'W': , 
 #                                                                                 },
-#                                                                             'bike_out': {'compute_node_attr_with_attn':True, 
+#                                                                             'bike_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -398,7 +445,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -458,7 +505,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_in': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_in': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -571,7 +618,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -637,7 +684,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -703,7 +750,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -774,7 +821,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -845,7 +892,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_in': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_in': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -861,7 +908,7 @@ modifications = {
 #                                                                                             #'D': ,
 #                                                                                             #'W': , 
 #                                                                                 },
-#                                                                             'bike_out': {'compute_node_attr_with_attn':True, 
+#                                                                             'bike_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -924,7 +971,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -989,7 +1036,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'bike_in': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'bike_in': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'threshold_volume_min': 1,
 #                                                                                             'agg_iris_target_n': 100,
@@ -1011,10 +1058,13 @@ modifications = {
 
 
 
-# # [Subway-In]
-# # All Steps RMSE = 38.34, MAE = 21.38, MAPE = 24.99, MSE = 1471.33
-# 'subway_in_calendar_emb64_out64_Huber_MinMax': {'target_data': 'subway_in',
-#                                                   'dataset_names': ['subway_in', 'calendar_embedding'],
+# 
+
+# # [Subway-In, Subway-Out]
+# # All Steps RMSE = 38.88, MAE = 21.97, MAPE = 28.35, MSE = 1514.15
+# # All Steps RMSE = 39.15, MAE = 21.89, MAPE = 25.39, MSE = 1536.12
+# 'subway_in_calendar_subway_OUT_emb64_out64_Huber_MinMax_stack': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding','subway_out'],
 #                                                   'dataset_for_coverage': ['subway_in','netmob_POIs'],
 #                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
 #                                                   'loss_function_type':'HuberLoss',
@@ -1026,6 +1076,7 @@ modifications = {
 #                                                     'enable_bias': True,
 #                                                     'adj_type': 'corr',
 #                                                     'enable_padding': True,
+#                                                     # args.enable_padding = False,
 #                                                     'threshold': 0.3,
 #                                                     'act_func': 'glu',
 #                                                     'temporal_h_dim': 64,
@@ -1051,68 +1102,21 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {},
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
+#                                                                                             'stacked_contextual': True,
+#                                                                                             'vision_model_name' : None,
+#                                                                                             'use_only_for_common_dates': False, 
+#                                                                                             'stack_consistent_datasets' : False, # True,
+#                                                                                             'attn_kwargs': {'latent_dim': 1,
+#                                                                                                             'dim_feedforward' : 64,
+#                                                                                                             'num_heads':  2,
+#                                                                                                             'dim_model':  24,
+#                                                                                                             'keep_topk': False,
+#                                                                                                             },
+#                                                                                       },  
+#                                                                         },
 #                                                     'denoising_names':[],
 #                                                     }, 
-
-
-# [Subway-In, Subway-Out]
-# All Steps RMSE = 38.88, MAE = 21.97, MAPE = 28.35, MSE = 1514.15
-# All Steps RMSE = 39.15, MAE = 21.89, MAPE = 25.39, MSE = 1536.12
-'subway_in_calendar_subway_OUT_emb64_out64_Huber_MinMax_stack': {'target_data': 'subway_in',
-                                                  'dataset_names': ['subway_in', 'calendar_embedding','subway_out'],
-                                                  'dataset_for_coverage': ['subway_in','netmob_POIs'],
-                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
-                                                  'loss_function_type':'HuberLoss',
-                                                   'Kt': 2,
-                                                    'stblock_num': 4,
-                                                    'Ks': 2,
-                                                    'graph_conv_type': 'graph_conv',
-                                                    'gso_type': 'sym_renorm_adj',
-                                                    'enable_bias': True,
-                                                    'adj_type': 'corr',
-                                                    'enable_padding': True,
-                                                    # args.enable_padding = False,
-                                                    'threshold': 0.3,
-                                                    'act_func': 'glu',
-                                                    'temporal_h_dim': 64,
-                                                    'spatial_h_dim': 256,
-                                                    'output_h_dim': 64,
-                                                    'weight_decay': 0.0014517707449388,
-                                                    'batch_size': 128,
-                                                    'lr': 0.00071,
-                                                    'dropout': 0.145169206052754,
-                                                    'epochs': 500,
-                                                    'standardize': False,
-                                                    'minmaxnorm': True,
-
-                                                    'TE_embedding_dim': 64,
-                                                    'TE_out_h_dim': 64,
-                                                    'TE_concatenation_late': True,
-                                                    'TE_concatenation_early':False,
-
-                                                    'optimizer': 'adamw',
-                                                    'batch_size': 128,
-                                                    'freq': '15min',
-                                                    'H':6,
-                                                    'D':1,
-                                                    'W':0,
-
-                                                    'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
-                                                                                            'stacked_contextual': True,
-                                                                                            'vision_model_name' : None,
-                                                                                            'use_only_for_common_dates': False, 
-                                                                                            'stack_consistent_datasets' : False, # True,
-                                                                                            'attn_kwargs': {'latent_dim': 1,
-                                                                                                            'dim_feedforward' : 64,
-                                                                                                            'num_heads':  2,
-                                                                                                            'dim_model':  24,
-                                                                                                            'keep_topk': False,
-                                                                                                            },
-                                                                                      },  
-                                                                        },
-                                                    'denoising_names':[],
-                                                    }, 
 
 
 
@@ -1159,7 +1163,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1215,7 +1219,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1285,7 +1289,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1341,7 +1345,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1397,7 +1401,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1454,7 +1458,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1510,7 +1514,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1586,7 +1590,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':False, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':False, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1640,7 +1644,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -1705,7 +1709,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -1771,7 +1775,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -1841,7 +1845,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -1912,7 +1916,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -1967,7 +1971,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -2025,7 +2029,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -2081,7 +2085,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -2136,7 +2140,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'subway_out': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'subway_out': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'vision_model_name' : None,
 #                                                                                             'use_only_for_common_dates': False, 
@@ -2150,6 +2154,1086 @@ modifications = {
 #                                                                             },  
 #                                                     'denoising_names':[],
 #                                                     }, 
+
+
+# 
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out1': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 1}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out2': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 2}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out4': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 4}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out8': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 8}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out16': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 16}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out32': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 32}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff64_h2_l8_unormalized_loss_concatenated_L_out64': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 8 , # L*latent_dim = 7*16 = 112 
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 64}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+#
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim128_ff64_h2_l16_unormalized_loss_concatenated_L_out128': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 16 , # L*latent_dim = 7*16 = 112 
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 128,
+                                                                                                            'keep_topk': False,
+                                                                                                            'L_out': 128}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+# All Steps RMSE = 38.90, MAE = 21.86, MAPE = 26.16, MSE = 1515.57
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': True,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : False,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': True,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 48,
+                                                                                                            'keep_topk': False}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+# 
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim24_ff64_h2_l1_unormalized_loss': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': True,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {'latent_dim' : 1 ,
+                                                                                                            'dim_feedforward' : 64,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 24,
+                                                                                                            'keep_topk': False}  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+
+# #All Steps RMSE = 39.03, MAE = 21.82, MAPE = 24.48, MSE = 1525.28
+# #  All Steps RMSE = 39.26, MAE = 22.34, MAPE = 27.49, MSE = 1543.54
+# 'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim12_ff64_h2_l2': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+#                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
+#                                                   'loss_function_type':'HuberLoss',
+#                                                    'Kt': 2,
+#                                                     'stblock_num': 4,
+#                                                     'Ks': 2,
+#                                                     'graph_conv_type': 'graph_conv',
+#                                                     'gso_type': 'sym_renorm_adj',
+#                                                     'enable_bias': True,
+#                                                     'adj_type': 'corr',
+#                                                     'enable_padding': True,
+#                                                     'threshold': 0.3,
+#                                                     'act_func': 'glu',
+#                                                     'temporal_h_dim': 64,
+#                                                     'spatial_h_dim': 256,
+#                                                     'output_h_dim': 64,
+#                                                     'weight_decay': 0.0014517707449388,
+#                                                     'batch_size': 128,
+#                                                     'lr': 0.00071,
+#                                                     'dropout': 0.145169206052754,
+#                                                     'epochs': 500,
+#                                                     'standardize': False,
+#                                                     'minmaxnorm': True,
+
+#                                                     'TE_embedding_dim': 64,
+#                                                     'TE_out_h_dim': 64,
+#                                                     'TE_concatenation_late': True,
+#                                                     'TE_concatenation_early':False,
+
+                                                     
+#                                                     'optimizer': 'adamw',
+#                                                     'batch_size': 128,
+#                                                     'freq': '15min',
+#                                                     'H':6,
+#                                                     'D':1,
+#                                                     'W':0,
+#                                                     'unormalize_loss' : False,
+#                                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+#                                                                                             'stacked_contextual': True,
+#                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+#                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+#                                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+#                                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+#                                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+#                                                                                             'vision_model_name' : None,
+#                                                                                             'epsilon_clustering': 0.1,
+#                                                                                             'agg_iris_target_n': 100,
+#                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+#                                                                                             'attn_kwargs': {'latent_dim' : 2 ,
+#                                                                                                             'dim_feedforward' : 64,
+#                                                                                                             'num_heads' : 2 ,
+#                                                                                                             'dim_model' : 12,
+#                                                                                                             'keep_topk': False}  
+#                                                                                             #'H' : ,
+#                                                                                             #'D': ,
+#                                                                                             #'W': , 
+#                                                                                 },
+#                                                                         },  
+#                                                     'denoising_names':['netmob_POIs'],
+#                                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+#                                                     'denoising_modes':["train","valid","test"],             # par défaut
+#                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+#             },
+# # All Steps RMSE = 39.44, MAE = 22.21, MAPE = 24.54, MSE = 1558.60
+# 'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim12_ff64_h2_l2_unormalized_loss': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+#                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
+#                                                   'loss_function_type':'HuberLoss',
+#                                                    'Kt': 2,
+#                                                     'stblock_num': 4,
+#                                                     'Ks': 2,
+#                                                     'graph_conv_type': 'graph_conv',
+#                                                     'gso_type': 'sym_renorm_adj',
+#                                                     'enable_bias': True,
+#                                                     'adj_type': 'corr',
+#                                                     'enable_padding': True,
+#                                                     'threshold': 0.3,
+#                                                     'act_func': 'glu',
+#                                                     'temporal_h_dim': 64,
+#                                                     'spatial_h_dim': 256,
+#                                                     'output_h_dim': 64,
+#                                                     'weight_decay': 0.0014517707449388,
+#                                                     'batch_size': 128,
+#                                                     'lr': 0.00071,
+#                                                     'dropout': 0.145169206052754,
+#                                                     'epochs': 500,
+#                                                     'standardize': False,
+#                                                     'minmaxnorm': True,
+
+#                                                     'TE_embedding_dim': 64,
+#                                                     'TE_out_h_dim': 64,
+#                                                     'TE_concatenation_late': True,
+#                                                     'TE_concatenation_early':False,
+
+                                                     
+#                                                     'optimizer': 'adamw',
+#                                                     'batch_size': 128,
+#                                                     'freq': '15min',
+#                                                     'H':6,
+#                                                     'D':1,
+#                                                     'W':0,
+#                                                     'unormalize_loss' : True,
+#                                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+#                                                                                             'stacked_contextual': True,
+#                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+#                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+#                                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+#                                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+#                                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+#                                                                                             'vision_model_name' : None,
+#                                                                                             'epsilon_clustering': 0.1,
+#                                                                                             'agg_iris_target_n': 100,
+#                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+#                                                                                             'attn_kwargs': {'latent_dim' : 2 ,
+#                                                                                                             'dim_feedforward' : 64,
+#                                                                                                             'num_heads' : 2 ,
+#                                                                                                             'dim_model' : 12,
+#                                                                                                             'keep_topk': False}  
+#                                                                                             #'H' : ,
+#                                                                                             #'D': ,
+#                                                                                             #'W': , 
+#                                                                                 },
+#                                                                         },  
+#                                                     'denoising_names':['netmob_POIs'],
+#                                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+#                                                     'denoising_modes':["train","valid","test"],             # par défaut
+#                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+#             },
+
+# # All Steps RMSE = 39.59, MAE = 22.24, MAPE = 26.39, MSE = 1570.03
+# 'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim24_ff64_h2_l2_unormalized_loss': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+#                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
+#                                                   'loss_function_type':'HuberLoss',
+#                                                    'Kt': 2,
+#                                                     'stblock_num': 4,
+#                                                     'Ks': 2,
+#                                                     'graph_conv_type': 'graph_conv',
+#                                                     'gso_type': 'sym_renorm_adj',
+#                                                     'enable_bias': True,
+#                                                     'adj_type': 'corr',
+#                                                     'enable_padding': True,
+#                                                     'threshold': 0.3,
+#                                                     'act_func': 'glu',
+#                                                     'temporal_h_dim': 64,
+#                                                     'spatial_h_dim': 256,
+#                                                     'output_h_dim': 64,
+#                                                     'weight_decay': 0.0014517707449388,
+#                                                     'batch_size': 128,
+#                                                     'lr': 0.00071,
+#                                                     'dropout': 0.145169206052754,
+#                                                     'epochs': 500,
+#                                                     'standardize': False,
+#                                                     'minmaxnorm': True,
+
+#                                                     'TE_embedding_dim': 64,
+#                                                     'TE_out_h_dim': 64,
+#                                                     'TE_concatenation_late': True,
+#                                                     'TE_concatenation_early':False,
+
+                                                     
+#                                                     'optimizer': 'adamw',
+#                                                     'batch_size': 128,
+#                                                     'freq': '15min',
+#                                                     'H':6,
+#                                                     'D':1,
+#                                                     'W':0,
+#                                                     'unormalize_loss' : True,
+#                                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+#                                                                                             'stacked_contextual': True,
+#                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+#                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+#                                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+#                                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+#                                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+#                                                                                             'vision_model_name' : None,
+#                                                                                             'epsilon_clustering': 0.1,
+#                                                                                             'agg_iris_target_n': 100,
+#                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+#                                                                                             'attn_kwargs': {'latent_dim' : 2 ,
+#                                                                                                             'dim_feedforward' : 64,
+#                                                                                                             'num_heads' : 2 ,
+#                                                                                                             'dim_model' : 24,
+#                                                                                                             'keep_topk': False}  
+#                                                                                             #'H' : ,
+#                                                                                             #'D': ,
+#                                                                                             #'W': , 
+#                                                                                 },
+#                                                                         },  
+#                                                     'denoising_names':['netmob_POIs'],
+#                                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+#                                                     'denoising_modes':["train","valid","test"],             # par défaut
+#                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+#             },
+
+# # All Steps RMSE = 38.98, MAE = 21.89, MAPE = 25.56, MSE = 1522.25
+# 'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim24_ff128_h2_l1_unormalized_loss': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+#                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
+#                                                   'loss_function_type':'HuberLoss',
+#                                                    'Kt': 2,
+#                                                     'stblock_num': 4,
+#                                                     'Ks': 2,
+#                                                     'graph_conv_type': 'graph_conv',
+#                                                     'gso_type': 'sym_renorm_adj',
+#                                                     'enable_bias': True,
+#                                                     'adj_type': 'corr',
+#                                                     'enable_padding': True,
+#                                                     'threshold': 0.3,
+#                                                     'act_func': 'glu',
+#                                                     'temporal_h_dim': 64,
+#                                                     'spatial_h_dim': 256,
+#                                                     'output_h_dim': 64,
+#                                                     'weight_decay': 0.0014517707449388,
+#                                                     'batch_size': 128,
+#                                                     'lr': 0.00071,
+#                                                     'dropout': 0.145169206052754,
+#                                                     'epochs': 500,
+#                                                     'standardize': False,
+#                                                     'minmaxnorm': True,
+
+#                                                     'TE_embedding_dim': 64,
+#                                                     'TE_out_h_dim': 64,
+#                                                     'TE_concatenation_late': True,
+#                                                     'TE_concatenation_early':False,
+
+                                                     
+#                                                     'optimizer': 'adamw',
+#                                                     'batch_size': 128,
+#                                                     'freq': '15min',
+#                                                     'H':6,
+#                                                     'D':1,
+#                                                     'W':0,
+#                                                     'unormalize_loss' : True,
+#                                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+#                                                                                             'stacked_contextual': True,
+#                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+#                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+#                                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+#                                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+#                                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+#                                                                                             'vision_model_name' : None,
+#                                                                                             'epsilon_clustering': 0.1,
+#                                                                                             'agg_iris_target_n': 100,
+#                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+#                                                                                             'attn_kwargs': {'latent_dim' : 1 ,
+#                                                                                                             'dim_feedforward' : 128,
+#                                                                                                             'num_heads' : 2 ,
+#                                                                                                             'dim_model' : 24,
+#                                                                                                             'keep_topk': False}  
+#                                                                                             #'H' : ,
+#                                                                                             #'D': ,
+#                                                                                             #'W': , 
+#                                                                                 },
+#                                                                         },  
+#                                                     'denoising_names':['netmob_POIs'],
+#                                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+#                                                     'denoising_modes':["train","valid","test"],             # par défaut
+#                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+#             },
+# # All Steps RMSE = 39.94, MAE = 22.23, MAPE = 24.78, MSE = 1599.75
+# 'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim24_ff128_h2_l4_unormalized_loss': {'target_data': 'subway_in',
+#                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+#                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
+#                                                   'loss_function_type':'HuberLoss',
+#                                                    'Kt': 2,
+#                                                     'stblock_num': 4,
+#                                                     'Ks': 2,
+#                                                     'graph_conv_type': 'graph_conv',
+#                                                     'gso_type': 'sym_renorm_adj',
+#                                                     'enable_bias': True,
+#                                                     'adj_type': 'corr',
+#                                                     'enable_padding': True,
+#                                                     'threshold': 0.3,
+#                                                     'act_func': 'glu',
+#                                                     'temporal_h_dim': 64,
+#                                                     'spatial_h_dim': 256,
+#                                                     'output_h_dim': 64,
+#                                                     'weight_decay': 0.0014517707449388,
+#                                                     'batch_size': 128,
+#                                                     'lr': 0.00071,
+#                                                     'dropout': 0.145169206052754,
+#                                                     'epochs': 500,
+#                                                     'standardize': False,
+#                                                     'minmaxnorm': True,
+
+#                                                     'TE_embedding_dim': 64,
+#                                                     'TE_out_h_dim': 64,
+#                                                     'TE_concatenation_late': True,
+#                                                     'TE_concatenation_early':False,
+
+                                                     
+#                                                     'optimizer': 'adamw',
+#                                                     'batch_size': 128,
+#                                                     'freq': '15min',
+#                                                     'H':6,
+#                                                     'D':1,
+#                                                     'W':0,
+#                                                     'unormalize_loss' : True,
+#                                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+#                                                                                             'stacked_contextual': True,
+#                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+#                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+#                                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+#                                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+#                                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+#                                                                                             'vision_model_name' : None,
+#                                                                                             'epsilon_clustering': 0.1,
+#                                                                                             'agg_iris_target_n': 100,
+#                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+#                                                                                             'attn_kwargs': {'latent_dim' : 4 ,
+#                                                                                                             'dim_feedforward' : 128,
+#                                                                                                             'num_heads' : 2 ,
+#                                                                                                             'dim_model' : 24,
+#                                                                                                             'keep_topk': False}  
+#                                                                                             #'H' : ,
+#                                                                                             #'D': ,
+#                                                                                             #'W': , 
+#                                                                                 },
+#                                                                         },  
+#                                                     'denoising_names':['netmob_POIs'],
+#                                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+#                                                     'denoising_modes':["train","valid","test"],             # par défaut
+#                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+#             },
 # # [Web_Weather, Google_Maps, Deezer], MinMax, No Smoothing Agg30
 # # All Steps RMSE = 39.27, MAE = 22.14, MAPE = 26.01, MSE = 1544.27
 # 'subway_in_calendar_emb64_out64_Huber_MinMax_Google_Maps_Web_Weather_Deezer_IRIS_Agg30_attn_dim48_ff128_h3_l3_MinMax_H6_D1': {'target_data': 'subway_in',
@@ -2190,7 +3274,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2258,7 +3342,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2325,7 +3409,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2394,7 +3478,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2460,7 +3544,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2528,7 +3612,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2595,7 +3679,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2662,7 +3746,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2729,7 +3813,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2797,7 +3881,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2865,7 +3949,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -2933,7 +4017,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3001,7 +4085,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3068,7 +4152,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3135,7 +4219,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3200,7 +4284,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3265,7 +4349,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3330,7 +4414,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3397,7 +4481,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3462,7 +4546,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3525,7 +4609,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3590,7 +4674,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3653,7 +4737,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3716,7 +4800,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3782,7 +4866,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3845,7 +4929,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3910,7 +4994,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -3973,7 +5057,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 #                                                                                             'NetMob_selected_apps' : ['Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4038,7 +5122,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                     'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4102,7 +5186,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4165,7 +5249,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4229,7 +5313,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4291,7 +5375,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4352,7 +5436,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': False,
 
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
@@ -4462,7 +5546,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4529,7 +5613,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4597,7 +5681,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4666,7 +5750,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4731,7 +5815,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4794,7 +5878,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4858,7 +5942,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4924,7 +6008,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -4989,7 +6073,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5053,7 +6137,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5119,7 +6203,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5183,7 +6267,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5248,7 +6332,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5312,7 +6396,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5377,7 +6461,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5441,7 +6525,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5505,7 +6589,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5570,7 +6654,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5634,7 +6718,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5698,7 +6782,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5764,7 +6848,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5827,7 +6911,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5890,7 +6974,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -5953,7 +7037,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6016,7 +7100,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6079,7 +7163,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6142,7 +7226,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6205,7 +7289,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6268,7 +7352,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6333,7 +7417,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6395,7 +7479,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6459,7 +7543,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer','Google_Maps','Uber','Instagram'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6522,7 +7606,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -6582,7 +7666,7 @@ modifications = {
 #                                                     'D':1,
 #                                                     'W':0,
 
-#                                                      'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+#                                                      'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
 #                                                                                             'stacked_contextual': True,
 #                                                                                             'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
 #                                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7088,7 +8172,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7142,7 +8226,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7196,7 +8280,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7251,7 +8335,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7301,7 +8385,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7351,7 +8435,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7402,7 +8486,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7452,7 +8536,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7502,7 +8586,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7553,7 +8637,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7607,7 +8691,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7661,7 +8745,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7746,7 +8830,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7800,7 +8884,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7854,7 +8938,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7909,7 +8993,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -7959,7 +9043,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8009,7 +9093,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8060,7 +9144,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8110,7 +9194,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8160,7 +9244,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8211,7 +9295,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8265,7 +9349,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8319,7 +9403,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8394,7 +9478,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8448,7 +9532,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8502,7 +9586,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8557,7 +9641,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8607,7 +9691,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8657,7 +9741,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8708,7 +9792,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8758,7 +9842,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8808,7 +9892,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8859,7 +9943,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8913,7 +9997,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -8967,7 +10051,7 @@ modifications = {
         #                                             'TE_concatenation_late': True,
         #                                             'TE_concatenation_early':False,
 
-        #                                              'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        #                                              'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
         #                                                                                     'stacked_contextual': True,
         #                                                                                     'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
         #                                                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

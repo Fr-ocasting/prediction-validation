@@ -38,7 +38,7 @@ modifications = { 'Init': {'dataset_names': ['CRITER_3_4_5_lanes_flow','netmob_P
                               'standardize': False,
                               'minmaxnorm': True,
 
-                              'contextual_kwargs' :  {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                              'contextual_kwargs' :  {'netmob_POIs': {'need_global_attn':True, 
                                                                                                 'stacked_contextual': True,
                                                                                                 'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
                                                                                                 'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -87,7 +87,7 @@ modifications = { 'Init': {'dataset_names': ['CRITER_3_4_5_lanes_flow','netmob_P
                                   'TE_out_h_dim': 64,
                                   'TE_concatenation_late': True,
                                   'TE_concatenation_early':False,
-                                  'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                  'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                                                                 'stacked_contextual': True,
                                                                                                 'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
                                                                                                 'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -136,7 +136,7 @@ modifications = { 'Init': {'dataset_names': ['CRITER_3_4_5_lanes_flow','netmob_P
                                                         'TE_out_h_dim': 64,
                                                         'TE_concatenation_late': True,
                                                         'TE_concatenation_early':False,
-                                                        'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+                                                        'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                                                                 'stacked_contextual': True,
                                                                                                 'NetMob_selected_apps' : ['Google_Maps','Deezer'], # Google_Maps # 
                                                                                                 'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

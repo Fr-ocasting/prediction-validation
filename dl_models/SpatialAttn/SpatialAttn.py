@@ -70,23 +70,23 @@ class model(nn.Module):
         # print('\nFoward Spatial Attention: ')
         # print('Query (x_flow_station):',x_flow_station.size())
         # print('Key/Values (x_contextual):',x_contextual.size())
-        projected_x_flow,x_mha,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
+        projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
 
         # --------Case where we don't want to project again the MHA output, and we keep the long projection (dim_model)
         if self.stack_consistent_datasets:
-            return projected_x_flow,x_mha
+            return projected_x_flow,context
         
         # --------Case where we want to project the MHA output in order to go back to the original temporal dimension:
         else: 
-            # print('After MHA:',x_mha.size()) #[B,N,dim_model]
-            x_fc = self.feedforward(x_mha)
-            # print('After FC:',x_fc.size()) #[B,N,ff_dim*L] where L = query_dim
+            # print('After MHA:',context.size()) #[B,N,dim_model]
+            context = self.feedforward(context)
+            # print('After FC:',context.size()) #[B,N,ff_dim*L] where L = query_dim
             if self.temporal_proj is not None:
                 # print(x_fc[0,0,:])
-                reshaped_x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),self.latent_dim,self.query_dim)
-                x_fc = self.temporal_proj(self.relu(reshaped_x_fc))  # [B,N,z] -> [B,N,z1,L] -> [B,N,z1,r] -> [B,N,z']
-                x_fc = x_fc.reshape(x_fc.size(0),x_fc.size(1),-1)
-                # print('After Temporal Projection:',x_fc.size()) #  [B,N,ff_dim] 
+                context = context.reshape(context.size(0),context.size(1),self.latent_dim,self.query_dim)
+                context = self.temporal_proj(self.relu(context))  # [B,N,z] -> [B,N,z1,L] -> [B,N,z1,r] -> [B,N,z']
+                context = context.reshape(context.size(0),context.size(1),-1)
+                # print('After Temporal Projection:',context.size()) #  [B,N,ff_dim] 
 
-        return projected_x_flow,x_fc
+        return projected_x_flow,context

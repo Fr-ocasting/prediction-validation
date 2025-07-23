@@ -35,7 +35,7 @@ config = {'target_data': 'subway_in',
         'calendar_types':['dayofweek', 'timeofday'],
 
         'unormalize_loss' : True,
-        'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+        'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                 'stacked_contextual': True,
                                                 'NetMob_selected_apps' : ['Deezer','Google_Maps'], # Google_Maps # 
                                                 'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

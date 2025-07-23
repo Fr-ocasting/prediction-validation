@@ -53,7 +53,7 @@ modification = {'target_data': target_data,
 
                     'stacked_contextual': True, # True # False
                     'temporal_graph_transformer_encoder': False,
-                    'compute_node_attr_with_attn' : False, # True ??
+                    'need_global_attn' : False, # True ??
 
                     ### Denoising: 
                     #'denoising_names':['subway_in','subway_out'],

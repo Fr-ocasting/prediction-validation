@@ -48,7 +48,7 @@ config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar'], # ['CRITER_3_
             'minmaxnorm': False,
             'metrics':['masked_mae','masked_rmse','masked_mape','masked_mse','mae','rmse','mape','mse','mase'],
             
-            'contextual_kwargs' : {'netmob_POIs': {'compute_node_attr_with_attn':True, 
+            'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
                                                    'stacked_contextual': True,
                                                    'NetMob_selected_apps' : ['Deezer'], # Google_Maps # 
                                                     'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -65,7 +65,7 @@ config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar'], # ['CRITER_3_
                                                     #'D': ,
                                                     #'W': , 
                                         },
-                                    # 'netmob_POIs': {'compute_node_attr_with_attn':False, 
+                                    # 'netmob_POIs': {'need_global_attn':False, 
                                     #                 'stacked_contextual': True,
                                     #                 'NetMob_selected_apps' : ['Deezer','Google_Maps'],
                                     #                   'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
@@ -75,7 +75,7 @@ config = {'dataset_names' :['CRITER_3_4_5_lanes_flow','calendar'], # ['CRITER_3_
                                     #                 'vision_model_name' : None
                                     #                  },
 
-                                    'subway_out': {'compute_node_attr_with_attn':False, 
+                                    'subway_out': {'need_global_attn':False, 
                                                    'stacked_contextual': True,
                                                    'vision_model_name': None, # Define the type of model used to extract contextual information from NetMob
                                                    'vision_input_type': None, # 'image_per_stations' # 'unique_image_through_lyon'  

@@ -64,7 +64,7 @@ config = {'model_name': 'RNN',
 
         'vision_model_name': None,
         'stacked_contextual': False,
-        'compute_node_attr_with_attn': False,
+        'need_global_attn': False,
         'use_target_as_context': False,
         'torch_scheduler': None,
         'TE_embedding_dim': 64,

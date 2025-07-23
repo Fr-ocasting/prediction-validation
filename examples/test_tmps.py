@@ -30,7 +30,7 @@ if False:
                     #'learnable_adj_matrix' : False,
                     #'stacked_contextual': True,
                     #'temporal_graph_transformer_encoder': False,
-                    #'compute_node_attr_with_attn': False,
+                    #'need_global_attn': False,
                     #'freq': '15min',
                     }
     
@@ -117,7 +117,7 @@ if False:
                                             
                                             'stacked_contextual': True,
                                             'temporal_graph_transformer_encoder': False,
-                                            'compute_node_attr_with_attn': False,
+                                            'need_global_attn': False,
                                             }
                                 })
                         

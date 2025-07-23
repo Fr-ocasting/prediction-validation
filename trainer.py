@@ -70,8 +70,9 @@ class Trainer(object):
         
         if args.torch_compile == 'compile':
             self.model = torch.compile(model,
-                                       fullgraph = False,
+                                       fullgraph = False, #True,
                                        backend = args.backend,
+                                       # dynamic=True,
                                        mode = None
                                         )
         elif args.torch_compile == 'jit_script':
@@ -379,17 +380,17 @@ class Trainer(object):
                 y_b = normalizer.unormalize_tensor(inputs=y_b,feature_vect = True) # device = self.args.device
 
             loss = self.loss_function(pred.float(),y_b)
-        #print('loss: ',loss)
-        #print('pred: ', pred.dtype, pred.size())
-        #print('y_b: ', y_b.dtype, y_b.size())
-        #print(self.loss_function)
-
+        # print('loss: ',loss)
+        # print('pred: ', pred.dtype, pred.size())
+        # print('y_b: ', y_b.dtype, y_b.size())
+        # print(self.loss_function)
+        # print('\n Start Backward')
         # Back propagation (after each mini-batch)
         if self.training_mode == 'train': 
             self.chrono.backward()
             loss = self.backpropagation(loss)
-            #print('pred: ', pred.dtype, pred.size())
-            #print('y_b: ', y_b.dtype, y_b.size())
+            # print('pred: ', pred.dtype, pred.size())
+            # print('y_b: ', y_b.dtype, y_b.size())
             #print(self.loss_function)
 
         # Keep track on metrics 
