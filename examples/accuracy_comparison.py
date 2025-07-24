@@ -25,14 +25,14 @@ from calendar_class import is_bank_holidays
 
 # Personnal imports: 
 from bokeh.models import ColumnDataSource
-from bokeh.palettes import Blues9,Reds9 
+from bokeh.palettes import Blues9,Reds9, Greens9
 from bokeh.palettes import Plasma256 
 from bokeh.palettes import Turbo256 as palette
 
 ##### ==================================================
 
 ##### ==================================================
-def plot_daily_profile(profil_real_station_i,daily_profil1_station_i,daily_profil2_station_i,
+def plot_daily_profile(profil_real_station_i,std_profil_station_i,daily_profil1_station_i,daily_profil2_station_i,
                         station,
                         width = 1200,
                         height = 400,
@@ -64,6 +64,12 @@ def plot_daily_profile(profil_real_station_i,daily_profil1_station_i,daily_profi
                 #line_dash="dashed",
                 line_width=1,
                 )
+        
+    ## Add transparent area for std: 
+    y1,y2 = df[c] - std_profil_station_i, df[c] + std_profil_station_i, 
+    p.varea(x=df.index, y1=y1, y2=y2, alpha=0.2,color = Greens9[k],
+            legend_label=c, 
+            )
 
 
     p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
@@ -85,7 +91,7 @@ def plot_daily_profile(profil_real_station_i,daily_profil1_station_i,daily_profi
     output_notebook()
     show(p)
 
-def get_working_day_daily_profile_on_h(h,full_predict1,df_verif,ds1,args_init1):
+def get_working_day_daily_profile_on_h(h,full_predict1,df_verif,ds1,args_init1,std = False, coeff_std = 1.0):
         h_idx = h//args_init1.horizon_step -1
         h_idx_max = args_init1.step_ahead//args_init1.horizon_step
 
@@ -115,7 +121,14 @@ def get_working_day_daily_profile_on_h(h,full_predict1,df_verif,ds1,args_init1):
         df_horizon['hour'] = df_horizon['date'].dt.hour
         df_horizon['minute'] = df_horizon['date'].dt.minute
         df_horizon = df_horizon[df_horizon['working_days']].copy().drop(columns = ['working_days','date'])
-        df_horizon = df_horizon.groupby(['hour','minute']).mean().reset_index()
+
+
+        if std :
+            df_horizon = df_horizon.groupby(['hour','minute']).std()
+            df_horizon = df_horizon * coeff_std
+            df_horizon = df_horizon.reset_index()
+        else:
+            df_horizon = df_horizon.groupby(['hour','minute']).mean().reset_index()
 
         ## build fake date from hour/minute as xticks and plot columns: 
         df_horizon['hour'] = df_horizon['hour'].apply(lambda x: f"{x:02d}")
