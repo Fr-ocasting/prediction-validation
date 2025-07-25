@@ -15,6 +15,7 @@ if working_dir not in sys.path:
     sys.path.insert(0,working_dir)
 # ...
 from denoising import DenoisingManager
+
 class QuantileLoss(nn.Module):
     def __init__(self,quantiles):
         super().__init__()
