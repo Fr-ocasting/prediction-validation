@@ -32,6 +32,8 @@ class Trainer:
         self.config = config
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.model.to(self.device)
+        self.train_loss = []
+        self.valid_loss = []
         
         # Fonctions de perte et optimiseur
         if config["training"]["loss_function"] == "mse":
@@ -85,9 +87,8 @@ class Trainer:
             train_loss = self._run_epoch(self.dataloaders["train"], is_training=True)
             valid_loss = self._run_epoch(self.dataloaders["valid"], is_training=False)
             
-            # print(f"Epoch {epoch+1}/{self.config['training']['epochs']} | "
-            #     f"Train Loss: {train_loss:.4f} | "
-            #     f"Valid Loss: {valid_loss:.4f}")
+            self.train_loss.append(train_loss)
+            self.valid_loss.append(valid_loss)
 
     def predict(self, mode='test',allow_dropout = False):
         """Fait des prédictions sur un ensemble de données spécifié."""

@@ -15,8 +15,12 @@ class Calibrator:
         preds, _ = torch.sort(preds, dim=-1)
         
         self.y_calib = y_calib.squeeze().to(self.device)
-        self.lower_q = preds[..., 0].to(self.device)
-        self.upper_q = preds[..., 1].to(self.device)
+        if preds.size(-1) == 1: 
+            self.lower_q = preds[..., 0].to(self.device)
+            self.upper_q = preds[..., 0].to(self.device)
+        else:
+            self.lower_q = preds[..., 0].to(self.device)
+            self.upper_q = preds[..., 1].to(self.device)
 
     def get_conformity_scores(self):
         """Calcule les scores de non-conformité."""
@@ -32,11 +36,9 @@ class Calibrator:
         self.quantile_order = min(quantile_order, 1.0) # S'assurer que le quantile ne dépasse pas 1
 
         # Calculer le quantile sur toutes les observations et stations
-        # Aplatir les scores pour obtenir un quantile global
-        all_scores = self.conformity_scores.flatten()
         
         # Le quantile est calculé en utilisant la méthode 'higher' pour être conservateur
-        self.Q = torch.quantile(all_scores, self.quantile_order, interpolation='higher')
+        self.Q = torch.quantile(self.conformity_scores, self.quantile_order, interpolation='higher',dim = 0)
 
 
 class PI_object(object):
