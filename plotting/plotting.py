@@ -21,7 +21,7 @@ from utils.utilities_DL import get_associated__df_verif_index
 from utils.metrics import error_along_ts
 from calendar_class import is_morning_peak,is_evening_peak,is_weekday
 
-def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
+def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hpo = True):
     if not(type(Datasets) == list):
         Datasets = [Datasets]
     fig,ax = plt.subplots(figsize=figsize)
@@ -58,6 +58,7 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
 
     # K-folds : 
     dates_xticks = []
+    K_fold = len(Datasets)
     for i,dset in enumerate(Datasets):
         limits = dset.tensor_limits_keeper
 
@@ -88,10 +89,10 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
         if not np.isnan(width_predict_valid):
             ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
             ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Time-slots within ValidSet' if i == 0 else None)
-
-        if not np.isnan(width_predict_test):
-            ax.barh(i-0.2, width_predict_test, left=lpte1, color='forestgreen', height = 0.35, alpha = 0.7, label='Predicted Test' if i == 0 else None)
-            ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label='Time-slots within TestSet' if i == 0 else None)
+        if i != 0 or not hpo:
+            if not np.isnan(width_predict_test):
+                ax.barh(i-0.2, width_predict_test, left=lpte1, color='forestgreen', height = 0.35, alpha = 0.7, label='Predicted Test' if i == 0 else None)
+                ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label='Time-slots within TestSet' if i == 0 else None)
 
 
         # .........
@@ -106,10 +107,11 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
             ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
 
         # For test bar
-        if not np.isnan(width_predict_test):
-            ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
-            ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
-        # ..........
+        if i != 0 or not hpo:
+            if not np.isnan(width_predict_test):
+                ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
+                ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
+            # ..........
 
     # ...
             
@@ -119,7 +121,12 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None):
     # Add xticks
     ax.set_xticks(dates_xticks)
     ax.tick_params(axis='x',rotation=30,labelsize = fontsize)
-
+    # Add yticks
+    ax.set_yticks(np.arange(K_fold))
+    if hpo : 
+        ax.set_yticklabels(['Fold HPO']+[f'Fold {x}' for x in list(map(str,list(np.arange(K_fold))))[1:]])
+    else:
+        ax.set_yticklabels([f'Fold {x}' for x in list(map(str,list(np.arange(K_fold))))])
     # Might be useless : 
     fig.autofmt_xdate()
 

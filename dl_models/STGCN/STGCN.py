@@ -6,6 +6,7 @@ import torch.nn as nn
 # Relative path:
 import sys 
 import os 
+import importlib 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -15,6 +16,9 @@ if parent_dir not in sys.path:
 # Personnal import:
 import dl_models.STGCN.STGCN_layer as layers
 from dl_models.MTGNN.MTGNN_layer import graph_constructor
+from utils.utilities import filter_args
+
+
 # ============================================================
 # Inspired by  https://github.com/hazdzz/STGCN/tree/main
 # ============================================================
@@ -60,27 +64,26 @@ class STGCN(nn.Module):
                                              node_embedding_dim=args.learnable_adj_embd_dim if getattr(args,'learnable_adj_matrix') else None,
                                              device = args.device,
                                              alpha=3)
-
-
-
         for l in range(len(blocks) - 3):
             modules.append(layers.STConvBlock(args.Kt, args.Ks, args.num_nodes, blocks[l][-1], blocks[l+1], args.act_func, args.graph_conv_type, gso, args.enable_bias, args.dropout,args.enable_padding,self.g_constructor))
         self.st_blocks = nn.Sequential(*modules)
 
-        ## Tackle Input if concatenated Late: 
+        # ---- Tackle Input if 'extracted feature' is concatenated Late:  -----
         # self.concatenation_late = args.args_vision.concatenation_late if (hasattr(args,'args_vision') and hasattr(args.args_vision,'concatenation_late'))else False
         self.concatenation_late = False
         extracted_feature_dim = 0
         if (hasattr(args,'contextual_kwargs')):
             for key in args.contextual_kwargs.keys():
-                local_concatenation_late = not(args.contextual_kwargs[key]['stacked_contextual']) 
-                self.concatenation_late = self.concatenation_late or local_concatenation_late
-                if local_concatenation_late:
-                    extracted_feature_dim = extracted_feature_dim + args.contextual_kwargs[key]['out_dim']* args.contextual_kwargs[key]['attn_kwargs']['L_out']
-        ## ...
-
+                # If this data does not have an attention module which is concatenated late:
+                if not('attn_kwargs' in args.contextual_kwargs[key].keys() and 'attn_late' in args.contextual_kwargs[key]['attn_kwargs'].keys() and  args.contextual_kwargs[key]['attn_kwargs']['attn_late']):
+                    local_concatenation_late = not(args.contextual_kwargs[key]['stacked_contextual']) 
+                    self.concatenation_late = self.concatenation_late or local_concatenation_late
+                    if local_concatenation_late:
+                        extracted_feature_dim = extracted_feature_dim + args.contextual_kwargs[key]['out_dim']* args.contextual_kwargs[key]['attn_kwargs']['L_out']
 
         self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
+        # ---- 
+
 
         self.Ko = Ko
         self.num_nodes = args.num_nodes
@@ -99,6 +102,41 @@ class STGCN(nn.Module):
         self.fc1 = nn.Identity()
         self.fc2 = nn.Identity()
         self.relu = nn.ReLU()
+
+
+
+        # ----- Tackle Spatial Attention Late -----
+        ModuleContextualAttnLate = nn.ModuleDict() # For the late concatenation of contextual attention modules
+        attn_late_dim = 0
+        for ds_name in args.contextual_kwargs.keys():
+            if 'attn_kwargs' in args.contextual_kwargs[ds_name].keys() and 'attn_late' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys():
+                if args.contextual_kwargs[ds_name]['attn_kwargs']['attn_late']:
+                    script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
+                    scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
+                    importlib.reload(scrip_args)    
+                    args_ds_i = scrip_args.args
+                    args_ds_i.dropout = args.dropout        
+                    args_ds_i.query_dim = args.L  # input dim of Query  --> L but USELESS   
+                    args_ds_i.key_dim = args.L  # input dim of Key  --> L 
+                    args_ds_i.output_temporal_dim = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out'] if 'L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else None   #  Dimension of FC layer after MHA ONLY IF stack_consistent_datasets is False 
+                    args_ds_i.stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if 'stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys() else False # True if we want the output of MHA, False if we want it to also pass through FC layer after MHA  
+                    args_ds_i.proj_query = True if 'proj_query' not in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else args.contextual_kwargs[ds_name]['attn_kwargs']['proj_query']
+            
+                    for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
+                        setattr(args_ds_i,key,value)
+                    args_ds_i.dim_model = blocks[-3][-1] # Dimension of the last STGCN block output channel
+
+                    print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets)
+                    importlib.reload(script)
+                    func = script.model
+                    filered_args = filter_args(func, args_ds_i)
+                    ModuleContextualAttnLate[ds_name] = func(**filered_args)      
+                    attn_late_dim = attn_late_dim+args_ds_i.dim_model
+        # -----
+
+
+
+
         if self.Ko > 0:
             #print('blocks: ',blocks)
             #print('in_feature_fc1: ',in_feature_fc1)
@@ -108,6 +146,9 @@ class STGCN(nn.Module):
                                              TGE_num_layers=args.TGE_num_layers if args.temporal_graph_transformer_encoder else None, 
                                              TGE_num_heads=args.TGE_num_heads if args.temporal_graph_transformer_encoder else None,  
                                              TGE_FC_hdim=args.TGE_FC_hdim if args.temporal_graph_transformer_encoder else None, 
+                                             ModuleContextualAttnLate = ModuleContextualAttnLate,
+                                             dict_ds_which_need_attn_late2pos = args.dict_ds_which_need_attn_late2pos,
+                                             attn_late_dim = attn_late_dim
                                              )
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=in_feature_fc1, out_features=blocks[-2][0], bias=args.enable_bias)
@@ -128,7 +169,8 @@ class STGCN(nn.Module):
 
     def forward(self,x: Tensor,
                 x_vision: Optional[Tensor] = None, 
-                x_calendar: Optional[Tensor] = None) -> Tensor:
+                x_calendar: Optional[Tensor] = None,
+                contextual: Optional[list[Tensor]]= None) -> Tensor:
             
             ''' 
             Args:
@@ -157,11 +199,14 @@ class STGCN(nn.Module):
                     # [B,C,L,N] -> [B, C_out, L-4*nb_blocks, N]
                     x = self.st_blocks(x)
                 ### ---
+
             # print('x.size after st_blocks: ',x.size())
             # print('self.Ko:', self.Ko)
+
+
             if self.Ko >= 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
-                x = self.output(x,x_vision,x_calendar)
+                x = self.output(x,x_vision,x_calendar,contextual)
             elif self.Ko == 0:
                 # [B,C_out,L',N] = [B,1,L',N] actually 
                 if x_vision is not None:

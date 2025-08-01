@@ -52,12 +52,6 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     # data_app.shape :[nb-osmid*(apps*transfer_mode*tags), T]
     netmob_T = load_data_npy(FOLDER_PATH,args)
 
-    # [T,nb-osmid*(apps*transfer_mode*tags)]
-    netmob_T = netmob_T.permute(1,0)
-
-    # Extract only usefull data, and replace "heure d'été"
-    netmob_T = replace_heure_d_ete(netmob_T,start = 1532, end = 1536)  # start = 1532, end = 1536  # start = 572, end = 576
-
     # Temporal Aggregation if needed: 
     if False: 
         if args.freq != FREQ :
@@ -127,6 +121,17 @@ def load_data_npy(FOLDER_PATH,args):
                 folder_path_to_save_agg_data = f"{save_folder}/{tag}/{app}/{mode}"
                 try: 
                     loaded_data = torch.Tensor(np.load(open(f"{folder_path_to_save_agg_data}/data.npy","rb")))
+
+                    # Remove outliers (Keep only < quantile 0.975), replace 'heure d'été' by interpolation: 
+                    loaded_data = loaded_data.T
+                    loaded_data = replace_heure_d_ete(loaded_data,start = 1532, end = 1536)  # start = 1532, end = 1536  # start = 572, end = 576
+                    Q = loaded_data.quantile(0.975,0)
+                    T = loaded_data.size(0)
+                    Q_padded = Q.unsqueeze(0).repeat(T,1)
+                    loaded_data = torch.minimum(loaded_data, Q_padded)
+                    loaded_data = loaded_data.T
+                    # ...
+
                     if tag == 'iris':
                         if ('agg_iris_target_n' in args.contextual_kwargs['netmob_POIs'].keys()) and (args.contextual_kwargs['netmob_POIs']['agg_iris_target_n'] is not None):
                             target_n = args.contextual_kwargs['netmob_POIs']['agg_iris_target_n']
@@ -144,6 +149,9 @@ def load_data_npy(FOLDER_PATH,args):
                 except:
                     raise ImportError(f"{folder_path_to_save_agg_data}/data.npy does not exist. NetMob app {app} Might not have been recorded.")
     netmob_T = torch.cat(list_of_data)    # [nb-osmid*(apps*transfer_mode*tags), T]
+
+    # [T,nb-osmid*(apps*transfer_mode*tags)]
+    netmob_T = netmob_T.permute(1,0)
 
     #print(args.NetMob_selected_apps,args.NetMob_transfer_mode,args.NetMob_selected_tags)
     #print(netmob_T.size())

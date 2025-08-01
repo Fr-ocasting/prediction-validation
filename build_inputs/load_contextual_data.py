@@ -27,7 +27,7 @@ def find_positions(applications, file_list):
                 positions.append(idx)
     return positions
 
-def replace_heure_d_ete(tensor,start = 572, end = 576):
+def replace_heure_d_ete(tensor,start = 1532, end = 1536):
     values_before = tensor[start-1:start]
     values_after = tensor[end:end+1]
 
@@ -231,11 +231,11 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
             # --- Just to correspond with old version: 
             else:
                 kwargs_i = {'use_only_for_common_dates':False,
-                            'vision_model_name':args.vision_model_name,
+                            'vision_model_name':args.vision_model_name  if hasattr(args,'vision_model_name') else None,
                             'stacked_contextual':args.stacked_contextual,
-                            'need_global_attn':args.need_global_attn,
-                            'vision_input_type':args.vision_input_type,
-                            'vision_model_name': args.vision_model_name,
+                            'need_global_attn':args.need_global_attn if hasattr(args,'need_global_attn') else None,
+                            'vision_input_type':args.vision_input_type if hasattr(args,'vision_input_type') else None,
+                            'vision_model_name': args.vision_model_name if hasattr(args,'vision_model_name') else None,
                             }
                 if 'netmob_POIs' in name_i:
                     kwargs_i['NetMob_selected_apps'] = args.NetMob_selected_apps

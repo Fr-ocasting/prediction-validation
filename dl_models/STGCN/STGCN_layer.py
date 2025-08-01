@@ -340,8 +340,11 @@ class OutputBlock(nn.Module):
                  concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
                  TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None,
+                 ModuleContextualAttnLate = {},dict_ds_which_need_attn_late2pos = {},attn_late_dim = 0
                  ):
         super(OutputBlock, self).__init__()
+
+        # ---- Temporal Graph Transformer Encoder ----
         self.temporal_graph_transformer_encoder = temporal_graph_transformer_encoder
         self.temporal_agg = nn.Identity() # initialize temporal agg for torch.jit.script
         if temporal_graph_transformer_encoder:
@@ -360,16 +363,34 @@ class OutputBlock(nn.Module):
                                                         dim_feedforward = TGE_FC_hdim,
                                                         dropout =dropout
                                                         )
-            
+        # ----
+
+        # ---- Spatial Attention Late ----
+        self.ModuleContextualAttnLate = ModuleContextualAttnLate
+        self.ModuleContextualAttnLate_keys = list(self.ModuleContextualAttnLate.keys())
+        self.dict_ds_which_need_attn_late2pos = dict_ds_which_need_attn_late2pos
+        # ----
+
+        # print('\n-----------------\nKo : ',Ko)
+        # print('last_block_channel : ',last_block_channel)
+        # print('channels : ',channels[0])
+        # print('num_nodes : ',num_nodes)
         self.temporal_conv_out = TemporalConvLayer(Ko, last_block_channel, channels[0], num_nodes, act_func,enable_padding = False)
                                               
 
         # Design Input Dimension according to contextual data integration or not: 
         in_channel_fc1 = channels[0]  #blocks[-2][0]
+
+        # Tackle Extracted Feature Concatenation Late:
         if concatenation_late:
             in_channel_fc1 = in_channel_fc1 + extracted_feature_dim
+
+        # Tackle Time Embedding  Late:
         if TE_concatenation_late:
             in_channel_fc1 = in_channel_fc1 +embedding_dim
+
+        # Tackle Spatial Attention Late:
+        in_channel_fc1 = in_channel_fc1 + attn_late_dim
 
         self.concatenation_late = concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
@@ -441,12 +462,29 @@ class OutputBlock(nn.Module):
 
     def forward(self,x: Tensor,
                 x_vision: Optional[Tensor] = None, 
-                x_calendar: Optional[Tensor] = None) -> Tensor:
+                x_calendar: Optional[Tensor] = None,
+                contextual : Optional[list[Tensor]] = None) -> Tensor:
         # print("\nEntry Output Block:")
         # print('x.size(): ',x.size())   #->  [B,C,N,1]
         x = self.forward_temporal_agg(x)
-
         # print('x.size after temporal conv + permute: ',x.size())
+
+        # ---- Tackle Spatial Attention Late ----
+        # print('------------------------\nStart Spatial Attention Late')
+        context_list = []
+        for ds_name in self.ModuleContextualAttnLate_keys:
+            spatial_attn = self.ModuleContextualAttnLate[ds_name]
+            pos = self.dict_ds_which_need_attn_late2pos[ds_name] 
+            inputs_attn = contextual[pos]
+            # print('inputs_attn.size: ',inputs_attn.size())
+            _,context = spatial_attn(x.squeeze(), inputs_attn)
+            if context.dim() == 3:
+                # If context is [B,N,C] -> [B,1,N,C]
+                context = context.unsqueeze(1)
+            context_list.append(context)
+            # print('context.size: ',context.size())
+        # print('End Spatial Attention Late\n------------------------\n')
+        # ----
 
         ## Concatenate Late if exists:
         cat_list: List[Tensor] = []
@@ -463,7 +501,11 @@ class OutputBlock(nn.Module):
             # print('keep only one dimension (all identical): x_calendar.size(): ',x_calendar.size())
             # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,1,N,Z+L_calendar]
             cat_list.append(x_calendar)
+        if len(context_list) > 0:
+            # print('context_list size: ',[c.size() for c in context_list])
+            cat_list = cat_list+context_list
         if len(cat_list) > 0:
+            # print('x size before concatenation late: ',x.size())
             x = [x]+cat_list
             # x = torch.cat(x,dim=-1) 
 
@@ -487,7 +529,7 @@ class OutputBlock(nn.Module):
         # print("\nforward output module:")
         # print('fc1: ',self.fc1)
         x = self.fc1(x)
-        #print('x after fc1: ',x.size())
+        # print('x after fc1: ',x.size())
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)

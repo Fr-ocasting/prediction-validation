@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from examples.load_best_config import load_trainer_ds_from_saved_trial
-from plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains
+from plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
 from examples.train_model import load_init_model_trainer_ds
 import numpy as np 
 import pandas as pd
@@ -273,19 +273,21 @@ def plot_gain_between_models_with_temporal_agg(ds,dic_error,stations,temporal_ag
         dic_gain_agg (dict): Dictionary containing gain values for each metric and temporal aggregation.
         heatmap plot for each metric and temporal aggregation.
     """
-
+    figsize_x = max(8,0.7*len(stations))
     dic_gain_agg = {metric : {} for metric in metrics}
     dic_error_agg  = {metric : {} for metric in metrics}
     for metric in metrics:
         if len(temporal_aggs) == 1:
-            fig, axes = plt.subplots(1, 2, figsize=(max(8,0.5*len(stations)),6))
+            fig, axes = plt.subplots(1, 2, figsize=(figsize_x,6))
         else:
             if temporal_aggs == ['hour','date','weekday']:
                 gridspec_kw={'width_ratios': [1,5],'height_ratios': [4,3,2]}
+            elif 'working_day_hour' in temporal_aggs:
+                gridspec_kw={'width_ratios': [3,1],'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
             else:
                 gridspec_kw={'width_ratios': [1,5],'height_ratios': [1]*len(temporal_aggs)}
             
-            fig, axes = plt.subplots(len(temporal_aggs), 2, figsize=(max(8,0.5*len(stations)),6*len(temporal_aggs)),gridspec_kw=gridspec_kw)
+            fig, axes = plt.subplots(len(temporal_aggs), 2, figsize=(figsize_x,6*len(temporal_aggs)),gridspec_kw=gridspec_kw)
     
         for i,temporal_agg in enumerate(temporal_aggs):
             if metric == 'mase':
@@ -375,3 +377,95 @@ def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1
                 gain_all_horizon = f'{gain_all_horizon:.2f}'
         print(f'Global {metric.upper()} gain (%) from Model2 compared to Model1 at horizon {horizon_list}: {gain_per_horizon} // All horizon : {gain_all_horizon}')
 
+
+
+def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
+                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None):
+    
+    step_ahead_max = args_init1.step_ahead
+    print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1)
+    dic_error_agg_h = {}
+
+    # for step_ahead in range(1,step_ahead_max+1): # range(1,step_ahead_max+1):
+    for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
+        h_idx = step_ahead// args_init1.horizon_step
+
+        # Get previous and predictions
+        previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
+
+        # Plotting
+        dic_gain,dic_error = get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
+        dic_gain_agg,dic_error_agg = plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metrics = metric_list,step_ahead = step_ahead)  # ['mse','mase','mape']
+        dic_error_agg_h[step_ahead] = dic_error_agg
+
+    if station is not None:
+        station_i = list(ds1.spatial_unit).index(station)
+        p = plot_profile_comparison_between_2_prediction(args_init1,full_predict1,full_predict2,real,ds1,station_i,station, width=900, height=400, bool_plot = True)
+
+    for L_metric in [[metric] for metric in metric_list]:
+        print(f'\nModel: {args_init1.model_name}')
+        for daily_period in ['morning_peak','evening_peak','all_day']:
+            print(daily_period)
+            for metric in L_metric: 
+                print(' ',metric.upper())
+                if metric == 'rmse':
+                    metric_i = 'mse'
+                else:
+                    metric_i = metric
+                error1_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred1_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
+                error2_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred2_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
+                if metric == 'rmse':
+                    error1_per_h = [np.sqrt(x) for x in error1_per_h]
+                    error2_per_h = [np.sqrt(x) for x in error2_per_h]
+
+                print('   Model 1: ',error1_per_h)
+                print('   Model 2: ',error2_per_h)
+
+
+
+def plot_heatmap(M,xlabel=None,ylabel=None, title=None,cmap='hot',figsize=(15, 15),vmin = None,vmax= None):
+    fig, ax = plt.subplots(figsize=figsize)
+    heatmap = ax.imshow(M, cmap=cmap, interpolation='nearest', aspect='auto',vmin = vmin, vmax=vmax)
+    if xlabel is not None:
+        ax.set_xticks(range(len(xlabel)), labels=xlabel,rotation=45, ha="right", rotation_mode="anchor")
+    if ylabel is not None:
+        ax.set_yticks(range(len(ylabel)), labels=ylabel)
+
+    fig.colorbar(heatmap,ax=ax)
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    plt.show()
+
+def plot_attn_weights(NetMob_attn_weights,weekdays,hours,spatial_unit):
+    # ----- Find Indices related to specifics period of the days: 
+
+    # Find the indices of the hours between 7 and 10 on torch tensor
+    mask_morning =  ((hours >= 7) & (hours <= 10)) & (weekdays <= 4)
+    indices_morning = torch.where(mask_morning)[0]
+
+    mask_evening =  ((hours >= 17) & (hours <= 19)) & (weekdays <= 4)
+    indices_evening = torch.where(mask_evening)[0]
+    # -----
+
+    # head = 0
+
+
+    uniform_weight = 1/NetMob_attn_weights.size(-1)
+    vmin = 0
+    vmax = min(1,uniform_weight*3)
+
+
+    for head in range(NetMob_attn_weights.size(1)):
+        
+        # -- Average Attention Weight : 
+        average_attn_weight = NetMob_attn_weights.mean(0)   # [heads, stations, Iris]
+        plot_heatmap(average_attn_weight[head].detach().cpu().numpy(),ylabel =spatial_unit,figsize = (15,7) ,title=f'Average Attention Weight throughout the day\n Head {head}',vmin=vmin,vmax=vmax)
+
+        # -- Morning Average Attention Weight : 
+        morning_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_morning).mean(0)
+        plot_heatmap(morning_attn_weight[head].detach().cpu().numpy(), title=f'Attention Weight during Morning (7:00 - 10:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
+
+        # -- Evening Attention Weight : 
+        evening_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_evening).mean(0)
+        plot_heatmap(evening_attn_weight[head].detach().cpu().numpy(), title=f'Attention Weight during evening (17:00 - 19:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)

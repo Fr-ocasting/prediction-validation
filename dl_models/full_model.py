@@ -96,15 +96,25 @@ class full_model(nn.Module):
         # Init for jit script 
         # self.nb_add_channel = torch.jit.Attribute(0, int)
 
-        # Init for the model
-        self.ds_which_need_spatial_attn_per_station = list(args.ds_which_need_spatial_attn_per_station)
-        self.ds_which_need_global_attn  = list(args.ds_which_need_global_attn)
-        self.dict_pos_node_attr2ds     = args.dict_pos_node_attr2ds
-        self.dict_pos_node_attr2ds_keys = list(self.dict_pos_node_attr2ds.keys())
-        self.dict_pos_node_attr_which_does_not_need_attn2ds = {p:ds_name for ds_name,p in self.dict_pos_node_attr2ds.items() if p not in self.ds_which_need_global_attn}
-        self.pos_node_attr_which_does_not_need_attn = list(self.dict_pos_node_attr_which_does_not_need_attn2ds.keys())
-        self.dict_ds_which_need_attn2pos = {}
-        self.dict_ds2added_dim = {}
+        # ------- Init for the model
+        self.dict_pos_node_attr2ds                              = args.dict_pos_node_attr2ds
+        self.dict_pos_node_attr2ds_keys                         = list(self.dict_pos_node_attr2ds.keys())
+
+        # Global Attn:
+        self.ds_which_need_global_attn                          = list(args.ds_which_need_global_attn)
+        self.dict_ds_which_need_attn2pos                        = {}
+
+        # Global Attn Late:
+        self.ds_which_need_global_attn_late                     = list(args.ds_which_need_global_attn_late)
+        self.dict_ds_which_need_attn_late2pos                   = {}
+
+        # Local Attn:
+        self.ds_which_need_spatial_attn_per_station             = list(args.ds_which_need_spatial_attn_per_station)
+
+        # Will be stacked 
+        self.dict_pos_node_attr_which_does_not_need_attn2ds     = {p:ds_name for ds_name,p in self.dict_pos_node_attr2ds.items() if (p not in self.ds_which_need_global_attn) and (p not in self.ds_which_need_global_attn_late)}
+        self.pos_node_attr_which_does_not_need_attn             = list(self.dict_pos_node_attr_which_does_not_need_attn2ds.keys())
+        self.dict_ds2added_dim                                  = {}
 
         self.netmob_vision= None 
         self.te= None        
@@ -113,6 +123,7 @@ class full_model(nn.Module):
         self.spatial_attn_poi        = nn.ModuleDict()
         self.dic_stacked_contextual = {}
         self.dic_stacked_consistant_contextual = {}
+        # ------- 
 
         #___ Add positions for each dataset which need spatial attention:
         self.contextual_positions = args.contextual_positions
@@ -124,6 +135,11 @@ class full_model(nn.Module):
         for pos,ds_name in self.dict_pos_node_attr2ds.items():     # ex: (pos,ds_name) = (2,'subway_out')
             if ds_name in self.ds_which_need_global_attn:        
                 self.dict_ds_which_need_attn2pos[ds_name]= pos
+            if ds_name in self.ds_which_need_global_attn_late:
+                self.dict_ds_which_need_attn_late2pos[ds_name]= pos
+        args.dict_ds_which_need_attn_late2pos = self.dict_ds_which_need_attn_late2pos
+
+
             
 
         if dataset.target_data in args.dataset_names :
@@ -443,7 +459,8 @@ class full_model(nn.Module):
         if self.core_model is not None:
             x= self.core_model(x,
                                x_vision = extracted_features,
-                               x_calendar = x_calendar )
+                               x_calendar = x_calendar,
+                                contextual = contextual )
             #print('x after Core Model: ',x.size())
         # ...
 
@@ -609,12 +626,14 @@ def load_model(dataset, args):
         former_L = None
         for key in args.contextual_kwargs.keys():
             if 'stack_consistent_datasets' in args.contextual_kwargs[key].keys() and args.contextual_kwargs[key]['stack_consistent_datasets']:
-                    L_new = args.contextual_kwargs[key]['attn_kwargs']['dim_model']
-                    if former_L is not None:
-                        if former_L != L_new:
-                            raise ValueError(f'Inconsistent L_add_2 for {key} contextual dataset: {former_L} != {L_new}')
-                    else: 
-                        former_L = L_new
+                    # Specific case when we do 'attention late':
+                    if not(('attn_late' in args.contextual_kwargs[key]['attn_kwargs']) and  (args.contextual_kwargs[key]['attn_kwargs']['attn_late'])):
+                        L_new = args.contextual_kwargs[key]['attn_kwargs']['dim_model']
+                        if former_L is not None:
+                            if former_L != L_new:
+                                raise ValueError(f'Inconsistent L_add_2 for {key} contextual dataset: {former_L} != {L_new}')
+                        else: 
+                            former_L = L_new
 
         args.L = former_L if former_L is not None else args.L
         Ko = get_output_kernel_size(args)

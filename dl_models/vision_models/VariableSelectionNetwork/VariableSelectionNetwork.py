@@ -364,6 +364,7 @@ class AttentionGRU(nn.Module):
         x_trafic : 2-th order Tensor : historical sequence of trafic flow [B,L]
         x_context : 3-th order Tensor : R Embedding or P_i contextual data associated to the spatial unit of x_trafic [B,P_i,L]
         '''
+        # MultiHeadAttention
         #print('x_trafic: ',x_trafic.size())  #[B,L]  -> torch.Size([32,7])  
         #print('x_dynamic: ',x_dynamic.size()) #[B, P, L']  -> torch.Size([32, 4, 7]) 
         #print('x_known None: ',x_known)
@@ -378,7 +379,8 @@ class AttentionGRU(nn.Module):
     
 
 class MultiHeadAttention(nn.Module):
-    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout,keep_topk=False):
+
+    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout,keep_topk=False, proj_query = True):
         super(MultiHeadAttention, self).__init__()
 
         self.d_model = d_model
@@ -386,14 +388,19 @@ class MultiHeadAttention(nn.Module):
         self.d_k = d_model // num_heads
         self.num_heads = num_heads
 
-        self.W_q = nn.Parameter(torch.cuda.FloatTensor(query_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(query_dim, d_model))
+        if proj_query:
+            self.W_q = nn.Parameter(torch.cuda.FloatTensor(query_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(query_dim, d_model))
+            nn.init.xavier_uniform_(self.W_q)
+        else:
+            self.W_q = None
+            self.repeat_identical_query_heads = True
         self.W_k = nn.Parameter(torch.cuda.FloatTensor(key_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(key_dim, d_model))
         self.W_v = nn.Parameter(torch.cuda.FloatTensor(key_dim, d_model)) if torch.cuda.is_available() else nn.Parameter(torch.FloatTensor(key_dim, d_model))
 
         self.softmax = nn.Softmax(dim = -1)
         self.dropout = nn.Dropout(dropout)
 
-        nn.init.xavier_uniform_(self.W_q)
+
         nn.init.xavier_uniform_(self.W_k)
         nn.init.xavier_uniform_(self.W_v)
 
@@ -420,11 +427,20 @@ class MultiHeadAttention(nn.Module):
                 values = torch.nn.functional.pad(values, (query.size(-1) - values.size(-1),0), mode='constant', value=0)
         return query,key,values
 
-    def split_heads(self,x):
+    def split_heads(self,x,is_query=False):
+        # print('x size before split_heads: ',x.size())
+        # print('is query: ',is_query)
+        # print('self.repeat_identical_query_heads: ',self.repeat_identical_query_heads)
         B, P, d_model = x.size()
+        # if is_query and self.repeat_identical_query_heads:
+        #     x = x.unsqueeze(-1)
+        #     x = x.repeat(1,1,1,self.num_heads)
+        #     return x.permute(0,3,1,2)
+        # else:
         return x.view(B, P, self.num_heads, self.d_k).transpose(1, 2)
     
     def combine_heads(self, x):
+        # print('x size before combine_heads: ',x.size())
         B, num_heads, P, d_k = x.size()
         return x.transpose(1, 2).contiguous().view(B, P, self.d_model)
 
@@ -480,7 +496,6 @@ class MultiHeadAttention(nn.Module):
         batch_size = key.size(0)
         # print('\nquery,key,values before align: ',query.size(),key.size(),values.size())
         query,key,values = self.align_axis(query,key,values)
-        query,key,values = self.padding_sequence_length(query,key,values)
         # print('query,key,values after align: ',query.size(),key.size(),values.size())
         # print('projection matrix Wq,Wk,Wv: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
         # print('query values: ',query[0,0,:])
@@ -491,17 +506,23 @@ class MultiHeadAttention(nn.Module):
         #Projection to a laten space of dimenison d: [B,n_heads, P, d_k]
         #   query x    self.W_q   -->     QxW_q     
         # [B,1,L] x [B,L,d_model] --> [B,1,d_model] --split_head--> [B,n_heads,1,d_model//n_heads] 
-        #print('query,key,values before split_heads: ',query.size(),key.size(),values.size())
+        # print('query,key,values before proj: ',query.size(),key.size(),values.size())
         #print('W_q,W_k,W_v: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
-        Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
+        if self.W_q is not None:
+            query,key,values = self.padding_sequence_length(query,key,values)
+            Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
+        else:
+            Q = self.layer_norm(self.split_heads(query,is_query=True))
         K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))
         V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
+        # print('Q,K,V after proj: ',Q.size(),K.size(),V.size())
 
         context,attn_weights = self.compute_scaled_dot_product(Q,K,V)
-        #print('context,attn_weights: ',context.size(),attn_weights.size())
+        # print('context,attn_weights: ',context.size(),attn_weights.size())
 
         #[B,n_heads, nb_units, d_k] -> [B, nb_units, d_models]     
         context = self.combine_heads(context)
+        # print('context after combine_heads: ',context.size())
         combined_Q = self.combine_heads(Q)
 
         #[B, nb_units, d_models] -> [B,d_models] if 'per_station'. Otherwise  do nothing

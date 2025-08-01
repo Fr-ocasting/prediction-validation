@@ -34,13 +34,14 @@ class model(nn.Module):
         keep_topk: bool = False,
         output_temporal_dim: int = None,
         stack_consistent_datasets = False,
+        proj_query: bool = True
     ):
         super().__init__()
         self.query_dim = query_dim
         self.key_dim = key_dim
         self.latent_dim = latent_dim
         #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
-        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout,keep_topk)
+        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout,keep_topk,proj_query)
         #print('query_dim,key_dim,dim_model,num_heads: ',query_dim,key_dim,dim_model,num_heads)
 
         self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)

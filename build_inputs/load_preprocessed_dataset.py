@@ -20,7 +20,7 @@ from dataset import PersonnalInput
 from utils.seasonal_decomposition import fill_and_decompose_df
 
 
-def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn):
+def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_predict,contextual_tensors,contextual_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late):
     
     if type(contextual_ds) == list:
         contextual_tensors.update({f'{dataset_name}_{k}': {'train': ds_i.U_train,
@@ -54,10 +54,13 @@ def update_contextual_tensor(dataset_name,args,need_local_spatial_attn,ds_to_pre
     else:
         dict_pos_node_attr2ds[pos_contextual_i] = dataset_name
         if args.contextual_kwargs[dataset_name]['need_global_attn']:
-            ds_which_need_global_attn.append(dataset_name)
+            if 'attn_late' in args.contextual_kwargs[dataset_name]['attn_kwargs'].keys() and args.contextual_kwargs[dataset_name]['attn_kwargs']['attn_late']:
+                ds_which_need_global_attn_late.append(dataset_name)
+            else:
+                ds_which_need_global_attn.append(dataset_name)
 
     
-    return contextual_tensors,ds_to_predict,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn
+    return contextual_tensors,ds_to_predict,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late
 
 
 def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test):
@@ -78,6 +81,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     ds_which_need_spatial_attn_per_station = []
     dict_pos_node_attr2ds = {}
     ds_which_need_global_attn = []
+    ds_which_need_global_attn_late = []
     target_ds.normalizers = {target_ds.target_data:target_ds.normalizer}
 
 
@@ -103,18 +107,18 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
             
         if dataset_name in ['netmob_image_per_station','netmob_bidon','netmob_video_lyon']:
              need_local_spatial_attn = False
-             contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+             contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn_per_station,contextual_positions,
-                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn)
+                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late)
              
 
         elif dataset_name in ['subway_out','subway_in','subway_indiv','PeMS08_flow','PeMS08_occupancy','PeMS08_speed']:
             need_local_spatial_attn = False
-            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn_per_station,contextual_positions,
-                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn) 
+                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late) 
             if args.data_augmentation and args.DA_method == 'noise':
                 if args.DA_noise_from == 'MSTL':
                     decomposition = fill_and_decompose_df(contextual_ds_i.raw_values,
@@ -138,30 +142,30 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                 target_ds.noises[dataset_name] = df_noises         
         elif dataset_name in ['netmob_POIs','bike_in','bike_out']:
             need_local_spatial_attn = False
-            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn_per_station,contextual_positions,
-                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn)
+                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late)
             if args.data_augmentation and args.DA_method == 'noise':
                 raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out ?')     
 
                 
         elif dataset_name == 'netmob_POIs_per_station':
             need_local_spatial_attn = True
-            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn_per_station,contextual_positions,
-                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn)
+                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late)
             if args.data_augmentation and args.DA_method == 'noise':
                  raise NotImplementedError('Pas implémenté" encore. Copier le build Noise de subway_out')
 
 
         elif dataset_name == 'subway_out_per_station':
             need_local_spatial_attn = True
-            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
+            contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,
                                                                                                                              ds_which_need_spatial_attn_per_station,contextual_positions,
-                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn)
+                                                                                                                             dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late)
 
              # build Noises :
             if args.data_augmentation and args.DA_method == 'noise':
@@ -198,6 +202,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     args.ds_which_need_spatial_attn_per_station = ds_which_need_spatial_attn_per_station
     args.dict_pos_node_attr2ds = dict_pos_node_attr2ds
     args.ds_which_need_global_attn = ds_which_need_global_attn
+    args.ds_which_need_global_attn_late = ds_which_need_global_attn_late
  
     return(target_ds,args)
 

@@ -349,6 +349,8 @@ class DataSet(object):
         self.H = H
         self.cleaned_df = cleaned_df
         self.target_data = target_data
+        if train_pourcent is None :
+            train_pourcent = 100
         self.train_pourcent = train_pourcent
 
         # Data Augmentation: 
