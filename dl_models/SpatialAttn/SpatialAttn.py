@@ -43,11 +43,15 @@ class model(nn.Module):
         #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
         self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout,keep_topk,proj_query)
         #print('query_dim,key_dim,dim_model,num_heads: ',query_dim,key_dim,dim_model,num_heads)
+        self.stack_consistent_datasets = stack_consistent_datasets
 
-        self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
+        if self.stack_consistent_datasets:
+            self.feedforward = None
+        else:
+            self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
         #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
         #self.outputs = feed_forward(dim_model,dim_feedforward)
-        self.stack_consistent_datasets = stack_consistent_datasets
+
         if output_temporal_dim is None:
             self.temporal_proj = None
         else:
@@ -68,9 +72,9 @@ class model(nn.Module):
 
         outputs: x_fc [B,L,z*1]   or [B,L,z*N]  (where z is the output dimension of the feedforward layer)
         """
-        # print('\nFoward Spatial Attention: ')
-        # print('Query (x_flow_station):',x_flow_station.size())
-        # print('Key/Values (x_contextual):',x_contextual.size())
+        print('\nFoward Spatial Attention: ')
+        print('Query (x_flow_station):',x_flow_station.size())
+        print('Key/Values (x_contextual):',x_contextual.size())
         projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
 
@@ -80,9 +84,9 @@ class model(nn.Module):
         
         # --------Case where we want to project the MHA output in order to go back to the original temporal dimension:
         else: 
-            # print('After MHA:',context.size()) #[B,N,dim_model]
+            print('After MHA:',context.size()) #[B,N,dim_model]
             context = self.feedforward(context)
-            # print('After FC:',context.size()) #[B,N,ff_dim*L] where L = query_dim
+            print('After FC:',context.size()) #[B,N,ff_dim*L] where L = query_dim
             if self.temporal_proj is not None:
                 # print(x_fc[0,0,:])
                 context = context.reshape(context.size(0),context.size(1),self.latent_dim,self.query_dim)

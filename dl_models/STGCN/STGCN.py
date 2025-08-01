@@ -116,15 +116,16 @@ class STGCN(nn.Module):
                     importlib.reload(scrip_args)    
                     args_ds_i = scrip_args.args
                     args_ds_i.dropout = args.dropout        
-                    args_ds_i.query_dim = args.L  # input dim of Query  --> L but USELESS   
+ 
                     args_ds_i.key_dim = args.L  # input dim of Key  --> L 
-                    args_ds_i.output_temporal_dim = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out'] if 'L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else None   #  Dimension of FC layer after MHA ONLY IF stack_consistent_datasets is False 
+                    args_ds_i.output_temporal_dim = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out'] if 'L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else None   #  Dimension of FC layer after MHA ONLY IF stack_consistent_datasets is False  & if we set L_out.
                     args_ds_i.stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if 'stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys() else False # True if we want the output of MHA, False if we want it to also pass through FC layer after MHA  
                     args_ds_i.proj_query = True if 'proj_query' not in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else args.contextual_kwargs[ds_name]['attn_kwargs']['proj_query']
-            
+                    print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets,args.contextual_kwargs[ds_name]['stack_consistent_datasets'])
                     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
                         setattr(args_ds_i,key,value)
                     args_ds_i.dim_model = blocks[-3][-1] # Dimension of the last STGCN block output channel
+                    args_ds_i.query_dim = args_ds_i.dim_model  # input dim of Query  --> output dim of STGCN 
 
                     print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets)
                     importlib.reload(script)
