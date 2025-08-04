@@ -340,7 +340,7 @@ class OutputBlock(nn.Module):
                  concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
                  TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None,
-                 ModuleContextualAttnLate = {},dict_ds_which_need_attn_late2pos = {},attn_late_dim = 0
+                 ModuleContextualAttnLate = nn.ModuleDict(),dict_ds_which_need_attn_late2pos = {},attn_late_dim = 0
                  ):
         super(OutputBlock, self).__init__()
 

@@ -118,8 +118,11 @@ def load_trainer_ds_from_saved_trial(args,model_save_path,modification={}):
     args_init.ray = False
 
 
-    ds,_,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)
-    model = full_model(ds, args_init).to(args_init.device)
+    ds,args_updated,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)
+    model = full_model(ds, 
+                       args_updated
+                    #    args_init
+                       ).to(args_init.device)
 
 
     model_param = torch.load(f"{model_save_path}")

@@ -72,9 +72,9 @@ class model(nn.Module):
 
         outputs: x_fc [B,L,z*1]   or [B,L,z*N]  (where z is the output dimension of the feedforward layer)
         """
-        print('\nFoward Spatial Attention: ')
-        print('Query (x_flow_station):',x_flow_station.size())
-        print('Key/Values (x_contextual):',x_contextual.size())
+        # print('\nFoward Spatial Attention: ')
+        # print('Query (x_flow_station):',x_flow_station.size())
+        # print('Key/Values (x_contextual):',x_contextual.size())
         projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
 
@@ -84,9 +84,9 @@ class model(nn.Module):
         
         # --------Case where we want to project the MHA output in order to go back to the original temporal dimension:
         else: 
-            print('After MHA:',context.size()) #[B,N,dim_model]
+            # print('After MHA:',context.size()) #[B,N,dim_model]
             context = self.feedforward(context)
-            print('After FC:',context.size()) #[B,N,ff_dim*L] where L = query_dim
+            # print('After FC:',context.size()) #[B,N,ff_dim*L] where L = query_dim
             if self.temporal_proj is not None:
                 # print(x_fc[0,0,:])
                 context = context.reshape(context.size(0),context.size(1),self.latent_dim,self.query_dim)

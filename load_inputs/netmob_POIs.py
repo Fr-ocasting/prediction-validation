@@ -50,7 +50,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     '''
 
     # data_app.shape :[nb-osmid*(apps*transfer_mode*tags), T]
-    netmob_T = load_data_npy(FOLDER_PATH,args)
+    netmob_T,list_correspondence,dictionnary_aggregated_iris = load_data_npy(FOLDER_PATH,args)
 
     # Temporal Aggregation if needed: 
     if False: 
@@ -84,7 +84,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     if 'epsilon_clustering' in args.contextual_kwargs['netmob_POIs'].keys() and args.contextual_kwargs['netmob_POIs']['epsilon_clustering'] is not None:
         print('    ATTENTION: Dimension reduction by clustering is applied on the entire dataset. This should be done only on the training set.')
         initial_size = netmob_T.size(-1)
-        netmob_T = reduce_dim_by_clustering(netmob_T,epsilon = args.contextual_kwargs['netmob_POIs']['epsilon_clustering'])
+        netmob_T,dict_label2agg = reduce_dim_by_clustering(netmob_T,epsilon = args.contextual_kwargs['netmob_POIs']['epsilon_clustering'])
         print(f"    Netmob_T.size(): {netmob_T.size()}. Dimensionality reduced by {'{:.1%}'.format(1-netmob_T.size(-1)/initial_size)}")
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
     
@@ -98,6 +98,9 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
                                            tensor_limits_keeper=tensor_limits_keeper) 
     NetMob_POI.periods = None # dataset.periods
     NetMob_POI.spatial_unit = list(np.arange(netmob_T.size(1)))
+    NetMob_POI.list_correspondence = list_correspondence
+    NetMob_POI.dictionnary_aggregated_iris = dictionnary_aggregated_iris
+    NetMob_POI.dict_label2agg = dict_label2agg
 
     
     return(NetMob_POI)
@@ -115,6 +118,8 @@ def load_data_npy(FOLDER_PATH,args):
         raise ImportError("No NetMob transfer mode selected. Please check the configuration of netmob_POIs in the arguments.")
     
     # Load data for each app, transfer mode and tag
+    list_correspondence =  []
+    dictionnary_aggregated_iris = None
     for app in args.contextual_kwargs['netmob_POIs']['NetMob_selected_apps']:
         for mode in args.contextual_kwargs['netmob_POIs']['NetMob_transfer_mode']:
             for tag in args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']:
@@ -148,6 +153,7 @@ def load_data_npy(FOLDER_PATH,args):
                         list_of_data.append(loaded_data)  # [nb-osmid, T]
                 except:
                     raise ImportError(f"{folder_path_to_save_agg_data}/data.npy does not exist. NetMob app {app} Might not have been recorded.")
+                list_correspondence.append(f"{app}_{tag}_{mode}")
     netmob_T = torch.cat(list_of_data)    # [nb-osmid*(apps*transfer_mode*tags), T]
 
     # [T,nb-osmid*(apps*transfer_mode*tags)]
@@ -155,7 +161,7 @@ def load_data_npy(FOLDER_PATH,args):
 
     #print(args.NetMob_selected_apps,args.NetMob_transfer_mode,args.NetMob_selected_tags)
     #print(netmob_T.size())
-    return netmob_T
+    return netmob_T,list_correspondence,dictionnary_aggregated_iris
 
 
 def agg_clustering(multi_ts,epsilon):
@@ -187,6 +193,9 @@ def reduce_dim_by_clustering(multi_ts,epsilon,agg_function = 'median'):
     epsilon: maximum accepted distance correlation as diameter within cluster (agglomerative clustering)
     '''
     labels = agg_clustering(multi_ts,epsilon = epsilon)
+    # Keep track on initial labels (example : if spatial unit at position 2 is aggregated, and at each label is it associated):
+    dict_label2agg = {k:l for k,l in enumerate(labels)}
+
 
     unique_labels = sorted(set(labels))
     cluster_aggregates = []
@@ -208,5 +217,5 @@ def reduce_dim_by_clustering(multi_ts,epsilon,agg_function = 'median'):
         cluster_aggregates.append(agg_tensor)
     tensor_reduced = torch.stack(cluster_aggregates, dim=1)
 
-    return(tensor_reduced)
+    return(tensor_reduced,dict_label2agg)
 

@@ -121,18 +121,18 @@ class STGCN(nn.Module):
                     args_ds_i.output_temporal_dim = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out'] if 'L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else None   #  Dimension of FC layer after MHA ONLY IF stack_consistent_datasets is False  & if we set L_out.
                     args_ds_i.stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if 'stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys() else False # True if we want the output of MHA, False if we want it to also pass through FC layer after MHA  
                     args_ds_i.proj_query = True if 'proj_query' not in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else args.contextual_kwargs[ds_name]['attn_kwargs']['proj_query']
-                    print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets,args.contextual_kwargs[ds_name]['stack_consistent_datasets'])
                     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
                         setattr(args_ds_i,key,value)
                     args_ds_i.dim_model = blocks[-3][-1] # Dimension of the last STGCN block output channel
                     args_ds_i.query_dim = args_ds_i.dim_model  # input dim of Query  --> output dim of STGCN 
-
-                    print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets)
                     importlib.reload(script)
                     func = script.model
                     filered_args = filter_args(func, args_ds_i)
                     ModuleContextualAttnLate[ds_name] = func(**filered_args)      
-                    attn_late_dim = attn_late_dim+args_ds_i.dim_model
+                    if args_ds_i.stack_consistent_datasets:
+                        attn_late_dim = attn_late_dim+args_ds_i.dim_model
+                    else:
+                        attn_late_dim = attn_late_dim+args_ds_i.dim_model*args.contextual_kwargs[ds_name]['attn_kwargs']['latent_dim']
         # -----
 
 

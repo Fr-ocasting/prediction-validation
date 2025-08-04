@@ -168,7 +168,11 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
                                         )
         contextual_ds[dataset_name] = contextual_ds_i
 
-
+        ### Update args with contextual dataset information:
+        if hasattr(args,'contextual_kwargs') and (dataset_name in args.contextual_kwargs.keys()):
+            if hasattr(contextual_ds_i,'list_correspondence') : args.contextual_kwargs[dataset_name]['list_correspondence'] = contextual_ds_i.list_correspondence
+            if hasattr(contextual_ds_i,'dictionnary_aggregated_iris') : args.contextual_kwargs[dataset_name]['dictionnary_aggregated_iris'] = contextual_ds_i.dictionnary_aggregated_iris
+            if hasattr(contextual_ds_i,'dict_label2agg') : args.contextual_kwargs[dataset_name]['dict_label2agg'] = contextual_ds_i.dict_label2agg
     ### Match the dates of the contextual datasets with the target dataset if differents: 
     target_ds,contextual_ds = restrain_all_ds_to_common_dates(target_ds,contextual_ds)
 
