@@ -117,4 +117,6 @@ if __name__ == "__main__":
 
             loger.add_log(test_metrics,['rmse','mae','mape','mse'],trial_id, args.step_ahead,args.horizon_step)
 
+            print('norm_attn_weight: ',trainer.norm_attn_weight)
+
         loger.display_log()

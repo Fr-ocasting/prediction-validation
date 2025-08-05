@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 import torch 
 import pickle
 import numpy as np 
+import re
 # Get Parent folder : 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
-
+from calendar_class import is_morning_peak,is_evening_peak,is_weekday
 from examples.load_best_config import load_trainer_ds_from_saved_trial
 from plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
 from examples.train_model import load_init_model_trainer_ds
@@ -437,15 +438,61 @@ def plot_heatmap(M,xlabel=None,ylabel=None, title=None,cmap='hot',figsize=(15, 1
     fig.tight_layout()
     plt.show()
 
-def plot_attn_weights(NetMob_attn_weights,weekdays,hours,spatial_unit):
+
+
+def get_calendar_mask(s_dates,temporal_group = 'morning_peak',city=None):
+
+
+    """ 
+    args 
+    -----------
+    temporal_group : str, one of ['morning_peak','evening_peak','off_peak','h0','h7',h8',...,'h23']
+    s_dates is a pd.Series of datetime64[ns] from tensor_limits_keeper.df_verif_{trainig_mode};
+    examples: 
+    ---------
+    >>>  s_dates = ds.tensor_limits_keeper.df_verif_test.iloc[:,-1].reset_index(drop=True) 
+
+    """
+
+    s_is_weekday = is_weekday(s_dates)
+    s_is_weekday = s_is_weekday.replace({True: 'Weekday', False: 'Weekend'})
+    s_evening_peak = is_evening_peak(s_dates)
+    s_morning_peak =  is_morning_peak(s_dates)
+    s_morning_peak = s_morning_peak & s_is_weekday
+    s_evening_peak = s_evening_peak & s_is_weekday
+
+    # s_bank_holidays = is_bank_holidays(s_dates,city=city)
+    # s_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city=city))
+
+    s_off_peak = ~s_evening_peak & ~s_morning_peak & s_is_weekday
+
+    motif = r'^h([0-9]|1[0-9]|2[0-3])$'
+
+    if temporal_group == 'morning_peak':
+
+        mask = s_morning_peak[s_morning_peak].index
+    elif temporal_group == 'evening_peak':
+        mask = s_evening_peak[s_evening_peak].index
+    elif temporal_group == 'off_peak':
+        mask = s_off_peak[s_off_peak].index
+
+    elif re.fullmatch(motif, temporal_group):   # if h1, h2, ..., h23
+        hour = int(temporal_group[1:]) 
+        mask = s_dates[s_dates.dt.hour == hour].index
+    else:
+        raise ValueError(f"temporal_group '{temporal_group}' is not recognized. Use one of ['morning_peak','evening_peak','off_peak', 'h0', 'h1', ..., 'h23']")
+    
+    return mask
+        
+def plot_attn_weights(NetMob_attn_weights,s_dates,
+                      #weekdays,hours,
+                      spatial_unit,city = None):
     # ----- Find Indices related to specifics period of the days: 
 
     # Find the indices of the hours between 7 and 10 on torch tensor
-    mask_morning =  ((hours >= 7) & (hours <= 10)) & (weekdays <= 4)
-    indices_morning = torch.where(mask_morning)[0]
-
-    mask_evening =  ((hours >= 17) & (hours <= 19)) & (weekdays <= 4)
-    indices_evening = torch.where(mask_evening)[0]
+    indices_morning = torch.tensor(get_calendar_mask(s_dates,temporal_group = 'morning_peak',city=city)).long().detach().cpu()
+    indices_evening = torch.tensor(get_calendar_mask(s_dates,temporal_group = 'evening_peak',city=city)).long().detach().cpu()
+    NetMob_attn_weights = NetMob_attn_weights.detach().cpu()  # Ensure the attention weights are on CPU and detached from the computation graph
     # -----
 
     # head = 0
@@ -460,12 +507,12 @@ def plot_attn_weights(NetMob_attn_weights,weekdays,hours,spatial_unit):
         
         # -- Average Attention Weight : 
         average_attn_weight = NetMob_attn_weights.mean(0)   # [heads, stations, Iris]
-        plot_heatmap(average_attn_weight[head].detach().cpu().numpy(),ylabel =spatial_unit,figsize = (15,7) ,title=f'Average Attention Weight throughout the day\n Head {head}',vmin=vmin,vmax=vmax)
+        plot_heatmap(average_attn_weight[head],ylabel =spatial_unit,figsize = (15,7) ,title=f'Average Attention Weight throughout the day\n Head {head}',vmin=vmin,vmax=vmax)
 
         # -- Morning Average Attention Weight : 
         morning_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_morning).mean(0)
-        plot_heatmap(morning_attn_weight[head].detach().cpu().numpy(), title=f'Attention Weight during Morning (7:00 - 10:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
+        plot_heatmap(morning_attn_weight[head], title=f'Attention Weight during Morning (7:00 - 10:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
 
         # -- Evening Attention Weight : 
         evening_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_evening).mean(0)
-        plot_heatmap(evening_attn_weight[head].detach().cpu().numpy(), title=f'Attention Weight during evening (17:00 - 19:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
+        plot_heatmap(evening_attn_weight[head], title=f'Attention Weight during evening (17:00 - 19:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)

@@ -510,11 +510,19 @@ class MultiHeadAttention(nn.Module):
         #print('W_q,W_k,W_v: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
         if self.W_q is not None:
             query,key,values = self.padding_sequence_length(query,key,values)
-            Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
+            # Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
+            Q = self.split_heads(torch.matmul(query,self.W_q))
         else:
-            Q = self.layer_norm(self.split_heads(query,is_query=True))
-        K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))
+            # Q = self.layer_norm(self.split_heads(query,is_query=True))
+            Q = self.split_heads(query,is_query=True)
+
+        # K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))       
+        K = self.split_heads(torch.matmul(key,self.W_k))
+
+        # V = self.split_heads(torch.matmul(values,self.W_v))
         V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
+
+
         # print('Q,K,V after proj: ',Q.size(),K.size(),V.size())
 
         context,attn_weights = self.compute_scaled_dot_product(Q,K,V)
