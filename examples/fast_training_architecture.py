@@ -116,7 +116,11 @@ if __name__ == "__main__":
             test_metrics = trainer.performance['test_metrics']
 
             loger.add_log(test_metrics,['rmse','mae','mape','mse'],trial_id, args.step_ahead,args.horizon_step)
+            # try:
+            #     grad_norms = trainer.model.core_model.output.ModuleContextualAttnLate.netmob_POIs.mha.attention_grad_norms
+            # except:
+            #     grad_norms = trainer.model.spatial_attn_poi.netmob_POIs.mha.attention_grad_norms
+            # print('grad_norms: ',grad_norms)
 
-            print('norm_attn_weight: ',trainer.norm_attn_weight)
-
+            
         loger.display_log()

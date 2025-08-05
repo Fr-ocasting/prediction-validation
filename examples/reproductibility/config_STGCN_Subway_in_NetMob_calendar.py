@@ -183,7 +183,7 @@ modifications = {
                                                     'batch_size': 128,
                                                     'lr': 0.00071,
                                                     'dropout': 0.145169206052754,
-                                                    'epochs': 500,
+                                                    'epochs': 5,
                                                     'standardize': False,
                                                     'minmaxnorm': True,
 

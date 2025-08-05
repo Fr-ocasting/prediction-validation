@@ -406,6 +406,7 @@ class MultiHeadAttention(nn.Module):
 
         self.layer_norm = nn.LayerNorm(self.d_k)
         self.keep_topk = keep_topk  # If True then keep only the top 10% of the attention weights
+        self.attention_grad_norms = []
 
     def align_axis(self,query,key,values):
         # Case where only 1 traffic time-serie for P contextual data
@@ -475,7 +476,10 @@ class MultiHeadAttention(nn.Module):
             attn_weights = self.softmax(scaled_compact)  
             self.dropout(attn_weights)
 
-
+        # Hook to keep track on attention weight grad:
+        self.attn_weight_for_hook = attn_weights
+        if self.attn_weight_for_hook.requires_grad:
+            self.attn_weight_for_hook.register_hook(self._save_grad_norm)
 
 
         #print('scaled_compact.size: ',scaled_compact.size())
@@ -485,7 +489,11 @@ class MultiHeadAttention(nn.Module):
         #[B,n_heads, nb_units, P] x [B,n_heads, P, d] ->   [B,n_heads, nb_units, d]
         context = torch.matmul(attn_weights,V)
         return context,attn_weights
-        
+
+    def _save_grad_norm(self, grad):
+        """Hook"""
+        if grad is not None:
+            self.attention_grad_norms.append(grad.norm().item())
 
     def forward(self, query,key,values):
         '''

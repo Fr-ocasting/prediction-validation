@@ -78,6 +78,7 @@ class model(nn.Module):
         projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
 
+
         # --------Case where we don't want to project again the MHA output, and we keep the long projection (dim_model)
         if self.stack_consistent_datasets:
             return projected_x_flow,context

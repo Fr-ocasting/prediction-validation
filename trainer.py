@@ -390,11 +390,6 @@ class Trainer(object):
         if self.training_mode == 'train': 
             self.chrono.backward()
             loss = self.backpropagation(loss)
-            try:
-                self.norm_attn_weight =  self.norm_attn_weight + [self.model.core_model.output.ModuleContextualAttnLate.netmob_POIs.attn_weight.grad.norm().item()]
-            except:
-                self.norm_attn_weight =  self.norm_attn_weight + [self.model.spatial_attn_poi.netmob_POIs.attn_weight.grad.norm().item()]
-
 
             # print('pred: ', pred.dtype, pred.size())
             # print('y_b: ', y_b.dtype, y_b.size())
