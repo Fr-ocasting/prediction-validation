@@ -384,7 +384,7 @@ class MultiHeadAttention(nn.Module):
         super(MultiHeadAttention, self).__init__()
 
         self.d_model = d_model
-        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
+        assert d_model % num_heads == 0, f"d_model={d_model} must be divisible by num_heads={num_heads}"
         self.d_k = d_model // num_heads
         self.num_heads = num_heads
 
@@ -401,15 +401,23 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
 
+
         nn.init.xavier_uniform_(self.W_k)
         nn.init.xavier_uniform_(self.W_v)
 
-        self.layer_norm = nn.LayerNorm(self.d_k)
+        # self.layer_norm = nn.LayerNorm(self.d_k)
 
         # ---- Add normalization for query and key/values before Attention ----
         self.layer_normq = nn.LayerNorm(query_dim)
         self.layer_normkv = nn.LayerNorm(key_dim)
         # ----
+
+        # --- Add linear proj if query_dim != d_model ---
+        if query_dim != d_model:
+            self.res_proj = nn.Linear(query_dim, d_model)
+        else:
+            self.res_proj = None
+        # ---
 
         self.keep_topk = keep_topk  # If True then keep only the top 10% of the attention weights
         self.attention_grad_norms = []
@@ -507,6 +515,7 @@ class MultiHeadAttention(nn.Module):
         key : From x_dynamic    -> [B,P,L]    --|
         values: From x_dynamic    -> [B,P,L]  --|---> Same object
         '''
+        original_query = query
         batch_size = key.size(0)
         # print('\nquery,key,values before align: ',query.size(),key.size(),values.size())
         query,key,values = self.align_axis(query,key,values)
@@ -544,7 +553,6 @@ class MultiHeadAttention(nn.Module):
 
 
         # print('Q,K,V after proj: ',Q.size(),K.size(),V.size())
-
         context,attn_weights = self.compute_scaled_dot_product(Q,K,V)
         # print('context,attn_weights: ',context.size(),attn_weights.size())
 
@@ -560,7 +568,17 @@ class MultiHeadAttention(nn.Module):
         if batch_size==1:
             context = context.unsqueeze(0)
 
-        return combined_Q,context,attn_weights
+        # --- Residual Layer
+        if self.res_proj is not None:
+            residual = self.res_proj(original_query)
+        else:
+            residual = original_query
+        
+        context_output = residual + self.dropout(context)
+        # ----
+        
+
+        return combined_Q,context_output,attn_weights
 
 
 class model(nn.Module):

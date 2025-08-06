@@ -62,7 +62,6 @@ def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_tempo
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
 
-    print('args_ds_i.stack_consistent_datasets: ',args_ds_i.stack_consistent_datasets)
     importlib.reload(script)
     func = script.model
     filered_args = filter_args(func, args_ds_i)
@@ -236,11 +235,11 @@ class full_model(nn.Module):
                 L_out = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out']
             else:
                 L_out = None
-            condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
+            # condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
             self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, 
                                                                      init_spatial_dim=args.L,
-                                                                     output_temporal_dim = L_out,
-                                                                     stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if condition_i else False
+                                                                    #  output_temporal_dim = L_out,
+                                                                    #  stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if condition_i else False
                                                                      )
         self.spatial_attn_poi_keys = list(self.spatial_attn_poi.keys())
 

@@ -18,48 +18,81 @@ from dl_models.TransformerGraphEncoder import TransformerGraphEncoder,feed_forwa
 from dl_models.vision_models.VariableSelectionNetwork.VariableSelectionNetwork import MultiHeadAttention
 
 
+class MHA_layer(nn.Module):
+    def __init__(
+            self, 
+            query_dim: int = 1,
+            key_dim: int = 1,
+            dim_model: int = 24,
+
+            num_heads: int = 3,
+            dim_feedforward: int = 32,
+            output_dim: int = 1,
+
+            dropout: float = 0.1,
+            keep_topk: bool = False,
+            proj_query: bool = True
+            ):
+        super(MHA_layer, self).__init__()
+
+        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model, num_heads, dropout, keep_topk, proj_query)
+        self.feedforward = feed_forward(dim_model, dim_feedforward, output_dim)
+        self.layer_norm = nn.LayerNorm(dim_model)
+        self.dropout = nn.Dropout(dropout)
+
+        #  -- Add linear proj if align is needed 
+        if dim_model != output_dim:
+            self.res_proj = nn.Linear(dim_model, output_dim)
+        else:
+            self.res_proj = None
+        # -- 
+
+    def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
+        # ------- MHA
+        projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
+        self.attn_weight = attn_weight
+        
+        if self.res_proj is not None:
+            residual = self.res_proj(context)
+        else:
+            residual = context
+
+        # ------- Normalizing the MHA output:
+        context_norm = self.layer_norm(context)
+        ff_output = self.feedforward(context_norm)
+
+        # ------- Residual connection:
+        output = residual + self.dropout(ff_output)
+
+        return projected_x_flow,output
 
 class model(nn.Module):
     def __init__(
         self,
-        #node_ids: int= 40,
-        #num_layers: int = 2,
-        dim_model: int = 24,
         query_dim: int = 1,
         key_dim: int = 1,
-        latent_dim: int = 1,
+        dim_model: int = 24,
+
         num_heads: int = 3,
         dim_feedforward: int = 32,
+        latent_dim: int = 1,
+
         dropout: float = 0.1,
         keep_topk: bool = False,
-        output_temporal_dim: int = None,
-        stack_consistent_datasets = False,
-        proj_query: bool = True
+        proj_query: bool = True,
+        nb_layers: int = 1
     ):
         super().__init__()
         self.query_dim = query_dim
         self.key_dim = key_dim
-        self.latent_dim = latent_dim
-        #print('node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout: ',node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)
-        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model,num_heads,dropout,keep_topk,proj_query)
-        #print('query_dim,key_dim,dim_model,num_heads: ',query_dim,key_dim,dim_model,num_heads)
-        self.stack_consistent_datasets = stack_consistent_datasets
 
-        if self.stack_consistent_datasets:
-            self.feedforward = None
+        if nb_layers == 1:
+            self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
         else:
-            self.feedforward = feed_forward(dim_model,dim_feedforward,query_dim*latent_dim)
-        #self.spatial_attn = TransformerGraphEncoder(node_ids,num_layers,dim_model,num_heads,dim_feedforward,dropout)     
-        #self.outputs = feed_forward(dim_model,dim_feedforward)
+            self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query)]+
+                                          [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query) for _ in range(nb_layers-2)] + 
+                                          [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
 
-        if output_temporal_dim is None:
-            self.temporal_proj = None
-        else:
-            self.relu = nn.ReLU()
-            self.temporal_proj = nn.Linear(key_dim,output_temporal_dim)
-
-        #self.avgpool = nn.AvgPool3d((node_ids,1,1))
-        #self.avgpool = nn.AvgPool2d((node_ids,1))
     def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
         """
         inputs: 
@@ -75,24 +108,10 @@ class model(nn.Module):
         # print('\nFoward Spatial Attention: ')
         # print('Query (x_flow_station):',x_flow_station.size())
         # print('Key/Values (x_contextual):',x_contextual.size())
-        projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
-        self.attn_weight = attn_weight
+        current_context = x_flow_station
+        for mha_layer in self.mha_list:
+            projected_x_flow, current_context = mha_layer(current_context, x_contextual)
+            # print('\nProjected Flow (x_flow_station):',projected_x_flow.size())
+            # print('Current Context:',current_context.size())
 
-
-        # --------Case where we don't want to project again the MHA output, and we keep the long projection (dim_model)
-        if self.stack_consistent_datasets:
-            return projected_x_flow,context
-        
-        # --------Case where we want to project the MHA output in order to go back to the original temporal dimension:
-        else: 
-            # print('After MHA:',context.size()) #[B,N,dim_model]
-            context = self.feedforward(context)
-            # print('After FC:',context.size()) #[B,N,ff_dim*L] where L = query_dim
-            if self.temporal_proj is not None:
-                # print(x_fc[0,0,:])
-                context = context.reshape(context.size(0),context.size(1),self.latent_dim,self.query_dim)
-                context = self.temporal_proj(self.relu(context))  # [B,N,z] -> [B,N,z1,L] -> [B,N,z1,r] -> [B,N,z']
-                context = context.reshape(context.size(0),context.size(1),-1)
-                # print('After Temporal Projection:',context.size()) #  [B,N,ff_dim] 
-
-        return projected_x_flow,context
+        return projected_x_flow,current_context

@@ -162,7 +162,7 @@ modifications = {
 #                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
 #             },
 
-'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out4_outliers_removed_V_non_norm_bis1': {'target_data': 'subway_in',
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h1_l1_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
                                                   'loss_function_type':'HuberLoss',
@@ -212,12 +212,15 @@ modifications = {
                                                                                             'epsilon_clustering': 0.1,
                                                                                             'agg_iris_target_n': 100,
                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                            'dim_feedforward' : 64,
-                                                                                                            'num_heads' : 2 ,
-                                                                                                            'dim_model' : 48,
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 1 ,
+                                                                                                            'dim_model' : 64,
                                                                                                             'keep_topk': False,
-                                                                                                            'L_out': 4}  
+                                                                                                            'nb_layers': 1,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
                                                                                             #'H' : ,
                                                                                             #'D': ,
                                                                                             #'W': , 
@@ -229,7 +232,8 @@ modifications = {
                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
             },
 
-'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out4_outliers_removed_V_non_norm_bis2': {'target_data': 'subway_in',
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h2_l1_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
                                                   'loss_function_type':'HuberLoss',
@@ -279,12 +283,15 @@ modifications = {
                                                                                             'epsilon_clustering': 0.1,
                                                                                             'agg_iris_target_n': 100,
                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                            'dim_feedforward' : 64,
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
                                                                                                             'num_heads' : 2 ,
-                                                                                                            'dim_model' : 48,
+                                                                                                            'dim_model' : 64,
                                                                                                             'keep_topk': False,
-                                                                                                            'L_out': 4}  
+                                                                                                            'nb_layers': 1,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
                                                                                             #'H' : ,
                                                                                             #'D': ,
                                                                                             #'W': , 
@@ -296,7 +303,9 @@ modifications = {
                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
             },
 
-'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out4_outliers_removed_V_non_norm_bis3': {'target_data': 'subway_in',
+
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h4_l1_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
                                                   'loss_function_type':'HuberLoss',
@@ -346,12 +355,15 @@ modifications = {
                                                                                             'epsilon_clustering': 0.1,
                                                                                             'agg_iris_target_n': 100,
                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                            'dim_feedforward' : 64,
-                                                                                                            'num_heads' : 2 ,
-                                                                                                            'dim_model' : 48,
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 4 ,
+                                                                                                            'dim_model' : 64,
                                                                                                             'keep_topk': False,
-                                                                                                            'L_out': 4}  
+                                                                                                            'nb_layers': 1,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
                                                                                             #'H' : ,
                                                                                             #'D': ,
                                                                                             #'W': , 
@@ -362,8 +374,7 @@ modifications = {
                                                     'denoising_modes':["train","valid","test"],             # par défaut
                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
             },
-
-'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out4_outliers_removed_V_non_norm_bis4': {'target_data': 'subway_in',
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h1_l2_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
                                                   'loss_function_type':'HuberLoss',
@@ -413,12 +424,15 @@ modifications = {
                                                                                             'epsilon_clustering': 0.1,
                                                                                             'agg_iris_target_n': 100,
                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                            'dim_feedforward' : 64,
-                                                                                                            'num_heads' : 2 ,
-                                                                                                            'dim_model' : 48,
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 1 ,
+                                                                                                            'dim_model' : 64,
                                                                                                             'keep_topk': False,
-                                                                                                            'L_out': 4}  
+                                                                                                            'nb_layers': 2,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
                                                                                             #'H' : ,
                                                                                             #'D': ,
                                                                                             #'W': , 
@@ -429,8 +443,8 @@ modifications = {
                                                     'denoising_modes':["train","valid","test"],             # par défaut
                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
             },
-
-'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim48_ff64_h2_l2_unormalized_loss_concatenated_L_out4_outliers_removed_V_non_norm_bis5': {'target_data': 'subway_in',
+ 
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h2_l2_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
                                                   'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
                                                   'embedding_calendar_types': ['dayofweek', 'hour'],
                                                   'loss_function_type':'HuberLoss',
@@ -480,12 +494,15 @@ modifications = {
                                                                                             'epsilon_clustering': 0.1,
                                                                                             'agg_iris_target_n': 100,
                                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                            'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                            'dim_feedforward' : 64,
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
                                                                                                             'num_heads' : 2 ,
-                                                                                                            'dim_model' : 48,
+                                                                                                            'dim_model' : 64,
                                                                                                             'keep_topk': False,
-                                                                                                            'L_out': 4}  
+                                                                                                            'nb_layers': 2,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
                                                                                             #'H' : ,
                                                                                             #'D': ,
                                                                                             #'W': , 
@@ -497,6 +514,497 @@ modifications = {
                                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
             },
 
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h4_l2_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 4 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 2,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h1_l3_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 1 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 3,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+ 
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h2_l3_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 3,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h4_l3_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 4 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 3,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h1_l4_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 1 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 4,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+ 
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h2_l4_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 2 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 4,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
+
+'subway_in_calendar_emb64_out64_Google_Maps_Web_Weather_IRIS_Agg100_attn_dim64_ff256_h4_l4_unormalized_loss_concatenated_outliers_removed': {'target_data': 'subway_in',
+                                                  'dataset_names': ['subway_in', 'calendar_embedding','netmob_POIs'],
+                                                  'embedding_calendar_types': ['dayofweek', 'hour'],
+                                                  'loss_function_type':'HuberLoss',
+                                                   'Kt': 2,
+                                                    'stblock_num': 4,
+                                                    'Ks': 2,
+                                                    'graph_conv_type': 'graph_conv',
+                                                    'gso_type': 'sym_renorm_adj',
+                                                    'enable_bias': True,
+                                                    'adj_type': 'corr',
+                                                    'enable_padding': True,
+                                                    'threshold': 0.3,
+                                                    'act_func': 'glu',
+                                                    'temporal_h_dim': 64,
+                                                    'spatial_h_dim': 256,
+                                                    'output_h_dim': 64,
+                                                    'weight_decay': 0.0014517707449388,
+                                                    'batch_size': 128,
+                                                    'lr': 0.00071,
+                                                    'dropout': 0.145169206052754,
+                                                    'epochs': 500,
+                                                    'standardize': False,
+                                                    'minmaxnorm': True,
+
+
+                                                    'TE_embedding_dim': 64,
+                                                    'TE_out_h_dim': 64,
+                                                    'TE_concatenation_late': True,
+                                                    'TE_concatenation_early':False,
+
+                                                     
+                                                    'optimizer': 'adamw',
+                                                    'batch_size': 128,
+                                                    'freq': '15min',
+                                                    'H':6,
+                                                    'D':1,
+                                                    'W':0,
+                                                    'unormalize_loss' : True,
+                                                    'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                            'stacked_contextual': False,
+                                                                                            'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                            'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                            'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                            'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                            'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                            'vision_model_name' : None,
+                                                                                            'epsilon_clustering': 0.1,
+                                                                                            'agg_iris_target_n': 100,
+                                                                                            'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                            'attn_kwargs': {
+                                                                                                            'dim_feedforward' : 256,
+                                                                                                            'num_heads' : 4 ,
+                                                                                                            'dim_model' : 64,
+                                                                                                            'keep_topk': False,
+                                                                                                            'nb_layers': 4,
+                                                                                                            'latent_dim': 64,
+                                                                                            
+                                                                                                            }  
+                                                                                            #'H' : ,
+                                                                                            #'D': ,
+                                                                                            #'W': , 
+                                                                                },
+                                                                        },  
+                                                    'denoising_names':['netmob_POIs'],
+                                                    'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                                    'denoising_modes':["train","valid","test"],             # par défaut
+                                                    'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+            },
 # # All Steps RMSE = 39.46, MAE = 22.17, MAPE = 27.51, MSE = 1560.20 _bis1
 # # All Steps RMSE = 38.98, MAE = 21.85, MAPE = 25.98, MSE = 1520.96 _bis2
 # # All Steps RMSE = 38.59, MAE = 21.62, MAPE = 26.14, MSE = 1491.44 _bis3

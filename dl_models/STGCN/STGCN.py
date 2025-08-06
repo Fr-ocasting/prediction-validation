@@ -79,7 +79,7 @@ class STGCN(nn.Module):
                     local_concatenation_late = not(args.contextual_kwargs[key]['stacked_contextual']) 
                     self.concatenation_late = self.concatenation_late or local_concatenation_late
                     if local_concatenation_late:
-                        extracted_feature_dim = extracted_feature_dim + args.contextual_kwargs[key]['out_dim']* args.contextual_kwargs[key]['attn_kwargs']['L_out']
+                        extracted_feature_dim = extracted_feature_dim + args.contextual_kwargs[key]['out_dim'] #* args.contextual_kwargs[key]['attn_kwargs']['L_out']
 
         self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
         # ---- 
