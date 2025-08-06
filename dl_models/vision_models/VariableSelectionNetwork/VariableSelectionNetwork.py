@@ -405,6 +405,12 @@ class MultiHeadAttention(nn.Module):
         nn.init.xavier_uniform_(self.W_v)
 
         self.layer_norm = nn.LayerNorm(self.d_k)
+
+        # ---- Add normalization for query and key/values before Attention ----
+        self.layer_normq = nn.LayerNorm(query_dim)
+        self.layer_normkv = nn.LayerNorm(key_dim)
+        # ----
+
         self.keep_topk = keep_topk  # If True then keep only the top 10% of the attention weights
         self.attention_grad_norms = []
 
@@ -519,16 +525,22 @@ class MultiHeadAttention(nn.Module):
         if self.W_q is not None:
             query,key,values = self.padding_sequence_length(query,key,values)
             # Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
-            Q = self.split_heads(torch.matmul(query,self.W_q))
+            # Q = self.split_heads(torch.matmul(query,self.W_q))
+            Q = self.split_heads(torch.matmul(self.layer_normq(query),self.W_q))
+            
         else:
             # Q = self.layer_norm(self.split_heads(query,is_query=True))
-            Q = self.split_heads(query,is_query=True)
+            # Q = self.split_heads(query,is_query=True)
+            Q = self.split_heads(self.layer_normq(query),is_query=True)
 
-        # K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))       
-        K = self.split_heads(torch.matmul(key,self.W_k))
+    
+        # K = self.split_heads(torch.matmul(key,self.W_k))
+        K = self.split_heads(torch.matmul(self.layer_normkv(key),self.W_k))
+        # K = self.layer_norm(self.split_heads(torch.matmul(key,self.W_k)))   
 
         # V = self.split_heads(torch.matmul(values,self.W_v))
-        V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
+        V = self.split_heads(torch.matmul(self.layer_normkv(values),self.W_v))
+        # V = self.layer_norm(self.split_heads(torch.matmul(values,self.W_v)))
 
 
         # print('Q,K,V after proj: ',Q.size(),K.size(),V.size())

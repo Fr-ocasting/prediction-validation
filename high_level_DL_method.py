@@ -15,9 +15,10 @@ def load_optimizer_and_scheduler(model,args):
     return(optimizer,scheduler,loss_function)
 
 
-def load_everything(args):
+def load_everything(args,folds=None):
     # Load DataSet, DataLoader, Args :
-    folds = [0]
+    if folds is None:
+        folds = [0]
     K_fold_splitter = KFoldSplitter(args,folds)
     K_subway_ds,args = K_fold_splitter.split_k_fold()
     subway_ds = K_subway_ds[0]
@@ -36,10 +37,10 @@ def load_everything(args):
     return(model,subway_ds,loss_function,optimizer,scheduler,args)
 
 
-def evaluate_config(dataset_names,FOLDER_PATH,FILE_NAME,args,coverage,vision_model_name,mod_plot):
+def evaluate_config(args,mod_plot=None,folds_to_evaluate=None):
     # Load Model, Optimizer, Scheduler:
 
-    model,subway_ds,loss_function,optimizer,scheduler,args = load_everything(args)
+    model,subway_ds,loss_function,optimizer,scheduler,args = load_everything(args,folds_to_evaluate)
     normalizer = subway_ds.normalizer
     df_verif_test = subway_ds.tensor_limits_keeper.df_verif_test
     # Load trainer: 
