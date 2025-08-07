@@ -154,6 +154,9 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     config['track_pi'] = False #True
 
+    # --- Keep track on grad through training : 
+    config['track_grad_norm'] = True # True # False  # If True then track the gradient norm of the model through training.
+
     # Validation, K-fold
     config['validation_split_method'] = 'forward_chaining_cv'  # Choices =  ['custom_blocked_cv','forward_chaining_cv']. Design the way we split the data and compute the metrics.
     config['min_fold_size_proportion'] = 0.75 # choice: continuous variable in [0:1]. Set the size of the smallest fold (fold0) as maximum-size - minimum-size*K_fold*min_fold_size_proportion

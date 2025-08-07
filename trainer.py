@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np 
 import time
 from torch.cuda.amp import autocast,GradScaler
+import torch.nn as nn 
 from datetime import datetime
 if torch.cuda.is_available():
    torch.backends.cuda.matmul.allow_tf32 = True
@@ -89,7 +90,6 @@ class Trainer(object):
             self.scaler = GradScaler()
         self.train_loss = []
         self.valid_loss = []
-        self.norm_attn_weight = []
 
         self.args = args
         
@@ -121,6 +121,15 @@ class Trainer(object):
             self.best_model_save_directory = f"{SAVE_DIRECTORY}/{save_folder}/best_models"
         else:
             self.best_model_save_directory = f"{SAVE_DIRECTORY}/best_models"
+
+
+        # --- Keep track on gradient norms:
+        if (not self.args.ray) and (args.track_grad_norm):
+            self.tracked_params_map = self._discover_tracked_params(self.model)
+            self.dict_gradient_norm = {}
+        else:
+            self.tracked_params_map = None
+            self.dict_gradient_norm = None
             
 
 
@@ -391,6 +400,20 @@ class Trainer(object):
             self.chrono.backward()
             loss = self.backpropagation(loss)
 
+
+            if self.tracked_params_map is not None:
+                for name, param in self.tracked_params_map.items():
+                    if param.grad is not None:
+                        try: 
+                            self.dict_gradient_norm[name].append(param.grad.norm().item())
+                        except:
+                            self.dict_gradient_norm[name] = [param.grad.norm().item()]
+                    else:
+                        try: 
+                            self.dict_gradient_norm[name].append(-1.0)
+                        except:
+                            self.dict_gradient_norm[name] = [-1.0]
+
             # print('pred: ', pred.dtype, pred.size())
             # print('y_b: ', y_b.dtype, y_b.size())
             #print(self.loss_function)
@@ -586,6 +609,20 @@ class Trainer(object):
 
                         for metric in metrics.keys():
                             self.gradient_metrics[name][metric].append(metrics[metric])
+
+
+    def _discover_tracked_params(self, model: nn.Module) -> dict:
+        """
+        Traverse the model tree to find parameters marked for tracking.
+        Uses the convention `_tracked_grads_info`.
+        """
+        tracked_params = {}
+        for module_path, module in model.named_modules():
+            if hasattr(module, '_tracked_grads_info'):
+                for param_name, param_obj in module._tracked_grads_info:
+                    full_name = f"{module_path}/{param_name}"
+                    tracked_params[full_name] = param_obj
+        return tracked_params
 
         
 

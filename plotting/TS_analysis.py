@@ -235,7 +235,7 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return layout
 
 
-def plot_TS(list_df_ts,width=400,height=1500,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False,x_datetime = True):
+def plot_TS(list_df_ts,width=1500,height=400,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False,x_datetime = True):
        if x_datetime:
              p = figure(x_axis_type="datetime",title=title,
                             width=width,height=height)

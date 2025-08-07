@@ -300,6 +300,14 @@ class STConvBlock(nn.Module):
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
 
+
+        # --- Gradient we would like to Keep track on:
+        self._tracked_grads_info = [
+                                    ("tmp-conv1", self.tmp_conv1.causal_conv.conv2d.weight),
+                                    ("graph-conv", self.graph_conv.graph_conv.weight),
+                                    ("tmp-conv2", self.tmp_conv2.causal_conv.conv2d.weight)
+        ]
+        # ----
     def forward(self, x):
         '''Inputs: x: [B,C,L,N] 
 
@@ -405,6 +413,7 @@ class OutputBlock(nn.Module):
         self.tc1_ln = nn.LayerNorm([num_nodes, channels[0]])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(p=dropout)
+
 
     def forward_temporal_agg(self,x):
         '''

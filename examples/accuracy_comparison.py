@@ -291,18 +291,18 @@ def plot_gain_between_models_with_temporal_agg(ds,dic_error,stations,temporal_ag
             elif 'working_day_hour' in temporal_aggs or 'weekday_hour_minute' in temporal_aggs:
                 if 'working_day_hour' in temporal_aggs:
                     special_index = temporal_aggs.index('working_day_hour')
-                    height_ratios[special_index] = 5
+                    height_ratios[special_index] = 3
                     coef_y_size = coef_y_size+2
                 if  'weekday_hour_minute' in temporal_aggs:
                     special_index = temporal_aggs.index('weekday_hour_minute')
                     height_ratios[special_index] = 8
-                    coef_y_size = coef_y_size+2
+                    coef_y_size = coef_y_size+3
 
 
-                
-                gridspec_kw={'width_ratios': [3,1],'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
-            else:
                 gridspec_kw = {'width_ratios': [1, 5], 'height_ratios': height_ratios}
+                
+            else:
+                gridspec_kw={'width_ratios': [3,1],'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
             
             fig, axes = plt.subplots(len(temporal_aggs), 2, figsize=(figsize_x,6*len(temporal_aggs)*coef_y_size),gridspec_kw=gridspec_kw)
     

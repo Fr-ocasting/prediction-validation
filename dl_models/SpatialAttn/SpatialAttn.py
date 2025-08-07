@@ -93,6 +93,24 @@ class model(nn.Module):
                                           [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query) for _ in range(nb_layers-2)] + 
                                           [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
 
+
+        # --- Gradient we would like to Keep track on:
+        tracked_grads_info = []
+        for k,mha_layer in enumerate(self.mha_list):
+            if hasattr(mha_layer.mha,'W_q'): 
+                tracked_grads_info.append((f'layer{k}mha_W_q', mha_layer.mha.W_q))
+            tracked_grads_info.extend([
+                (f'layer{k}/LN_q', mha_layer.mha.layer_normq.weight),
+                (f'layer{k}/LN_kv', mha_layer.mha.layer_normkv.weight),
+                (f"layer{k}/mha_W_k", mha_layer.mha.W_k),
+                (f"layer{k}/mha_W_v", mha_layer.mha.W_v),
+                (f'layer{k}/LN_mha', mha_layer.layer_norm.weight),
+                (f"layer{k}/ff_fc1", mha_layer.feedforward[0].weight),
+                (f"layer{k}/ff_fc2", mha_layer.feedforward[2].weight)
+            ])
+        self._tracked_grads_info = tracked_grads_info
+        # ----
+
     def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
         """
         inputs: 

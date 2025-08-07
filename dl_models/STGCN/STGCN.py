@@ -161,6 +161,9 @@ class STGCN(nn.Module):
             #self.silu = nn.SiLU()
             #self.dropout = nn.Dropout(p=args.dropout)
 
+
+
+        
     def init_learnable_adjacency_matrix(self,bool_learnable_adj,num_nodes,k,node_embedding_dim,device,alpha):
         if bool_learnable_adj:
             self.g_constructor = graph_constructor(num_nodes, k, node_embedding_dim, device=device, alpha=alpha, static_feat=None).to(device)     
