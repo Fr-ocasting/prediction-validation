@@ -152,6 +152,7 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
                 args_copy.D = args.contextual_kwargs[dataset_name]['D']
             if 'W' in args.contextual_kwargs[dataset_name].keys():
                 args_copy.W = args.contextual_kwargs[dataset_name]['W']
+            args_copy.contextual_kwargs[dataset_name]['loading_contextual_data'] = True
         ## ---
 
         

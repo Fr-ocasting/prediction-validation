@@ -2,6 +2,7 @@ import sys
 import os 
 import pandas as pd
 import numpy as np
+import torch
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -42,7 +43,15 @@ num_nodes = 40
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True,filename=None,name=NAME,tensor_limits_keeper = None):
     dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename)
     args_DataSet = filter_args(DataSet, args)
-    preprocesed_ds = load_input_and_preprocess(dims = dataset.dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=dataset.raw_values,
+
+    if  hasattr(args,'contextual_kwargs') and (name in args.contextual_kwargs.keys()) and ('use_future_values' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['use_future_values'] and ('loading_contextual_data' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['loading_contextual_data']:
+        data_T = torch.roll(torch.Tensor(dataset.raw_values), shifts=-1, dims=0)
+        print(f">>>>> ICI ON UTILISE LE {name.upper()} IN FUTURE !!!!")
+        print('data_T.size: ',data_T.size())
+    else:
+        data_T = dataset.raw_values
+
+    preprocesed_ds = load_input_and_preprocess(dims = dataset.dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,
                                             coverage_period=coverage_period,name=name,
                                             minmaxnorm=minmaxnorm,standardize=standardize,
                                             tensor_limits_keeper=tensor_limits_keeper)
