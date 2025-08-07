@@ -281,14 +281,30 @@ def plot_gain_between_models_with_temporal_agg(ds,dic_error,stations,temporal_ag
         if len(temporal_aggs) == 1:
             fig, axes = plt.subplots(1, 2, figsize=(figsize_x,6))
         else:
+            # Create a default height of 1 for all rows
+            height_ratios = [1] * len(temporal_aggs)
+            coef_y_size = 1
+
             if temporal_aggs == ['hour','date','weekday']:
                 gridspec_kw={'width_ratios': [1,5],'height_ratios': [4,3,2]}
-            elif 'working_day_hour' in temporal_aggs:
+
+            elif 'working_day_hour' in temporal_aggs or 'weekday_hour_minute' in temporal_aggs:
+                if 'working_day_hour' in temporal_aggs:
+                    special_index = temporal_aggs.index('working_day_hour')
+                    height_ratios[special_index] = 5
+                    coef_y_size = coef_y_size+2
+                if  'weekday_hour_minute' in temporal_aggs:
+                    special_index = temporal_aggs.index('weekday_hour_minute')
+                    height_ratios[special_index] = 8
+                    coef_y_size = coef_y_size+2
+
+
+                
                 gridspec_kw={'width_ratios': [3,1],'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
             else:
-                gridspec_kw={'width_ratios': [1,5],'height_ratios': [1]*len(temporal_aggs)}
+                gridspec_kw = {'width_ratios': [1, 5], 'height_ratios': height_ratios}
             
-            fig, axes = plt.subplots(len(temporal_aggs), 2, figsize=(figsize_x,6*len(temporal_aggs)),gridspec_kw=gridspec_kw)
+            fig, axes = plt.subplots(len(temporal_aggs), 2, figsize=(figsize_x,6*len(temporal_aggs)*coef_y_size),gridspec_kw=gridspec_kw)
     
         for i,temporal_agg in enumerate(temporal_aggs):
             if metric == 'mase':

@@ -160,7 +160,7 @@ def error_along_ts(predict,real,metric,min_flow,normalize):
               error[mask] = 100 * (torch.abs(real[mask] - predict[mask]) / real[mask]) 
               error[mask] = torch.clamp(error[mask], max=100)
 
-       elif metric == 'mae':
+       elif (metric == 'mae') or (metric == 'rmse'):
               err = torch.abs(real[mask] - predict[mask])
               if normalize:
                   err = 100 * err/err.max()
@@ -171,8 +171,9 @@ def error_along_ts(predict,real,metric,min_flow,normalize):
               if normalize:
                   err = 100 * err/err.max()
               error[mask] = err
+
        else:
-              raise NotImplementedError
+              raise NotImplementedError(f"Metric {metric} is not implemented for error_along_ts function.")
        
        return(error)
 

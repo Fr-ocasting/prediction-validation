@@ -477,7 +477,7 @@ class MultiHeadAttention(nn.Module):
         # Keep only 10% of the best attention weights: 
         if self.keep_topk:
             if scaled_compact.size(-1)>10:
-                nb_of_values = 10 #max(10,int(scaled_compact.size(-1)*0.1) )
+                nb_of_values = 10 if self.keep_topk == True else self.keep_topk #max(10,int(scaled_compact.size(-1)*0.1) )
                 _, topk_idx = torch.topk(scaled_compact, nb_of_values, dim=-1) 
                 mask = torch.ones_like(scaled_compact) * (-1e6)  # -inf
                 mask.scatter_(-1, topk_idx, 0)                           # add 0 on the top k 

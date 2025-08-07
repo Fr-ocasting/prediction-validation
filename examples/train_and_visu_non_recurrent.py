@@ -224,7 +224,7 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
 
     if (df_prediction is not None) and (len(df_prediction)==1):
-        p3 = plot_prediction_error(df_true,df_prediction[0],station,metrics =trainer.metrics,title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
+        p3 = plot_prediction_error(df_true,df_prediction[0],station,metrics =['mae','mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
     else:
         p3=None
 

@@ -137,7 +137,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['DA_prop'] = 1 #  SET = 1. SEEMS NOT WORKING  # float: between [0,1]: is the proportion of Data which will be augmented. 
     config['DA_noise_from'] = 'MSTL' # choices: ['MSTL','Homogenous'] Set where the noise amplitude is based from. MSTL is computationaly expensive. Constant set a noise = 1 for every single time-step and spatial-unit.
 
-
     # Config DataSet:
     config['H'] = 6
     config['W'] = 0
