@@ -130,62 +130,174 @@ if __name__ == '__main__':
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
     from examples.benchmark import local_get_args
 
-
     if True:
-        model_name = 'DCRNN' #'CNN'
+        model_name = 'STGCN' #'CNN'
         target_data = 'subway_in'
         dataset_for_coverage = [target_data,'netmob_POIs'] 
-        dataset_names = [target_data,'calendar_embedding']
+        dataset_names = [target_data,'calendar_embedding','netmob_POIs']
         args = local_get_args(model_name,
                             args_init = None,
                             dataset_names=dataset_names,
                             dataset_for_coverage=dataset_for_coverage,
                             modification = {'target_data' :target_data,
                                             'ray':True,
-                                            'grace_period':10,
-                                            'HP_max_epochs':1,#500,
+                                            'grace_period':20,
+                                            'HP_max_epochs':1, #1000, #300,
                                             'K_fold': 2,
                                             'evaluate_complete_ds' : True,
-                                            'vision_model_name': None,
-                                            'stacked_contextual': False, # True # False
+                                            'embedding_calendar_types': ['dayofweek', 'hour'],
 
-                                            # Preprocess
-                                            'standardize': False,
-                                            'minmaxnorm': True,
-                                            'data_augmentation': False, #True,  #False
 
-                                            # Other Module: 
-                                            'need_global_attn' : False, # False # True
-                                            'use_target_as_context': False,
-                                            'temporal_graph_transformer_encoder': False, # False # True
+                                            # Architecture 
+                                            'Kt': 2,
+                                            'stblock_num': 4,
+                                            'Ks': 2,
+                                            'graph_conv_type': 'graph_conv',
+                                            'gso_type': 'sym_renorm_adj',
+                                            'enable_bias': True,
+                                            'adj_type': 'corr',
+                                            'enable_padding': True,
+                                            'threshold': 0.3,
+                                            'act_func': 'glu',
+                                            'temporal_h_dim': 64,
+                                            'spatial_h_dim': 256,
+                                            'output_h_dim': 64,
 
-                                            # Optim
-                                            'optimizer': 'adamw',
+                                            # Optimization
                                             'loss_function_type':'HuberLoss',
-                                            'torch_scheduler': None,
+                                            'optimizer': 'adamw',
                                             'batch_size': 128,
-                                            'step_ahead': 4,
                                             'freq': '15min',
+                                            'weight_decay': 0.0014517707449388,
+                                            'batch_size': 128,
+                                            'lr': 0.00071,
+                                            'dropout': 0.145169206052754,
                                             'H':6,
                                             'D':1,
                                             'W':0,
+                                            'step_ahead': 1,
+                                            'horizon_step' : 1,
+                                            'unormalize_loss' : True,
+                                            'torch_scheduler': None,
 
-                                            # Time Embedding: 
+
+                                            'temporal_graph_transformer_encoder': False, # False # True
+                                            'need_global_attn' : False, # False # True
+                                            'data_augmentation': False, #True,  #False
+                                            'use_target_as_context': False,
+
+
+                                            
+                                            'standardize': False,
+                                            'minmaxnorm': True,
+
                                             'TE_embedding_dim': 64,
                                             'TE_out_h_dim': 64,
-                                            'TE_multi_embedding': True,
-                                            'TE_concatenation_late' : True,
-                                            'TE_concatenation_early' : False,
-                                            'TE_variable_selection_model_name': 'MLP',
-                                            'embedding_calendar_types': ['dayofweek', 'hour'],
+                                            'TE_concatenation_late': True,
+                                            'TE_concatenation_early':False,
 
-                                            })
+                                            'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+                                                                                    'stacked_contextual': False,
+                                                                                    'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+                                                                                    'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+                                                                                    'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+                                                                                    'NetMob_expanded' : '', # '' # '_expanded'
+                                                                                    'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+                                                                                    'vision_model_name' : None,
+                                                                                    'epsilon_clustering': 0.1,
+                                                                                    'agg_iris_target_n': None,
+                                                                                    'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+                                                                                    'attn_kwargs': {
+                                                                                                    'dim_feedforward' : 128,
+                                                                                                    'num_heads' : 4 ,
+                                                                                                    'dim_model' : 64,
+                                                                                                    'keep_topk':30,
+                                                                                                    'nb_layers': 3,
+                                                                                                    'latent_dim': 64,
+                                                                        
+                                                                                                    }  
+                                                                                    #'H' : ,
+                                                                                    #'D': ,
+                                                                                    #'W': , 
+                                                                        },
+                                                                },  
+                                            'denoising_names':['netmob_POIs'],
+                                            'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+                                            'denoising_modes':["train","valid","test"],             # par défaut
+                                            'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
 
-        # Init 
-        epochs_validation =1 # 500
-        num_samples = 2 #300
+                                            'num_workers' : 4, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                                            'persistent_workers' : True ,# False 
+                                            'pin_memory' : True ,# False 
+                                            'prefetch_factor' : 4, # None, 2,3,4,5 ... 
+                                            'drop_last' : False,  # True
+                                            'mixed_precision' : False, # True # False
+                                            #'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace'
+
+                                             })
+
+
+        epochs_validation = 1 #1000
+        num_samples = 1#200
         HP_and_valid_one_config(args,epochs_validation,num_samples)
-        #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
+
+        
+
+    # if True:
+    #     model_name = 'DCRNN' #'CNN'
+    #     target_data = 'subway_in'
+    #     dataset_for_coverage = [target_data,'netmob_POIs'] 
+    #     dataset_names = [target_data,'calendar_embedding']
+    #     args = local_get_args(model_name,
+    #                         args_init = None,
+    #                         dataset_names=dataset_names,
+    #                         dataset_for_coverage=dataset_for_coverage,
+    #                         modification = {'target_data' :target_data,
+    #                                         'ray':True,
+    #                                         'grace_period':10,
+    #                                         'HP_max_epochs':1,#500,
+    #                                         'K_fold': 2,
+    #                                         'evaluate_complete_ds' : True,
+    #                                         'vision_model_name': None,
+    #                                         'stacked_contextual': False, # True # False
+
+    #                                         # Preprocess
+    #                                         'standardize': False,
+    #                                         'minmaxnorm': True,
+    #                                         'data_augmentation': False, #True,  #False
+
+    #                                         # Other Module: 
+    #                                         'need_global_attn' : False, # False # True
+    #                                         'use_target_as_context': False,
+    #                                         'temporal_graph_transformer_encoder': False, # False # True
+
+    #                                         # Optim
+    #                                         'optimizer': 'adamw',
+    #                                         'loss_function_type':'HuberLoss',
+    #                                         'torch_scheduler': None,
+    #                                         'batch_size': 128,
+    #                                         'step_ahead': 4,
+    #                                         'freq': '15min',
+    #                                         'H':6,
+    #                                         'D':1,
+    #                                         'W':0,
+
+    #                                         # Time Embedding: 
+    #                                         'TE_embedding_dim': 64,
+    #                                         'TE_out_h_dim': 64,
+    #                                         'TE_multi_embedding': True,
+    #                                         'TE_concatenation_late' : True,
+    #                                         'TE_concatenation_early' : False,
+    #                                         'TE_variable_selection_model_name': 'MLP',
+    #                                         'embedding_calendar_types': ['dayofweek', 'hour'],
+
+    #                                         })
+
+    #     # Init 
+    #     epochs_validation =1 # 500
+    #     num_samples = 2 #300
+    #     HP_and_valid_one_config(args,epochs_validation,num_samples)
+    #     #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
         
 
 

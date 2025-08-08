@@ -366,10 +366,10 @@ class DataSet(object):
 
 
         
-    def bijection_name_indx(self):
-        colname2indx = {c:k for k,c in enumerate(self.spatial_unit)}
-        indx2colname = {k:c for k,c in enumerate(self.spatial_unit)}
-        return(colname2indx,indx2colname)
+    # def bijection_name_indx(self):
+    #     colname2indx = {c:k for k,c in enumerate(self.spatial_unit)}
+    #     indx2colname = {k:c for k,c in enumerate(self.spatial_unit)}
+    #     return(colname2indx,indx2colname)
     
     def get_shift_from_first_elmt(self):
         shift_week = self.W if self.W is not None else 0

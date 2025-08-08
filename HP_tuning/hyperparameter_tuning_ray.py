@@ -129,6 +129,7 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
     def train_with_tuner(config):
         # Dereference the large objects within the worker
         dataset = ray.get(dataset_ref)
+        # dataset.get_dataloader()
         trainer = load_trainer(config, dataset, args)
         trainer.train_and_valid()  # No plotting, No testing, No unnormalization
 
