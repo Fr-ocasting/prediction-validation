@@ -7,16 +7,6 @@ import pandas as pd
 import warnings
 warnings.simplefilter("error", category=RuntimeWarning)
 
-# === FIXE LA SEED POUR REPRODUCTIBILITÉ ===
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
 # === CHEMIN ET IMPORTS ===
 current_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_path, '..','..'))
@@ -28,6 +18,7 @@ from examples.benchmark import local_get_args
 from high_level_DL_method import load_optimizer_and_scheduler
 from dl_models.full_model import full_model
 from trainer import Trainer
+from utils.rng import set_seed
 
 # === PARAMÈTRES GÉNÉRAUX ===
 SEED = 42

@@ -46,7 +46,8 @@ if __name__ == "__main__":
                 from examples.reproductibility.config_STAEformer_Subway_in_NetMob_calendar import modifications as modifications
 
             if model_name == 'STGCN':
-                from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar import modifications as modifications
+                from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar_h1 import modifications as modifications
+                # from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar import modifications as modifications
         if target_data == 'CRITER_3_4_5_lanes_flow':
             if model_name == 'STGCN':
                 from examples.reproductibility.config_STGCN_CRITER_3_4_5_lanes_flow import modifications as modifications
@@ -56,8 +57,13 @@ if __name__ == "__main__":
 
         import torch._dynamo as dynamo; dynamo.graph_break()
         torch._dynamo.config.verbose=True
-        compilation_modification = {#'epochs' : 1, #100
 
+        SEED = 1
+        modification_init = {}
+        set_seed(SEED)
+
+        compilation_modification = {#'epochs' : 1, #100
+                                    'SEED' : SEED, 
                                     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
                                     'persistent_workers' : True ,# False 
                                     'pin_memory' : True ,# False 
@@ -70,9 +76,7 @@ if __name__ == "__main__":
                                     'device': torch.device('cuda:1')
             }
         
-        SEED = 1
-        modification_init = {}
-        set_seed(SEED)
+
 
 
         log_final  = f"\n--------- Resume ---------\n"

@@ -115,6 +115,9 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
                                     f'/__pycache__/**',  # Exclude python cache
                                     f'/save/**',  #Exclude save folder 
                                     f'/data/**',  #Exclude data folder 
+                                    f'/jupyter_ipynb/**',  #Exclude jupyter notebooks
+                                    '/home/rrochas/prediction-validation/build_inputs/NetMob_POIs.ipynb',
+                                    '/home/rrochas/prediction-validation/cache/**'
                                     ]
                             },
              num_gpus=num_gpus,

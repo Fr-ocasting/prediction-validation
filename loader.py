@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import Dataset,DataLoader
-
+import numpy as np
+import random
 
 
 class calib_prop_splitter(object):
@@ -78,36 +79,59 @@ class CustomDataLoder(object):
         self.SEED = args.SEED if hasattr(args,'SEED') else 1
         # ...
 
+    def seed_worker(self,worker_id):
+        """Initialise la graine aléatoire pour un worker du DataLoader."""
+        worker_seed = torch.initial_seed() % 2**32
+        np.random.seed(worker_seed)
+        random.seed(worker_seed)
+
     def call_dataloader(self,training_mode):
         inputs = CustomDataset(self.U,self.U_target,self.contextual_tensor) 
         # sampler = torch.utils.data.distributed.DistributedSampler(train_dataset,num_replicas=idr_torch.size,rank=idr_torch.rank,shuffle= ...)
 
         try:
-            self.dataloader = DataLoader(inputs, 
-                                        batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
-                                        shuffle = self.shuffle,  # if hasattr, then already shuffled 
-                                        #sampler=sampler,
-                                        num_workers=self.num_workers,
-                                        persistent_workers=self.persistent_workers,
-                                        pin_memory=self.pin_memory,
-                                        prefetch_factor=self.prefetch_factor,
-                                        drop_last=self.drop_last,
-                                        generator=torch.Generator().manual_seed(self.SEED)
-                                        ) 
-        except:
+            # self.dataloader = DataLoader(inputs, 
+            #                             batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
+            #                             shuffle = self.shuffle,  # if hasattr, then already shuffled 
+            #                             #sampler=sampler,
+            #                             num_workers=self.num_workers,
+            #                             persistent_workers=self.persistent_workers,
+            #                             pin_memory=self.pin_memory,
+            #                             drop_last=self.drop_last,
+            #                             generator=torch.Generator().manual_seed(self.SEED),
+            #                             worker_init_fn=self.SEED,
+            #                             prefetch_factor=self.prefetch_factor,
+            #                             ) 
+            
+            g = torch.Generator()
+            g.manual_seed(self.SEED)
 
-            self.dataloader = DataLoader(inputs, 
-                            batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
-                            shuffle = self.shuffle,  # if hasattr, then already shuffled 
-                            #sampler=sampler,
-                            num_workers=self.num_workers,
-                            persistent_workers=self.persistent_workers,
-                            pin_memory=self.pin_memory,
-                            drop_last=self.drop_last,
-                            generator=torch.Generator().manual_seed(self.SEED)
-                            ) 
+            self.dataloader = DataLoader(
+                inputs,
+                batch_size=(self.U.size(0) if training_mode == 'cal' else self.batch_size),
+                shuffle=self.shuffle,
+                num_workers=self.num_workers,
+                persistent_workers=self.persistent_workers,
+                pin_memory=self.pin_memory,
+                drop_last=self.drop_last,
+                generator=g,  # Utiliser le générateur pour un brassage reproductible
+                worker_init_fn=self.seed_worker if self.num_workers > 0 else None, # Utiliser la fonction pour les workers
+            )
             self.exception = True
-    
+        except:
+                self.dataloader = DataLoader(inputs, 
+                                batch_size=(self.U.size(0) if training_mode=='cal' else self.batch_size),  # batch_size
+                                shuffle = self.shuffle,  # if hasattr, then already shuffled 
+                                #sampler=sampler,
+                                num_workers=self.num_workers,
+                                persistent_workers=self.persistent_workers,
+                                pin_memory=self.pin_memory,
+                                drop_last=self.drop_last,
+                                # generator=torch.Generator().manual_seed(self.SEED),
+                                worker_init_fn=self.SEED,
+                                ) 
+                self.exception = True
+
 
 
 class DictDataLoader(object):

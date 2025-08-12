@@ -142,7 +142,7 @@ if __name__ == '__main__':
                             modification = {'target_data' :target_data,
                                             'ray':True,
                                             'grace_period':20,
-                                            'HP_max_epochs':1, #1000, #300,
+                                            'HP_max_epochs':1000, #1000, #300,
                                             'K_fold': 2,
                                             'evaluate_complete_ds' : True,
                                             'embedding_calendar_types': ['dayofweek', 'hour'],
@@ -226,19 +226,19 @@ if __name__ == '__main__':
                                             'denoising_modes':["train","valid","test"],             # par défaut
                                             'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
 
-                                            'num_workers' : 4, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
-                                            'persistent_workers' : True ,# False 
-                                            'pin_memory' : True ,# False 
-                                            'prefetch_factor' : 4, # None, 2,3,4,5 ... 
+                                            'num_workers' : 0, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                                            'persistent_workers' : False ,# True 
+                                            'pin_memory' : False ,# True 
+                                            'prefetch_factor' : None, # 4, # None, 2,3,4,5 ... 
                                             'drop_last' : False,  # True
                                             'mixed_precision' : False, # True # False
-                                            #'torch_compile' : 'compile', # 'compile' # 'jit_script' #'trace'
+                                            'torch_compile' : False,# 'compile', # 'compile' # 'jit_script' #'trace'
 
                                              })
 
 
-        epochs_validation = 1 #1000
-        num_samples = 1#200
+        epochs_validation = 1000 #1000
+        num_samples = 200#200
         HP_and_valid_one_config(args,epochs_validation,num_samples)
 
         
