@@ -29,3 +29,11 @@ for year in range(2021, 2023):
             print(f"Saved {bike_save_path}/{month:02d}_{freq}_emitted.csv")
             print(f"Saved {bike_save_path}/{month:02d}_{freq}_attracted.csv")
             print(f"Saved {bike_save_path}/{month:02d}_{freq}_OD.csv")
+
+
+if __name__ == "__main__":
+    # Load city bike data: 
+    year = 2021
+    month = 1
+    bike_save_path  = f'{SAVE_PATH}/city_bike_{year}'
+    df_test = pd.read_csv(f'{bike_save_path}/{month:02d}_15min_emitted.csv',index_col=0,dtype={0: str} ) 
