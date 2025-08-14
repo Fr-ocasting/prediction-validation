@@ -44,32 +44,6 @@ def replace_heure_d_ete(tensor,start = 1532, end = 1536):
         raise NotImplementedError(f'dim {tensor.dim()} has not been implemented')
     return tensor
 
-"""  # A supprimer ?????
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,contextual_T,dataset=None,df_dates=None):
-
-    print('\nInit contextual_ds Dataset: ', contextual_T.size())
-    print('Number of Nan Value: ',torch.isnan(contextual_T).sum())
-    print('Total Number of Elements: ', contextual_T.numel(),'\n')
-
-    if df_dates is None:
-        df_dates = dataset.df_dates
-
-    contrextual_ds = PersonnalInput(invalid_dates,args, tensor = contextual_T, dates = df_dates,
-                           time_step_per_hour = get_time_step_per_hour(args.time_step_per_hour),
-                           Weeks = args.W, 
-                           Days = args.D, 
-                           historical_len = args.H,
-                           step_ahead = args.step_ahead,
-                           minmaxnorm = args.minmaxnorm,
-                           standardize = args.standardize,
-                           dims =dims,
-                           data_augmentation= args.data_augmentation
-                           )
-    contrextual_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
-
-    return contrextual_ds
-"""
-
 def get_common_dates_between_contextual_and_target(target_ds,contextual_ds,training_mode):
     L_df_verif =  [getattr(target_ds.tensor_limits_keeper,f'df_verif_{training_mode}')] +[getattr(contextual_ds_i.tensor_limits_keeper,f'df_verif_{training_mode}') for _,contextual_ds_i in contextual_ds.items()]
     common_dates = list(set.intersection(*map(set, [df_verif_i.iloc[:,-1] for df_verif_i in L_df_verif])))
