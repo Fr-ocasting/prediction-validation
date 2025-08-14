@@ -10,7 +10,7 @@ if parent_dir not in sys.path:
 
 from dataset import DataSet
 from datetime import datetime 
-from utils.utilities import filter_args,get_time_step_per_hour,restrain_df_to_specific_period
+from utils.utilities import filter_args,get_time_step_per_hour,restrain_df_to_specific_period,remove_outliers_based_on_quantile
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 
 ''' This file has to :
@@ -41,7 +41,7 @@ C = 1
 num_nodes = 40
 
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True,filename=None,name=NAME,tensor_limits_keeper = None):
-    dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename)
+    dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename,name=name)
     args_DataSet = filter_args(DataSet, args)
 
     if  hasattr(args,'contextual_kwargs') and (name in args.contextual_kwargs.keys()) and ('use_future_values' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['use_future_values'] and ('loading_contextual_data' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['loading_contextual_data']:
@@ -67,7 +67,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     return preprocesed_ds
 
 
-def load_DataSet(args,FOLDER_PATH,coverage_period = None,filename=None):
+def load_DataSet(args,FOLDER_PATH,coverage_period = None,filename=None,name = NAME):
     '''Load the dataset. Supposed to coontains pd.DateTime Index as index, and named columns.
     columns has to represent the spatial units.
 
@@ -80,7 +80,9 @@ def load_DataSet(args,FOLDER_PATH,coverage_period = None,filename=None):
     if filename==None:
         filename = FILE_NAME
 
-    df = load_subway_in_df(args,FOLDER_PATH,filename,coverage_period)
+    df = load_subway_in_df(args,FOLDER_PATH,filename=filename,
+                           coverage_period = coverage_period,
+                           name=name)
 
     if (hasattr(args,'set_spatial_units')) and (args.set_spatial_units is not None) :
         print('   Number of Considered Spatial-Unit: ',len(args.set_spatial_units))
@@ -114,23 +116,20 @@ def load_DataSet(args,FOLDER_PATH,coverage_period = None,filename=None):
     return(dataset)
     
 
-def load_subway_in_df(args,FOLDER_PATH,filename,coverage_period):
+def load_subway_in_df(args,FOLDER_PATH,filename,coverage_period,name=NAME):
     
     print(f"   Load data from: /{FOLDER_PATH}/{filename}.csv")
     try:
         df = pd.read_csv(f"{FOLDER_PATH}/{filename}.csv",index_col = 0)
-    except FileNotFoundError:
-        print(f"   ERROR : File {FOLDER_PATH}/{filename}.csv has not been found.")
-        return None
-    except Exception as e:
-        print(f"   ERROR while loading {FOLDER_PATH}/{filename}.csv: {e}")
-        return None
-
+    except:
+        raise FileNotFoundError(f"   ERROR : File {FOLDER_PATH}/{filename}.csv has not been found.")
+    
     df.columns.name = 'Station'
     df.index = pd.to_datetime(df.index)
 
     # Remove ouliers
-    df = remove_outliers(df)
+    df = remove_outliers(df,args,name)
+
 
     if args.freq != FREQ :
         assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
@@ -138,17 +137,15 @@ def load_subway_in_df(args,FOLDER_PATH,filename,coverage_period):
 
     # Temporal Restriction: 
     df = restrain_df_to_specific_period(df,coverage_period)
-
     # Restrain to specific stations:
     df_correspondance = get_trigram_correspondance()
     df_correspondance.sort_values(by = 'Station',inplace = True)
     df = df.rename(columns = {row.Station: row.COD_TRG for _,row in df_correspondance.iterrows()})
     df = df[df_correspondance.COD_TRG]
     # ...
-
     return df
   
-def remove_outliers(df):
+def remove_outliers(df,args,name):
     '''
     Replace the outliers by linear interpolation. Outliers are identified as MaxiMum flow recorded during the 'light festival' in Lyon. 
     It's an atypical event which reach the highest possible flow. Having higher flow on passenger is almost impossible.
@@ -170,6 +167,10 @@ def remove_outliers(df):
 
     # Remplacer les valeurs originales par les interpolées
     df.update(df_interpolated)
+
+    # # remove outliers by quantile filtering. But differenciate according if it's for contextual dataset or target dataset:
+    df = remove_outliers_based_on_quantile(df,args,name)
+
     return df
 
 

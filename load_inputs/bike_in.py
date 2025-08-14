@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 
 # --- Importations personnalisées ---
 from dataset import DataSet, PersonnalInput
-from utils.utilities import filter_args # Assurez-vous que ce chemin est correct
+from utils.utilities import filter_args,remove_outliers_based_on_quantile # Assurez-vous que ce chemin est correct
 from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 # --- Constantes spécifiques à cette donnée ---
 NAME = 'bike_in'
@@ -86,6 +86,15 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
             raise ImportError(f"ERRROR : not any remaining data after temporal filtering on {file_name}.csv.\nPlease check dataset_coverage: {args.dataset_coverage} and dataset_names {args.dataset_names}")
     print(f"   Loaded data: {df_filtered.shape}")
 
+    # Filtering outliers : 
+    df_filtered = remove_outliers_based_on_quantile(df_filtered,args,name)
+    # if hasattr(args,'contextual_kwargs') and name in args.contextual_kwargs.keys() and 'quantile_filter_outliers' in args.contextual_kwargs[name] and args.contextual_kwargs[name]['quantile_filter_outliers'] is not None:
+    #     for c in df_filtered.columns:
+    #         treshold = df_filtered[c].quantile(args.contextual_kwargs[name]['quantile_filter_outliers']).astype(df_filtered[c].dtype)
+    #         df_filtered.loc[df_filtered.loc[:,c] > treshold,c] = treshold
+
+   
+    
     
     # Spatial Agg: 
     if ('agg_iris_target_n' in args.contextual_kwargs[name].keys()) and (args.contextual_kwargs[name]['agg_iris_target_n'] is not None):

@@ -206,6 +206,11 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
         for name_i,contextual_ds_i in contextual_ds.items():
             if hasattr(args,'contextual_kwargs'):
                 kwargs_i = args.contextual_kwargs[name_i]
+                if not 'use_only_for_common_dates' in kwargs_i.keys():
+                    kwargs_i['use_only_for_common_dates'] = False
+                if not 'vision_model_name' in kwargs_i.keys():
+                    kwargs_i['vision_model_name'] = None
+                
 
             # --- Just to correspond with old version: 
             else:

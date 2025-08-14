@@ -419,24 +419,29 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
         station_i = list(ds1.spatial_unit).index(station)
         p = plot_profile_comparison_between_2_prediction(args_init1,full_predict1,full_predict2,real,ds1,station_i,station, width=900, height=400, bool_plot = True)
 
-    for L_metric in [[metric] for metric in metric_list]:
-        print(f'\nModel: {args_init1.model_name}')
-        for daily_period in ['morning_peak','evening_peak','all_day']:
-            print(daily_period)
-            for metric in L_metric: 
-                print(' ',metric.upper())
-                if metric == 'rmse':
-                    metric_i = 'mse'
-                else:
-                    metric_i = metric
-                error1_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred1_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
-                error2_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred2_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
-                if metric == 'rmse':
-                    error1_per_h = [np.sqrt(x) for x in error1_per_h]
-                    error2_per_h = [np.sqrt(x) for x in error2_per_h]
 
-                print('   Model 1: ',error1_per_h)
-                print('   Model 2: ',error2_per_h)
+    # Display some informations: 
+    h0 = list(dic_error_agg_h.keys())[0]
+    metric0 = list(dic_error_agg_h[h0].keys())[0]
+    if 'daily_period' in dic_error_agg_h[h0][metric0].keys():
+        for L_metric in [[metric] for metric in metric_list]:
+            print(f'\nModel: {args_init1.model_name}')
+            for daily_period in ['morning_peak','evening_peak','all_day']:
+                print(daily_period)
+                for metric in L_metric: 
+                    print(' ',metric.upper())
+                    if metric == 'rmse':
+                        metric_i = 'mse'
+                    else:
+                        metric_i = metric
+                    error1_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred1_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
+                    error2_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred2_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
+                    if metric == 'rmse':
+                        error1_per_h = [np.sqrt(x) for x in error1_per_h]
+                        error2_per_h = [np.sqrt(x) for x in error2_per_h]
+
+                    print('   Model 1: ',error1_per_h)
+                    print('   Model 2: ',error2_per_h)
 
 
 

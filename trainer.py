@@ -124,7 +124,7 @@ class Trainer(object):
 
 
         # --- Keep track on gradient norms:
-        if (not self.args.ray) and (args.track_grad_norm):
+        if (not self.args.ray) and hasattr(args,'track_grad_norm') and (args.track_grad_norm):
             self.tracked_params_map = self._discover_tracked_params(self.model)
             self.dict_gradient_norm = {}
         else:

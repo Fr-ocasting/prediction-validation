@@ -18,6 +18,23 @@ def restrain_df_to_specific_period(df,coverage_period):
     df = df.sort_index()
     return df
 
+
+def remove_outliers_based_on_quantile(df,args,name):
+    condition_contextual_quantile_order = hasattr(args,'contextual_kwargs') and name in args.contextual_kwargs.keys() and  'quantile_filter_outliers' in args.contextual_kwargs[name] and args.contextual_kwargs[name]['quantile_filter_outliers'] is not None
+    condition_tackling_contextual = hasattr(args,'contextual_kwargs') and name in args.contextual_kwargs.keys() and ('loading_contextual_data' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['loading_contextual_data']
+    condition_target_quantile_order = hasattr(args,'target_kwargs') and name in args.target_kwargs.keys() and  'quantile_filter_outliers' in args.target_kwargs[name] and args.target_kwargs[name]['quantile_filter_outliers'] is not None 
+
+    if condition_contextual_quantile_order and condition_tackling_contextual :
+        for c in df.columns:
+            treshold = df[c].quantile(args.contextual_kwargs[name]['quantile_filter_outliers']).astype(df[c].dtype)
+            df.loc[df.loc[:,c] > treshold,c] = treshold
+    if condition_target_quantile_order and not(condition_tackling_contextual):
+
+        for c in df.columns:
+            treshold = df[c].quantile(args.target_kwargs[name]['quantile_filter_outliers']).astype(df[c].dtype)
+            df.loc[df.loc[:,c] > treshold,c] = treshold
+    return df
+
 def load_inputs_from_dataloader(dataloader,device):
         inputs_i = [[x,y,x_c] for  x,y,x_c  in dataloader]
         X = torch.cat([x for x,_,_ in inputs_i]).to(device)

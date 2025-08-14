@@ -85,7 +85,7 @@ class TensorLimitsKeeper(object):
 
     def get_raw_tensor_input_by_training_mode(self,dataset,training_mode):
         if getattr(self,f"{training_mode}_prop") > 1e-3:
-        
+
             if hasattr(dataset.args, "denoising_names") and hasattr(dataset.args,'denoising_modes') and ((dataset.name in dataset.args.denoising_names) & (training_mode in dataset.args.denoising_modes)):
                 raw_value_i = torch.index_select(dataset.raw_values,0,torch.tensor(getattr(self,f"{training_mode}_indices"),dtype=torch.long))
                 denoise_mgr = DenoisingManager(

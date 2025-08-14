@@ -46,8 +46,8 @@ if __name__ == "__main__":
                 from examples.reproductibility.config_STAEformer_Subway_in_NetMob_calendar import modifications as modifications
 
             if model_name == 'STGCN':
-                from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar_h1 import modifications as modifications
-                # from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar import modifications as modifications
+                # from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar_h1 import modifications as modifications
+                from examples.reproductibility.config_STGCN_Subway_in_NetMob_calendar import modifications as modifications
         if target_data == 'CRITER_3_4_5_lanes_flow':
             if model_name == 'STGCN':
                 from examples.reproductibility.config_STGCN_CRITER_3_4_5_lanes_flow import modifications as modifications
