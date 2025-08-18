@@ -165,8 +165,8 @@ possible_contextual_kwargs = {'subway_out': {'need_global_attn':True,
 modifications_new = {}
 for target_data in ['subway_out']:
     for horizon in [1,2,3,4]:
-        for contextual_dataset_names in [ ['subway_in','bike_in'],['subway_in'],['bike_in'],[] ]: 
-            for n_bis in range(1,6):
+        for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['bike_in','bike_out'],['bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[] ]: 
+            for n_bis in range(1,2): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar_embedding']
                 name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,

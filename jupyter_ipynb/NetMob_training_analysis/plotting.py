@@ -11,12 +11,11 @@ from bokeh.resources import CDN
 from bokeh.io import reset_output,show, output_file, save,output_notebook
 
 
-def plot_boxplot_on_metric(df,metric_i='mse',save_path=f"MSE_distribution_per_app_and_per_fold.html"):
+def plot_boxplot_on_metric(df,metric_i='mse',xaxis_label = "App", legend_group = 'fold', width=1200, height=400,save_path=f"MSE_distribution_per_app_and_per_fold.html"):
     sdf = df.groupby("id")[metric_i].mean().sort_values()
     sdf_ids = sdf.index.tolist()
 
-    if not 'fold_str' in df.columns: 
-        df["fold_str"] = df["fold"].astype(str)
+    df[f"{legend_group}_str"] = df[legend_group].astype(str)
 
     grp = df.groupby("id")[metric_i]
     q1 = grp.quantile(0.25)
@@ -40,8 +39,8 @@ def plot_boxplot_on_metric(df,metric_i='mse',save_path=f"MSE_distribution_per_ap
 
     p = figure(
         x_range=sdf_ids, #sorted(df["id"].unique()),
-        width=1200, height=400,
-        title=f"{metric_i} distribution per app and per folds"
+        width=width, height=height,
+        title=f"{metric_i} distribution per {xaxis_label} and per {legend_group}"
     )
     box_width = 0.2
 
@@ -51,20 +50,20 @@ def plot_boxplot_on_metric(df,metric_i='mse',save_path=f"MSE_distribution_per_ap
     p.vbar("id", box_width, "q1", "median_v", source=source_box, line_width=2,fill_color = 'grey',fill_alpha = 0.3,line_color = 'black')
     #p.rect("id","median_v", box_width, 0, source=source_box)
 
-    palette = Category10[len(df["fold_str"].unique())]
+    palette = Category10[len(df[f"{legend_group}_str"].unique())]
     p.circle(
         x="id", y=metric_i,
         source=source_points,
         size=7,
         line_color="black",
-        fill_color=factor_cmap("fold_str", palette=palette, factors=df["fold_str"].unique()),
-        legend_group="fold_str"
+        fill_color=factor_cmap(f"{legend_group}_str", palette=palette, factors=df[f"{legend_group}_str"].unique()),
+        legend_group=f"{legend_group}_str"
     )
 
-    p.xaxis.axis_label = "App"
+    p.xaxis.axis_label = xaxis_label 
     p.yaxis.axis_label = metric_i
     p.xaxis.major_label_orientation = np.pi/2
-    p.legend.title = "Fold"
+    p.legend.title = legend_group
     output_notebook()
     show(p)
 
