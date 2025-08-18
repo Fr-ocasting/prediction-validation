@@ -836,6 +836,47 @@ def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
         df_error_pred2_agg.update({column:error_pred2_agg[column]})
     return df_gain21,df_error_pred1_agg,df_error_pred2_agg
 
+
+
+
+def set_attention_weights_agregated_per_daily_period(gdf,NetMob_attn_weights, 
+                                                     station_i,head, mask, agg_iris_target_n,
+                                                     dict_agg2label,list_correspondence):
+    if agg_iris_target_n is None:
+        agg_iris_target_n = len(gdf)
+    gdf_copy = gdf.copy()
+    for channel_spatial_unit in range(NetMob_attn_weights.size(-1)):
+        init_labels = dict_agg2label[channel_spatial_unit]
+        list_range = [range(k*agg_iris_target_n,(k+1)*agg_iris_target_n) for k in range(len(list_correspondence))]
+        is_associated_to_an_unique_app = [all([label in range_agg_iris_target_n for label in init_labels]) for range_agg_iris_target_n in list_range]
+
+        # If it's associated to an unique app: 
+        assert sum(is_associated_to_an_unique_app) < 2, 'Issue with the discretisation'
+        if sum(is_associated_to_an_unique_app) > 0:
+            # Attention weight at head 'head' and station 'station_i'.  
+            attn_weight_head_i = NetMob_attn_weights[:,head,station_i,:]  # [T,n_head,N,channel_spatial_units] -> [T,channel_spatial_units]
+
+            # Fin the associated app: 
+            app_tag_mode = list_correspondence[np.where(np.array(is_associated_to_an_unique_app) == True)[0][0]]
+
+            # Find the associated zones 
+            reduced_init_labels = [init_labels[i]%agg_iris_target_n for i in range(len(init_labels))]
+
+            # Specifie daily period (morning peak on working day ...) :
+            attn_weight_head_i = torch.index_select(attn_weight_head_i.detach().cpu(),0, torch.tensor(mask).long())
+
+            # Add the attention weights to the gdf:
+            gdf_copy.loc[reduced_init_labels,app_tag_mode] = attn_weight_head_i.mean(0)[channel_spatial_unit].detach().cpu()
+            gdf_copy.loc[reduced_init_labels,f'{app_tag_mode}_channel_spatial'] = channel_spatial_unit
+        else:
+            if len(list_correspondence) == 2:
+                app_tag_mode = list_correspondence
+                print('mix of apps: ',init_labels)
+            else:
+                raise NotImplementedError
+    return gdf_copy
+
+
 if __name__ == '__main__':
     # Exemple with 'plot_coverage_matshow':
     range_dates = pd.date_range(start= "2019-9-30",end="2021-5-31",freq = '7D')
@@ -844,3 +885,4 @@ if __name__ == '__main__':
     plot_coverage_matshow(data, log  = False, cmap = 'YlOrRd')
 
     
+

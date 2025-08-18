@@ -3,6 +3,11 @@ import pandas as pd
 import datetime 
 import torch
 
+def is_morning(predicted_dates_h):
+    return (predicted_dates_h.dt.time >= datetime.time(7, 00)) & (predicted_dates_h.dt.time <= datetime.time(11, 30))
+
+def is_evening(predicted_dates_h):
+    return (predicted_dates_h.dt.time >= datetime.time(16, 00)) & (predicted_dates_h.dt.time <= datetime.time(20, 00))
 
 def is_morning_peak(predicted_dates_h):
     return (predicted_dates_h.dt.time >= datetime.time(7, 30)) & (predicted_dates_h.dt.time <= datetime.time(9, 00))
