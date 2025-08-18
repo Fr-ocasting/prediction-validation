@@ -3,17 +3,17 @@ import pandas as pd
 import datetime 
 import torch
 
-def is_morning(predicted_dates_h):
-    return (predicted_dates_h.dt.time >= datetime.time(7, 00)) & (predicted_dates_h.dt.time <= datetime.time(11, 30))
+def is_morning(predicted_dates_h,start = datetime.time(7, 00), end=datetime.time(11, 30)):
+    return (predicted_dates_h.dt.time >= start) & (predicted_dates_h.dt.time <= end)
 
-def is_evening(predicted_dates_h):
-    return (predicted_dates_h.dt.time >= datetime.time(16, 00)) & (predicted_dates_h.dt.time <= datetime.time(20, 00))
+def is_evening(predicted_dates_h, start = datetime.time(16, 00), end=datetime.time(20, 00)):
+    return (predicted_dates_h.dt.time >= start) & (predicted_dates_h.dt.time <= end)
 
-def is_morning_peak(predicted_dates_h):
-    return (predicted_dates_h.dt.time >= datetime.time(7, 30)) & (predicted_dates_h.dt.time <= datetime.time(9, 00))
+def is_morning_peak(predicted_dates_h, start = datetime.time(7, 30), end=datetime.time(9, 00)):
+    return (predicted_dates_h.dt.time >= start) & (predicted_dates_h.dt.time <= end)
 
-def is_evening_peak(predicted_dates_h):
-    return (predicted_dates_h.dt.time >= datetime.time(17, 00)) & (predicted_dates_h.dt.time <= datetime.time(19, 00))
+def is_evening_peak(predicted_dates_h, start = datetime.time(17, 00), end=datetime.time(19, 00)):
+    return (predicted_dates_h.dt.time >= start) & (predicted_dates_h.dt.time <= end)
 
 def is_weekday(predicted_dates_h):
     return (predicted_dates_h.dt.dayofweek < 5)
