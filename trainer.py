@@ -623,6 +623,153 @@ class Trainer(object):
                     full_name = f"{module_path}/{param_name}"
                     tracked_params[full_name] = param_obj
         return tracked_params
+    
+    def transfer_weights_from(self, source_trainer, modules_to_transfer=None, freeze_transferred=True, List_not_freezing = []):
+        """
+        Transfers weights from a source (trained) trainer to this (initialized) trainer.
 
+        This method identifies matching layers between the source and destination models
+        and copies the weights. It can handle partial transfers and optionally freeze
+        the layers that received the transferred weights.
+
+        Args:
+            source_trainer (Trainer): The trainer instance containing the pre-trained model.
+            modules_to_transfer (list, optional): A list of strings specifying which top-level
+                modules to transfer weights from. If None, it will try to transfer all possible
+                weights. Example: ['te', 'core_model']. Defaults to None.
+            freeze_transferred (bool, optional): If True, all parameters that have been
+                successfully transferred will be frozen (i.e., their `requires_grad` attribute
+                will be set to False). Defaults to True.
+        """
+
+        # --- Get State Dictionaries ---
+        source_model = getattr(source_trainer.model, '_orig_mod', source_trainer.model)
+        source_state_dict = source_model.state_dict()
         
+        dest_model = self.model
+        dest_state_dict = dest_model.state_dict()
 
+        transferred_keys = set()
+        mismatched_keys = []
+        newly_initialized_keys = []
+
+        # --- Transfer Weights ---
+        for name, param in dest_state_dict.items():
+            # Check if the module is in the allowed list, if provided
+            if modules_to_transfer and not any(name.startswith(mod + '.') for mod in modules_to_transfer):
+                continue
+
+            if name in source_state_dict:
+                source_param = source_state_dict[name]
+                if param.shape == source_param.shape:
+                    # Copy the weights
+                    param.copy_(source_param)
+                    transferred_keys.add(name)
+                else:
+                    mismatched_keys.append({
+                        "name": name,
+                        "dest_shape": param.shape,
+                        "source_shape": source_param.shape
+                    })
+            else:
+                newly_initialized_keys.append(name)
+
+
+        # --- Freeze Transferred Weights (Optional) ---
+        frozen_keys = set()
+        if freeze_transferred:
+            frozen_count = 0
+            for name, param in dest_model.named_parameters():
+                if (name in transferred_keys) and not (sum([layer in name for layer in  List_not_freezing]) > 0):
+                    param.requires_grad = False
+                    frozen_keys.add(name)
+                    frozen_count += 1
+            print(f"{frozen_count} layers have been frozen.")
+
+        # --- 4. Report Summary ---
+        print("\n--- Transfer Summary ---")
+        print(f"Kept {len(newly_initialized_keys)} layers to train.")
+        if mismatched_keys:
+            print(f"Found {len(mismatched_keys)} layers with mismatched shapes (weights not transferred):")
+            for key_info in mismatched_keys:
+                print(f"  - {key_info['name']}: Dest: {key_info['dest_shape']} vs Source: {key_info['source_shape']}")
+        print("------------------------\n")
+
+        # --- 5. Print Model Structure with Colors ---
+
+        print("Model structure after transfer:\n")
+        print("- Blue:  All parameters in the module were transferred AND are frozen\n",
+        "- Green:  All parameters in the module were transferred AND are NOT frozen\n",
+        "- Yellow: Some, but not all, parameters were transferred\n",
+        "- White: No parameters were transferred\n")
+        self._print_model_structure_with_transfer_status(dest_model, transferred_keys,frozen_keys)
+
+
+    def _print_model_structure_with_transfer_status(self, model, transferred_params_names, frozen_params_names, prefix=''):
+        """
+        Recursively prints the model architecture, coloring modules based on their weight
+        transfer and freeze status using native ANSI escape codes.
+
+        Color description is detailed above in the last print.
+
+        Args:
+            model (nn.Module): The model or module to print.
+            transferred_params_names (set): A set of full parameter names that were transferred.
+            frozen_params_names (set): A set of full parameter names that are frozen.
+            prefix (str): The current prefix for parameter names, used in recursion.
+        """
+
+        # ANSI color codes
+        COLORS = {
+            'blue': '\033[94m',   # Frozen & Transferred
+            'green': '\033[92m',  # Not Frozen & Transferred
+            'yellow': '\033[93m', # Partially Transferred
+            'reset': '\033[0m'
+        }
+
+        for name, module in model.named_children():
+            full_prefix = f"{prefix}{name}."
+            
+            # Get all parameter names for this module and its submodules
+            module_params = {f"{full_prefix}{p_name}" for p_name, _ in module.named_parameters()}
+            
+            color_code = ''
+            reset_code = ''
+
+            if module_params:
+                # Evaluate the status of this specific module
+                transferred_in_module = module_params.intersection(transferred_params_names)
+                frozen_in_module = module_params.intersection(frozen_params_names)
+                
+                num_params = len(module_params)
+                num_transferred = len(transferred_in_module)
+                num_frozen = len(frozen_in_module)
+
+                if num_transferred == 0:
+                    pass # Default: white
+                elif num_transferred < num_params:
+                    color_code = COLORS['yellow'] # Partially transferred
+                else: # Fully transferred
+                    if num_frozen == num_params:
+                        color_code = COLORS['blue'] # Fully frozen
+                    else:
+                        color_code = COLORS['green'] # Not fully frozen (or not at all)
+            
+            if color_code:
+                reset_code = COLORS['reset']
+
+            # --- Printing Logic ---
+            # Get the first line of the module's string representation to print as a header
+            module_repr_first_line = str(module).split('\n')[0]
+            print(f"{color_code}{prefix}({name}): {module_repr_first_line}{reset_code}")
+
+            # If the module is a container (has children), recurse into it
+            if list(module.children()):
+                self._print_model_structure_with_transfer_status(
+                    module, transferred_params_names, frozen_params_names, full_prefix
+                )
+            # If it's a "leaf" module (like Linear, Conv2d), print the rest of its details
+            else:
+                rest_of_lines = str(module).split('\n')[1:]
+                for line in rest_of_lines:
+                    print(f"{color_code}{prefix}  {line}{reset_code}")

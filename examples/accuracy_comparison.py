@@ -663,11 +663,11 @@ if __name__ == '__main__':
     SAVE_DIRECTORY = f"../{SAVE_DIRECTORY}"
 
     for horizon in range(1,5):
-        trial_id1 = f'subway_out_calendar_embedding_h{horizon}_bis'
-        for contextual_datasets in ['subway_in_bike_in_calendar_embedding',
-                                    'subway_in_calendar_embedding',
-                                    'bike_in_calendar_embedding'
-                                    ]:
+        # trial_id1 = f'subway_out_calendar_embedding_h{horizon}_bis'
+        trial_id1 = f'subway_out_subway_in_calendar_embedding_h{horizon}_bis'
+        
+        # for contextual_datasets in ['subway_in_bike_in_calendar_embedding', 'subway_in_calendar_embedding','bike_in_calendar_embedding']:
+        for contextual_datasets in ['subway_in_bike_in_calendar_embedding']:
             trial_id2 = f'subway_out_{contextual_datasets}_h{horizon}_bis'
 
 
@@ -678,7 +678,7 @@ if __name__ == '__main__':
             model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
 
             INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models"
-            save_path = f"{INIT_SAVE_PATH}/{trial_id2}"
+            save_path = f"{INIT_SAVE_PATH}/ref_{trial_id1}_compared_to_{trial_id2}"
 
             modification = {'shuffle':False,
                         'data_augmentation':False,
