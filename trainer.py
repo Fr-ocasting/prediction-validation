@@ -643,10 +643,19 @@ class Trainer(object):
         """
 
         # --- Get State Dictionaries ---
-        source_model = getattr(source_trainer.model, '_orig_mod', source_trainer.model)
+        if hasattr(source_trainer.model,'_orig_mod'):
+            source_model = getattr(source_trainer.model, '_orig_mod', source_trainer.model)
+        else:
+            source_model = source_trainer.model
+        if hasattr(self.model, '_orig_mod'):
+            dest_model = getattr(self.model, '_orig_mod', self.model)
+        else:
+            dest_model = self.model
+
+
         source_state_dict = source_model.state_dict()
         
-        dest_model = self.model
+        
         dest_state_dict = dest_model.state_dict()
 
         transferred_keys = set()

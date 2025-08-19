@@ -596,7 +596,8 @@ def get_calendar_mask(s_dates,temporal_group = 'morning_peak',city=None):
         
 def plot_attn_weights(NetMob_attn_weights,s_dates,
                       #weekdays,hours,
-                      spatial_unit,city = None):
+                      spatial_unit,city = None,
+                      vmax_coeff = 3):
     # ----- Find Indices related to specifics period of the days: 
 
     # Find the indices of the hours between 7 and 10 on torch tensor
@@ -610,7 +611,7 @@ def plot_attn_weights(NetMob_attn_weights,s_dates,
 
     uniform_weight = 1/NetMob_attn_weights.size(-1)
     vmin = 0
-    vmax = min(1,uniform_weight*3)
+    vmax = min(1,uniform_weight*vmax_coeff)
 
 
     for head in range(NetMob_attn_weights.size(1)):
