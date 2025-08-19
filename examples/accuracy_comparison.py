@@ -7,11 +7,19 @@ import torch
 import pickle
 import numpy as np 
 import re
-# Get Parent folder : 
+from bokeh.models import ColumnDataSource
+from bokeh.palettes import Blues9,Reds9, Greens9
+from bokeh.palettes import Plasma256 
+from bokeh.palettes import Turbo256 as palette
+import itertools
+
+
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
+
+# Personnal Import 
 from calendar_class import is_morning_peak,is_evening_peak,is_weekday
 from examples.load_best_config import load_trainer_ds_from_saved_trial
 from plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
@@ -22,13 +30,7 @@ import torch
 from bokeh.plotting import figure, show,output_notebook
 from bokeh.models import Legend,DatetimeTickFormatter
 from bokeh.layouts import row,column
-from calendar_class import is_bank_holidays
-
-# Personnal imports: 
-from bokeh.models import ColumnDataSource
-from bokeh.palettes import Blues9,Reds9, Greens9
-from bokeh.palettes import Plasma256 
-from bokeh.palettes import Turbo256 as palette
+from calendar_class import is_bank_holidays 
 
 ##### ==================================================
 
@@ -258,104 +260,89 @@ def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx):
     return previous,predict1,predict2,real
 
 
-def plot_gain_between_models_with_temporal_agg(ds,dic_error,stations,temporal_aggs,training_mode,metrics,step_ahead):
-    """
-    Plot the gain between two models for different temporal aggregations.
-    Args:
-        ds (Dataset): Dataset containing the data.
-        dic_error (dict): Dictionary containing error metrics.
-        stations (list): List of stations to consider.
-        temporal_aggs (list): List of temporal aggregations to consider :
-            >>>> choices = ['hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour']
-        training_mode (str): Mode for training, e.g., 'train', 'val', 'test'.
-        metrics (list): List of metrics to compute gains for.
-        step_ahead (int): Step ahead for predictions.
-    Returns:
-        dic_gain_agg (dict): Dictionary containing gain values for each metric and temporal aggregation.
-        heatmap plot for each metric and temporal aggregation.
-    """
-    figsize_x = max(8,0.7*len(stations))
-    dic_gain_agg = {metric : {} for metric in metrics}
-    dic_error_agg  = {metric : {} for metric in metrics}
-    for metric in metrics:
-        if len(temporal_aggs) == 1:
-            fig, axes = plt.subplots(1, 2, figsize=(figsize_x,6))
-        else:
-            # Create a default height of 1 for all rows
-            height_ratios = [1] * len(temporal_aggs)
-            coef_y_size = 1
 
-            if temporal_aggs == ['hour','date','weekday']:
-                gridspec_kw={'width_ratios': [1,5],'height_ratios': [4,3,2]}
+def display_information_related_to_comparison(dic_error_agg_h,args_init1,metric_list,spatial_unit,step_ahead_max):
+    h0 = list(dic_error_agg_h.keys())[0]
+    metric0 = list(dic_error_agg_h[h0].keys())[0]
+    if 'daily_period' in dic_error_agg_h[h0][metric0].keys():
+        for L_metric in [[metric] for metric in metric_list]:
+            print(f'\nModel: {args_init1.model_name}')
+            for daily_period in ['morning_peak','evening_peak','all_day']:
+                print(daily_period)
+                for metric in L_metric: 
+                    print(' ',metric.upper())
+                    if metric == 'rmse':
+                        metric_i = 'mse'
+                    else:
+                        metric_i = metric
+                    error1_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred1_agg'][station][daily_period] for station in spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
+                    error2_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred2_agg'][station][daily_period] for station in spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
+                    if metric == 'rmse':
+                        error1_per_h = [np.sqrt(x) for x in error1_per_h]
+                        error2_per_h = [np.sqrt(x) for x in error2_per_h]
 
-            elif 'working_day_hour' in temporal_aggs or 'weekday_hour_minute' in temporal_aggs:
-                if 'working_day_hour' in temporal_aggs:
-                    special_index = temporal_aggs.index('working_day_hour')
-                    height_ratios[special_index] = 3
-                    coef_y_size = coef_y_size+2
-                if  'weekday_hour_minute' in temporal_aggs:
-                    special_index = temporal_aggs.index('weekday_hour_minute')
-                    height_ratios[special_index] = 8
-                    coef_y_size = coef_y_size+3
+                    print('   Model 1: ',error1_per_h)
+                    print('   Model 2: ',error2_per_h)
 
 
-                gridspec_kw = {'width_ratios': [1, 5], 'height_ratios': height_ratios}
-                
-            else:
-                gridspec_kw={'width_ratios': [3,1],'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
-            
-            fig, axes = plt.subplots(len(temporal_aggs), 2, figsize=(figsize_x,6*len(temporal_aggs)*coef_y_size),gridspec_kw=gridspec_kw)
+def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,min_flow,stations,training_mode,metric_list,clustered_stations,
+                        save_path=None,
+                        bool_plot = True):
+    # Get previous and predictions
+    previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
+
+    # Plotting
+    dic_gain,dic_error = get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
+
+    comparisonplotter = ComparisonPlotter(figsize_x=10,clustered_stations=clustered_stations)
+    dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,save_path=save_path,bool_plot = bool_plot)
+    dic_error_agg_h[step_ahead] = dic_error_agg
+
+    return dic_error_agg_h,real
+
+
+
+def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
+                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,clustered_stations = None,bool_plot = True,save_path=None):
     
-        for i,temporal_agg in enumerate(temporal_aggs):
-            if metric == 'mase':
-                df_gain21,error_pred1_agg,error_pred2_agg = get_df_mase_and_gains(ds,dic_error,training_mode,temporal_agg,stations)
-            else:
-                df_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg,stations)
-            ### --- AGG All sations  
-            if len(temporal_aggs) == 1:
-                plt.sca(axes[0])
-            else:
-                plt.sca(axes[i,0])
-            plot_coverage_matshow(pd.DataFrame(pd.DataFrame(df_gain21).mean(axis=1)),cmap = 'RdYlBu', save=None, 
-                                cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-10,v_max=10,display_values = True)
-            title = f"Average {metric.upper()} Gain(%) per {temporal_agg} of \nModel2 compared to Model1 at horizon {step_ahead}"
-           
-            if len(temporal_aggs) == 1:
-                axes[0].set_title(f"{title}\nAggregated through stations")
-            else:
-                axes[i,0].set_title(f"{title}\nAggregated through stations")
-            ## ...
+    step_ahead_max = args_init1.step_ahead
+    print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1)
+    dic_error_agg_h = {}
 
-            ### --- Per station 
-            if len(temporal_aggs) == 1:
-                plt.sca(axes[1])
-            else:
-                plt.sca(axes[i,1])
-            plot_coverage_matshow(pd.DataFrame(df_gain21),cmap = 'RdYlBu', save=None, 
-                                cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-20,v_max=20,display_values = False)
-            if len(temporal_aggs) == 1:
-                axes[1].set_title(title)
-            else:
-                axes[i,1].set_title(title) 
-            dic_gain_agg[metric][temporal_agg] = df_gain21
-            dic_error_agg[metric][temporal_agg] = {'error_pred1_agg': error_pred1_agg, 'error_pred2_agg': error_pred2_agg}
+    # -- Comparison plotting for each horizon : 
+    for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
+        h_idx = step_ahead// args_init1.horizon_step
+        dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,min_flow,stations,training_mode,
+                                                   metric_list,clustered_stations,
+                                                   save_path=f"{save_path}_h{step_ahead}",
+                                                   bool_plot = bool_plot)
+    # --
 
-            ## ...
-    return dic_gain_agg,dic_error_agg
+    # -- Plot Temporal profil if needed : 
+    if station is not None:
+        station_i = list(ds1.spatial_unit).index(station)
+        p = plot_profile_comparison_between_2_prediction(args_init1,full_predict1,full_predict2,real,ds1,station_i,station, width=900, height=400, bool_plot = bool_plot)
+    # --
 
-def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,path_model_args):
+
+    # -- Display some informations: 
+    display_information_related_to_comparison(dic_error_agg_h,args_init1,metric_list,ds1.spatial_unit,step_ahead_max)
+    # --
+
+
+def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,path_model_args,ds1_init=None,ds2_init = None,args_init1 = None, args_init2 = None):
     """
     Load trainer and dataset from two trials.
     Will be used to compare the two models.
     """
     args = model_args['model'][trial_id1]['args']
     model_save_path = f"{path_model_args}/{trial_id1}.pkl"
-    trainer1, ds1, args_init1 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification)
+    trainer1, ds1, args_init1 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init=ds1_init,args_init = args_init1)
 
 
     args = model_args['model'][trial_id2]['args']
     model_save_path = f"{path_model_args}/{trial_id2}.pkl"
-    trainer2, ds2, args_init2 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification)
+    trainer2, ds2, args_init2 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init = ds2_init,args_init=args_init2)
     return trainer1,trainer2,ds1,ds2,args_init1,args_init2 
 
 
@@ -396,55 +383,6 @@ def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1
 
 
 
-def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None):
-    
-    step_ahead_max = args_init1.step_ahead
-    print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1)
-    dic_error_agg_h = {}
-
-    # for step_ahead in range(1,step_ahead_max+1): # range(1,step_ahead_max+1):
-    for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
-        h_idx = step_ahead// args_init1.horizon_step
-
-        # Get previous and predictions
-        previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
-
-        # Plotting
-        dic_gain,dic_error = get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
-        dic_gain_agg,dic_error_agg = plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metrics = metric_list,step_ahead = step_ahead)  # ['mse','mase','mape']
-        dic_error_agg_h[step_ahead] = dic_error_agg
-
-    if station is not None:
-        station_i = list(ds1.spatial_unit).index(station)
-        p = plot_profile_comparison_between_2_prediction(args_init1,full_predict1,full_predict2,real,ds1,station_i,station, width=900, height=400, bool_plot = True)
-
-
-    # Display some informations: 
-    h0 = list(dic_error_agg_h.keys())[0]
-    metric0 = list(dic_error_agg_h[h0].keys())[0]
-    if 'daily_period' in dic_error_agg_h[h0][metric0].keys():
-        for L_metric in [[metric] for metric in metric_list]:
-            print(f'\nModel: {args_init1.model_name}')
-            for daily_period in ['morning_peak','evening_peak','all_day']:
-                print(daily_period)
-                for metric in L_metric: 
-                    print(' ',metric.upper())
-                    if metric == 'rmse':
-                        metric_i = 'mse'
-                    else:
-                        metric_i = metric
-                    error1_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred1_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
-                    error2_per_h = [np.mean([dic_error_agg_h[h][metric_i]['daily_period']['error_pred2_agg'][station][daily_period] for station in ds1.spatial_unit]) for h in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step)]
-                    if metric == 'rmse':
-                        error1_per_h = [np.sqrt(x) for x in error1_per_h]
-                        error2_per_h = [np.sqrt(x) for x in error2_per_h]
-
-                    print('   Model 1: ',error1_per_h)
-                    print('   Model 2: ',error2_per_h)
-
-
-
 def plot_heatmap(M,xlabel=None,ylabel=None, title=None,cmap='hot',figsize=(15, 15),vmin = None,vmax= None):
     fig, ax = plt.subplots(figsize=figsize)
     heatmap = ax.imshow(M, cmap=cmap, interpolation='nearest', aspect='auto',vmin = vmin, vmax=vmax)
@@ -458,6 +396,157 @@ def plot_heatmap(M,xlabel=None,ylabel=None, title=None,cmap='hot',figsize=(15, 1
         ax.set_title(title)
     fig.tight_layout()
     plt.show()
+
+
+
+class ComparisonPlotter:
+    """
+    Class to plot the gain between two models with different temporal aggregations.
+    """
+    def __init__(self, figsize_x=10, clustered_stations=None):
+        self.figsize_x = figsize_x
+        self.dic_gain_agg = {}
+        self.dic_error_agg = {}
+        self.dic_gain_agg_per_cluster = {}
+        self.clustered_stations = clustered_stations  # dict of list of clustered stations if any, else None
+
+
+    def _init_fig_axes_sizes(self,temporal_aggs):
+        if self.clustered_stations is None: 
+            nb_y_axes = 2
+        else:
+            nb_y_axes = 3
+
+        width_ratios = [1,5] if self.clustered_stations is None else [1,10,4]
+        if len(temporal_aggs) == 1:
+                fig, axes = plt.subplots(1, nb_y_axes, figsize=(self.figsize_x,6))
+        else:
+            # Create a default height of 1 for all rows
+            height_ratios = [1] * len(temporal_aggs)
+            coef_y_size = 1
+
+            if temporal_aggs == ['hour','date','weekday']:
+                gridspec_kw={'width_ratios': width_ratios,'height_ratios': [4,3,2]}
+
+            elif 'working_day_hour' in temporal_aggs or 'weekday_hour_minute' in temporal_aggs:
+                if 'working_day_hour' in temporal_aggs:
+                    special_index = temporal_aggs.index('working_day_hour')
+                    height_ratios[special_index] = 3
+                    coef_y_size = coef_y_size+2
+                if  'weekday_hour_minute' in temporal_aggs:
+                    special_index = temporal_aggs.index('weekday_hour_minute')
+                    height_ratios[special_index] = 8
+                    coef_y_size = coef_y_size+3
+
+                gridspec_kw = {'width_ratios': width_ratios, 'height_ratios': height_ratios}
+                
+            else:
+                gridspec_kw={'width_ratios': width_ratios,'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
+            if self.clustered_stations is None: 
+                fig, axes = plt.subplots(len(temporal_aggs), nb_y_axes, figsize=(self.figsize_x,6*len(temporal_aggs)*coef_y_size),gridspec_kw=gridspec_kw)
+
+        self.fig = fig
+        self.axes = axes
+
+    def _aggregated_plot(self,dic_gain21,metric,temporal_aggs,i):
+        if len(temporal_aggs) == 1:
+            plt.sca(self.axes[0])
+        else:
+            plt.sca(self.axes[i,0])
+
+        plot_coverage_matshow(pd.DataFrame(pd.DataFrame(dic_gain21).mean(axis=1)),cmap = 'RdYlBu', save=None, 
+                            cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-10,v_max=10,display_values = True,bool_plot = self.bool_plot)
+        
+        if len(temporal_aggs) == 1:
+            self.axes[0].set_title(f"Aggregated through stations")
+        else:
+            self.axes[i,0].set_title(f"Aggregated through stations")
+
+
+    def _plot_per_station(self,dic_gain21,metric,temporal_agg,temporal_aggs,i,error_pred1_agg,error_pred2_agg):
+        if len(temporal_aggs) == 1:
+            plt.sca(self.axes[1])
+        else:
+            plt.sca(self.axes[i,1])
+
+        if self.clustered_stations is None: 
+            df_matshow = pd.DataFrame(dic_gain21)
+        else:
+            df_matshow = pd.DataFrame(dic_gain21)[list(itertools.chain.from_iterable([v for k,v in sorted(self.clustered_stations.items())]))]
+        plot_coverage_matshow(df_matshow,cmap = 'RdYlBu', save=None, 
+                            cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-20,v_max=20,display_values = False,bool_plot = self.bool_plot)
+        if len(temporal_aggs) == 1:
+            self.axes[1].set_title(f"No Spatial Aggregation")
+        else:
+            self.axes[i,1].set_title(f"No Spatial Aggregation") 
+        self.dic_gain_agg[metric][temporal_agg] = dic_gain21
+        self.dic_error_agg[metric][temporal_agg] = {'error_pred1_agg': error_pred1_agg, 'error_pred2_agg': error_pred2_agg}
+
+    def _plot_per_cluster(self,dic_gain21,metric,temporal_agg,temporal_aggs,i):
+        if self.clustered_stations is not None: 
+            if len(temporal_aggs) == 1:
+                plt.sca(self.axes[2])
+            else:
+                plt.sca(self.axes[i,2])
+
+            df_gain21 = pd.DataFrame(dic_gain21)
+            df_gain_aggregated_per_cluster = pd.DataFrame(index=df_gain21.index)
+            for cluster_id, station_list in sorted(self.clustered_stations.items()):
+                df_gain_aggregated_per_cluster[cluster_id] = df_gain21[station_list].mean(axis=1)
+
+            plot_coverage_matshow(df_gain_aggregated_per_cluster,cmap = 'RdYlBu', save=None, 
+                cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-10,v_max=10,display_values = True,bool_plot = self.bool_plot)
+
+            if len(temporal_aggs) == 1:
+                self.axes[2].set_title(f"Aggregated through cluster of stations")
+            else:
+                self.axes[i,2].set_title(f"Aggregated through cluster of station") 
+
+            self.dic_gain_agg_per_cluster[metric][temporal_agg] = df_gain_aggregated_per_cluster
+
+
+    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error,stations,temporal_aggs,training_mode,metrics,step_ahead,save_path=None,bool_plot=True):
+        """
+        Plot the gain between two models for different temporal aggregations.
+        Args:
+            ds (Dataset): Dataset containing the data.
+            dic_error (dict): Dictionary containing error metrics.
+            stations (list): List of stations to consider.
+            temporal_aggs (list): List of temporal aggregations to consider :
+                >>>> choices = ['hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour']
+            training_mode (str): Mode for training, e.g., 'train', 'val', 'test'.
+            metrics (list): List of metrics to compute gains for.
+            step_ahead (int): Step ahead for predictions.
+        Returns:
+            dic_gain_agg (dict): Dictionary containing gain values for each metric and temporal aggregation.
+            heatmap plot for each metric and temporal aggregation.
+        """
+        # -- Init
+        self.figsize_x = max(8,0.7*len(stations))
+        self.dic_gain_agg = {metric : {} for metric in metrics}
+        self.dic_error_agg  = {metric : {} for metric in metrics}
+        self.dic_gain_agg_per_cluster = {metric : {} for metric in metrics}
+        self.bool_plot = bool_plot
+
+        for metric in metrics:
+            self._init_fig_axes_sizes(temporal_aggs)
+
+            for i,temporal_agg in enumerate(temporal_aggs):
+                title = f"Average {metric.upper()} Gain(%) per {temporal_agg} of \nModel2 compared to Model1 at horizon {step_ahead}"
+                if metric == 'mase':
+                    dic_gain21,error_pred1_agg,error_pred2_agg = get_df_mase_and_gains(ds,dic_error,training_mode,temporal_agg,stations)
+                else:
+                    dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg,stations)
+
+                self._aggregated_plot(dic_gain21,metric,temporal_aggs,i)
+                self._plot_per_station(dic_gain21,metric,temporal_agg,temporal_aggs,i,error_pred1_agg,error_pred2_agg)
+                self._plot_per_cluster(dic_gain21,metric,temporal_agg,temporal_aggs,i)
+                ## ...
+            self.fig.suptitle(title)
+
+            if save_path is not None:
+                self.fig.savefig(f"{save_path}_{metric}_gain_comparison.pdf", bbox_inches='tight')
+        return self.dic_gain_agg,self.dic_error_agg
 
 
 
@@ -537,3 +626,112 @@ def plot_attn_weights(NetMob_attn_weights,s_dates,
         # -- Evening Attention Weight : 
         evening_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_evening).mean(0)
         plot_heatmap(evening_attn_weight[head], title=f'Attention Weight during evening (17:00 - 19:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
+
+
+
+
+if __name__ == '__main__':
+    from clustering.clustering import TimeSeriesClusterer
+    from constants.paths import SAVE_DIRECTORY
+    ## -----------------FULL DATA 1 AN---------------------------------------------------------------------------------------------------------
+    ## Prediction on 4 consecutives horizons 
+
+    # ## Prediction on HORIZON 1
+    # trial_id1 = 'subway_out_calendar_embedding_h1_bis'
+    # trial_id2 = 'subway_out_subway_in_bike_in_calendar_embedding_h1_bis'
+    # trial_id2 = 'subway_out_subway_in_calendar_embedding_h1_bis'
+    # trial_id2 = 'subway_out_bike_in_calendar_embedding_h1_bis'
+
+    # ## Prediction on HORIZON 2
+    # trial_id1 = 'subway_out_calendar_embedding_h2_bis'
+    # trial_id2 = 'subway_out_subway_in_bike_in_calendar_embedding_h2_bis'
+    # trial_id2 = 'subway_out_subway_in_calendar_embedding_h2_bis'
+    # trial_id2 = 'subway_out_bike_in_calendar_embedding_h2_bis'
+
+    # ## Prediction on HORIZON 3
+    # trial_id1 = 'subway_out_calendar_embedding_h3_bis'
+    # trial_id2 = 'subway_out_subway_in_bike_in_calendar_embedding_h3_bis'
+    # trial_id2 = 'subway_out_subway_in_calendar_embedding_h3_bis'
+    # trial_id2 = 'subway_out_bike_in_calendar_embedding_h3_bis'
+
+    # ## Prediction on HORIZON 4
+    # trial_id1 = 'subway_out_calendar_embedding_h4_bis'
+    # trial_id2 = 'subway_out_subway_in_bike_in_calendar_embedding_h4_bis'
+    # trial_id2 = 'subway_out_subway_in_calendar_embedding_h4_bis'
+    # trial_id2 = 'subway_out_bike_in_calendar_embedding_h4_bis'
+    
+    SAVE_DIRECTORY = f"../{SAVE_DIRECTORY}"
+
+    for horizon in range(1,5):
+        trial_id1 = f'subway_out_calendar_embedding_h{horizon}_bis'
+        for contextual_datasets in ['subway_in_bike_in_calendar_embedding',
+                                    'subway_in_calendar_embedding',
+                                    'bike_in_calendar_embedding'
+                                    ]:
+            trial_id2 = f'subway_out_{contextual_datasets}_h{horizon}_bis'
+
+
+
+            subfolder = 'K_fold_validation/training_wo_HP_tuning/optim/subway_in_STGCN'
+            
+            path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
+            model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
+
+            INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models"
+            save_path = f"{INIT_SAVE_PATH}/{trial_id2}"
+
+            modification = {'shuffle':False,
+                        'data_augmentation':False,
+                        'torch_compile': False,
+                        'device': torch.device('cuda:0')
+                        }
+            training_mode = 'test'
+            temporal_aggs =   ['working_day_hour'] # ['daily_period','working_day_hour','weekday_hour_minute'] # ['hour','date','weekday'] 'hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour'
+            metric_list = ['mae','rmse'] # ['mae','mase','rmse']
+
+            #  ----  Load saved models and predictions  ---- 
+            ds1,args_init1 = None,None
+            ds2,args_init2 = None,None
+            range_k = range(1,6)   # 5 trials per config
+            for k in range_k: # range(1,6):
+                trial_id1_updated = f"_{trial_id1}{k}_f5"
+                trial_id2_updated = f"_{trial_id2}{k}_f5"
+                trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(trial_id1_updated,trial_id2_updated,modification = modification,model_args=model_args,path_model_args=path_model_args,
+                                                                                                ds1_init=ds1,ds2_init=ds2,
+                                                                                                args_init1=args_init1,args_init2=args_init2)
+                full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
+                globals()[f"trainer1_bis{k}"] = trainer1
+                globals()[f"trainer2_bis{k}"] = trainer2
+                globals()[f"ds1_bis{k}"] = ds1
+                globals()[f"ds2_bis{k}"] = ds2
+                globals()[f"full_predict1_bis{k}"] = full_predict1
+                globals()[f"full_predict2_bis{k}"] = full_predict2
+            
+
+            full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k]).mean(0)
+            full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k]).mean(0)
+            stations = list(ds1.spatial_unit)  # ['BEL','PER','PAR','AMP','FOC'] #list(ds1.spatial_unit)
+
+            # ---- 
+
+            # --- Get Cluster : 
+            # Load Train inputs: 
+            train_input = ds2.train_input
+            train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
+            train_df = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
+            train_df = train_df.reindex(pd.date_range(start=train_df.index.min(),end=train_df.index.max(),freq='15min'))
+
+            # Get Clustering of stations from these inputs: 
+            clusterer = TimeSeriesClusterer(train_df)
+            clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+            clusterer.run_agglomerative(n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2)
+            # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=2,distance_threshold = 0.1)
+            clusterer.plot_clusters(heatmap= True, daily_profile=True, dendrogram=True,save_path = save_path ,bool_plot = False)
+            # ---
+
+
+            # ---- Plot Accuracy Comparison ---- 
+            plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
+                                                stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
+                                                clustered_stations = clusterer.clusters,save_path=save_path,bool_plot = False)
+            # ----

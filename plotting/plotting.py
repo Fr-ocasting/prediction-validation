@@ -232,7 +232,8 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
 def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, 
                           cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False
                           ,v_min=None,v_max=None,
-                          display_values = False):
+                          display_values = False,
+                          bool_plot = None):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
 
@@ -740,6 +741,8 @@ def get_df_error(ds1,dic_error,metric,error_name,training_mode):
     dates = df_verif.iloc[:,-1]
     n_units = len(ds1.spatial_unit)
     # Get df of time-serie of a metric: 
+    if metric == 'rmse':
+        metric = 'mse'
     error_per_stations = dic_error[metric][error_name].reshape(-1,n_units)
     dict_for_df = {column: error_per_stations[:,i] for i,column in enumerate(ds1.spatial_unit)}
     dict_for_df.update({'datetime':dates})
@@ -750,7 +753,7 @@ def get_df_error(ds1,dic_error,metric,error_name,training_mode):
     return df_error_station
 
 
-def temporal_agg_for_matshow(df_error_station,column,index_matshow):
+def temporal_agg_for_matshow(df_error_station,column,index_matshow,metric = None):
     '''
     From a df_error_station, return the temporal aggregation of the column
     args:
@@ -797,6 +800,9 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow):
         df_agg = df_error_station[[column,'is_weekday','new_hour']].groupby(['is_weekday','new_hour']).mean()
     else:
         raise NotImplementedError
+    
+    if metric is not None and metric == 'rmse':
+        df_agg = np.sqrt(df_agg)
     return df_agg 
 
 def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations):
@@ -827,8 +833,8 @@ def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
     df_error_pred1_agg,df_error_pred2_agg = {},{}
 
     for column in stations: 
-        error_pred1_agg = temporal_agg_for_matshow(df_error1,column,temporal_agg)
-        error_pred2_agg = temporal_agg_for_matshow(df_error2,column,temporal_agg)   
+        error_pred1_agg = temporal_agg_for_matshow(df_error1,column,temporal_agg,metric)
+        error_pred2_agg = temporal_agg_for_matshow(df_error2,column,temporal_agg,metric)   
         gain = 100*(error_pred2_agg/error_pred1_agg-1)
 
         df_gain21.update({column:gain[column]})

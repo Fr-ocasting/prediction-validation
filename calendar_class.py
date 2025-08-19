@@ -19,6 +19,72 @@ def is_weekday(predicted_dates_h):
     return (predicted_dates_h.dt.dayofweek < 5)
 
 
+def get_mask_working_day(s_dates,mask_specific_period,city):
+    """
+    Create a mask for working days, excluding weekends and bank holidays.
+    Args:   
+    -----
+        s_dates (pd.Series): Series of datetime objects.
+        mask_specific_period (pd.Series): Boolean mask for specific time periods.
+        city (str): City name to check for bank holidays.
+
+    Returns:
+    ------
+        pd.Series: Boolean mask indicating whether each date is a working day.
+    """
+    weekday_mask = is_weekday(s_dates)
+    dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
+    filter_mask = mask_specific_period & weekday_mask & ~dates_is_bank_holidays
+    return filter_mask
+
+def get_temporal_mask(s_dates: pd.Series, 
+                      start: datetime.time = datetime.time(7, 0), 
+                      end: datetime.time = datetime.time(21, 0),
+                      temporal_agg: str = None,
+                      city = None) -> pd.Series:
+    """
+    Create a mask for the specified time range within the given dates.
+    
+    Args:
+    -----
+        s_dates (pd.Series): Series of datetime objects.
+        start (datetime.time): Start time for the mask.
+        end (datetime.time): End time for the mask.
+        temporal_agg (str): Temporal aggregation type (e.g., 'morning_peak', 'evening_peak', etc.).
+        city (str): City name to check for bank holidays.
+
+    Returns:
+    -----
+        pd.Series: Boolean mask indicating whether each date falls within the specified time range.
+    """
+    
+    if temporal_agg == 'morning_peak':
+        filter_mask = get_mask_working_day(s_dates,is_morning_peak(s_dates),city)
+    elif temporal_agg == 'evening_peak':
+        filter_mask = get_mask_working_day(s_dates,is_evening_peak(s_dates),city)
+    elif temporal_agg == 'off_peak':
+        filter_mask = get_mask_working_day(s_dates,~is_morning_peak(s_dates) & ~is_evening_peak(s_dates),city)
+    elif temporal_agg == 'bank_holiday':
+        dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
+        usefull_hours =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+        filter_mask = usefull_hours & (~weekday_mask | ~dates_is_bank_holidays)
+    elif temporal_agg == 'business_day':
+        weekday_mask = is_weekday(s_dates)
+        dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
+        usefull_hours =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+        filter_mask = usefull_hours & weekday_mask & ~dates_is_bank_holidays
+    elif temporal_agg == 'morning':
+        filter_mask = get_mask_working_day(s_dates,is_morning(s_dates),city)
+    elif temporal_agg == 'evening':
+        filter_mask = get_mask_working_day(s_dates,is_evening(s_dates),city)
+    elif temporal_agg is None:
+        filter_mask =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+    else: 
+        raise ValueError(f"Unknown temporal aggregation: {temporal_agg}")
+
+    return filter_mask
+
+
 BANK_HOLIDAYS = {
     'Lyon': [
             "2019-01-01",  # Mardi 1er janvier 2019

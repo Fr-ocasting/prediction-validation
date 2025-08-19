@@ -107,22 +107,28 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     return(args)
 
 
-def load_trainer_ds_from_saved_trial(args,model_save_path,modification={}):
+def load_trainer_ds_from_saved_trial(args,model_save_path,modification={},ds_init = None,args_init= None):
 
-    try: 
-        fold_to_evaluate = [args['K_fold']-1]
-        args_init = Namespace(**args)
-    except:
-        fold_to_evaluate = [args.K_fold-1]
-        args_init = Namespace(**vars(args)) 
-    args_init.ray = False
+    if ds_init is None: 
+        try: 
+            fold_to_evaluate = [args['K_fold']-1]
+            args_init = Namespace(**args)
+        except:
+            fold_to_evaluate = [args.K_fold-1]
+            args_init = Namespace(**vars(args)) 
+        args_init.ray = False
 
+        ds,args_updated,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)
+    else:
+        ds = ds_init
+        args_updated = args_init
+        for key,values in modification.items():
+            setattr(args_updated,key,values)
 
-    ds,args_updated,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)
     model = full_model(ds, 
                        args_updated
                     #    args_init
-                       ).to(args_init.device)
+                       ).to(args_updated.device)
 
 
     model_param = torch.load(f"{model_save_path}")
@@ -132,13 +138,13 @@ def load_trainer_ds_from_saved_trial(args,model_save_path,modification={}):
     model_param['state_dict'] = {k[len(prefix):] if k.startswith(prefix) else k: v    #Needed here to remove the prefix added by torch.compile
                 for k, v in model_param['state_dict'].items()}
     model.load_state_dict(model_param['state_dict'],strict=True)
-    model = model.to(args_init.device)
+    model = model.to(args_updated.device)
     ## 
     
-    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args_init)
-    trainer = Trainer(ds,model,args_init,optimizer,loss_function,scheduler = scheduler)
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args_updated)
+    trainer = Trainer(ds,model,args_updated,optimizer,loss_function,scheduler = scheduler)
 
-    return trainer, ds, args_init
+    return trainer, ds, args_updated
 
 
 def get_trainer_and_ds_from_saved_trial(trial_id = None,
