@@ -18,6 +18,17 @@ def restrain_df_to_specific_period(df,coverage_period):
     df = df.sort_index()
     return df
 
+def return_performance_from_saved_trial(model_args,trial_id):
+    performance_ref = model_args['model'][trial_id]['performance']['test_metrics']
+    keys_mae = [c for c in performance_ref.keys() if c.startswith('mae_') and not ('all' in c)]
+    keys_mse = [c for c in performance_ref.keys() if c.startswith('mse_') and not ('all' in c)]
+    keys_rmse = [c for c in performance_ref.keys() if c.startswith('rmse_') and not ('all' in c)]
+    print('\n---------------  Recorded metric on trial-id: ------------------')
+    print('Trial id: ',trial_id)
+    print('Number of horizon: ',len(keys_mae))
+    print('Mean MAE: ',np.mean([performance_ref[k] for k in keys_mae]))
+    print('Mean RMSE: ',np.mean([performance_ref[k] for k in keys_rmse]))
+    print('Mean MSE: ',np.mean([performance_ref[k] for k in keys_mse]))
 
 def remove_outliers_based_on_quantile(df,args,name):
     condition_contextual_quantile_order = hasattr(args,'contextual_kwargs') and name in args.contextual_kwargs.keys() and  'quantile_filter_outliers' in args.contextual_kwargs[name] and args.contextual_kwargs[name]['quantile_filter_outliers'] is not None

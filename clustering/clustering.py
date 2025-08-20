@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import datetime
 from typing import Dict, List, Optional
-
+import os 
 # Visualization and Clustering
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -58,7 +58,8 @@ class TimeSeriesClusterer:
         self.method: Optional[str] = None
         self.min_samples: Optional[int] = None
         self.bool_plot: bool = True  # Whether to show plots or not
-        self.save_path: Optional[str] = None
+        self.folder_path: Optional[str] = None
+        self.save_name: Optional[str] = None
 
     def normalize(self, normalisation_type: str = 'minmax' ):
         """
@@ -228,7 +229,7 @@ class TimeSeriesClusterer:
         print(f"GMM clustering completed with {n_clusters} clusters.")
         return self
 
-    def plot_clusters(self,heatmap: bool = True, daily_profile: bool = False, dendrogram: bool = False,bool_plot: bool = True,save_path: Optional[str] = None):
+    def plot_clusters(self,heatmap: bool = True, daily_profile: bool = False, dendrogram: bool = False,bool_plot: bool = True,folder_path: Optional[str] = None,save_name: Optional[str] = None):
         """
         Visualizes the clustering results based on the method used.
         """
@@ -237,7 +238,8 @@ class TimeSeriesClusterer:
         
         print(f"Plotting results for {self.method} clustering...")
         self.bool_plot = bool_plot
-        self.save_path = save_path
+        self.folder_path = folder_path
+        self.save_name = save_name
         if self.method == 'agglomerative':
             self._plot_agglomerative(heatmap,daily_profile,dendrogram)
         elif self.method == 'gmm':
@@ -278,8 +280,11 @@ class TimeSeriesClusterer:
         plt.tight_layout()
         if self.bool_plot:
             plt.show()
-        if self.save_path is not None:
-            plt.savefig(f"{self.save_path}_dendrogram.pdf", bbox_inches='tight')
+        if (self.folder_path is not None) and (self.save_name is not None):
+            assert os.path.exists(self.folder_path), f"Folder path {self.folder_path} does not exist."
+            if not os.path.exists(f"{self.folder_path}/dendrogram"):
+                os.makedirs(f"{self.folder_path}/dendrogram")
+            plt.savefig(f"{self.folder_path}/dendrogram/{self.save_name}_dendrogram.pdf", bbox_inches='tight')
 
     def _plot_heatmap_corr(self):
         
@@ -291,8 +296,11 @@ class TimeSeriesClusterer:
         if self.bool_plot:
             plt.show()
 
-        if self.save_path is not None:
-            plt.savefig(f"{self.save_path}_heatmap_corr.pdf", bbox_inches='tight')
+        if (self.folder_path is not None) and (self.save_name is not None):
+            assert os.path.exists(self.folder_path), f"Folder path {self.folder_path} does not exist."
+            if not os.path.exists(f"{self.folder_path}/heatmap"):
+                os.makedirs(f"{self.folder_path}/heatmap")
+            plt.savefig(f"{self.folder_path}/heatmap/{self.save_name}_heatmap_corr.pdf", bbox_inches='tight')
 
     def _plot_daily_profile(self):
         n_clusters = len(self.clusters)
@@ -333,8 +341,13 @@ class TimeSeriesClusterer:
         plt.tight_layout()
         if self.bool_plot:
             plt.show()
-        if self.save_path is not None:
-            plt.savefig(f"{self.save_path}_daily_profiles.pdf", bbox_inches='tight')
+
+        if (self.folder_path is not None) and (self.save_name is not None):
+            assert os.path.exists(self.folder_path), f"Folder path {self.folder_path} does not exist."
+            if not os.path.exists(f"{self.folder_path}/daily_profiles"):
+                os.makedirs(f"{self.folder_path}/daily_profiles")
+            plt.savefig(f"{self.folder_path}/daily_profiles/{self.save_name}_daily_profiles.pdf", bbox_inches='tight')
+
 
 
 if __name__ == "__main__":

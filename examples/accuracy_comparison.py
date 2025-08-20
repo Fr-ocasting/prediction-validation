@@ -286,7 +286,8 @@ def display_information_related_to_comparison(dic_error_agg_h,args_init1,metric_
 
 
 def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,min_flow,stations,training_mode,metric_list,clustered_stations,
-                        save_path=None,
+                        folder_path =None,
+                        save_name = None,
                         bool_plot = True):
     # Get previous and predictions
     previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
@@ -295,7 +296,8 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
     dic_gain,dic_error = get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
 
     comparisonplotter = ComparisonPlotter(figsize_x=10,clustered_stations=clustered_stations)
-    dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,save_path=save_path,bool_plot = bool_plot)
+    dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,
+                                                                                                folder_path=folder_path,save_name=save_name,bool_plot = bool_plot)
     dic_error_agg_h[step_ahead] = dic_error_agg
 
     return dic_error_agg_h,real
@@ -303,7 +305,8 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
 
 
 def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,clustered_stations = None,bool_plot = True,save_path=None):
+                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,clustered_stations = None,folder_path = None, save_name = None,
+                                      bool_plot = True):
     
     step_ahead_max = args_init1.step_ahead
     print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1)
@@ -314,7 +317,8 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
         h_idx = step_ahead// args_init1.horizon_step
         dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,min_flow,stations,training_mode,
                                                    metric_list,clustered_stations,
-                                                   save_path=f"{save_path}_h{step_ahead}",
+                                                   folder_path = folder_path,
+                                                   save_name = f"{save_name}_h{step_ahead}",
                                                    bool_plot = bool_plot)
     # --
 
@@ -505,7 +509,7 @@ class ComparisonPlotter:
             self.dic_gain_agg_per_cluster[metric][temporal_agg] = df_gain_aggregated_per_cluster
 
 
-    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error,stations,temporal_aggs,training_mode,metrics,step_ahead,save_path=None,bool_plot=True):
+    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error,stations,temporal_aggs,training_mode,metrics,step_ahead,folder_path=None,save_name=None,bool_plot=True):
         """
         Plot the gain between two models for different temporal aggregations.
         Args:
@@ -544,8 +548,12 @@ class ComparisonPlotter:
                 ## ...
             self.fig.suptitle(title)
 
-            if save_path is not None:
-                self.fig.savefig(f"{save_path}_{metric}_gain_comparison.pdf", bbox_inches='tight')
+            if (folder_path is not None) and (save_name is not None):
+                assert os.path.exists(folder_path), f"Folder path {folder_path} does not exist."
+                if not os.path.exists(f"{folder_path}/{metric}"):
+                    os.makedirs(f"{folder_path}/{metric}")
+                self.fig.savefig(f"{folder_path}/{metric}/{save_name}_gain.pdf", bbox_inches='tight')
+
         return self.dic_gain_agg,self.dic_error_agg
 
 
@@ -662,17 +670,16 @@ if __name__ == '__main__':
     # trial_id2 = 'subway_out_bike_in_calendar_embedding_h4_bis'
     
     SAVE_DIRECTORY = f"../{SAVE_DIRECTORY}"
+    for contextual_datasets in [ 'subway_in_calendar_embedding','bike_in_calendar_embedding',
+                                    'subway_in_bike_out_calendar_embedding', 'subway_in_bike_in_calendar_embedding',
+                                    'subway_in_bike_in_bike_out_calendar_embedding']:
 
-    for horizon in range(1,5):
-        # trial_id1 = f'subway_out_calendar_embedding_h{horizon}_bis'
-        trial_id1 = f'subway_out_subway_in_calendar_embedding_h{horizon}_bis'
-        
-        # for contextual_datasets in ['subway_in_bike_in_calendar_embedding', 'subway_in_calendar_embedding','bike_in_calendar_embedding']:
-        # for contextual_datasets in ['subway_in_bike_in_calendar_embedding']:
-        for contextual_datasets in ['subway_in_bike_in_bike_out_calendar_embedding','subway_in_bike_out_calendar_embedding']:
+        for horizon in range(1,5):
+            
+            trial_id1 = f'subway_out_calendar_embedding_h{horizon}_bis'
+            # trial_id1 = f'subway_out_subway_in_calendar_embedding_h{horizon}_bis'
+            
             trial_id2 = f'subway_out_{contextual_datasets}_h{horizon}_bis'
-
-
 
             subfolder = 'K_fold_validation/training_wo_HP_tuning/optim/subway_in_STGCN'
             
@@ -680,7 +687,11 @@ if __name__ == '__main__':
             model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
 
             INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models"
-            save_path = f"{INIT_SAVE_PATH}/ref_{trial_id1}_compared_to_{trial_id2}"
+
+            save_name = f"{trial_id2}"
+            # save_name = f"ref_{trial_id1}_compared_to_{trial_id2}"
+
+
 
             modification = {'shuffle':False,
                         'data_augmentation':False,
@@ -718,22 +729,24 @@ if __name__ == '__main__':
 
             # --- Get Cluster : 
             # Load Train inputs: 
-            train_input = ds2.train_input
-            train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
-            train_df = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
-            train_df = train_df.reindex(pd.date_range(start=train_df.index.min(),end=train_df.index.max(),freq='15min'))
+            if horizon == 1: 
+                train_input = ds2.train_input
+                train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
+                train_df = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
+                train_df = train_df.reindex(pd.date_range(start=train_df.index.min(),end=train_df.index.max(),freq='15min'))
 
-            # Get Clustering of stations from these inputs: 
-            clusterer = TimeSeriesClusterer(train_df)
-            clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
-            clusterer.run_agglomerative(n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2)
-            # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=2,distance_threshold = 0.1)
-            clusterer.plot_clusters(heatmap= True, daily_profile=True, dendrogram=True,save_path = save_path ,bool_plot = False)
+                # Get Clustering of stations from these inputs: 
+                clusterer = TimeSeriesClusterer(train_df)
+                clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+                clusterer.run_agglomerative(n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2)
+                # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=2,distance_threshold = 0.1)
+
+            clusterer.plot_clusters(heatmap= True, daily_profile=True, dendrogram=True,folder_path = INIT_SAVE_PATH, save_name = save_name ,bool_plot = False)
             # ---
 
 
             # ---- Plot Accuracy Comparison ---- 
             plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
                                                 stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
-                                                clustered_stations = clusterer.clusters,save_path=save_path,bool_plot = False)
+                                                clustered_stations = clusterer.clusters,folder_path = INIT_SAVE_PATH, save_name = save_name,bool_plot = False)
             # ----
