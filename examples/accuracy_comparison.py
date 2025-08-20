@@ -668,7 +668,8 @@ if __name__ == '__main__':
         trial_id1 = f'subway_out_subway_in_calendar_embedding_h{horizon}_bis'
         
         # for contextual_datasets in ['subway_in_bike_in_calendar_embedding', 'subway_in_calendar_embedding','bike_in_calendar_embedding']:
-        for contextual_datasets in ['subway_in_bike_in_calendar_embedding']:
+        # for contextual_datasets in ['subway_in_bike_in_calendar_embedding']:
+        for contextual_datasets in ['subway_in_bike_in_bike_out_calendar_embedding','subway_in_bike_out_calendar_embedding']:
             trial_id2 = f'subway_out_{contextual_datasets}_h{horizon}_bis'
 
 

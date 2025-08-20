@@ -214,14 +214,21 @@ class STAEformer(nn.Module):
         
     def forward(self,  x: Tensor,
                 x_vision: Optional[Tensor] = None, 
-                x_calendar: Optional[Tensor] = None) -> Tensor:
+                x_calendar: Optional[Tensor] = None,
+                contextual: Optional[list[Tensor]]= None,
+                ) -> Tensor:
         
         #print('x shape before input_proj:', x.shape)
         if x_vision is not None:
             raise NotImplementedError("tackling x_vision has not been implemented")
-        
+
         if x_calendar is None:
             raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
+
+        if len(contextual) > 2: 
+            raise NotImplementedError(f"Contextual size: {[c.size() for c in contextual]}. Which means it contains surely more than the two initial calendar tensors, and tackling other contextual has not been implemented")
+
+
         else: 
             x = x.permute(0,3,2,1) # [B,C,N,L] -> [B,L,N,C]
             if x_calendar.size(-1) != 2:
