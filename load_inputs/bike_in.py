@@ -113,6 +113,7 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
             agg_df[idx] = df_filtered[effective_columns].sum(axis=1)
 
         mask = agg_df.mean() > threshold_volume_min
+        kept_zones = list(mask[mask].index)
         df_filtered = agg_df.T[mask].T
         print(f"   Dimension after spatial agg: {df_filtered.shape}")
 
@@ -130,4 +131,5 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
     processed_input.spatial_unit = df_filtered.columns.tolist()
     processed_input.C = C
     processed_input.periods = None 
+    processed_input.kept_zones = kept_zones
     return processed_input

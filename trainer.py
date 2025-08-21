@@ -544,7 +544,7 @@ class Trainer(object):
     def load_all_inputs_from_training_mode(self,training_mode):
         X,Y,X_c,nb_contextual = load_inputs_from_dataloader(self.dataloader[training_mode],self.args.device)
         return X,Y,X_c,nb_contextual
-    
+
     def test_prediction(self,allow_dropout = False,training_mode = 'test',X = None, Y_true= None, T_labels= None,track_loss = False,normalizer = None):
         self.training_mode = training_mode
         if allow_dropout:
