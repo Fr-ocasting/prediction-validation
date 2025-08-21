@@ -17,9 +17,8 @@ if parent_dir not in sys.path:
 
 # Personnal imports:
 from PI.PI_object import PI_object
-from utils.utilities_DL import get_associated__df_verif_index
 from utils.metrics import error_along_ts
-from calendar_class import is_morning_peak,is_evening_peak,is_weekday
+from calendar_class import is_morning_peak,is_evening_peak,is_weekday,get_temporal_mask
 
 def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hpo = True):
     if not(type(Datasets) == list):
@@ -846,41 +845,174 @@ def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations):
 
 
 def set_attention_weights_agregated_per_daily_period(gdf,NetMob_attn_weights, 
-                                                     station_i,head, mask, agg_iris_target_n,
-                                                     dict_agg2label,list_correspondence):
+                                                     station_i,head, mask, agg_iris_target_n=None,
+                                                     dict_label2agg= None,list_correspondence=None,
+                                                     kept_zones = None, contextual_dataset =None):
     if agg_iris_target_n is None:
         agg_iris_target_n = len(gdf)
     gdf_copy = gdf.copy()
-    for channel_spatial_unit in range(NetMob_attn_weights.size(-1)):
-        init_labels = dict_agg2label[channel_spatial_unit]
-        list_range = [range(k*agg_iris_target_n,(k+1)*agg_iris_target_n) for k in range(len(list_correspondence))]
-        is_associated_to_an_unique_app = [all([label in range_agg_iris_target_n for label in init_labels]) for range_agg_iris_target_n in list_range]
 
-        # If it's associated to an unique app: 
-        assert sum(is_associated_to_an_unique_app) < 2, 'Issue with the discretisation'
-        if sum(is_associated_to_an_unique_app) > 0:
-            # Attention weight at head 'head' and station 'station_i'.  
-            attn_weight_head_i = NetMob_attn_weights[:,head,station_i,:]  # [T,n_head,N,channel_spatial_units] -> [T,channel_spatial_units]
 
-            # Fin the associated app: 
-            app_tag_mode = list_correspondence[np.where(np.array(is_associated_to_an_unique_app) == True)[0][0]]
 
-            # Find the associated zones 
-            reduced_init_labels = [init_labels[i]%agg_iris_target_n for i in range(len(init_labels))]
+    # --- Tackle Netmob contextual datasets:
+    if list_correspondence is not None: 
+        # -- Build dict_agg2label
+        dict_agg2label = {}
+        for k,v in dict_label2agg.items():
+            if v not in dict_agg2label:
+                dict_agg2label[v] = []
+            dict_agg2label[v].append(k)
+        # -- 
+        for channel_spatial_unit in range(NetMob_attn_weights.size(-1)):
+            init_labels = dict_agg2label[channel_spatial_unit]
+            list_range = [range(k*agg_iris_target_n,(k+1)*agg_iris_target_n) for k in range(len(list_correspondence))]
+            is_associated_to_an_unique_app = [all([label in range_agg_iris_target_n for label in init_labels]) for range_agg_iris_target_n in list_range]
 
-            # Specifie daily period (morning peak on working day ...) :
-            attn_weight_head_i = torch.index_select(attn_weight_head_i.detach().cpu(),0, torch.tensor(mask).long())
+            # If it's associated to an unique app: 
+            assert sum(is_associated_to_an_unique_app) < 2, 'Issue with the discretisation'
+            if sum(is_associated_to_an_unique_app) > 0:
+                # Attention weight at head 'head' and station 'station_i'.  
+                attn_weight_head_i = NetMob_attn_weights[:,head,station_i,:]  # [T,n_head,N,channel_spatial_units] -> [T,channel_spatial_units]
 
-            # Add the attention weights to the gdf:
-            gdf_copy.loc[reduced_init_labels,app_tag_mode] = attn_weight_head_i.mean(0)[channel_spatial_unit].detach().cpu()
-            gdf_copy.loc[reduced_init_labels,f'{app_tag_mode}_channel_spatial'] = channel_spatial_unit
-        else:
-            if len(list_correspondence) == 2:
-                app_tag_mode = list_correspondence
-                print('mix of apps: ',init_labels)
+                # Fin the associated app: 
+                app_tag_mode = list_correspondence[np.where(np.array(is_associated_to_an_unique_app) == True)[0][0]]
+
+                # Find the associated zones 
+                reduced_init_labels = [init_labels[i]%agg_iris_target_n for i in range(len(init_labels))]
+
+                # Specifie daily period (morning peak on working day ...) :
+                attn_weight_head_i = torch.index_select(attn_weight_head_i.detach().cpu(),0, torch.tensor(mask).long())
+
+                # Add the attention weights to the gdf:
+                gdf_copy.loc[reduced_init_labels,app_tag_mode] = attn_weight_head_i.mean(0)[channel_spatial_unit].detach().cpu()
+                gdf_copy.loc[reduced_init_labels,f'{app_tag_mode}_channel_spatial'] = channel_spatial_unit
+            else:
+                if len(list_correspondence) == 2:
+                    app_tag_mode = list_correspondence
+                    print('mix of apps: ',init_labels)
+                else:
+                    raise NotImplementedError
+        # ---
+                
+    # --- Tackle Bike-in or Bike-out contextual datasets: 
+    elif kept_zones is not None:
+        attn_weight_head_i = NetMob_attn_weights[:,head,station_i,:]  # [T,n_head,N,channel_spatial_units] -> [T,channel_spatial_units]
+        attn_weight_head_i = torch.index_select(attn_weight_head_i.detach().cpu(),0, torch.tensor(mask).long())
+        attn_weight_head_i = attn_weight_head_i.mean(0)  
+        gdf_copy.loc[kept_zones,contextual_dataset] = attn_weight_head_i.numpy()
+        # gdf.loc[:,contextual_dataset] = gdf.loc[:,contextual_dataset].fillna(-1)  # Fill NaN values with 0
+        gdf_copy.loc[:,f"{contextual_dataset}_channel_spatial"] = gdf_copy.index
+    # ---
+    
+    else:
+        raise NotImplementedError(f'Contextual dataset {contextual_dataset} not implemented')
+
+
+    return gdf_copy
+
+
+
+
+
+
+
+
+def get_attn_weight_from_model(model,contextual_dataset):
+    """
+    Get the attention weights from the model, depending on the model architecture.
+    """
+    try: 
+        NetMob_attn_weights = getattr(model.spatial_attn_poi,contextual_dataset).attn_weight
+    except:
+        try: 
+            NetMob_attn_weights = getattr(model.core_model.output.ModuleContextualAttnLate,contextual_dataset).attn_weight
+        except:
+            NetMob_attn_weights = getattr(model.spatial_attn_poi,contextual_dataset).mha_list[-1].attn_weight
+    return NetMob_attn_weights
+
+
+def plot_avg_attn_weights(args,trainer_list,ds,temporal_aggs,training_mode,vmax_coeff=4):
+    """ Plot the average attention weights for each contextual dataset.
+    Args:
+        trainer_list: List of Trainer to use for loading inputs and forward in model .
+        ds: Dataset object
+        training_mode: Mode of training (e.g., 'test','train', or 'valid').
+    """
+    dict_attn_weights = {}
+    if hasattr(args,'contextual_kwargs') and len(args.contextual_kwargs) > 0:
+        contextual_datasets = list(args.contextual_kwargs.keys())
+        for contextual_dataset in contextual_datasets:
+            NetMob_attn_weights = []
+            for trainer in trainer_list:
+                X,Y,Xc,nb_contextual = trainer.load_all_inputs_from_training_mode(training_mode)
+                model = trainer.model
+                model.eval()
+                with torch.no_grad():
+                    pred = model(X,Xc)
+                    test_NetMob_attn_weights = get_attn_weight_from_model(model,contextual_dataset)
+
+                NetMob_attn_weights.append(test_NetMob_attn_weights)
+            NetMob_attn_weights = torch.stack(NetMob_attn_weights,0).mean(0)
+
+            spatial_unit = ds.spatial_unit
+            s_dates = ds.tensor_limits_keeper.df_verif_test.iloc[:,-1].reset_index(drop=True)
+            plot_attn_weights(NetMob_attn_weights,s_dates,temporal_aggs,spatial_unit,city = ds.city,
+                      vmax_coeff = vmax_coeff)
+            dict_attn_weights[contextual_dataset] = NetMob_attn_weights
+    return dict_attn_weights
+
+
+
+
+def plot_heatmap(M,xlabel=None,ylabel=None, title=None,cmap='hot',figsize=(15, 15),vmin = None,vmax= None):
+    fig, ax = plt.subplots(figsize=figsize)
+    heatmap = ax.imshow(M, cmap=cmap, interpolation='nearest', aspect='auto',vmin = vmin, vmax=vmax)
+    if xlabel is not None:
+        ax.set_xticks(range(len(xlabel)), labels=xlabel,rotation=45, ha="right", rotation_mode="anchor")
+    if ylabel is not None:
+        ax.set_yticks(range(len(ylabel)), labels=ylabel)
+
+    fig.colorbar(heatmap,ax=ax)
+    if title:
+        ax.set_title(title)
+    fig.tight_layout()
+    plt.show()
+        
+def plot_attn_weights(NetMob_attn_weights,s_dates,
+                      temporal_aggs,
+                      spatial_unit,city = None,
+                      vmax_coeff = 3):
+    # ----- Find Indices related to specifics period of the days: 
+
+    # Find the indices of the hours between 7 and 10 on torch tensor
+    indices_morning = torch.tensor(get_temporal_mask(s_dates,temporal_agg = 'morning_peak',city=city)).long().detach().cpu()
+    indices_evening = torch.tensor(get_temporal_mask(s_dates,temporal_agg = 'evening_peak',city=city)).long().detach().cpu()
+    NetMob_attn_weights = NetMob_attn_weights.detach().cpu()  # Ensure the attention weights are on CPU and detached from the computation graph
+    # -----
+
+    # head = 0
+
+
+    uniform_weight = 1/NetMob_attn_weights.size(-1)
+    vmin = 0
+    vmax = min(1,uniform_weight*vmax_coeff)
+
+    for head in range(NetMob_attn_weights.size(1)):
+        for temporal_agg in temporal_aggs:
+            if temporal_agg == 'all_day':
+                # -- Average Attention Weight : 
+                average_attn_weight = NetMob_attn_weights.mean(0)   # [heads, stations, Iris]
+                plot_heatmap(average_attn_weight[head],ylabel =spatial_unit,figsize = (15,7) ,title=f'Average Attention Weight throughout the day\n Head {head}',vmin=vmin,vmax=vmax)
+            elif temporal_agg == 'morning_peak':
+                # -- Morning Average Attention Weight : 
+                morning_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_morning).mean(0)
+                plot_heatmap(morning_attn_weight[head], title=f'Attention Weight during Morning (7:00 - 10:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
+            elif temporal_agg == 'evening_peak':
+                # -- Evening Attention Weight : 
+                evening_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_evening).mean(0)
+                plot_heatmap(evening_attn_weight[head], title=f'Attention Weight during evening (17:00 - 19:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
             else:
                 raise NotImplementedError
-    return gdf_copy
 
 
 if __name__ == '__main__':

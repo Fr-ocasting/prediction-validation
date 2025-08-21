@@ -85,6 +85,7 @@ def get_temporal_mask(s_dates: pd.Series,
     return filter_mask
 
 
+
 BANK_HOLIDAYS = {
     'Lyon': [
             "2019-01-01",  # Mardi 1er janvier 2019

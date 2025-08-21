@@ -20,7 +20,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # Personnal Import 
-from calendar_class import is_morning_peak,is_evening_peak,is_weekday
+from calendar_class import get_temporal_mask
 from examples.load_best_config import load_trainer_ds_from_saved_trial
 from plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
 from examples.train_model import load_init_model_trainer_ds
@@ -387,22 +387,6 @@ def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1
 
 
 
-def plot_heatmap(M,xlabel=None,ylabel=None, title=None,cmap='hot',figsize=(15, 15),vmin = None,vmax= None):
-    fig, ax = plt.subplots(figsize=figsize)
-    heatmap = ax.imshow(M, cmap=cmap, interpolation='nearest', aspect='auto',vmin = vmin, vmax=vmax)
-    if xlabel is not None:
-        ax.set_xticks(range(len(xlabel)), labels=xlabel,rotation=45, ha="right", rotation_mode="anchor")
-    if ylabel is not None:
-        ax.set_yticks(range(len(ylabel)), labels=ylabel)
-
-    fig.colorbar(heatmap,ax=ax)
-    if title:
-        ax.set_title(title)
-    fig.tight_layout()
-    plt.show()
-
-
-
 class ComparisonPlotter:
     """
     Class to plot the gain between two models with different temporal aggregations.
@@ -555,87 +539,6 @@ class ComparisonPlotter:
                 self.fig.savefig(f"{folder_path}/{metric}/{save_name}_gain.pdf", bbox_inches='tight')
 
         return self.dic_gain_agg,self.dic_error_agg
-
-
-
-def get_calendar_mask(s_dates,temporal_group = 'morning_peak',city=None):
-
-
-    """ 
-    args 
-    -----------
-    temporal_group : str, one of ['morning_peak','evening_peak','off_peak','h0','h7',h8',...,'h23']
-    s_dates is a pd.Series of datetime64[ns] from tensor_limits_keeper.df_verif_{trainig_mode};
-    examples: 
-    ---------
-    >>>  s_dates = ds.tensor_limits_keeper.df_verif_test.iloc[:,-1].reset_index(drop=True) 
-
-    """
-
-    s_is_weekday = is_weekday(s_dates)
-    s_is_weekday = s_is_weekday.replace({True: 'Weekday', False: 'Weekend'})
-    s_evening_peak = is_evening_peak(s_dates)
-    s_morning_peak =  is_morning_peak(s_dates)
-    s_morning_peak = s_morning_peak & s_is_weekday
-    s_evening_peak = s_evening_peak & s_is_weekday
-
-    # s_bank_holidays = is_bank_holidays(s_dates,city=city)
-    # s_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city=city))
-
-    s_off_peak = ~s_evening_peak & ~s_morning_peak & s_is_weekday
-
-    motif = r'^h([0-9]|1[0-9]|2[0-3])$'
-
-    if temporal_group == 'morning_peak':
-
-        mask = s_morning_peak[s_morning_peak].index
-    elif temporal_group == 'evening_peak':
-        mask = s_evening_peak[s_evening_peak].index
-    elif temporal_group == 'off_peak':
-        mask = s_off_peak[s_off_peak].index
-
-    elif re.fullmatch(motif, temporal_group):   # if h1, h2, ..., h23
-        hour = int(temporal_group[1:]) 
-        mask = s_dates[s_dates.dt.hour == hour].index
-    else:
-        raise ValueError(f"temporal_group '{temporal_group}' is not recognized. Use one of ['morning_peak','evening_peak','off_peak', 'h0', 'h1', ..., 'h23']")
-    
-    return mask
-        
-def plot_attn_weights(NetMob_attn_weights,s_dates,
-                      #weekdays,hours,
-                      spatial_unit,city = None,
-                      vmax_coeff = 3):
-    # ----- Find Indices related to specifics period of the days: 
-
-    # Find the indices of the hours between 7 and 10 on torch tensor
-    indices_morning = torch.tensor(get_calendar_mask(s_dates,temporal_group = 'morning_peak',city=city)).long().detach().cpu()
-    indices_evening = torch.tensor(get_calendar_mask(s_dates,temporal_group = 'evening_peak',city=city)).long().detach().cpu()
-    NetMob_attn_weights = NetMob_attn_weights.detach().cpu()  # Ensure the attention weights are on CPU and detached from the computation graph
-    # -----
-
-    # head = 0
-
-
-    uniform_weight = 1/NetMob_attn_weights.size(-1)
-    vmin = 0
-    vmax = min(1,uniform_weight*vmax_coeff)
-
-
-    for head in range(NetMob_attn_weights.size(1)):
-        
-        # -- Average Attention Weight : 
-        average_attn_weight = NetMob_attn_weights.mean(0)   # [heads, stations, Iris]
-        plot_heatmap(average_attn_weight[head],ylabel =spatial_unit,figsize = (15,7) ,title=f'Average Attention Weight throughout the day\n Head {head}',vmin=vmin,vmax=vmax)
-
-        # -- Morning Average Attention Weight : 
-        morning_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_morning).mean(0)
-        plot_heatmap(morning_attn_weight[head], title=f'Attention Weight during Morning (7:00 - 10:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
-
-        # -- Evening Attention Weight : 
-        evening_attn_weight = torch.index_select(NetMob_attn_weights, 0, indices_evening).mean(0)
-        plot_heatmap(evening_attn_weight[head], title=f'Attention Weight during evening (17:00 - 19:45)\n Head {head}',ylabel =spatial_unit,figsize = (15,7),vmin=vmin,vmax=vmax)
-
 
 
 
