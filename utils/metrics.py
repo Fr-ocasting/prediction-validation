@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 from PI.PI_object import PI_object
 from utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape,RMSELoss
 
-def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None, horizon_step = None):
+def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None, horizon_step = None,Q = None):
     '''
     Args:
     ------
@@ -39,7 +39,7 @@ def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_m
     Return a dictionnary (dic_metric) of couple (Key, error), where the key are the metrics, and the values the associated error from the prediction.
     '''
     if ('PICP' in metrics) or ('MPIW' in metrics): 
-        dic_metric,metrics  = evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics)
+        dic_metric,metrics  = evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics,Q = Q)
 
     dic_metric  = evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous,horizon_step)
     return(dic_metric)
@@ -65,11 +65,11 @@ def evaluate_single_point_metrics(dic_metric,Preds,Y_true,metrics,previous,horiz
         dic_metric[f"{metric}_all"] = np.mean(np.array([dic_metric[f"{metric}_h{(out_dim+1)*horizon_step}"] for out_dim in range(Preds.size(-1))]))
     return dic_metric
 
-def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics):
+def evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics,Q = None):
     '''
     Tackle the case of multi-point (range) prediction
     '''    
-    pi = PI_object(Preds,Y_true,alpha,type_calib)
+    pi = PI_object(Preds,Y_true,alpha,type_calib,Q = Q)
     for metric in metrics:
         if metric == 'PICP':
             dic_metric[metric] = pi.picp

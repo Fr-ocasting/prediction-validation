@@ -175,7 +175,7 @@ class Trainer(object):
 
         self.training_mode = 'valid'
         self.model.eval()   # Desactivate Dropout 
-        Preds,Y_true,T_labels = self.loop_epoch(normalizer=normalizer) 
+        valid_Preds,valid_Y_true,valid_T_labels = self.loop_epoch(normalizer=normalizer) 
 
         # Update scheduler after each Epoch 
         self.chrono.torch_scheduler()
@@ -184,7 +184,7 @@ class Trainer(object):
 
         # Follow Update of Testing Metrics 
         self.chrono.track_pi()
-        pi = self.track_pi(Preds,Y_true,T_labels)
+        pi = self.track_pi(valid_Preds,valid_Y_true,valid_T_labels,normalizer)
         self.ray_tune_track(pi)
         self.chrono.track_pi()
 
@@ -198,12 +198,14 @@ class Trainer(object):
         if epoch == 2:
             print(f"Estimated time for training: {'{0:.1f}'.format(self.args.epochs*(time.time()-t0)/60)}min ")
     
-    def get_pi_from_prediction(self,Preds,Y_true,T_labels):
+    def get_pi_from_prediction(self,Preds,Y_true,T_labels,normalizer):
         if self.type_calib == 'CQR':
             # Get Quantile tensor from Calibration with 'cal' datalaoder:
             Q = self.conformal_calibration(self.alpha,
                                         conformity_scores_type = self.args.conformity_scores_type,
-                                        quantile_method = self.args.quantile_method,print_info = False)  
+                                        quantile_method = self.args.quantile_method,
+                                        normalizer = normalizer,
+                                        print_info = False)  
             # get PI from Prediction and apply the Calibration :
             pi = self.CQR_PI(Preds,Y_true,self.args.alpha,Q,T_labels)
             # ....
@@ -214,9 +216,9 @@ class Trainer(object):
 
         return(pi)
     
-    def track_pi(self,Preds,Y_true,T_labels):
+    def track_pi(self,Preds,Y_true,T_labels,normalizer):
         if self.args.track_pi:
-            pi = self.get_pi_from_prediction(Preds,Y_true,T_labels)
+            pi = self.get_pi_from_prediction(Preds,Y_true,T_labels,normalizer)
             self.picp_list.append(pi.picp)
             self.mpiw_list.append(pi.mpiw)
             return(pi)
@@ -269,16 +271,26 @@ class Trainer(object):
                 self.best_valid = self.valid_loss[-1]
                 self.performance = {'valid_loss': self.best_valid, 'epoch':epoch, 'training_over' : False}
 
+                if self.type_calib == 'CQR':
+                    Q = self.conformal_calibration(self.alpha,
+                                                conformity_scores_type = self.args.conformity_scores_type,
+                                                quantile_method = self.args.quantile_method,
+                                                normalizer = normalizer,print_info = False)  
+                else:
+                    Q = None
+
+
                 # Keep Track on Test Metrics
                 Preds_test,Y_true_test,_ = self.test_prediction(allow_dropout = False,training_mode = 'test',track_loss=False,normalizer=normalizer)
+            
                 test_metrics = evaluate_metrics(Preds_test,Y_true_test,metrics = self.metrics,
-                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {},horizon_step = self.horizon_step)
+                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {},horizon_step = self.horizon_step,Q=Q)
                 self.performance.update({'test_metrics': test_metrics})
 
                 # Keep Track on Valid Metrics:
                 Preds_valid,Y_true_valid,_ = self.test_prediction(allow_dropout = False,training_mode = 'valid',track_loss=False,normalizer=normalizer)
                 valid_metrics = evaluate_metrics(Preds_valid,Y_true_valid,metrics = self.metrics,
-                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {},horizon_step = self.horizon_step)
+                                                 alpha = self.alpha, type_calib = self.type_calib,dic_metric = {},horizon_step = self.horizon_step,Q=Q)
                 self.performance.update({'valid_metrics': valid_metrics})    
                 # ...
 
@@ -491,7 +503,8 @@ class Trainer(object):
             self.update_loss_list(loss_epoch,nb_samples,self.training_mode)
         return Preds,Y_true,T_labels
 
-    def conformal_calibration(self,alpha,conformity_scores_type = 'max_residual',quantile_method = 'classic',print_info = True, calibration_calendar_class = None):
+    def conformal_calibration(self,alpha,conformity_scores_type = 'max_residual',quantile_method = 'classic',
+                                        normalizer = None, print_info = True, calibration_calendar_class = None):
         ''' 
         Quantile estimator (i.e NN model) is trained on the proper set
         Conformity scores computed with quantile estimator on the calibration set
@@ -509,7 +522,7 @@ class Trainer(object):
 
         # Lower / Upper band 
         calibrator.get_lower_upper_bands()
-        calibrator.unormalize(self)
+        calibrator.unormalize(normalizer = normalizer)
 
         # Get conformity scores
         calibrator.get_conformity_scores(conformity_scores_type)

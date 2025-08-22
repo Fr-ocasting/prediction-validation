@@ -23,6 +23,7 @@ class Calibrator(object):
 
     def get_prediction(self,trainer):
         trainer.training_mode = 'cal'
+        trainer.model.eval()
         Preds,Y_cal,T_cal = trainer.loop_epoch()
         self.Preds = Preds
         self.Y_cal = Y_cal
@@ -38,11 +39,11 @@ class Calibrator(object):
         else:raise ValueError(f"Shape of model's prediction: {self.Preds.size()}. Last dimension should be 1 or 2.")
         # ...
 
-    def unormalize(self,trainer):
+    def unormalize(self,normalizer):
         # unormalized lower and upper band  
-        self.lower_q = trainer.dataset.normalizer.unormalize_tensor(inputs = self.lower_q,feature_vect = True ) # ,device = self.args.device
-        self.upper_q  = trainer.dataset.normalizer.unormalize_tensor(inputs = self.upper_q,feature_vect = True ) # , device = self.args.device
-        self.Y_cal = trainer.dataset.normalizer.unormalize_tensor(inputs = self.Y_cal, feature_vect = True ) # ,device = self.args.device
+        self.lower_q = normalizer.unormalize_tensor(inputs = self.lower_q,feature_vect = True ) # ,device = self.args.device
+        self.upper_q  = normalizer.unormalize_tensor(inputs = self.upper_q,feature_vect = True ) # , device = self.args.device
+        self.Y_cal = normalizer.unormalize_tensor(inputs = self.Y_cal, feature_vect = True ) # ,device = self.args.device
         # ...
     
     def get_conformity_scores(self,conformity_scores_type):

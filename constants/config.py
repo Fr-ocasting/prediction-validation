@@ -163,16 +163,21 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0
-    config['metrics'] = ['rmse','mse','mae','mape','mase']
-    # ===   ===
+    # ===  
+
     config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
 
 
     # Define Output dimension: 
-    if config['loss_function_type'] in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']: out_dim_factor = 1
-    elif config['loss_function_type'] == 'quantile': out_dim_factor = 2
+    if config['loss_function_type'] in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']: 
+        out_dim_factor = 1
+        metrics = ['rmse','mse','mae','mape','mase']
+    elif config['loss_function_type'] == 'quantile': 
+        out_dim_factor = 2
+        metrics  = ['MPIW','PICP']
     else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
     config['out_dim_factor'] = out_dim_factor
+    config['metrics'] = metrics
     # ...
 
     # Temporal Graph Transformer Encoder: 
@@ -252,6 +257,7 @@ def update_out_dim(args):
         args.alpha = None
     elif args.loss_function_type == 'quantile': 
         args.out_dim_factor = 2
+        args.metrics  = ['MPIW','PICP']
     else: 
         raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
     
