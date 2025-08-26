@@ -572,86 +572,109 @@ if __name__ == '__main__':
     # trial_id2 = 'subway_out_subway_in_calendar_embedding_h4_bis'
     # trial_id2 = 'subway_out_bike_in_calendar_embedding_h4_bis'
     
+
+    # --- Init
     SAVE_DIRECTORY = f"../{SAVE_DIRECTORY}"
-    # for contextual_datasets in [ 'subway_in_calendar_embedding','bike_in_calendar_embedding',
-    #                                 'subway_in_bike_out_calendar_embedding', 'subway_in_bike_in_calendar_embedding',
-    #                                 'subway_in_bike_in_bike_out_calendar_embedding']:
-    for contextual_datasets in [ 'subway_in_bike_out_calendar_embedding', 'subway_in_bike_in_calendar_embedding',
-                                    'subway_in_bike_in_bike_out_calendar_embedding']:
-
-        for horizon in range(1,5):
-            
-            # trial_id1 = f'subway_out_calendar_embedding_h{horizon}_bis'
-            trial_id1 = f'subway_out_subway_in_calendar_embedding_h{horizon}_bis'
-            
-            trial_id2 = f'subway_out_{contextual_datasets}_h{horizon}_bis'
-
-            subfolder = 'K_fold_validation/training_wo_HP_tuning/optim/subway_in_STGCN'
-            
-            path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
-            model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
-
-            INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models"
-
-            # save_name = f"{trial_id2}"
-            save_name = f"ref_subway_out_subway_in_h{horizon}_to_{trial_id2[:-4]}"
+    subfolder = 'K_fold_validation/training_wo_HP_tuning/optim/subway_in_STGCN'
+    path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
+    model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
 
 
 
-            modification = {'shuffle':False,
-                        'data_augmentation':False,
-                        'torch_compile': False,
-                        'device': torch.device('cuda:0')
-                        }
-            training_mode = 'test'
-            temporal_aggs =   ['working_day_hour'] # ['daily_period','working_day_hour','weekday_hour_minute'] # ['hour','date','weekday'] 'hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour'
-            metric_list = ['mae','rmse'] # ['mae','mase','rmse']
-
-            #  ----  Load saved models and predictions  ---- 
-            ds1,args_init1 = None,None
-            ds2,args_init2 = None,None
-            range_k = range(1,6)   # 5 trials per config
-            for k in range_k: # range(1,6):
-                trial_id1_updated = f"_{trial_id1}{k}_f5"
-                trial_id2_updated = f"_{trial_id2}{k}_f5"
-                trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(trial_id1_updated,trial_id2_updated,modification = modification,model_args=model_args,path_model_args=path_model_args,
-                                                                                                ds1_init=ds1,ds2_init=ds2,
-                                                                                                args_init1=args_init1,args_init2=args_init2)
-                full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
-                globals()[f"trainer1_bis{k}"] = trainer1
-                globals()[f"trainer2_bis{k}"] = trainer2
-                globals()[f"ds1_bis{k}"] = ds1
-                globals()[f"ds2_bis{k}"] = ds2
-                globals()[f"full_predict1_bis{k}"] = full_predict1
-                globals()[f"full_predict2_bis{k}"] = full_predict2
-            
-
-            full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k]).mean(0)
-            full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k]).mean(0)
-            stations = list(ds1.spatial_unit)  # ['BEL','PER','PAR','AMP','FOC'] #list(ds1.spatial_unit)
-
-            # ---- 
-
-            # --- Get Cluster : 
-            # Load Train inputs: 
-            if horizon == 1: 
-                train_input = ds2.train_input
-                train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
-                train_df = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
-                train_df = train_df.reindex(pd.date_range(start=train_df.index.min(),end=train_df.index.max(),freq='15min'))
-
-                # Get Clustering of stations from these inputs: 
-                clusterer = TimeSeriesClusterer(train_df)
-                clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
-                clusterer.run_agglomerative(n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2)
-                # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=2,distance_threshold = 0.1)
-
-            clusterer.plot_clusters(heatmap= True, daily_profile=True, dendrogram=True,folder_path = INIT_SAVE_PATH, save_name = save_name ,bool_plot = False)
-            # ---
+    target_data = 'subway_in' #'subway_out'
+    subway_data_2 = 'subway_out' #'subway_in'
 
 
-            # ---- Plot Accuracy Comparison ---- 
-            plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                                stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
-                                                clustered_stations = clusterer.clusters,folder_path = INIT_SAVE_PATH, save_name = save_name,bool_plot = False)
-            # ----
+    trial_id1_i = f"{target_data}"
+    trial_id1_ii = f"{target_data}_{subway_data_2}"
+
+    dic_contextual_datasets = { trial_id1_i: [f'{subway_data_2}_bike_in_bike_out',
+                                              f'{subway_data_2}_bike_out', f'{subway_data_2}_bike_in',
+                                              f'{subway_data_2}',f'bike_in',f'bike_out'],
+
+                                trial_id1_ii: [f'{subway_data_2}_bike_in_bike_out',
+                                               f'{subway_data_2}_bike_out', f'{subway_data_2}_bike_in',
+                                               f'bike_in',f'bike_out']
+                            }
+    # ---
+
+    
+    for trial_id1_init in [trial_id1_i,trial_id1_ii]:  
+        contextual_datasets = dic_contextual_datasets[trial_id1_init]
+
+        for contextual_dataset in contextual_datasets:
+            for horizon in range(1,5):
+              
+
+                trial_id1 = f'{trial_id1_init}_calendar_embedding_h{horizon}_bis'
+                trial_id2 = f'{target_data}_{contextual_dataset}_calendar_embedding_h{horizon}_bis'
+
+
+
+                INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models/prediction_{target_data}"
+
+                # save_name = f"{trial_id2}"
+                save_name = f"ref_{trial_id1_init}_h{horizon}_to_{trial_id2[:-4]}"
+
+                print('\n--------------------\nINIT_SAVE_PATH: ',INIT_SAVE_PATH)
+                print('save_name: ',save_name)
+
+
+
+                modification = {'shuffle':False,
+                            'data_augmentation':False,
+                            'torch_compile': False,
+                            'device': torch.device('cuda:0')
+                            }
+                training_mode = 'test'
+                temporal_aggs =   ['working_day_hour'] # ['daily_period','working_day_hour','weekday_hour_minute'] # ['hour','date','weekday'] 'hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour'
+                metric_list = ['mae','rmse'] # ['mae','mase','rmse']
+
+                #  ----  Load saved models and predictions  ---- 
+                ds1,args_init1 = None,None
+                ds2,args_init2 = None,None
+                range_k = range(1,6)   # 5 trials per config
+                for k in range_k: # range(1,6):
+                    trial_id1_updated = f"_{trial_id1}{k}_f5"
+                    trial_id2_updated = f"_{trial_id2}{k}_f5"
+                    trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(trial_id1_updated,trial_id2_updated,modification = modification,model_args=model_args,path_model_args=path_model_args,
+                                                                                                    ds1_init=ds1,ds2_init=ds2,
+                                                                                                    args_init1=args_init1,args_init2=args_init2)
+                    full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
+                    globals()[f"trainer1_bis{k}"] = trainer1
+                    globals()[f"trainer2_bis{k}"] = trainer2
+                    globals()[f"ds1_bis{k}"] = ds1
+                    globals()[f"ds2_bis{k}"] = ds2
+                    globals()[f"full_predict1_bis{k}"] = full_predict1
+                    globals()[f"full_predict2_bis{k}"] = full_predict2
+                
+
+                full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k]).mean(0)
+                full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k]).mean(0)
+                stations = list(ds1.spatial_unit)  # ['BEL','PER','PAR','AMP','FOC'] #list(ds1.spatial_unit)
+
+                # ---- 
+
+                # --- Get Cluster : 
+                # Load Train inputs: 
+                if horizon == 1: 
+                    train_input = ds2.train_input
+                    train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
+                    train_df = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
+                    train_df = train_df.reindex(pd.date_range(start=train_df.index.min(),end=train_df.index.max(),freq='15min'))
+
+                    # Get Clustering of stations from these inputs: 
+                    clusterer = TimeSeriesClusterer(train_df)
+                    clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+                    clusterer.run_agglomerative(n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2)
+                    # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=2,distance_threshold = 0.1)
+
+                clusterer.plot_clusters(heatmap= True, daily_profile=True, dendrogram=True,folder_path = INIT_SAVE_PATH, save_name = save_name ,bool_plot = False)
+                # ---
+
+
+                # ---- Plot Accuracy Comparison ---- 
+                plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
+                                                    stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
+                                                    clustered_stations = clusterer.clusters,folder_path = INIT_SAVE_PATH, save_name = save_name,bool_plot = False)
+                # ----
