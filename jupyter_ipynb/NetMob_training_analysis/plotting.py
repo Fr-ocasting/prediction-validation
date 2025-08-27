@@ -59,10 +59,10 @@ def plot_boxplot_on_metric(df,metric_i='mse',xaxis_label = "App", legend_group =
         fill_color=factor_cmap(f"{legend_group}_str", palette=palette, factors=df[f"{legend_group}_str"].unique()),
         legend_group=f"{legend_group}_str"
     )
-
+    p.xaxis.major_label_text_font_size = "10pt"
     p.xaxis.axis_label = xaxis_label 
     p.yaxis.axis_label = metric_i
-    p.xaxis.major_label_orientation = np.pi/2
+    p.xaxis.major_label_orientation = np.pi/7
     p.legend.title = legend_group
     output_notebook()
     show(p)
