@@ -162,15 +162,79 @@ possible_contextual_kwargs = {'subway_out': {'need_global_attn':True,
 
 
 
+possible_contextual_kwargs = {
+    #     # No spatial Attention, directly Stack subway-out at the module entry: 
+    # 'subway_out': {'need_global_attn':False, 
+                    # 'stacked_contextual': True,
+                    # 'vision_model_name' : None,
+                    # 'use_only_for_common_dates': False,
+                    # 'quantile_filter_outliers': 0.99 ,
+                    #                 }, 
+    #    #  No Spatial Attention, only Embeding with FF : 
+    #   'subway_out': {'need_global_attn':True, 
+    #                 'stacked_contextual': False,
+    #                 'vision_model_name' : None,
+    #                 'use_only_for_common_dates': False,
+    #                 'quantile_filter_outliers': 0.99 ,
+                    
+    #                 'attn_kwargs': {
+    #                                 'dim_feedforward' : 128,
+    #                                 'num_heads' : 1,
+    #                                 'dim_model' : 32,
+    #                                 'nb_layers': 0,
+    #                                 'latent_dim': 32,
+    #                                     },
+    #                                 },                             
+    #                           }
+
+     #  Spatial Attention, but LATE, with the output of ST-blocks as query 
+      'subway_out': {'need_global_attn':True, 
+                    'stacked_contextual': False,
+                    'vision_model_name' : None,
+                    'use_only_for_common_dates': False,
+                    'quantile_filter_outliers': 0.99 ,
+                    
+                    'attn_kwargs': {
+                                    'dim_feedforward' : 128,
+                                    'num_heads' : 1,
+                                    'dim_model' : 32,
+                                    'nb_layers': 1,
+                                    'latent_dim': 32,
+                                     'attn_late' : True,     # Attention entre le sortie des STblocks et les données NetMob Raw
+                                     'proj_query': False,    # Comme attention Late, Query déjà projeté dans un espace latent
+                                        },
+                                    },  
+
+      'weather': {'need_global_attn':True, 
+                    'stacked_contextual': False,
+                    'vision_model_name' : None,
+                    'use_only_for_common_dates': False,
+                    'quantile_filter_outliers': 0.995 ,
+                    
+                    'attn_kwargs': {'dim_feedforward' : 64,
+                                    'num_heads' : 1,
+                                    'dim_model' : 32,
+                                    'nb_layers': 1,
+                                    'latent_dim': 32,
+                                     'attn_late' : False,     # Attention entre le sortie des STblocks et les données NetMob Raw
+                                        },
+                                    },                                      
+                              }
+
+
+
+
 modifications_new = {}
-for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
-    # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[] ]:
-    # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'] ]:
-    for contextual_dataset_names in [['bike_out'],['bike_in','bike_out']]:
-        for horizon in [1,2,3,4]:
+for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
+    # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
+    # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
+    for contextual_dataset_names in [['weather']]:
+        # for horizon in [1,2,3,4]:
+        for horizon in [1]:
             for n_bis in range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar_embedding']
                 name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
+                # name_i = f"{'_'.join(dataset_names)}_attn_late_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],

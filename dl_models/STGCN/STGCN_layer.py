@@ -392,14 +392,11 @@ class OutputBlock(nn.Module):
         # Tackle Extracted Feature Concatenation Late:
         if concatenation_late:
             in_channel_fc1 = in_channel_fc1 + extracted_feature_dim
-
         # Tackle Time Embedding  Late:
         if TE_concatenation_late:
             in_channel_fc1 = in_channel_fc1 +embedding_dim
-
         # Tackle Spatial Attention Late:
         in_channel_fc1 = in_channel_fc1 + attn_late_dim
-
         self.concatenation_late = concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
         # ...
@@ -491,7 +488,7 @@ class OutputBlock(nn.Module):
                 # If context is [B,N,C] -> [B,1,N,C]
                 context = context.unsqueeze(1)
             context_list.append(context)
-            # print('context.size: ',context.size())
+        #     print('context.size: ',context.size())
         # print('End Spatial Attention Late\n------------------------\n')
         # ----
 
@@ -542,7 +539,7 @@ class OutputBlock(nn.Module):
         x = self.relu(x)
         x = self.dropout(x)
         x = self.fc2(x)
-        #print('x.size after fc2: ',x.size())
+        # print('x.size after fc2: ',x.size())
         x = x.permute(0, 3, 1, 2)
         # print('output (after permute): ',x.size())
 

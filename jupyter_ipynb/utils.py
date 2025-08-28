@@ -30,6 +30,7 @@ def parse_results_to_dataframe(data_string, bis = False):
             continue
 
         match = line_regex.search(line)
+
         if not match:
             continue
             
@@ -39,13 +40,12 @@ def parse_results_to_dataframe(data_string, bis = False):
 
         # Identifie la donnée cible (target) et les données contextuelles
         target_data = f"{parts[0]}_{parts[1]}"
-        
         if bis == False:
-            context_parts = '_'.join(parts[2:-3]) # Ignore target, calendar, embedding, et horizon
+            context_parts = '_'.join(parts[2:]) # Ignore target, calendar, embedding, et horizon
             horizon_code = parts[-1]
             bis_code = [1]*len(horizon_code)
         else:
-            context_parts = '_'.join(parts[2:-4]) # Ignore target, calendar, embedding, et horizon
+            context_parts = '_'.join(parts[2:]) # Ignore target, calendar, embedding, et horizon
             horizon_code = parts[-2]
             bis_code = parts[-1][3:]
         
@@ -64,6 +64,10 @@ def parse_results_to_dataframe(data_string, bis = False):
             'RMSE': float(rmse),
             'MAE': float(mae),
             'MAPE': float(mape),
+            'stack': 'stack' in line,
+            'ff_concat_late': 'ff_concat_late' in line,
+            'attn_late': 'attn_late' in line,
+            'STAEformer': 'STAEformer' in line
         }
         parsed_data.append(row)
 
@@ -81,7 +85,8 @@ def parse_results_to_dataframe(data_string, bis = False):
         'target_data', 'horizon', 
         'subway_in', 'subway_out', 
         'bike_in', 'bike_out',
-        'RMSE', 'MAE', 'MAPE','bis'
+        'RMSE', 'MAE', 'MAPE','bis',
+        'stack','ff_concat_late', 'STAEformer','attn_late'
     ]
     df = df[final_columns]
     

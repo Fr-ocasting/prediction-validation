@@ -111,7 +111,7 @@ class full_model(nn.Module):
 
         # Will be stacked 
         self.dict_pos_node_attr_which_does_not_need_attn2ds     = {p:ds_name for ds_name,p in self.dict_pos_node_attr2ds.items() if (p not in self.ds_which_need_global_attn) and (p not in self.ds_which_need_global_attn_late)}
-        self.pos_node_attr_which_does_not_need_attn             = list(self.dict_pos_node_attr_which_does_not_need_attn2ds.keys())
+        self.pos_node_attr_which_does_not_need_attn             = list(self.dict_pos_node_attr_which_does_not_need_attn2ds.values())
         self.dict_ds2added_dim                                  = {}
 
         self.netmob_vision= None 
@@ -436,7 +436,6 @@ class full_model(nn.Module):
         if len(L_node_attributes) > 0:
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attributes_from_attn(x,L_node_attributes,L_projected_x)
-            
 
         """ #A retirer 
         x,extracted_feature = self.forward_feature_extractor_model(x,contextual)        # Tackle NetMob (if exists):
@@ -534,7 +533,7 @@ def load_model(dataset, args):
                 else:
                     L_add = args.args_vision.L*args.args_vision.h_dim//2
             L_add = 7
-            print('ATTENTION CHANGER LES LIGNES 380 DANS full_model.load_model()')
+            raise NotImplementedError("This method has not been updated")
     else:
         L_add = 0
         vision_concatenation_late = False
@@ -555,6 +554,7 @@ def load_model(dataset, args):
         TE_embedding_dim = None
 
     if args.model_name == 'STAEformer':
+        args.added_dim_output = L_add
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}

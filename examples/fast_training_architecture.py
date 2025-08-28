@@ -70,10 +70,11 @@ if __name__ == "__main__":
                                     'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                     'drop_last' : False,  # True
                                     'mixed_precision' : False, # True # False
-                                    'torch_compile' : 'compile', # 'compile', # 'compile', #'compile' # 'jit_script' #'trace' # False
+                                    'torch_compile' : 'compile', #'compile', #'compile', # 'compile', # 'compile', #'compile' # 'jit_script' #'trace' # False
                                     'unormalize_loss' : True, # False
+                                    'track_grad_norm' : False,
 
-                                    'device': torch.device('cuda:1')
+                                    'device': torch.device('cuda:1'),
             }
         
 

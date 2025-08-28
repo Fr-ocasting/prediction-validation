@@ -132,7 +132,7 @@ class STGCN(nn.Module):
                     if args_ds_i.stack_consistent_datasets:
                         attn_late_dim = attn_late_dim+args_ds_i.dim_model
                     else:
-                        attn_late_dim = attn_late_dim+args_ds_i.dim_model*args.contextual_kwargs[ds_name]['attn_kwargs']['latent_dim']
+                        attn_late_dim = attn_late_dim+args.contextual_kwargs[ds_name]['attn_kwargs']['latent_dim']
         # -----
 
 

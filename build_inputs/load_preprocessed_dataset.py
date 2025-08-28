@@ -140,7 +140,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                     raise NotImplementedError(f"Noise from {args.DA_noise_from} has not been implemented")
                 
                 target_ds.noises[dataset_name] = df_noises         
-        elif dataset_name in ['netmob_POIs','bike_in','bike_out']:
+        elif dataset_name in ['netmob_POIs','bike_in','bike_out','weather']:
             need_local_spatial_attn = False
             contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,

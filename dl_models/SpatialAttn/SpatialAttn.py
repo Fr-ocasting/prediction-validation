@@ -36,8 +36,8 @@ class MHA_layer(nn.Module):
         super(MHA_layer, self).__init__()
 
         self.mha = MultiHeadAttention(query_dim, key_dim, dim_model, num_heads, dropout, keep_topk, proj_query)
-        self.feedforward = feed_forward(dim_model, dim_feedforward, output_dim)
         self.layer_norm = nn.LayerNorm(dim_model)
+        self.feedforward = feed_forward(dim_model, dim_feedforward, output_dim)
         self.dropout = nn.Dropout(dropout)
 
         #  -- Add linear proj if align is needed 
@@ -85,31 +85,37 @@ class model(nn.Module):
         super().__init__()
         self.query_dim = query_dim
         self.key_dim = key_dim
-
-        if nb_layers == 1:
-            self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
+        self.nb_layers = nb_layers
+        if nb_layers == 0:
+            # No layer, just a linear projection
+            self.mha_list = nn.ModuleList([ #nn.LayerNorm(latent_dim),
+                                            feed_forward(key_dim, dim_feedforward, latent_dim),
+                                            nn.Dropout(dropout)])
         else:
-            self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query)]+
-                                          [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query) for _ in range(nb_layers-2)] + 
-                                          [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
+            if nb_layers == 1:
+                self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
+            else:
+                self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query)]+
+                                            [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query) for _ in range(nb_layers-2)] + 
+                                            [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
 
 
-        # --- Gradient we would like to Keep track on:
-        tracked_grads_info = []
-        for k,mha_layer in enumerate(self.mha_list):
-            if hasattr(mha_layer.mha,'W_q'): 
-                tracked_grads_info.append((f'layer{k}mha_W_q', mha_layer.mha.W_q))
-            tracked_grads_info.extend([
-                (f'layer{k}/LN_q', mha_layer.mha.layer_normq.weight),
-                (f'layer{k}/LN_kv', mha_layer.mha.layer_normkv.weight),
-                (f"layer{k}/mha_W_k", mha_layer.mha.W_k),
-                (f"layer{k}/mha_W_v", mha_layer.mha.W_v),
-                (f'layer{k}/LN_mha', mha_layer.layer_norm.weight),
-                (f"layer{k}/ff_fc1", mha_layer.feedforward[0].weight),
-                (f"layer{k}/ff_fc2", mha_layer.feedforward[2].weight)
-            ])
-        self._tracked_grads_info = tracked_grads_info
-        # ----
+            # --- Gradient we would like to Keep track on:
+            tracked_grads_info = []
+            for k,mha_layer in enumerate(self.mha_list):
+                if hasattr(mha_layer.mha,'W_q'): 
+                    tracked_grads_info.append((f'layer{k}mha_W_q', mha_layer.mha.W_q))
+                tracked_grads_info.extend([
+                    (f'layer{k}/LN_q', mha_layer.mha.layer_normq.weight),
+                    (f'layer{k}/LN_kv', mha_layer.mha.layer_normkv.weight),
+                    (f"layer{k}/mha_W_k", mha_layer.mha.W_k),
+                    (f"layer{k}/mha_W_v", mha_layer.mha.W_v),
+                    (f'layer{k}/LN_mha', mha_layer.layer_norm.weight),
+                    (f"layer{k}/ff_fc1", mha_layer.feedforward[0].weight),
+                    (f"layer{k}/ff_fc2", mha_layer.feedforward[2].weight)
+                ])
+            self._tracked_grads_info = tracked_grads_info
+            # ----
 
     def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
         """
@@ -126,10 +132,18 @@ class model(nn.Module):
         # print('\nFoward Spatial Attention: ')
         # print('Query (x_flow_station):',x_flow_station.size())
         # print('Key/Values (x_contextual):',x_contextual.size())
-        current_context = x_flow_station
-        for mha_layer in self.mha_list:
-            projected_x_flow, current_context = mha_layer(current_context, x_contextual)
-            # print('\nProjected Flow (x_flow_station):',projected_x_flow.size())
-            # print('Current Context:',current_context.size())
+
+        if self.nb_layers == 0:
+            current_context = x_contextual
+            projected_x_flow = x_flow_station
+            for layer in self.mha_list:
+                current_context = layer(current_context)
+
+        else:
+            current_context = x_flow_station
+            for mha_layer in self.mha_list:
+                projected_x_flow, current_context = mha_layer(current_context, x_contextual)
+                # print('\nProjected Flow (x_flow_station):',projected_x_flow.size())
+                # print('Current Context:',current_context.size())
 
         return projected_x_flow,current_context

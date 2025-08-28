@@ -98,19 +98,25 @@ class SelfAttentionLayer(nn.Module):
         self.dropout2 = nn.Dropout(dropout)
 
     def forward(self, x: Tensor, dim: int = -2) -> Tensor:
+        # print('\ninit: ',x.size())
         x = x.transpose(dim, -2)
+        # print('permuted : ',x.size())
         # x: (batch_size, ..., length, model_dim)
         residual = x
         out = self.attn(x, x, x)  # (batch_size, ..., length, model_dim)
+        # print('context: ',out.size())
         out = self.dropout1(out)
         out = self.ln1(residual + out)
 
         residual = out
+
         out = self.feed_forward(out)  # (batch_size, ..., length, model_dim)
+        # print('feed forward: ',out.size())
         out = self.dropout2(out)
         out = self.ln2(residual + out)
 
         out = out.transpose(dim, -2)
+        # print('output: ',out.size())
         return out
 
 
@@ -135,6 +141,7 @@ class STAEformer(nn.Module):
         use_mixed_proj=True,
         contextual_positions = {},
         horizon_step = 1,
+        added_dim_output = 0,
     ):
         super().__init__()
 
@@ -150,6 +157,7 @@ class STAEformer(nn.Module):
         self.dow_embedding_dim = dow_embedding_dim
         self.spatial_embedding_dim = spatial_embedding_dim
         self.adaptive_embedding_dim = adaptive_embedding_dim
+        self.added_dim_output = added_dim_output
         self.model_dim = (
             input_embedding_dim
             + tod_embedding_dim
@@ -157,6 +165,7 @@ class STAEformer(nn.Module):
             + spatial_embedding_dim
             + adaptive_embedding_dim
         )
+        self.output_model_dim = self.model_dim + self.added_dim_output
         
         self.num_heads = num_heads
         self.num_layers = num_layers
@@ -189,11 +198,11 @@ class STAEformer(nn.Module):
             self.adaptive_embedding = None
 
         if use_mixed_proj:
-            self.output_proj = nn.Linear(self.in_steps * self.model_dim, self.out_steps * self.output_dim// self.horizon_step)
+            self.output_proj = nn.Linear(self.in_steps * self.output_model_dim, self.out_steps * self.output_dim// self.horizon_step)
             self.temporal_proj = None
         else:
             self.temporal_proj = nn.Linear(self.in_steps, self.out_steps// self.horizon_step)
-            self.output_proj = nn.Linear(self.model_dim, self.out_steps * self.output_dim// self.horizon_step)
+            self.output_proj = nn.Linear(self.output_model_dim, self.out_steps * self.output_dim// self.horizon_step)
 
         self.attn_layers_t = nn.ModuleList(
             [
@@ -218,16 +227,12 @@ class STAEformer(nn.Module):
                 contextual: Optional[list[Tensor]]= None,
                 ) -> Tensor:
         
-        #print('x shape before input_proj:', x.shape)
-        if x_vision is not None:
-            raise NotImplementedError("tackling x_vision has not been implemented")
+        # print('x shape before input_proj:', x.shape)
 
+        if x_vision is not None:
+            raise NotImplementedError("x_vision is not implemented yet in this version.")
         if x_calendar is None:
             raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
-
-        if len(contextual) > 2: 
-            raise NotImplementedError(f"Contextual size: {[c.size() for c in contextual]}. Which means it contains surely more than the two initial calendar tensors, and tackling other contextual has not been implemented")
-
 
         else: 
             x = x.permute(0,3,2,1) # [B,C,N,L] -> [B,L,N,C]
@@ -269,10 +274,20 @@ class STAEformer(nn.Module):
 
 
             for attn in self.attn_layers_t:
+                # print('\n--- Temporal attention layer ---')
                 x = attn(x, dim=1)
             for attn in self.attn_layers_s:
+                # print('\n--- Spatial attention layer ---')
                 x = attn(x, dim=2)
             # (batch_size, in_steps, num_nodes, model_dim)
+            # print('x.size(): ',x.size())
+
+            if x_vision is not None: 
+                # print('x_vision.size(): ',x_vision.size())
+
+                x_vision = x_vision.unsqueeze().permute(0,3,2,1)
+                x = torch.cat([x, x_vision], dim=-1)
+                # print("x.size() after concat 'vision': ",x.size())
 
             if self.temporal_proj is None:
                 out = x.transpose(1, 2)  # (batch_size, num_nodes, in_steps, model_dim)
@@ -285,6 +300,7 @@ class STAEformer(nn.Module):
                 out = self.output_proj(out.transpose(1, 3) )  # (batch_size, self.out_steps//self.horizon_step, num_nodes, output_dim)
             
             out = out.permute(0,3,2,1)  #  (batch_size, output_dim, num_nodes, self.out_steps//self.horizon_step )
+            # print('output.size(): ',out.size())
 
             return out
 

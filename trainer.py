@@ -415,7 +415,7 @@ class Trainer(object):
 
             if self.tracked_params_map is not None:
                 for name, param in self.tracked_params_map.items():
-                    if param.grad is not None:
+                    if param is not None and param.grad is not None:
                         try: 
                             self.dict_gradient_norm[name].append(param.grad.norm().item())
                         except:

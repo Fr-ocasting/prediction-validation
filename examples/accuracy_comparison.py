@@ -581,25 +581,26 @@ if __name__ == '__main__':
 
 
 
-    target_data = 'subway_in' #'subway_out'
-    subway_data_2 = 'subway_out' #'subway_in'
+    target_data = 'subway_in'# 'subway_in' #'subway_out'
+    subway_data_2 = 'subway_out' # 'subway_out' #'subway_in'
 
 
     trial_id1_i = f"{target_data}"
     trial_id1_ii = f"{target_data}_{subway_data_2}"
 
     dic_contextual_datasets = { trial_id1_i: [f'{subway_data_2}_bike_in_bike_out',
-                                              f'{subway_data_2}_bike_out', f'{subway_data_2}_bike_in',
+                                              f'{subway_data_2}_bike_in',f'{subway_data_2}_bike_out', f'bike_in_bike_out',
                                               f'{subway_data_2}',f'bike_in',f'bike_out'],
 
-                                trial_id1_ii: [f'{subway_data_2}_bike_in_bike_out',
-                                               f'{subway_data_2}_bike_out', f'{subway_data_2}_bike_in',
-                                               f'bike_in',f'bike_out']
+                                # trial_id1_ii: [f'{subway_data_2}_bike_in_bike_out',
+                                #                f'{subway_data_2}_bike_in',f'{subway_data_2}_bike_out', f'bike_in_bike_out',
+                                #                f'bike_in',f'bike_out']
+                                trial_id1_ii : [f'bike_in_bike_out']
                             }
     # ---
 
     
-    for trial_id1_init in [trial_id1_i,trial_id1_ii]:  
+    for trial_id1_init in [trial_id1_ii]: #[trial_id1_i,trial_id1_ii]:  
         contextual_datasets = dic_contextual_datasets[trial_id1_init]
 
         for contextual_dataset in contextual_datasets:

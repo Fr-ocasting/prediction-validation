@@ -55,49 +55,177 @@ constant_modif = {'dataset_for_coverage': ['subway_in','netmob_POIs'],
                         'calendar_types':['dayofweek', 'timeofday']
                         }
 
+
+
+possible_target_kwargs = {'subway_out': {'quantile_filter_outliers': 0.99  },  
+                        'subway_in': { 'quantile_filter_outliers': 0.99 }, 
+                                    }
+
+possible_contextual_kwargs = {'subway_out': {'need_global_attn':True, 
+                                            'stacked_contextual': False,
+                                            'vision_model_name' : None,
+                                            'use_only_for_common_dates': False,
+                                            'quantile_filter_outliers': 0.99 ,
+                                            
+                                            'attn_kwargs': {
+                                                            'dim_feedforward' : 128,
+                                                            'num_heads' : 1,
+                                                            'dim_model' : 32,
+                                                            'nb_layers': 1,
+                                                            'latent_dim': 32,
+                                                                },
+                                                            },  
+
+                            'subway_in': {'need_global_attn':True, 
+                                        'stacked_contextual': False,
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False,
+                                        'quantile_filter_outliers': 0.99 ,
+                                        
+                                        'attn_kwargs': {
+                                                        'dim_feedforward' : 128,
+                                                        'num_heads' : 1,
+                                                        'dim_model' : 32,
+                                                        'nb_layers': 1,
+                                                        'latent_dim': 32,
+                                                            },
+                                    }, 
+
+                            'bike_in':{'need_global_attn':True, 
+                                        'stacked_contextual': False,
+                                        'agg_iris_target_n':50,
+                                        'threshold_volume_min': 1,
+                                       'quantile_filter_outliers': 0.99,
+                                        'attn_kwargs': {
+                                                        'dim_feedforward' : 128,
+                                                        'num_heads' : 1,
+                                                        'dim_model' : 32,
+                                                        'nb_layers': 1,
+                                                        'latent_dim': 32,
+                                                            },
+                                    },
+                                    
+                            'bike_out':{'need_global_attn':True, 
+                                        'stacked_contextual': False,
+                                         'agg_iris_target_n':50,
+                                        'threshold_volume_min': 1,
+                                         'quantile_filter_outliers': 0.99,
+                                        'attn_kwargs': {
+                                                        'dim_feedforward' : 128,
+                                                        'num_heads' : 1,
+                                                        'dim_model' : 32,
+                                                        'nb_layers': 1,
+                                                        'latent_dim': 32,
+                                                            },
+                                    },
+                    }
+
+
+
+modifications_new = {}
+for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
+    # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
+    # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
+    for contextual_dataset_names in [[]]:
+        # for horizon in [1,2,3,4]:
+        for horizon in [1,4]:
+            for n_bis in range(1,6): # range(1,6):
+                dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
+                # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
+                config_i =  {'target_data': target_data,
+                                'dataset_names': dataset_names,
+                                'dataset_for_coverage': ['subway_in'],
+                                'calendar_types':['dayofweek', 'timeofday']
+
+                                'input_embedding_dim': 12,
+                                'adaptive_embedding_dim': 32,
+                                'input_embedding_dim': 24,
+                                'tod_embedding_dim': 6,
+                                'dow_embedding_dim': 6,
+                                'feed_forward_dim': 256,
+                                'num_heads': 4,
+                                'num_layers': 3,
+
+                                'use_mixed_proj': True,
+                                'freq': '15min',
+                                'H':6,
+                                'D':1,
+                                'W':0,
+
+                                'lr': 0.001,
+                                'weight_decay':  0.0015,
+                                'dropout': 0.2,
+                                'torch_scheduler_milestone': 20,
+                                'torch_scheduler_gamma':0.9925,
+                                'torch_scheduler_type': 'warmup',
+                                'torch_scheduler_lr_start_factor': 0.3,
+                                'standardize': False,
+                                'minmaxnorm': True,
+                                'batch_size': 128,
+                                'epochs':500,
+
+                                'loss_function_type':'HuberLoss',
+                                'optimizer': 'adamw',
+                                'unormalize_loss' : True,
+                                'contextual_kwargs' : {}, 
+
+
+                                'horizon_step': horizon,
+                                'step_ahead': horizon,
+
+                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
+                                'denoising_names':[],
+                                }  
+
+                modifications_new[name_i] = config_i
+
+
+
 modifications = {
 ######==========================================================================
 #        BEST MODEL OBTENU 
 #######========================================================================
-                # All Steps RMSE = 40.12, MAE = 22.54, MAPE = 24.14, MSE = 1612.03
-                # All Steps RMSE = 39.81, MAE = 22.44, MAPE = 25.02, MSE = 1586.97
-                # All Steps RMSE = 40.00, MAE = 22.58, MAPE = 25.26, MSE = 1602.40
-                #  All Steps RMSE = 40.02, MAE = 22.59, MAPE = 25.11, MSE = 1604.55
-                # All Steps RMSE = 40.23, MAE = 22.67, MAPE = 24.83, MSE = 1620.54
-                'calendar_input_dim24': {'dataset_names': ['subway_in','calendar'],
-                                                        'input_embedding_dim': 12,
-                                                        'unormalize_loss' : True,
-                                                        'contextual_kwargs' : {},  
-                                                        'loss_function_type':'HuberLoss',
-                                                        'optimizer': 'adamw',
-                                                        'batch_size': 128,
-                                                        'epochs':500,
-                                                        'adaptive_embedding_dim': 32,
-                                                        'input_embedding_dim': 24,
-                                                        'tod_embedding_dim': 6,
-                                                        'dow_embedding_dim': 6,
-                                                        'feed_forward_dim': 256,
+                # # All Steps RMSE = 40.12, MAE = 22.54, MAPE = 24.14, MSE = 1612.03
+                # # All Steps RMSE = 39.81, MAE = 22.44, MAPE = 25.02, MSE = 1586.97
+                # # All Steps RMSE = 40.00, MAE = 22.58, MAPE = 25.26, MSE = 1602.40
+                # #  All Steps RMSE = 40.02, MAE = 22.59, MAPE = 25.11, MSE = 1604.55
+                # # All Steps RMSE = 40.23, MAE = 22.67, MAPE = 24.83, MSE = 1620.54
+                # 'calendar_input_dim24': {'dataset_names': ['subway_in','calendar'],
+                #                                         'input_embedding_dim': 12,
+                #                                         'unormalize_loss' : True,
+                #                                         'contextual_kwargs' : {},  
+                #                                         'loss_function_type':'HuberLoss',
+                #                                         'optimizer': 'adamw',
+                #                                         'batch_size': 128,
+                #                                         'epochs':500,
+                #                                         'adaptive_embedding_dim': 32,
+                #                                         'input_embedding_dim': 24,
+                #                                         'tod_embedding_dim': 6,
+                #                                         'dow_embedding_dim': 6,
+                #                                         'feed_forward_dim': 256,
                                                         
-                                                        'num_heads': 4,
-                                                        'num_layers': 3,
+                #                                         'num_heads': 4,
+                #                                         'num_layers': 3,
 
-                                                        'use_mixed_proj': True,
-                                                        'freq': '15min',
-                                                        'H':6,
-                                                        'D':1,
-                                                        'W':0,
+                #                                         'use_mixed_proj': True,
+                #                                         'freq': '15min',
+                #                                         'H':6,
+                #                                         'D':1,
+                #                                         'W':0,
 
-                                                        'lr': 0.001,
-                                                        'weight_decay':  0.0015,
-                                                        'dropout': 0.2,
-                                                        'torch_scheduler_milestone': 20,
-                                                        'torch_scheduler_gamma':0.9925,
-                                                        'torch_scheduler_type': 'warmup',
-                                                        'torch_scheduler_lr_start_factor': 0.3,
-                                                        'standardize': True,
-                                                        'minmaxnorm': False,
-                                                        'calendar_types':['dayofweek', 'timeofday']
-                            },
+                #                                         'lr': 0.001,
+                #                                         'weight_decay':  0.0015,
+                #                                         'dropout': 0.2,
+                #                                         'torch_scheduler_milestone': 20,
+                #                                         'torch_scheduler_gamma':0.9925,
+                #                                         'torch_scheduler_type': 'warmup',
+                #                                         'torch_scheduler_lr_start_factor': 0.3,
+                #                                         'standardize': True,
+                #                                         'minmaxnorm': False,
+                #                                         'calendar_types':['dayofweek', 'timeofday']
+                #             },
 
                 # # [Subway-in, Subway_out]  Stack Channel
                 # # All Steps RMSE = 39.92, MAE = 22.43, MAPE = 24.68, MSE = 1595.62
@@ -1032,70 +1160,70 @@ modifications = {
 #             },
 
 
-        # All Steps RMSE = 38.98, MAE = 22.32, MAPE = 26.05, MSE = 1520.75
-        # All Steps RMSE = 39.14, MAE = 22.16, MAPE = 26.02, MSE = 1533.68
-        #  All Steps RMSE = 39.75, MAE = 22.45, MAPE = 25.33, MSE = 1581.65
-        # All Steps RMSE = 39.09, MAE = 22.18, MAPE = 26.25, MSE = 1529.74
-        # All Steps RMSE = 40.00, MAE = 22.64, MAPE = 25.57, MSE = 1602.63
-        # All Steps RMSE = 39.41, MAE = 22.25, MAPE = 25.92, MSE = 1554.86
-        # All Steps RMSE = 39.10, MAE = 22.04, MAPE = 25.24, MSE = 1530.37
-       'calendar_Web_Weather_Google_Maps_IRIS_agg_100_input_dim24_attn_dim12_ff64_h2_ldim2_exp_smooth_08_clustering01': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
-                                        'loss_function_type':'HuberLoss',
-                                        'optimizer': 'adamw',
-                                        'batch_size': 128,
-                                        'epochs':500,
-                                        'adaptive_embedding_dim': 32,
-                                        'tod_embedding_dim': 6,
-                                        'dow_embedding_dim': 6,
-                                        'feed_forward_dim': 256,
-                                        'input_embedding_dim': 24,
-                                        'num_heads': 4,
-                                        'num_layers': 3,
-                                        'lr': 0.001,
-                                        'weight_decay':  0.0015,
-                                        'dropout': 0.2,
-                                        'torch_scheduler_milestone': 20,
-                                        'torch_scheduler_gamma':0.9925,
-                                        'torch_scheduler_type': 'warmup',
-                                        'torch_scheduler_lr_start_factor': 0.3,
+    #     # All Steps RMSE = 38.98, MAE = 22.32, MAPE = 26.05, MSE = 1520.75
+    #     # All Steps RMSE = 39.14, MAE = 22.16, MAPE = 26.02, MSE = 1533.68
+    #     #  All Steps RMSE = 39.75, MAE = 22.45, MAPE = 25.33, MSE = 1581.65
+    #     # All Steps RMSE = 39.09, MAE = 22.18, MAPE = 26.25, MSE = 1529.74
+    #     # All Steps RMSE = 40.00, MAE = 22.64, MAPE = 25.57, MSE = 1602.63
+    #     # All Steps RMSE = 39.41, MAE = 22.25, MAPE = 25.92, MSE = 1554.86
+    #     # All Steps RMSE = 39.10, MAE = 22.04, MAPE = 25.24, MSE = 1530.37
+    #    'calendar_Web_Weather_Google_Maps_IRIS_agg_100_input_dim24_attn_dim12_ff64_h2_ldim2_exp_smooth_08_clustering01': {'dataset_names': ['subway_in','calendar','netmob_POIs'],
+    #                                     'loss_function_type':'HuberLoss',
+    #                                     'optimizer': 'adamw',
+    #                                     'batch_size': 128,
+    #                                     'epochs':500,
+    #                                     'adaptive_embedding_dim': 32,
+    #                                     'tod_embedding_dim': 6,
+    #                                     'dow_embedding_dim': 6,
+    #                                     'feed_forward_dim': 256,
+    #                                     'input_embedding_dim': 24,
+    #                                     'num_heads': 4,
+    #                                     'num_layers': 3,
+    #                                     'lr': 0.001,
+    #                                     'weight_decay':  0.0015,
+    #                                     'dropout': 0.2,
+    #                                     'torch_scheduler_milestone': 20,
+    #                                     'torch_scheduler_gamma':0.9925,
+    #                                     'torch_scheduler_type': 'warmup',
+    #                                     'torch_scheduler_lr_start_factor': 0.3,
 
-                                        'use_mixed_proj': True,
-                                        'freq': '15min',
-                                        'H':6,
-                                        'D':1,
-                                        'W':0,
+    #                                     'use_mixed_proj': True,
+    #                                     'freq': '15min',
+    #                                     'H':6,
+    #                                     'D':1,
+    #                                     'W':0,
 
-                                        'standardize': True,
-                                        'minmaxnorm': False,
-                                        'calendar_types':['dayofweek', 'timeofday'],
+    #                                     'standardize': True,
+    #                                     'minmaxnorm': False,
+    #                                     'calendar_types':['dayofweek', 'timeofday'],
 
-                                        'unormalize_loss' : True,
-                                        'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
-                                                                                'stacked_contextual': True,
-                                                                                'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
-                                                                                'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
-                                                                                'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-                                                                                'NetMob_expanded' : '', # '' # '_expanded'
-                                                                                'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
-                                                                                'vision_model_name' : None,
-                                                                                'epsilon_clustering': 0.1,
-                                                                                'agg_iris_target_n': 100,
-                                                                                'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
-                                                                                'attn_kwargs': {'latent_dim' : 2 ,
-                                                                                                'dim_feedforward' : 64,
-                                                                                                'num_heads' : 2 ,
-                                                                                                'dim_model' : 12,
-                                                                                                'keep_topk': False}  
-                                                                                #'H' : ,
-                                                                                #'D': ,
-                                                                                #'W': , 
-                                                                    },
-                                                            },  
-                                        'denoising_names':['netmob_POIs'],
-                                        'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
-                                        'denoising_modes':["train","valid","test"],             # par défaut
-                                        'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
-            },
+    #                                     'unormalize_loss' : True,
+    #                                     'contextual_kwargs' : {'netmob_POIs': {'need_global_attn':True, 
+    #                                                                             'stacked_contextual': True,
+    #                                                                             'NetMob_selected_apps' : ['Google_Maps','Web_Weather'], # Google_Maps # 
+    #                                                                             'NetMob_transfer_mode' :  ['DL'], #,'UL'] # ['DL'] # ['UL'] #['DL','UL']
+    #                                                                             'NetMob_selected_tags' : ['iris'],#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
+    #                                                                             'NetMob_expanded' : '', # '' # '_expanded'
+    #                                                                             'NetMob_only_epsilon': False, # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'
+    #                                                                             'vision_model_name' : None,
+    #                                                                             'epsilon_clustering': 0.1,
+    #                                                                             'agg_iris_target_n': 100,
+    #                                                                             'use_only_for_common_dates': False, # If True then only use the dataset to restrain Feature vector to the common dates between the datasets
+    #                                                                             'attn_kwargs': {'latent_dim' : 2 ,
+    #                                                                                             'dim_feedforward' : 64,
+    #                                                                                             'num_heads' : 2 ,
+    #                                                                                             'dim_model' : 12,
+    #                                                                                             'keep_topk': False}  
+    #                                                                             #'H' : ,
+    #                                                                             #'D': ,
+    #                                                                             #'W': , 
+    #                                                                 },
+    #                                                         },  
+    #                                     'denoising_names':['netmob_POIs'],
+    #                                     'denoiser_names':["exponential"],   # ['median'], ['exponential'], ['savitzky_golay']         # un seul filtre
+    #                                     'denoising_modes':["train","valid","test"],             # par défaut
+    #                                     'denoiser_kwargs':{'exponential': {'alpha': 0.8}}, # {'savitzky_golay': {'window': 5, 'poly': 2}} # {'exponential': {'alpha':0.3}} # {"median": {"kernel_size": 2}}
+    #         },
 #       # All Steps RMSE = 39.33, MAE = 22.27, MAPE = 24.76, MSE = 1548.55
 #         # All Steps RMSE = 39.46, MAE = 22.30, MAPE = 24.31, MSE = 1558.68
 #         # All Steps RMSE = 39.49, MAE = 22.39, MAPE = 24.76, MSE = 1561.84
@@ -6105,6 +6233,9 @@ modifications = {
     #                                 },
     #                         
     }
+
+if len(modifications_new)>0:
+    modifications = modifications_new
 
 if len(constant_modif) > 0:
     modifications_bis = modifications.copy()

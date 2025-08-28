@@ -1,7 +1,78 @@
-import numpy as np
+import sys 
+import os 
 import pandas as pd
-import bokeh as bk
+import numpy as np
+import torch
 from datetime import datetime
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+
+from utils.utilities import restrain_df_to_specific_period
+from build_inputs.load_preprocessed_dataset import load_input_and_preprocess
+from utils.utilities import remove_outliers_based_on_quantile
+NAME = 'weather'
+FILE_NAME = 'weather/donnees-meteo'  # 'subway_out/subway_out'  #  'subway_in/subway_in' 
+START = '01/01/2019'
+END = '01/01/2021'
+
+FREQ = '60min'
+USELESS_DATES = {}
+list_of_invalid_period = []
+C = 1
+
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True,filename=None,tensor_limits_keeper = None): # args,FOLDER_PATH,coverage_period = None
+    '''
+    args:
+    ------
+
+
+    outputs:
+    --------
+    PersonalInput object. Containing a 2-th order tensor [T,R]
+    '''
+
+    df_weather = load_weather_data(folder_path = FOLDER_PATH,
+                                    pathway = f"{FILE_NAME}.csv",
+                                    id_stations = [69029001,69299001],
+                                    columns = ['POSTE','DATE','T','RR1','DRR1','FF','GLO'],
+                                    dico = {'POSTE':'id_station','DATE':'date','T':'temperature', 
+                            'RR1':'precip','DRR1':'duree_prec','FF':'wind_ms','GLO':'solar'}
+                            )
+                
+    df_weather = df_weather.applymap(lambda x: float(x.replace(',','.')) if isinstance(x,str) else x)
+    pivoted_df_weather = df_weather.pivot_table(index='date',columns='id_station',values='precip')
+
+    # Restraint df: 
+    coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
+    if args.freq in ['15min','30min']:
+        pivoted_df_weather = pivoted_df_weather.reindex(coverage_local)
+    else:
+        raise NotImplementedError(f"Frequency {args.freq} not implemented")
+    pivoted_df_weather = restrain_df_to_specific_period(pivoted_df_weather,coverage_period)
+    pivoted_df_weather = remove_outliers_based_on_quantile(pivoted_df_weather,args,NAME)
+
+
+    # Interpolation : 
+    interpolated_weather = pivoted_df_weather.copy()
+    interpolated_weather = interpolated_weather.interpolate(method='polynomial', order=2)
+    interpolated_weather[interpolated_weather<1e-3] = 0
+
+
+
+
+    data_T = torch.tensor(interpolated_weather.values).float()  # Tensor of shape [T,N]
+    
+    dims = [0]# [0]  -> We are normalizing each time-serie independantly 
+    preprocessed_ds = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
+                                           args=args,data_T=data_T,coverage_period = coverage_period,
+                                           freq = args.freq,step_ahead = args.step_ahead, horizon_step = args.horizon_step,
+                                           name=NAME, minmaxnorm=minmaxnorm,
+                                           standardize=standardize,
+                                           tensor_limits_keeper=tensor_limits_keeper) 
+    return preprocessed_ds
+
 
 def date_transform(date):
     date = ''.join('-'.join('-'.join(date.split('/')).split(':')).split(' '))
