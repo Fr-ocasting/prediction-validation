@@ -3,6 +3,13 @@ import io
 import pandas as pd 
 import re 
 
+def f_name(row,methods):
+    if row['STAEformer']:
+        add_name = 'STAEformer'
+    else:
+        add_name = 'STGCN'
+    return f"{add_name}_{row['contextuals']}_{'_'.join([m for m in methods if row[m]])}_{row['epochs']}_h{row['horizon']}"
+
 def parse_results_to_dataframe(data_string, bis = False,
                                contextual_datasets = ['subway_in','subway_out','bike_in','bike_out','weather','calendar_embedding','calendar']):
     """
@@ -12,6 +19,7 @@ def parse_results_to_dataframe(data_string, bis = False,
     lines = io.StringIO(data_string).readlines()
     
     parsed_data = []
+    methods = []
 
     # Correspondance entre l'horizon et le temps
     horizon_map = {
@@ -74,12 +82,14 @@ def parse_results_to_dataframe(data_string, bis = False,
             'MAE': float(mae),
             'MAPE': float(mape),
             'stack': 'stack' in line,
-            'ff_concat_late': 'ff_concat_late' in line,
-            'attn_late': 'attn_late' in line,
-            'STAEformer': 'STAEformer' in line
+            'STAEformer': 'STAEformer' in line,
+            'model_name': 'STAEformer' if 'STAEformer' in line else 'STGCN'
         }
         row.update({p: True for p in method_parts})
-        row.update()
+
+        for p in method_parts:
+            if p not in methods:
+                methods.append(p)
         parsed_data.append(row)
 
     if not parsed_data:
@@ -90,8 +100,15 @@ def parse_results_to_dataframe(data_string, bis = False,
 
     # Trie les valeurs comme demandé : par cible, puis par horizon
     df = df.sort_values(by=['target_data', 'horizon_code','bis']).reset_index(drop=True)
-    
-    return df
+
+    # Update columns: 
+    df['contextuals'] = df.apply(lambda row : '_'.join([ds_name for ds_name in ['subway_in','subway_out','bike_in','bike_out','weather'] if row[ds_name]]),axis=1)
+    df['horizon'] = df['horizon'].apply(lambda h : int(h[1:-3]))
+    df['bis'] = df['bis'].astype(int)
+    df = df.fillna(False)
+    df['id'] = df.apply(lambda row : f_name(row,methods),axis=1)
+
+    return df,methods
 
 def display_latex_df(results_df):
     results_df.columns = ['\_'.join(c.split('_')) for c in results_df.columns]

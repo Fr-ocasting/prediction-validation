@@ -29,28 +29,28 @@ possible_target_kwargs = {'subway_out': {'quantile_filter_outliers': 0.99  },
                                     }
 
 possible_contextual_kwargs = {
-                        'subway_out': {'need_global_attn':True, 
-                                            'stacked_contextual': False,
-                                            'vision_model_name' : None,
-                                            'use_only_for_common_dates': False,
-                                            'quantile_filter_outliers': 0.99 ,
-                                            
-                                            'attn_kwargs': {
-                                                            'dim_feedforward' : 128,
-                                                            'num_heads' : 1,
-                                                            'dim_model' : 32,
-                                                            'nb_layers': 1,
-                                                            'latent_dim': 32,
-                                                            'keep_temporal_dim': True,  # If True : Garde la dimension temporelle pour l'attention
-                                                                },
-                                                            },  
-                        # 'subway_out': {'need_global_attn':False, 
-                        #                     'stacked_contextual': True,
+                        # 'subway_out': {'need_global_attn':True, 
+                        #                     'stacked_contextual': False,
                         #                     'vision_model_name' : None,
                         #                     'use_only_for_common_dates': False,
                         #                     'quantile_filter_outliers': 0.99 ,
-                        #                     'attn_kwargs': {},
+                                            
+                        #                     'attn_kwargs': {
+                        #                                     'dim_feedforward' : 128,
+                        #                                     'num_heads' : 1,
+                        #                                     'dim_model' : 32,
+                        #                                     'nb_layers': 1,
+                        #                                     'latent_dim': 32,
+                        #                                     'keep_temporal_dim': True,  # If True : Garde la dimension temporelle pour l'attention
+                        #                                         },
                         #                                     },  
+                        'subway_out': {'need_global_attn':False, 
+                                            'stacked_contextual': True,
+                                            'vision_model_name' : None,
+                                            'use_only_for_common_dates': False,
+                                            'quantile_filter_outliers': 0.99 ,
+                                            'attn_kwargs': {},
+                                                            },  
 
 
                             'subway_in': {'need_global_attn':True, 
@@ -88,10 +88,10 @@ possible_contextual_kwargs = {
                                          'quantile_filter_outliers': 0.99,
                                         'attn_kwargs': {
                                                         'dim_feedforward' : 128,
-                                                        'num_heads' : 1,
+                                                        'num_heads' : 4,
                                                         'dim_model' : 32,
-                                                        'nb_layers': 1,
-                                                        'latent_dim': 32,
+                                                        'nb_layers': 3,
+                                                        'latent_dim': 24,
                                                         'keep_temporal_dim': True, 
                                                             },
                                     },
@@ -115,7 +115,7 @@ modifications = {}
 for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['bike_out'],['subway_out']]:
+    for contextual_dataset_names in [['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
         # for horizon in [1,2,3,4]:
         for horizon in [1,4]:
             for n_bis in range(1,6): # range(1,6):
