@@ -32,8 +32,21 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     --------
     PersonalInput object. Containing a 2-th order tensor [T,R]
     '''
+    interpolated_weather = load_preprocessed_weather_df(args,coverage_period,folder_path = FOLDER_PATH)
+    data_T = torch.tensor(interpolated_weather.values).float()  # Tensor of shape [T,N]
+    
+    dims = [0]# [0]  -> We are normalizing each time-serie independantly 
+    preprocessed_ds = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
+                                           args=args,data_T=data_T,coverage_period = coverage_period,
+                                           freq = args.freq,step_ahead = args.step_ahead, horizon_step = args.horizon_step,
+                                           name=NAME, minmaxnorm=minmaxnorm,
+                                           standardize=standardize,
+                                           tensor_limits_keeper=tensor_limits_keeper) 
+    return preprocessed_ds
 
-    df_weather = load_weather_data(folder_path = FOLDER_PATH,
+
+def load_preprocessed_weather_df(args,coverage_period,folder_path):
+    df_weather = load_raw_weather_df(folder_path = folder_path,
                                     pathway = f"{FILE_NAME}.csv",
                                     id_stations = [69029001,69299001],
                                     columns = ['POSTE','DATE','T','RR1','DRR1','FF','GLO'],
@@ -58,20 +71,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     interpolated_weather = pivoted_df_weather.copy()
     interpolated_weather = interpolated_weather.interpolate(method='polynomial', order=2)
     interpolated_weather[interpolated_weather<1e-3] = 0
-
-
-
-
-    data_T = torch.tensor(interpolated_weather.values).float()  # Tensor of shape [T,N]
-    
-    dims = [0]# [0]  -> We are normalizing each time-serie independantly 
-    preprocessed_ds = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,
-                                           args=args,data_T=data_T,coverage_period = coverage_period,
-                                           freq = args.freq,step_ahead = args.step_ahead, horizon_step = args.horizon_step,
-                                           name=NAME, minmaxnorm=minmaxnorm,
-                                           standardize=standardize,
-                                           tensor_limits_keeper=tensor_limits_keeper) 
-    return preprocessed_ds
+    return interpolated_weather
 
 
 def date_transform(date):
@@ -81,7 +81,7 @@ def date_transform(date):
     return(date)
 
 
-def load_weather_data(folder_path = 'Data/Meteo',
+def load_raw_weather_df(folder_path = 'Data/Meteo',
                      pathway = 'donnees-meteo.csv',
                      id_stations = [69029001,69299001],
                      columns = ['POSTE','DATE','T','RR1','DRR1','FF','GLO'],
@@ -138,5 +138,5 @@ if __name__ == "__main__":
     dico = {'POSTE':'id_station','DATE':'date','T':'temperature', 
             'RR1':'precip','DRR1':'duree_prec','FF':'wind_ms','GLO':'solar'}
 
-    df_weather = load_weather_data(folder_path,csv_path,id_stations=id_stations,columns=columns,dico=dico)
+    df_weather = load_raw_weather_df(folder_path,csv_path,id_stations=id_stations,columns=columns,dico=dico)
     print(df_weather.head())

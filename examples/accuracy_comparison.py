@@ -235,9 +235,15 @@ def get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode):
     try: 
         inputs = [[x,y,x_c] for  x,y,x_c in ds1.dataloader[training_mode]]
         X = torch.cat([x for x,_,_ in inputs],0)
+        # if 'weather' in trainer2.contextual_positions.keys():
+        #     pos_weather = trainer2.contextual_positions['weather']
+        #     X_weather = torch.cat([x_c[pos_weather] for _,_,x_c in inputs],0)
+        # else:
+        #     X_weather = None
     except:
         inputs = [[x,y] for  x,y in ds1.dataloader[training_mode]]
         X = torch.cat([x for x,_ in inputs],0)
+
         
     X = ds1.normalizer.unormalize_tensor(inputs = X,feature_vect = True) # unormalize input cause prediction is unormalized 
     return(full_predict1,full_predict2,Y_true,X)
@@ -285,10 +291,9 @@ def display_information_related_to_comparison(dic_error_agg_h,args_init1,metric_
                     print('   Model 2: ',error2_per_h)
 
 
-def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,min_flow,stations,training_mode,metric_list,clustered_stations,
-                        folder_path =None,
-                        save_name = None,
-                        bool_plot = True):
+def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,
+                        min_flow,stations,training_mode,metric_list,clustered_stations,folder_path =None,
+                        save_name = None,bool_plot = True,dates = None):
     # Get previous and predictions
     previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
 
@@ -297,7 +302,7 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
 
     comparisonplotter = ComparisonPlotter(figsize_x=10,clustered_stations=clustered_stations)
     dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,
-                                                                                                folder_path=folder_path,save_name=save_name,bool_plot = bool_plot)
+                                                                                                folder_path=folder_path,save_name=save_name,bool_plot = bool_plot,dates=dates)
     dic_error_agg_h[step_ahead] = dic_error_agg
 
     return dic_error_agg_h,real
@@ -305,8 +310,15 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
 
 
 def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,clustered_stations = None,folder_path = None, save_name = None,
-                                      bool_plot = True):
+                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
+                                      clustered_stations = None,folder_path = None, save_name = None,
+                                      bool_plot = True, dates = None):
+    """
+    args : 
+    ------
+        If dates is not None: Only if full_predict1, full_predict2, Y_true and X does not correspond to the full set of the training mode.
+        Example of use:  When full_predict is a subset of the full prediction on test-set, associated to rainy dates.
+    """
     
     step_ahead_max = args_init1.step_ahead
     print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1)
@@ -319,7 +331,7 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
                                                    metric_list,clustered_stations,
                                                    folder_path = folder_path,
                                                    save_name = f"{save_name}_h{step_ahead}",
-                                                   bool_plot = bool_plot)
+                                                   bool_plot = bool_plot,dates = dates)
     # --
 
     # -- Plot Temporal profil if needed : 
@@ -334,18 +346,39 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
     # --
 
 
-def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,path_model_args,ds1_init=None,ds2_init = None,args_init1 = None, args_init2 = None):
+def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,path_model_args,path_model_args_bis=None,ds1_init=None,ds2_init = None,args_init1 = None, args_init2 = None,model_args_bis=None):
     """
     Load trainer and dataset from two trials.
     Will be used to compare the two models.
     """
-    args = model_args['model'][trial_id1]['args']
-    model_save_path = f"{path_model_args}/{trial_id1}.pkl"
+    if trial_id1 in model_args['model'].keys():
+        args = model_args['model'][trial_id1]['args']
+        path  = path_model_args
+    elif (model_args_bis is not None) and (trial_id1 in model_args_bis['model'].keys()):
+         args = model_args_bis['model'][trial_id1]['args']
+         path = path_model_args_bis
+    else:
+        raise ValueError(f"Trial ID {trial_id1} not found in model_args or model_args_bis.")
+    model_save_path = f"{path}/{trial_id1}.pkl"
     trainer1, ds1, args_init1 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init=ds1_init,args_init = args_init1)
 
 
-    args = model_args['model'][trial_id2]['args']
-    model_save_path = f"{path_model_args}/{trial_id2}.pkl"
+
+    if (trial_id2[1:] in model_args['model'].keys()):
+        trial_id2 = trial_id2[1:]
+    if trial_id2 in model_args['model'].keys():
+        args = model_args['model'][trial_id2]['args']
+        path  = path_model_args
+    else:
+        if (trial_id2[1:] in model_args_bis['model'].keys()):
+            trial_id2 = trial_id2[1:]
+        if trial_id2 in model_args_bis['model'].keys():
+            args = model_args_bis['model'][trial_id2]['args']
+            path = path_model_args_bis
+        else:
+            raise ValueError(f"Trial ID {trial_id2} not found in model_args or model_args_bis.")
+    
+    model_save_path = f"{path}/{trial_id2}.pkl"
     trainer2, ds2, args_init2 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init = ds2_init,args_init=args_init2)
     return trainer1,trainer2,ds1,ds2,args_init1,args_init2 
 
@@ -493,7 +526,8 @@ class ComparisonPlotter:
             self.dic_gain_agg_per_cluster[metric][temporal_agg] = df_gain_aggregated_per_cluster
 
 
-    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error,stations,temporal_aggs,training_mode,metrics,step_ahead,folder_path=None,save_name=None,bool_plot=True):
+    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error,stations,temporal_aggs,training_mode,metrics,
+                                                   step_ahead,folder_path=None,save_name=None,bool_plot=True,dates = None):
         """
         Plot the gain between two models for different temporal aggregations.
         Args:
@@ -522,9 +556,9 @@ class ComparisonPlotter:
             for i,temporal_agg in enumerate(temporal_aggs):
                 title = f"Average {metric.upper()} Gain(%) per {temporal_agg} of \nModel2 compared to Model1 at horizon {step_ahead}"
                 if metric == 'mase':
-                    dic_gain21,error_pred1_agg,error_pred2_agg = get_df_mase_and_gains(ds,dic_error,training_mode,temporal_agg,stations)
+                    dic_gain21,error_pred1_agg,error_pred2_agg = get_df_mase_and_gains(ds,dic_error,training_mode,temporal_agg,stations,dates=dates)
                 else:
-                    dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg,stations)
+                    dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg,stations,dates=dates)
 
                 self._aggregated_plot(dic_gain21,metric,temporal_aggs,i)
                 self._plot_per_station(dic_gain21,metric,temporal_agg,temporal_aggs,i,error_pred1_agg,error_pred2_agg)

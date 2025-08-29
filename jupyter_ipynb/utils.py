@@ -3,7 +3,8 @@ import io
 import pandas as pd 
 import re 
 
-def parse_results_to_dataframe(data_string, bis = False):
+def parse_results_to_dataframe(data_string, bis = False,
+                               contextual_datasets = ['subway_in','subway_out','bike_in','bike_out','weather','calendar_embedding','calendar']):
     """
     Analyse une chaîne de caractères de résultats de modèles pour la convertir en DataFrame Pandas.
     """
@@ -48,7 +49,12 @@ def parse_results_to_dataframe(data_string, bis = False):
             context_parts = '_'.join(parts[2:]) # Ignore target, calendar, embedding, et horizon
             horizon_code = parts[-2]
             bis_code = parts[-1][3:]
-        
+
+        complete_id = description.strip('_')
+        for context_ds in contextual_datasets:
+            complete_id = complete_id.replace(f"_{context_ds}", "")
+        complete_id = complete_id.split('_')
+        method_parts = complete_id[2:-3]
         
         horizon = horizon_map.get(horizon_code, 'N/A')
 
@@ -72,6 +78,8 @@ def parse_results_to_dataframe(data_string, bis = False):
             'attn_late': 'attn_late' in line,
             'STAEformer': 'STAEformer' in line
         }
+        row.update({p: True for p in method_parts})
+        row.update()
         parsed_data.append(row)
 
     if not parsed_data:
@@ -79,19 +87,9 @@ def parse_results_to_dataframe(data_string, bis = False):
 
     # Crée le DataFrame
     df = pd.DataFrame(parsed_data)
-    
+
     # Trie les valeurs comme demandé : par cible, puis par horizon
     df = df.sort_values(by=['target_data', 'horizon_code','bis']).reset_index(drop=True)
-    
-    # Réorganise et supprime les colonnes non nécessaires pour l'affichage final
-    final_columns = [
-        'target_data', 'horizon', 
-        'subway_in', 'subway_out', 
-        'bike_in', 'bike_out',
-        'RMSE', 'MAE', 'MAPE','bis',
-        'stack','ff_concat_late', 'STAEformer','attn_late','epochs','weather'
-    ]
-    df = df[final_columns]
     
     return df
 

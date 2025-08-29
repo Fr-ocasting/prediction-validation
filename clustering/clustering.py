@@ -316,7 +316,7 @@ class TimeSeriesClusterer:
             # Plot profiles for stations in the current cluster
             profiles_to_plot = self.representative_profiles.T[series_names]
             ax.plot(profiles_to_plot.index.astype(str), profiles_to_plot, alpha=0.6,label=series_names)
-            ax.set_title(f'Cluster {label} (GMM-based Profiles)')
+            ax.set_title(f'Cluster {label} ({self.method}-based Profiles)')
             ax.set_ylabel('Average Value')
             ax.legend()
             ax.tick_params(axis='x', rotation=45)
