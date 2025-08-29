@@ -97,6 +97,7 @@ possible_contextual_kwargs = {'subway_out': {'need_global_attn':True,
                                                         'nb_layers': 1,
                                                         'latent_dim': 32,
                                                         'attn_late' : False,     # Attention entre le sortie des STblocks et les données NetMob Raw
+                                                        'keep_temporal_dim': False,  # If True : Garde la dimension temporelle pour l'attention
                                                             },
                                     },         
                     }
@@ -135,7 +136,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'batch_size': 128,
                                 'lr': 0.00071,
                                 'dropout': 0.145169206052754,
-                                'epochs': 500,
+                                'epochs': 50,
                                 'standardize': False,
                                 'minmaxnorm': True,
 
@@ -180,7 +181,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' : 'compile', # 'compile', # 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' : False, # 'compile', # 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,

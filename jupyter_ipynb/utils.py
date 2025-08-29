@@ -49,6 +49,7 @@ def parse_results_to_dataframe(data_string, bis = False):
             horizon_code = parts[-2]
             bis_code = parts[-1][3:]
         
+        
         horizon = horizon_map.get(horizon_code, 'N/A')
 
         # Crée un dictionnaire pour stocker les informations de la ligne
@@ -58,6 +59,8 @@ def parse_results_to_dataframe(data_string, bis = False):
             'subway_out': 'subway_out' in context_parts,
             'bike_in': 'bike_in' in context_parts,
             'bike_out': 'bike_out' in context_parts,
+            'weather': 'weather' in context_parts,
+            'epochs': parts[-3] if (parts[-3].startswith('e') and parts[-2].startswith('h') and not parts[-3].startswith('em'))  else '',
             'horizon': horizon,
             'horizon_code': horizon_code, # Ajout pour le tri
             'bis': bis_code,
@@ -86,7 +89,7 @@ def parse_results_to_dataframe(data_string, bis = False):
         'subway_in', 'subway_out', 
         'bike_in', 'bike_out',
         'RMSE', 'MAE', 'MAPE','bis',
-        'stack','ff_concat_late', 'STAEformer','attn_late'
+        'stack','ff_concat_late', 'STAEformer','attn_late','epochs','weather'
     ]
     df = df[final_columns]
     

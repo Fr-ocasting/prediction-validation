@@ -384,7 +384,7 @@ class OutputBlock(nn.Module):
         # print('channels : ',channels[0])
         # print('num_nodes : ',num_nodes)
         self.temporal_conv_out = TemporalConvLayer(Ko, last_block_channel, channels[0], num_nodes, act_func,enable_padding = False)
-                                              
+
 
         # Design Input Dimension according to contextual data integration or not: 
         in_channel_fc1 = channels[0]  #blocks[-2][0]
@@ -487,6 +487,12 @@ class OutputBlock(nn.Module):
             if context.dim() == 3:
                 # If context is [B,N,C] -> [B,1,N,C]
                 context = context.unsqueeze(1)
+
+            # IF Spatial Attention while keeping temporal dim
+            if context.dim() == 4 and context.size(1) != 1:
+                context = context.permute(0,3,1,2) # [B,N,L,C] -> [B,C,N,L]
+                raise NotImplementedError('ERROR: Spatial Attention Late while keeping temporal dimension has not been implemented yet.\n Need to implement a temporal convolution to reduce L to 1 for each contextual data source with spatial attention and their specific embedding dim ')
+
             context_list.append(context)
         #     print('context.size: ',context.size())
         # print('End Spatial Attention Late\n------------------------\n')
@@ -498,7 +504,14 @@ class OutputBlock(nn.Module):
             #assert x_vision is not None
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
             # print('x_vision.size(): ',x_vision.size())
-            x_vision = x_vision.unsqueeze(1)  # [B,N,Z] -> [B,1,N,Z] 
+            if x_vision.dim() == 3: 
+                x_vision = x_vision.unsqueeze(1)  # [B,N,Z] -> [B,1,N,Z] 
+
+            # IF Spatial Attention while keeping temporal dim
+            if x_vision.dim() == 4 and x_vision.size(1) != 1:
+                x_vision = x_vision.permute(0,3,1,2) # [B,N,L,C] -> [B,C,N,L]
+                raise NotImplementedError('ERROR: Spatial Attention Late while keeping temporal dimension has not been implemented yet.\n Need to implement a temporal convolution to reduce L to 1 for each contextual data source with spatial attention and their specific embedding dim ')
+
             cat_list.append(x_vision) 
         if self.TE_concatenation_late and x_calendar is not None:
             # Reduce channel dim of calendar to 1 (cause correspond to repeated channel and x channel has been reduce to 1)
@@ -508,7 +521,6 @@ class OutputBlock(nn.Module):
             # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,1,N,Z+L_calendar]
             cat_list.append(x_calendar)
         if len(context_list) > 0:
-            # print('context_list size: ',[c.size() for c in context_list])
             cat_list = cat_list+context_list
         if len(cat_list) > 0:
             # print('x size before concatenation late: ',x.size())

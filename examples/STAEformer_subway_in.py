@@ -29,27 +29,29 @@ possible_target_kwargs = {'subway_out': {'quantile_filter_outliers': 0.99  },
                                     }
 
 possible_contextual_kwargs = {
-                        # 'subway_out': {'need_global_attn':True, 
-                        #                     'stacked_contextual': False,
-                        #                     'vision_model_name' : None,
-                        #                     'use_only_for_common_dates': False,
-                        #                     'quantile_filter_outliers': 0.99 ,
-                                            
-                        #                     'attn_kwargs': {
-                        #                                     'dim_feedforward' : 128,
-                        #                                     'num_heads' : 1,
-                        #                                     'dim_model' : 32,
-                        #                                     'nb_layers': 1,
-                        #                                     'latent_dim': 32,
-                        #                                         },
-                        #                                     },  
-                        'subway_out': {'need_global_attn':False, 
-                                            'stacked_contextual': True,
+                        'subway_out': {'need_global_attn':True, 
+                                            'stacked_contextual': False,
                                             'vision_model_name' : None,
                                             'use_only_for_common_dates': False,
                                             'quantile_filter_outliers': 0.99 ,
-                                            'attn_kwargs': {},
+                                            
+                                            'attn_kwargs': {
+                                                            'dim_feedforward' : 128,
+                                                            'num_heads' : 1,
+                                                            'dim_model' : 32,
+                                                            'nb_layers': 1,
+                                                            'latent_dim': 32,
+                                                            'keep_temporal_dim': True,  # If True : Garde la dimension temporelle pour l'attention
+                                                                },
                                                             },  
+                        # 'subway_out': {'need_global_attn':False, 
+                        #                     'stacked_contextual': True,
+                        #                     'vision_model_name' : None,
+                        #                     'use_only_for_common_dates': False,
+                        #                     'quantile_filter_outliers': 0.99 ,
+                        #                     'attn_kwargs': {},
+                        #                                     },  
+
 
                             'subway_in': {'need_global_attn':True, 
                                         'stacked_contextual': False,
@@ -79,7 +81,6 @@ possible_contextual_kwargs = {
                                                         'latent_dim': 32,
                                                             },
                                     },
-                                    
                             'bike_out':{'need_global_attn':True, 
                                         'stacked_contextual': False,
                                          'agg_iris_target_n':50,
@@ -91,8 +92,22 @@ possible_contextual_kwargs = {
                                                         'dim_model' : 32,
                                                         'nb_layers': 1,
                                                         'latent_dim': 32,
+                                                        'keep_temporal_dim': True, 
                                                             },
                                     },
+                            # 'bike_out':{'need_global_attn':True, 
+                            #             'stacked_contextual': False,
+                            #              'agg_iris_target_n':50,
+                            #             'threshold_volume_min': 1,
+                            #              'quantile_filter_outliers': 0.99,
+                            #             'attn_kwargs': {
+                            #                             'dim_feedforward' : 128,
+                            #                             'num_heads' : 1,
+                            #                             'dim_model' : 32,
+                            #                             'nb_layers': 1,
+                            #                             'latent_dim': 32,
+                            #                                 },
+                            #         },
                     }
 
 
@@ -100,7 +115,7 @@ modifications = {}
 for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_out']]:
+    for contextual_dataset_names in [['bike_out'],['subway_out']]:
         # for horizon in [1,2,3,4]:
         for horizon in [1,4]:
             for n_bis in range(1,6): # range(1,6):
@@ -136,7 +151,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'standardize': False,
                                 'minmaxnorm': True,
                                 'batch_size': 128,
-                                'epochs':500,
+                                'epochs':100,
 
                                 'horizon_step': horizon,
                                 'step_ahead': horizon,
@@ -168,7 +183,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  'compile', # 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' : 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,

@@ -380,7 +380,7 @@ class AttentionGRU(nn.Module):
 
 class MultiHeadAttention(nn.Module):
 
-    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout,keep_topk=False, proj_query = True):
+    def __init__(self, query_dim, key_dim, d_model,num_heads,dropout,keep_topk=False, proj_query = True,padding_sequence_length = True):
         super(MultiHeadAttention, self).__init__()
 
         self.d_model = d_model
@@ -421,6 +421,7 @@ class MultiHeadAttention(nn.Module):
 
         self.keep_topk = keep_topk  # If True then keep only the top 10% of the attention weights
         self.attention_grad_norms = []
+        self.padding_sequence_length = padding_sequence_length
 
     def align_axis(self,query,key,values):
         # Case where only 1 traffic time-serie for P contextual data
@@ -429,35 +430,44 @@ class MultiHeadAttention(nn.Module):
         if values.dim() == 2: values = values.unsqueeze(1)
         return query,key,values
     
-    def padding_sequence_length(self,query,key,values):
+    def _padding_sequence_length(self,query,key,values):
         ''' Case where sequence length is not the same for query and key/values 
         Pad 0 at the first dimension and keep the last dimension the same:
         '''
-        if query.size(-1) != key.size(-1):
-            if query.size(-1) < key.size(-1):
-                query = torch.nn.functional.pad(query, (key.size(-1) - query.size(-1),0), mode='constant', value=0)
+        if self.padding_sequence_length:
+            if query.size(-1) != key.size(-1):
+                if query.size(-1) < key.size(-1):
+                    query = torch.nn.functional.pad(query, (key.size(-1) - query.size(-1),0), mode='constant', value=0)
 
-            else:
-                key = torch.nn.functional.pad(key, (query.size(-1) - key.size(-1),0), mode='constant', value=0)
-                values = torch.nn.functional.pad(values, (query.size(-1) - values.size(-1),0), mode='constant', value=0)
+                else:
+                    key = torch.nn.functional.pad(key, (query.size(-1) - key.size(-1),0), mode='constant', value=0)
+                    values = torch.nn.functional.pad(values, (query.size(-1) - values.size(-1),0), mode='constant', value=0)
         return query,key,values
 
     def split_heads(self,x,is_query=False):
         # print('x size before split_heads: ',x.size())
         # print('is query: ',is_query)
         # print('self.repeat_identical_query_heads: ',self.repeat_identical_query_heads)
-        B, P, d_model = x.size()
-        # if is_query and self.repeat_identical_query_heads:
-        #     x = x.unsqueeze(-1)
-        #     x = x.repeat(1,1,1,self.num_heads)
-        #     return x.permute(0,3,1,2)
-        # else:
-        return x.view(B, P, self.num_heads, self.d_k).transpose(1, 2)
+        if x.dim() == 4:
+            B, P, L, d = x.size()
+            return x.view(B, P, L, self.num_heads, self.d_k).transpose(1, 3)
+        elif x.dim() == 3:
+            B, P, d = x.size()
+            return x.view(B, P, self.num_heads, self.d_k).transpose(1, 2)
+        else:
+            raise ValueError('Input tensor must be 3D or 4D')
+        
     
     def combine_heads(self, x):
         # print('x size before combine_heads: ',x.size())
-        B, num_heads, P, d_k = x.size()
-        return x.transpose(1, 2).contiguous().view(B, P, self.d_model)
+        if x.dim() == 5:
+            B, num_heads, L, P, d_k = x.size()
+            return x.transpose(1, 3).contiguous().view(B, P, L, self.d_model)
+        elif x.dim() == 4:
+            B, num_heads, P, d_k = x.size()
+            return x.transpose(1, 2).contiguous().view(B, P, self.d_model)
+        else:
+            raise ValueError('Input tensor must be 4D or 5D')
 
     def compute_scaled_dot_product(self,Q,K,V):
         '''
@@ -529,10 +539,8 @@ class MultiHeadAttention(nn.Module):
         #Projection to a laten space of dimenison d: [B,n_heads, P, d_k]
         #   query x    self.W_q   -->     QxW_q     
         # [B,1,L] x [B,L,d_model] --> [B,1,d_model] --split_head--> [B,n_heads,1,d_model//n_heads] 
-        # print('query,key,values before proj: ',query.size(),key.size(),values.size())
-        #print('W_q,W_k,W_v: ',self.W_q.size(),self.W_k.size(),self.W_v.size())
         if self.W_q is not None:
-            query,key,values = self.padding_sequence_length(query,key,values)
+            query,key,values = self._padding_sequence_length(query,key,values)
             # Q = self.layer_norm(self.split_heads(torch.matmul(query,self.W_q)))
             # Q = self.split_heads(torch.matmul(query,self.W_q))
             Q = self.split_heads(torch.matmul(self.layer_normq(query),self.W_q))

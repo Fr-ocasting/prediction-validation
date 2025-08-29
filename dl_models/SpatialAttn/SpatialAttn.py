@@ -31,11 +31,14 @@ class MHA_layer(nn.Module):
 
             dropout: float = 0.1,
             keep_topk: bool = False,
-            proj_query: bool = True
+            proj_query: bool = True,
+
+            keep_temporal_dim : bool = False
             ):
         super(MHA_layer, self).__init__()
-
-        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model, num_heads, dropout, keep_topk, proj_query)
+        padding_sequence_length = not(keep_temporal_dim)
+        self.keep_temporal_dim = keep_temporal_dim
+        self.mha = MultiHeadAttention(query_dim, key_dim, dim_model, num_heads, dropout, keep_topk, proj_query,padding_sequence_length)
         self.layer_norm = nn.LayerNorm(dim_model)
         self.feedforward = feed_forward(dim_model, dim_feedforward, output_dim)
         self.dropout = nn.Dropout(dropout)
@@ -48,6 +51,44 @@ class MHA_layer(nn.Module):
         # -- 
 
     def forward(self, x_flow_station: Tensor, x_contextual: Tensor) -> Tensor:
+        """
+        --- Case Spatial Attention while increasing temporal dimension : ---
+        >>> x_flow_station [B,L,N]   (= QUERY)
+        >>> x_contextual [B,L,P] (= KEY = VALUES)
+
+        Apply Embedding : 
+        >>> x_flow_station --permute--EMB--> [B,N,d]
+        >>> x_contextual --permute--EMB--> [B,P,d]
+
+        Apply Spatial Attention on values 'x_contextual' and its spatial axis of dimension 'P'
+        >>> attn_weight : [B,N,P]  #   (x_flow_station * x_contextual.T)/sqrt(d)
+        >>> context : [B,N,d]  # attention output (attn_weight * x_contextual)
+        >>> x_fc : [B,N,z]  # FF-Mish-FF   
+
+        # Reduce to dimension z (expect z << d)
+        ---------------------------------------------------------------------------------------------
+
+        
+        --- Case Spatial Attention while increasing channel dimension and keeping temporal dimension : ---
+        >>> x_flow_station [B,L,N,C1] (= QUERY)           query_dim = C1 = 1 or z from last MHA layer
+        >>> x_contextual [B,L,P,C2] (= KEY = VALUES)      key_dim = C2 = 1 as x_contextual is the same for each MHA layer
+
+        Apply Embedding :
+        >>> x_flow_station --EMB--> [B,L,N,d]             DOES IT REALLY NEED EMBEDDING AGAIN ? 
+        >>> x_contextual --EMB--> [B,L,P,d]
+
+        Apply Spatial Attention on values 'x_contextual' and its spatial axis of dimension 'P'
+        >>> attn_weight : [B,L,N,P]  #   (x_flow_station * x_contextual.T)/sqrt(d)
+        >>> context : [B,L,N,d]  # attention output (attn_weight * x_contextual)
+        >>> x_fc : [B,L,N,z]  # FF-Mish-FF
+        ---------------------------------------------------------------------------------------------
+        """
+        if self.keep_temporal_dim:
+            if x_flow_station.dim() == 3:
+                x_flow_station = x_flow_station.unsqueeze(-1)
+            if x_contextual.dim() == 3:
+                x_contextual = x_contextual.unsqueeze(-1)
+
         # ------- MHA
         projected_x_flow,context,attn_weight = self.mha(x_flow_station,x_contextual,x_contextual)
         self.attn_weight = attn_weight
@@ -59,10 +100,10 @@ class MHA_layer(nn.Module):
 
         # ------- Normalizing the MHA output:
         context_norm = self.layer_norm(context)
-        ff_output = self.feedforward(context_norm)
+        x_fc = self.feedforward(context_norm)
 
         # ------- Residual connection:
-        output = residual + self.dropout(ff_output)
+        output = residual + self.dropout(x_fc)
 
         return projected_x_flow,output
 
@@ -80,7 +121,8 @@ class model(nn.Module):
         dropout: float = 0.1,
         keep_topk: bool = False,
         proj_query: bool = True,
-        nb_layers: int = 1
+        nb_layers: int = 1,
+        keep_temporal_dim : bool = False
     ):
         super().__init__()
         self.query_dim = query_dim
@@ -92,12 +134,23 @@ class model(nn.Module):
                                             feed_forward(key_dim, dim_feedforward, latent_dim),
                                             nn.Dropout(dropout)])
         else:
-            if nb_layers == 1:
-                self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
+            # Apply SPatial-Attention Layers and increase channel dimension 
+            if keep_temporal_dim:
+                if nb_layers == 1:
+                    self.mha_list = nn.ModuleList([MHA_layer(1, 1, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query,keep_temporal_dim)])
+                else:
+                    self.mha_list = nn.ModuleList([MHA_layer(1, 1, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query,keep_temporal_dim)]+
+                                                [MHA_layer(dim_model, 1, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query,keep_temporal_dim) for _ in range(nb_layers-2)] + 
+                                                [MHA_layer(dim_model, 1, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query,keep_temporal_dim)])
+                    
+            # Apply SPatial-Attention Layers and increase Temporal dimension 
             else:
-                self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query)]+
-                                            [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query) for _ in range(nb_layers-2)] + 
-                                            [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query)])
+                if nb_layers == 1:
+                    self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query,keep_temporal_dim)])
+                else:
+                    self.mha_list = nn.ModuleList([MHA_layer(query_dim, key_dim, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query,keep_temporal_dim)]+
+                                                [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, dim_model, dropout, keep_topk, proj_query,keep_temporal_dim) for _ in range(nb_layers-2)] + 
+                                                [MHA_layer(dim_model, dim_model, dim_model, num_heads, dim_feedforward, latent_dim, dropout, keep_topk, proj_query,keep_temporal_dim)])
 
 
             # --- Gradient we would like to Keep track on:

@@ -142,6 +142,7 @@ class STAEformer(nn.Module):
         contextual_positions = {},
         horizon_step = 1,
         added_dim_output = 0,
+        added_dim_input = 0,
     ):
         super().__init__()
 
@@ -158,12 +159,14 @@ class STAEformer(nn.Module):
         self.spatial_embedding_dim = spatial_embedding_dim
         self.adaptive_embedding_dim = adaptive_embedding_dim
         self.added_dim_output = added_dim_output
+        self.added_dim_input = added_dim_input
         self.model_dim = (
             input_embedding_dim
             + tod_embedding_dim
             + dow_embedding_dim
             + spatial_embedding_dim
             + adaptive_embedding_dim
+            + added_dim_input
         )
         self.output_model_dim = self.model_dim + self.added_dim_output
         
@@ -229,8 +232,6 @@ class STAEformer(nn.Module):
         
         # print('x shape before input_proj:', x.shape)
 
-        if x_vision is not None:
-            raise NotImplementedError("x_vision is not implemented yet in this version.")
         if x_calendar is None:
             raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
 
@@ -245,7 +246,7 @@ class STAEformer(nn.Module):
             # x: (batch_size, in_steps, num_nodes, input_dim+tod+dow=3)
             batch_size = x.shape[0]
             x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
-            #print('x shape after input_proj:', x.shape)
+            # print('x size after input_proj:', x.size())
             #print('x_calendar shape:', x_calendar.shape)
             
             # Init features with empty tensor with 0 channels
@@ -270,6 +271,11 @@ class STAEformer(nn.Module):
                 adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
                 features = torch.cat([features, adp_emb], dim=-1)
 
+            if x_vision is not None:
+                # [B,N,L,C] ->   [B,L,N,C] 
+                x_vision = x_vision.transpose(2,1)  
+                features = torch.cat([features, x_vision], dim=-1)
+
             x = torch.cat([x, features], dim=-1)
 
 
@@ -282,9 +288,8 @@ class STAEformer(nn.Module):
             # (batch_size, in_steps, num_nodes, model_dim)
             # print('x.size(): ',x.size())
 
-            if x_vision is not None: 
-                # print('x_vision.size(): ',x_vision.size())
-
+            if x_vision is not None and x_vision.dim()==3: 
+                raise NotImplementedError("x_vision with 3 dims  and with concatenation late. Need to finish the implementation")
                 x_vision = x_vision.unsqueeze().permute(0,3,2,1)
                 x = torch.cat([x, x_vision], dim=-1)
                 # print("x.size() after concat 'vision': ",x.size())

@@ -47,14 +47,14 @@ import importlib
 #     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,ds_name,query_dim,init_spatial_dim,output_temporal_dim = None,stack_consistent_datasets = False):
+def load_spatial_attn_model(args,ds_name,query_dim,key_dim,output_temporal_dim = None,stack_consistent_datasets = False):
     script = importlib.import_module(f"dl_models.SpatialAttn.SpatialAttn")
     scrip_args = importlib.import_module(f"dl_models.SpatialAttn.load_config")
     importlib.reload(scrip_args)
     args_ds_i = scrip_args.args
     args_ds_i.dropout = args.dropout
     args_ds_i.query_dim = query_dim  # input dim of Query 
-    args_ds_i.key_dim = init_spatial_dim  # input dim of Key 
+    args_ds_i.key_dim = key_dim  # input dim of Key 
     args_ds_i.output_temporal_dim = output_temporal_dim 
     args_ds_i.stack_consistent_datasets = stack_consistent_datasets
     
@@ -223,7 +223,7 @@ class full_model(nn.Module):
             if ('netmob' in ds_name) or ('subway_out' in ds_name):
                 init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))] # range(len(self.contextual_positions[ds_name]))
                 self.spatial_attn_per_station[ds_name] = nn.ModuleList([
-                    load_spatial_attn_model(args,ds_name, query_dim=1, init_spatial_dim=init_spatial_dim)
+                    load_spatial_attn_model(args,ds_name, query_dim=1, key_dim=init_spatial_dim)
                     for init_spatial_dim in init_spatial_dims
                 ])
             else:
@@ -235,8 +235,9 @@ class full_model(nn.Module):
             else:
                 L_out = None
             # condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
-            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, query_dim=args.L, 
-                                                                     init_spatial_dim=args.L,
+            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, 
+                                                                     query_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L, 
+                                                                     key_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L,
                                                                     #  output_temporal_dim = L_out,
                                                                     #  stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if condition_i else False
                                                                      )
@@ -520,7 +521,7 @@ def reshaping(x,B):
     return x
 
 def load_model(dataset, args):
-    # Init L_add 
+    # --- Init L_add and added_dim_input
     if hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
         # IF Early concatenation : 
         vision_concatenation_late = args.args_vision.concatenation_late
@@ -538,10 +539,15 @@ def load_model(dataset, args):
         L_add = 0
         vision_concatenation_late = False
         vision_out_dim = None
-
+    added_dim_input = 0 
+    # ---
     for name_i in args.contextual_kwargs.keys():
         if 'out_dim' in args.contextual_kwargs[name_i].keys():
-            L_add = L_add + args.contextual_kwargs[name_i]['out_dim']
+            if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
+                added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
+            else:
+                L_add = L_add + args.contextual_kwargs[name_i]['out_dim']
+            
 
     if 'calendar_embedding' in args.dataset_names: #if not empty 
         # IF Early concatenation : 
@@ -555,6 +561,7 @@ def load_model(dataset, args):
 
     if args.model_name == 'STAEformer':
         args.added_dim_output = L_add
+        args.added_dim_input = added_dim_input
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}
