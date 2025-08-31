@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 # Personnal import
 from pipeline.dataset import DataSet, PersonnalInput
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
-from pipeline.load_inputs.PeMS03 import load_data as load_data_from_PEMS03
+from load_inputs.Manhattan.PeMS03 import load_data as load_data_from_PEMS03
 
 """
 PEMS04 Dataset

@@ -8,8 +8,8 @@ if parent_dir not in sys.path:
 
 from datetime import datetime 
 import torch
-from pipeline.load_inputs.subway_in import load_data as load_data_from_subway_in_py
-from pipeline.load_inputs.netmob_POIs import load_input_and_preprocess
+from load_inputs.Lyon.pt.subway_in import load_data as load_data_from_subway_in_py
+from load_inputs.Lyon.netmob.netmob_POIs import load_input_and_preprocess
 from pipeline.utils.utilities import filter_args
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.

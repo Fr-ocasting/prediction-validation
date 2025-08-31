@@ -15,7 +15,7 @@ if parent_dir not in sys.path:
 from pipeline.build_inputs.tile_ids_around_stations import DATA_FOLDER_PATH
 from pipeline.build_inputs.tile_ids_around_stations import buffer_between_tile_ids_and_subway_station,netmob_data_FOLDER_PATH,PATH_iris
 from pipeline.build_inputs.NetMob_pattern_around_stations import tackle_all_days
-from pipeline.load_inputs.subway_in import get_trigram_correspondance
+from load_inputs.Lyon.pt.subway_in import get_trigram_correspondance
 
 
 ROOT = f"{DATA_FOLDER_PATH}/rrochas"
@@ -108,7 +108,7 @@ if False:
 if False:
     import numpy as np 
     import pickle
-    from pipeline.load_inputs.subway_in import get_trigram_correspondance
+    from load_inputs.Lyon.pt.subway_in import get_trigram_correspondance
     stations = list(get_trigram_correspondance().COD_TRG)
     root = '/home/rrochas/prediction-validation/../../../../data/rrochas/prediction_validation/POIs/netmob_POI_Lyon'
     save_folder = f'{root}/InputsEpsilon'

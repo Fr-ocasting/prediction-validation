@@ -7,7 +7,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # Personnal import
-from pipeline.load_inputs.PeMS08 import load_data as load_data_from_PEMS08
+from load_inputs.Manhattan.PeMS08 import load_data as load_data_from_PEMS08
 
 """
 PEMS08 Dataset

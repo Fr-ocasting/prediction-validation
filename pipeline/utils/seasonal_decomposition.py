@@ -25,7 +25,7 @@ def fill_and_decompose_df(raw_values,df_verif_train,time_step_per_hour,columns,m
     period : liste de périodes associées aux différentes périodicités de la série temporelle. S
               Si on considère que y a D time-steps entre deux jours consécutif, et W entre deux semaines consécutives, alors period = [W,D] est adapté.
     '''
-    module_path = f"pipeline.load_inputs.{dataset_name}"
+    module_path = f"load_inputs.{dataset_name}"
     module = importlib.import_module(module_path)
     USELESS_DATES = module.USELESS_DATES
     

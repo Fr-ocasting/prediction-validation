@@ -70,20 +70,20 @@ def tackle_input_data(dataset,invalid_dates,intesect_coverage_period,args,c):
     if 'netmob_video_lyon' in args.dataset_names:
     # if vision_input_type == 'unique_image_through_lyon':
         #NetMob_ds = load_netmob_lyon_map(dataset,invalid_dates,args,columns = columns,normalize = normalize)
-        from pipeline.load_inputs.netmob_video_lyon import load_data
+        from load_inputs.Lyon.netmob.netmob_video_lyon import load_data
         NetMob_ds = load_data(dataset,parent_dir,invalid_dates,intesect_coverage_period,args,restricted,normalize= normalize)
         args.vision_input_type = 'unique_image_through_lyon'
         netmob_dataset_name = 'netmob_video_lyon'
 
 
     elif 'netmob_image_per_station' in args.dataset_names:
-        from pipeline.load_inputs.netmob_image_per_station import load_data
+        from load_inputs.Lyon.netmob.netmob_image_per_station import load_data
         NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize = normalize) 
         args.vision_input_type = 'image_per_stations'
         netmob_dataset_name = 'netmob_image_per_station'
         
     elif "netmob_POIs" in args.dataset_names:
-        from pipeline.load_inputs.netmob_POIs import load_data
+        from load_inputs.Lyon.netmob.netmob_POIs import load_data
         NetMob_ds = load_data(dataset,parent_dir,FOLDER_PATH,invalid_dates,intesect_coverage_period,args,normalize= normalize)
         args.vision_input_type = 'POIs'
         netmob_dataset_name = 'netmob_POIs'

@@ -18,7 +18,7 @@ if ROOT not in sys.path:
 # Personnal import:
 from pipeline.utils.utilities import get_distance_matrix
 from pipeline.build_inputs.load_raw_data import load_subway_15_min 
-from pipeline.load_inputs.subway_in import get_trigram_correspondance
+from load_inputs.Lyon.pt.subway_in import get_trigram_correspondance
 
 # ======================================================
 # Function 

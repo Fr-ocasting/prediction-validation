@@ -15,7 +15,7 @@ if parent_dir not in sys.path:
 from pipeline.dataset import DataSet, PersonnalInput
 from pipeline.utils.utilities import filter_args # Assurez-vous que ce chemin est correct
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
-from pipeline.load_inputs.bike_in import load_data as load_data_in
+from load_inputs.Lyon.bike.bike_in import load_data as load_data_in
 # --- Constantes spécifiques à cette donnée ---
 NAME = 'bike_out'
 FILE_BASE_NAME = 'velov'
