@@ -13,10 +13,10 @@ if working_dir not in sys.path:
 
 # Personnal import 
 from constants.config import get_args,update_modif
-from K_fold_validation.K_fold_validation import KFoldSplitter
+from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 
 # Hp Tuning
-from HP_tuning.hyperparameter_tuning_ray import HP_tuning
+from pipeline.HP_tuning.hyperparameter_tuning_ray import HP_tuning
 
 
 

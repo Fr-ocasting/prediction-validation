@@ -10,8 +10,8 @@ working_dir = os.path.abspath(os.path.join(current_path, '..','..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
-from jupyter_ipynb.Entropy_and_information.KDE import KDEEstimator
-from jupyter_ipynb.Entropy_and_information.KSG import KSGEstimator
+from pipeline.jupyter_ipynb.Entropy_and_information.KDE import KDEEstimator
+from pipeline.jupyter_ipynb.Entropy_and_information.KSG import KSGEstimator
 #############################
 # BUILD LAGGED FEATURES
 #############################

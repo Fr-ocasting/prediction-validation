@@ -10,10 +10,10 @@ if parent_dir not in sys.path:
 import pandas as pd
 import numpy as np 
 from constants.config import get_args,update_modif
-from utils.save_results import get_date_id
-from K_fold_validation.K_fold_validation import KFoldSplitter
-from high_level_DL_method import load_model,load_optimizer_and_scheduler
-from trainer import Trainer
+from pipeline.utils.save_results import get_date_id
+from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
+from pipeline.high_level_DL_method import load_model,load_optimizer_and_scheduler
+from pipeline.trainer import Trainer
 import matplotlib.pyplot as plt 
 def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
     # Load base args

@@ -20,9 +20,9 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # Personnal Import 
-from calendar_class import get_temporal_mask
+from pipeline.calendar_class import get_temporal_mask
 from examples.load_best_config import load_trainer_ds_from_saved_trial
-from plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
+from pipeline.plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
 from examples.train_model import load_init_model_trainer_ds
 import numpy as np 
 import pandas as pd
@@ -30,7 +30,7 @@ import torch
 from bokeh.plotting import figure, show,output_notebook
 from bokeh.models import Legend,DatetimeTickFormatter
 from bokeh.layouts import row,column
-from calendar_class import is_bank_holidays 
+from pipeline.calendar_class import is_bank_holidays 
 
 ##### ==================================================
 
@@ -577,7 +577,7 @@ class ComparisonPlotter:
 
 
 if __name__ == '__main__':
-    from clustering.clustering import TimeSeriesClusterer
+    from pipeline.clustering.clustering import TimeSeriesClusterer
     from constants.paths import SAVE_DIRECTORY
     ## -----------------FULL DATA 1 AN---------------------------------------------------------------------------------------------------------
     ## Prediction on 4 consecutives horizons 

@@ -1,0 +1,235 @@
+import torch
+import ray 
+from ray import tune 
+
+# Relative path:
+import sys 
+import os 
+import json
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+# ...
+
+# Personnal imports: 
+from pipeline.trainer import Trainer
+from pipeline.HP_tuning.ray_search_space import get_search_space_ray 
+from pipeline.HP_tuning.ray_config import get_ray_config
+from pipeline.high_level_DL_method import load_optimizer_and_scheduler
+from pipeline.dl_models.full_model import full_model
+from pipeline.utils.save_results import get_date_id,load_json_file,update_json
+
+
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+
+
+def HP_modification(config,args):
+    '''Update the hyperparameters'''
+    forbidden_keys = ['batch_size','train_prop','valid_prop','test_prop']
+    for key, value in config.items():
+        if key in forbidden_keys:
+            raise ValueError(f"Key {key} cant' be modified while loading trainer for HP-tuning cause it has also impact on dataloader which is already defined")
+        else:
+            if key == 'scheduler':
+                if 'scheduler' in config['scheduler'].keys():
+                    if config['scheduler']['scheduler']:
+                        for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
+                            setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+                else:
+                    for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
+                            setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+
+            ## Tackle Vision HP tuning
+            elif 'vision_' in key:
+                key = key.replace('vision_', '')
+                
+                # Cas Particulier, devrait être gérer mieux, avec une implémentation générale
+                if key == 'grn_out_dim':
+                    setattr(args.args_vision,'out_dim',value)
+                    setattr(args.args_vision,key,value)
+
+                elif 'concatenation_order' in key:
+                    for key_i in ['concatenation_early','concatenation_late']:
+                        setattr(args.args_vision,key_i,config['vision_concatenation_order'][key_i])  
+
+                elif 'n_head_d_model' in key:
+                    setattr(args.args_vision,'num_heads',config['vision_n_head_d_model']['num_heads'])     
+                    setattr(args.args_vision,'grn_out_dim',config['vision_n_head_d_model']['grn_out_dim'])       
+                    setattr(args.args_vision,'out_dim',config['vision_n_head_d_model']['grn_out_dim'])       
+                else:
+                    setattr(args.args_vision,key,value)
+                
+            # ....
+            
+            ## Takle calendar HP tuning : 
+            elif 'TE_fc1' in key:
+                for key_i in ['fc1','fc2','activation_fc1']:
+                    setattr(args.args_embedding,key_i,config['TE_fc1'][key_i])
+            elif 'TE_concatenation_order' in key:
+                for key_i in ['concatenation_early','concatenation_late']:
+                    setattr(args.args_embedding,key_i,config['TE_concatenation_order'][key_i])          
+            elif 'TE_' in key:
+                key = key.replace('TE_', '')
+                setattr(args.args_embedding,key,value)
+            # ...
+
+
+            elif hasattr(args, key):
+                setattr(args, key, value)
+            else: 
+                raise ValueError(f"Key {key} issue")
+    return(args)
+
+def load_trainer(config, dataset, args):
+    '''Change the hyperparameters and load the model accordingly. 
+    The hyperparameters to be modified must not concern the dataloader, so don't change: 
+    - train/valid/test/calib proportion
+    - batch-size
+    '''
+    args = HP_modification(config,args)
+    model = full_model(dataset, args).to(args.device)
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+
+    #model_ref = ray.put(model)
+    trainer = Trainer(dataset,model,
+                      args,optimizer,loss_function,scheduler = scheduler,
+                      #show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder
+                      )
+
+
+
+    return(trainer)
+
+def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_validation/',save_dir = 'save/HyperparameterTuning/'): 
+    # Load ray parameters:
+    config = get_search_space_ray(args)
+    ray_scheduler, ray_search_alg, resources_per_trial, num_gpus, max_concurrent_trials, num_cpus = get_ray_config(args)
+
+    # Init Ray
+    if ray.is_initialized:
+        ray.shutdown()
+    
+    ray.init(runtime_env={'working_dir': working_dir,
+                         'excludes': ['/.git/objects/**',  # Exclude .git folder
+                                    f'/__pycache__/**',  # Exclude python cache
+                                    f'/save/**',  #Exclude save folder 
+                                    f'/data/**',  #Exclude data folder 
+                                    f'/jupyter_ipynb/**',  #Exclude jupyter notebooks
+                                    '/home/rrochas/prediction-validation/build_inputs/NetMob_POIs.ipynb',
+                                    '/home/rrochas/prediction-validation/cache/**'
+                                    ]
+                            },
+             num_gpus=num_gpus,
+             num_cpus=num_cpus
+            )
+    
+    # Put large objects into the Ray object store
+    dataset_ref = ray.put(dataset) # Put dataset (large object) in a 'Ray Object Store'. Which mean a worker won't serealize it but access to a shared memory where dataset_ref is located for everyone.
+    #dataset_ref = dataset
+
+
+    def train_with_tuner(config):
+        # Dereference the large objects within the worker
+        dataset = ray.get(dataset_ref)
+        # dataset.get_dataloader()
+        trainer = load_trainer(config, dataset, args)
+        trainer.train_and_valid()  # No plotting, No testing, No unnormalization
+
+        # Clean Memory: 
+        torch.cuda.empty_cache()
+        del trainer 
+        del dataset
+        # gc.collect()  # Clean CPU memory
+        # ...
+
+
+    """
+    tuner = tune.Tuner(trainable = lambda config: train_with_tuner(config),
+                        param_space = config
+                        tune_config = tune.TuneConfig(ressources_per_trial = resources_per_trial,
+                                                    max_concurrent_trials = max_concurrent_trials,
+                                                    search_alg = ray_search_alg,
+                                                    num_samples = num_samples,
+                        fail_fast = False, # Continue even with errors 
+                        raise_on_failed_trial=False,
+                        )
+    )
+    analysis = tuner.fit()
+    """
+
+
+    analysis = tune.run(
+            lambda config: train_with_tuner(config),
+            config=config,
+            num_samples=num_samples,  # Increase num_samples for more random combinations
+            resources_per_trial = resources_per_trial,
+            max_concurrent_trials = max_concurrent_trials,
+            scheduler = ray_scheduler,
+            search_alg = ray_search_alg,
+            fail_fast = False, # Continue even with errors 
+            raise_on_failed_trial=False,
+        )
+
+    
+    # Get Trial ID (Name of the entire HP-tuning)
+    date_id = get_date_id()
+    datasets_names = '_'.join(args.dataset_names)
+    model_names = '_'.join([args.model_name,args.args_vision.model_name]) if (hasattr(args,'args_vision') and hasattr(args.args_vision,'model_name') ) else args.model_name
+    trial_id =  f"{datasets_names}_{model_names}_{args.loss_function_type}Loss_{date_id}"
+
+    # Keep track only on successfull trials:
+    path_folder = f'{working_dir}/{save_dir}'
+    analysis.results_df.to_csv(f'{path_folder}/{trial_id}.csv')
+    
+
+    # Keep track on other args:
+    json_file = load_json_file(path_folder)
+    update_json(args,json_file,trial_id,performance={},json_save_path=f'{path_folder}/model_args.pkl')
+
+    return(analysis,trial_id)
+
+if __name__ == '__main__': 
+    from constants.config import get_args,update_modif
+    from constants.paths import FOLDER_PATH,FILE_NAME
+    from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
+
+    # Set working directory (the one where you will find folder 'save/' or 'HP_tuning'):
+    current_path = notebook_dir = os.getcwd()
+    working_dir = os.path.abspath(os.path.join(current_path, '..'))
+    save_dir = 'save/HyperparameterTuning'
+
+    # Load config
+    model_name = 'STGCN' #'CNN'
+    dataset_names = ['subway_in','netmob']
+    args = get_args(model_name,dataset_names)
+
+    # Modification : 
+    args.K_fold = 5
+    args.ray = True
+    args.W = 0  # IMPORTANT AVEC NETMOB
+    args.epochs = 10
+    args.loss_function_type = 'MSE' # 'quantile'
+
+    args = update_modif(args)
+
+    # Coverage Period : 
+    small_ds = False
+    coverage = match_period_coverage_with_netmob(FILE_NAME,dataset_names=dataset_names)
+    # Choose DataSet and VisionModel if needed: 
+    dataset_names = ['subway_in'] # ['calendar','netmob'] #['subway_in','netmob','calendar']
+    vision_model_name = 'ImageAvgPooling'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
+
+
+    # Load K-fold subway-ds 
+    folds = [0] # Here we use the first fold for HP-tuning. 
+
+    # In case we need to compute the Sliding K-fold validation:
+    # folds = np.arange(1,args.K_fold)
+
+    K_fold_splitter = KFoldSplitter(args,folds)
+    K_subway_ds = K_fold_splitter.split_k_fold()
+
+    num_samples = 8
+    subway_ds = K_subway_ds[0]
+    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,working_dir,save_dir)

@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from PI import Calibrator
+from pipeline.PI import Calibrator
 
 
 class QuantileLoss(nn.Module):

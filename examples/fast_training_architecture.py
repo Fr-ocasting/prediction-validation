@@ -15,8 +15,8 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from examples.benchmark import local_get_args
-from utils.loger import LOG
-from utils.rng import set_seed
+from pipeline.utils.loger import LOG
+from pipeline.utils.rng import set_seed
 from examples.train_model import main 
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics

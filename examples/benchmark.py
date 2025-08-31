@@ -10,11 +10,11 @@ if parent_dir not in sys.path:
 import pandas as pd
 import numpy as np 
 from constants.config import get_args,update_modif, modification_contextual_args
-from K_fold_validation.K_fold_validation import KFoldSplitter
-from high_level_DL_method import load_optimizer_and_scheduler
-from dl_models.full_model import full_model
-from utils.save_results import get_trial_id
-from trainer import Trainer
+from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
+from pipeline.high_level_DL_method import load_optimizer_and_scheduler
+from pipeline.dl_models.full_model import full_model
+from pipeline.utils.save_results import get_trial_id
+from pipeline.trainer import Trainer
 import matplotlib.pyplot as plt 
 import importlib
 

@@ -17,12 +17,12 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
     
 from examples.benchmark import local_get_args,get_inputs,train_on_ds
-from utils.save_results import get_trial_id
+from pipeline.utils.save_results import get_trial_id
 from constants.config import modification_contextual_args,update_modif
-from plotting.TS_analysis import drag_selection_box,plot_single_point_prediction,plot_prediction_error,plot_loss_from_trainer,plot_TS
+from pipeline.plotting.TS_analysis import drag_selection_box,plot_single_point_prediction,plot_prediction_error,plot_loss_from_trainer,plot_TS
 from bokeh.plotting import show,output_notebook
 from bokeh.layouts import column,row
-from utils.specific_event import rugby_matches
+from pipeline.utils.specific_event import rugby_matches
 from constants.paths import FOLDER_PATH
 
 RANGE = 3*60  # +/- range (min) supposed to be affected around the event 

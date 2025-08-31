@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import PercentFormatter
 import torch 
-from PI import PI_object
+from pipeline.PI import PI_object
 
 def plot_PI_from_historical_UQ(real,lower,upper, station_i=0,window_size = 96*4):
     plt.figure(figsize=(12, 6))

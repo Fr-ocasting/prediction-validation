@@ -1,0 +1,97 @@
+import sys
+import os
+import pandas as pd
+import torch
+import numpy as np
+from datetime import datetime
+import h5py
+
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path, '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# Personnal import
+from pipeline.dataset import DataSet, PersonnalInput
+from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
+from pipeline.utils.utilities import restrain_df_to_specific_period
+
+"""
+METR-LA Dataset
+df.shape:  ()
+
+traffic speed on 207 sensors on the highways of Los Angeles County
+"""
+NAME = 'METR_LA'
+FILE_BASE_NAME = 'METR_LA'#'subway_IN_interpol_neg_15_min_2019_2020' #.csv
+DATA_SUBFOLDER = 'METR_LA'
+CITY = f'California_7' 
+
+# Naive Freq
+FREQ = '5min'
+# Temporal Coverage period
+START = '2012-03-01 00:00:00'
+END = '2012-06-28 00:00:00'
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+                 'weekday':[]#[5,6],
+                 }
+# List of invalid period 
+list_of_invalid_period = []
+
+C = 1 # Nb channels by spatial units
+
+num_nodes = 207
+
+
+
+def load_data(FOLDER_PATH, invalid_dates, coverage_period, args,minmaxnorm,standardize, normalize=True,
+              data_subfolder = DATA_SUBFOLDER,
+              file_base_name = FILE_BASE_NAME,city =CITY):
+     
+    """
+    Load data
+
+    Args:
+        
+
+    Returns:
+        PersonnalInput: Objet contenant les données traitées.
+    """
+    dirname = f"{FOLDER_PATH}/{data_subfolder}"
+    print(f"   Load data from: {dirname}")
+
+    data = h5py.File(f"{dirname}/{file_base_name}.h5", 'r')
+    axis0 = pd.Series(data['df']['axis0'][:].astype(str))
+    axis1 = pd.Series(data['df']['axis1'][:].astype(str))
+    df = pd.DataFrame(data['df']['block0_values'][:], columns=axis0, index = pd.to_datetime(axis1.astype(int)/1_000_000_000,unit='s'))
+    df.columns.name = 'Sensor'
+
+    assert '5min' == args.freq, f"Trying to apply a a {args.freq} temporal aggregation while METR-LA is designed for 5min"
+    #assert args.D == 0, f"Trying to look {args.D}Day before but there are no Weekends"
+
+    # --- Preprocess ---
+    df.index = pd.to_datetime(df.index)
+    df = restrain_df_to_specific_period(df,coverage_period)
+    print(f"Data loaded with shape: {df.shape}")
+    data_T = torch.tensor(df.values).float()
+    dims = [0] # if [0] then Normalisation on temporal dim
+
+    processed_input = load_input_and_preprocess(dims = dims,normalize=normalize,invalid_dates=invalid_dates,args=args,data_T=data_T,coverage_period=coverage_period,name= NAME,
+                                                minmaxnorm=minmaxnorm,standardize=standardize)
+
+    # --- Finalisation Métadonnées ---
+    processed_input.spatial_unit = df.columns.tolist()
+    processed_input.C = C
+    if hasattr(args, 'adj_type'):
+        if args.adj_type == 'dist':
+            adj_mx_name = 'dist.csv'
+        elif args.adj_type == 'adj':
+            raise NotImplementedError('direct Neighborhood Adjacency matrix does not exists for this dataset')
+        processed_input.adj_mx_path = f"{dirname}/adj/{adj_mx_name}"
+    processed_input.raw_data_path =f"{dirname}/{file_base_name}.h5"
+    processed_input.city = city
+    # processed_input.periods = None 
+    return processed_input
+
+if __name__ == "__main__":
+    print('Main vide')

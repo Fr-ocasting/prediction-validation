@@ -163,9 +163,11 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['no_common_dates_between_set'] = False  #If True then a shift of dataset.shift_from_first_elmt is applied. Otherwise, some pattern could be within Training and Validation DataLoader
     config['K_fold'] = 6  # int. If 1 : classic validation (only 1 model), Else : validation with K_fold according 'config['validation']
     config['current_fold'] = 0
+
     # ===  
 
     config['abs_path'] =  ('/').join(f"{os.path.abspath(os.getcwd())}".split('/')[:-1]) + '/' # f"{os.path.abspath(os.getcwd())}/"
+    config['dict_ds2path'] = {}
 
 
     # Define Output dimension: 
@@ -214,7 +216,7 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
 
     # Load Config associated to the Model: 
     if model_name is not None:
-        module_path = f"dl_models.{args.model_name}.load_config"
+        module_path = f"pipeline.dl_models.{args.model_name}.load_config"
         module = importlib.import_module(module_path)
         importlib.reload(module)
         locals()[f"args_{args.model_name}"] = module.args
@@ -232,7 +234,7 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
         args.scheduler=None
 
     if 'calendar_embedding' in args.dataset_names:
-        module_path_TE = f"dl_models.TimeEmbedding.load_config"
+        module_path_TE = f"pipeline.dl_models.TimeEmbedding.load_config"
         module_TE = importlib.import_module(module_path_TE)
         importlib.reload(module_TE)
         args_embedding = module_TE.args

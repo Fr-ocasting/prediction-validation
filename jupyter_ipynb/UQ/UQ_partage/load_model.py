@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from plotting import plot_uncertainty_bands
+from pipeline.plotting import plot_uncertainty_bands
 
 
 class DeepEnsemble(object):

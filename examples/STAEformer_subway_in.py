@@ -17,8 +17,8 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from examples.benchmark import local_get_args
-from utils.loger import LOG
-from utils.rng import set_seed
+from pipeline.utils.loger import LOG
+from pipeline.utils.rng import set_seed
 from examples.train_model import main 
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
@@ -72,7 +72,7 @@ possible_contextual_kwargs = {
                                         'stacked_contextual': False,
                                         'agg_iris_target_n':50,
                                         'threshold_volume_min': 1,
-                                       'quantile_filter_outliers': 0.99,
+                                    #    'quantile_filter_outliers': 0.99,
                                         'attn_kwargs': {
                                                         'dim_feedforward' : 128,
                                                         'num_heads' : 1,
@@ -85,7 +85,7 @@ possible_contextual_kwargs = {
                                         'stacked_contextual': False,
                                          'agg_iris_target_n':50,
                                         'threshold_volume_min': 1,
-                                         'quantile_filter_outliers': 0.99,
+                                        #  'quantile_filter_outliers': 0.99,
                                         'attn_kwargs': {
                                                         'dim_feedforward' : 128,
                                                         'num_heads' : 4,
@@ -151,7 +151,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'standardize': False,
                                 'minmaxnorm': True,
                                 'batch_size': 128,
-                                'epochs':100,
+                                'epochs':500,
 
                                 'horizon_step': horizon,
                                 'step_ahead': horizon,

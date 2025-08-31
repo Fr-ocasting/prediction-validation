@@ -28,6 +28,58 @@ else:
     
 SAVE_DIRECTORY = 'save'
 
+
+DATASET_IMPORT_PATHS = {
+    # --- Lyon : 
+    # PT: 
+    'subway_in': 'load_inputs.Lyon.pt.subway_in',
+    'subway_out': 'load_inputs.Lyon.pt.subway_out',
+    'subway_indiv': 'load_inputs.Lyon.pt.subway_indiv',
+    'subway_out_per_station': 'load_inputs.Lyon.pt.subway_out_per_station',
+    'tramway_indiv': 'load_inputs.Lyon.pt.tramway_indiv',
+    'buses_indiv': 'load_inputs.Lyon.pt.buses_indiv',
+
+    # Bike 
+    'bike_in': 'load_inputs.Lyon.bike.bike_in',
+    'bike_out': 'load_inputs.Lyon.bike.bike_out',
+
+    # Car
+    'CRITER_3lanes': 'load_inputs.car.CRITER_3lanes',
+    'CRITER_3_4_5_lanes_flow': 'load_inputs.car.CRITER_3_4_5_lanes_flow',
+    'CRITER_3_4_5_lanes_occupancy': 'load_inputs.car.CRITER_3_4_5_lanes_occupancy',
+    'CRITER_sup_35000dailyflow_3_4_5_lanes_flow': 'load_inputs.car.CRITER_sup_35000dailyflow_3_4_5_lanes_flow',
+    'CRITER_sup_35000dailyflow_3_4_5_lanes_occupancy': 'load_inputs.car.CRITER_sup_35000dailyflow_3_4_5_lanes_occupancy',
+    'CRITER_inf_35000dailyflow_flow': 'load_inputs.car.CRITER_inf_35000dailyflow_flow',
+    'CRITER_inf_35000dailyflow_occupancy': 'load_inputs.car.CRITER_inf_35000dailyflow_occupancy',
+    'CRITER_urban_between_15000_25000dailyflow_flow': 'load_inputs.car.CRITER_urban_between_15000_25000dailyflow_flow',
+    'CRITER_urban_between_15000_25000dailyflow_occupancy': 'load_inputs.car.CRITER_urban_between_15000_25000dailyflow_occupancy',
+    'CRITER': 'load_inputs.car.CRITER',
+
+    # NetMob: 
+    'netmob': 'load_inputs.Lyon.netmob',
+    'netmob_POIs': 'load_inputs.Lyon.netmob_POIs', 
+    'netmob_POIs_per_station': 'load_inputs.Lyon.netmob_POIs_per_station',
+    'netmob_image_per_station': 'load_inputs.Lyon.netmob_image_per_station',
+    'netmob_video_lyon': 'load_inputs.Lyon.netmob_video_lyon',
+
+    # Weather:
+    'weather': 'load_inputs.Lyon.weather',
+    # ---
+
+
+    # --- Manhattan : 
+    'METR_LA': 'load_inputs.Manhattan.METR_LA',
+    'PEMS_BAY': 'load_inputs.Manhattan.PEMS_BAY',
+    'PeMS03': 'load_inputs.Manhattan.PeMS03',
+    'PeMS04': 'load_inputs.Manhattan.PeMS04',
+    'PeMS07': 'load_inputs.Manhattan.PeMS07',
+    'PeMS08': 'load_inputs.Manhattan.PeMS08',
+    'PeMS08_flow': 'load_inputs.Manhattan.PeMS08_flow',
+    'PeMS08_occupancy': 'load_inputs.Manhattan.PeMS08_occupancy',
+    'PeMS08_speed': 'load_inputs.Manhattan.PeMS08_speed',
+    
+    }
+
 ''' NetMob Parameters: '''
 #SELECTED_APPS = ['Google_Maps','Deezer','Instagram'] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter']
 #TRANSFER_MODE = ['DL'] #,'UL'] # ['DL'] # ['UL'] #['DL','UL']

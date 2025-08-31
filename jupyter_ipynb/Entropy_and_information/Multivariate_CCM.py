@@ -12,7 +12,7 @@ working_dir = os.path.abspath(os.path.join(current_path, '..','..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
-from jupyter_ipynb.Entropy_and_information.utils import correlation_coefficient
+from pipeline.jupyter_ipynb.Entropy_and_information.utils import correlation_coefficient
 
 def build_multivariate_embedding(
     data_dict: Dict[str, np.ndarray],

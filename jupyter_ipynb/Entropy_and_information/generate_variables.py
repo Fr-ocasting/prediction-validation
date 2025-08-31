@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import inspect
 import os, sys
 sys.path.append(os.path.abspath('../..'))
-from jupyter_ipynb.Entropy_and_information.granger import GrangerCausalityAnalysis
+from pipeline.jupyter_ipynb.Entropy_and_information.granger import GrangerCausalityAnalysis
 
 def generate_linear_causal_series(n=200, lags=[2, 4], coeffs=[0.6, 0.3], noise_level=0.2, seed=None):
     """

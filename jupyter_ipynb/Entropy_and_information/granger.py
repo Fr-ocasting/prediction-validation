@@ -386,7 +386,7 @@ class GrangerCausalityAnalysis:
 
 
 if __name__ == "__main__":
-    from generate_variables import load_variables_sinusoidales
+    from pipeline.generate_variables import load_variables_sinusoidales
     t,x,y,z = load_variables_sinusoidales(n=100,T=2*np.pi,lag=np.pi/3,noise=True,seed=42,cos=True)
 
     # Create a DataFrame with your time series

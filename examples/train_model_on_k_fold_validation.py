@@ -9,12 +9,12 @@ if parent_dir not in sys.path:
 
 import pandas as pd
 import numpy as np 
-from trainer import Trainer
-from K_fold_validation.K_fold_validation import KFoldSplitter
+from pipeline.trainer import Trainer
+from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from constants.paths import SAVE_DIRECTORY
-from trainer import Trainer
-from high_level_DL_method import load_optimizer_and_scheduler
-from dl_models.full_model import full_model
+from pipeline.trainer import Trainer
+from pipeline.high_level_DL_method import load_optimizer_and_scheduler
+from pipeline.dl_models.full_model import full_model
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 
