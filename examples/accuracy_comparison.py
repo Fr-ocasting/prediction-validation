@@ -351,6 +351,14 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
     Load trainer and dataset from two trials.
     Will be used to compare the two models.
     """
+    # Sometimes trial_id is given with a unnecessary prefix '_':
+    if trial_id1[1:] in model_args['model'].keys():
+        trial_id1 = trial_id1[1:]
+    if not trial_id1 in model_args['model'].keys() and (model_args_bis is not None):
+        if (trial_id1[1:] in model_args_bis['model'].keys()):
+            trial_id1 = trial_id1[1:]
+
+    # Load model : 
     if trial_id1 in model_args['model'].keys():
         args = model_args['model'][trial_id1]['args']
         path  = path_model_args
@@ -358,7 +366,8 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
          args = model_args_bis['model'][trial_id1]['args']
          path = path_model_args_bis
     else:
-        raise ValueError(f"Trial ID {trial_id1} not found in model_args or model_args_bis.")
+        print(list(model_args['model'].keys()))
+        raise ValueError(f"Trial ID 1 {trial_id1} not found in model_args or model_args_bis.")
     model_save_path = f"{path}/{trial_id1}.pkl"
     trainer1, ds1, args_init1 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init=ds1_init,args_init = args_init1)
 
@@ -376,7 +385,7 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
             args = model_args_bis['model'][trial_id2]['args']
             path = path_model_args_bis
         else:
-            raise ValueError(f"Trial ID {trial_id2} not found in model_args or model_args_bis.")
+            raise ValueError(f"Trial ID 2 {trial_id2} not found in model_args or model_args_bis.")
     
     model_save_path = f"{path}/{trial_id2}.pkl"
     trainer2, ds2, args_init2 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init = ds2_init,args_init=args_init2)
@@ -575,7 +584,6 @@ class ComparisonPlotter:
         return self.dic_gain_agg,self.dic_error_agg
 
 
-
 if __name__ == '__main__':
     from pipeline.clustering.clustering import TimeSeriesClusterer
     from constants.paths import SAVE_DIRECTORY
@@ -608,8 +616,13 @@ if __name__ == '__main__':
     
 
     # --- Init
+    model_name = 'STAEformer' # 'STGCN', 'STAEformer'
+    if model_name == 'STGCN':
+        calendar_str = 'calendar_embedding'
+    if model_name == 'STAEformer':
+        calendar_str = 'calendar'
     SAVE_DIRECTORY = f"../{SAVE_DIRECTORY}"
-    subfolder = 'K_fold_validation/training_wo_HP_tuning/optim/subway_in_STGCN'
+    subfolder = f'K_fold_validation/training_wo_HP_tuning/optim/subway_in_{model_name}'
     path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
     model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
 
@@ -622,9 +635,14 @@ if __name__ == '__main__':
     trial_id1_i = f"{target_data}"
     trial_id1_ii = f"{target_data}_{subway_data_2}"
 
-    dic_contextual_datasets = { trial_id1_i: [f'{subway_data_2}_bike_in_bike_out',
-                                              f'{subway_data_2}_bike_in',f'{subway_data_2}_bike_out', f'bike_in_bike_out',
-                                              f'{subway_data_2}',f'bike_in',f'bike_out'],
+    dic_contextual_datasets = { 
+                                trial_id1_i: [f'{subway_data_2}',
+                                              f'bike_out',f'bike_out_{subway_data_2}'
+                                              ],
+
+                                # trial_id1_i: [f'{subway_data_2}_bike_in_bike_out',
+                                #               f'{subway_data_2}_bike_in',f'{subway_data_2}_bike_out', f'bike_in_bike_out',
+                                #               f'{subway_data_2}',f'bike_in',f'bike_out'],
 
                                 # trial_id1_ii: [f'{subway_data_2}_bike_in_bike_out',
                                 #                f'{subway_data_2}_bike_in',f'{subway_data_2}_bike_out', f'bike_in_bike_out',
@@ -634,19 +652,19 @@ if __name__ == '__main__':
     # ---
 
     
-    for trial_id1_init in [trial_id1_ii]: #[trial_id1_i,trial_id1_ii]:  
+    for trial_id1_init in [trial_id1_i]: # [trial_id1_i,trial_id1_ii]: # [trial_id1_i]:
         contextual_datasets = dic_contextual_datasets[trial_id1_init]
 
         for contextual_dataset in contextual_datasets:
-            for horizon in range(1,5):
+            for horizon in [1,4]: #[1,2,3,4]: 
               
 
-                trial_id1 = f'{trial_id1_init}_calendar_embedding_h{horizon}_bis'
-                trial_id2 = f'{target_data}_{contextual_dataset}_calendar_embedding_h{horizon}_bis'
+                trial_id1 = f'{trial_id1_init}_{calendar_str}_h{horizon}_bis'
+                trial_id2 = f'{target_data}_{contextual_dataset}_{calendar_str}_h{horizon}_bis'
 
 
 
-                INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models/prediction_{target_data}"
+                INIT_SAVE_PATH = f"{SAVE_DIRECTORY}/plot/comparison_between_models/{model_name}_prediction_{target_data}"
 
                 # save_name = f"{trial_id2}"
                 save_name = f"ref_{trial_id1_init}_h{horizon}_to_{trial_id2[:-4]}"
