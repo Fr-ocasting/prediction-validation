@@ -48,7 +48,6 @@ possible_contextual_kwargs = {'subway_out': {'need_global_attn':True,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
-                                        
                                         'attn_kwargs': {
                                                         'dim_feedforward' : 128,
                                                         'num_heads' : 1,
@@ -107,7 +106,7 @@ modifications = {}
 for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['weather']]:
+    for contextual_dataset_names in [[]]:  # 'weather'
         # for horizon in [1,2,3,4]:
         for horizon in [1,4]:
             for n_bis in range(1,6): # range(1,6):
@@ -118,6 +117,14 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
                                 'embedding_calendar_types': ['dayofweek', 'hour'],
+
+
+                                #  ATTENTION A MODIFIER PROCHAINE FOIS  
+                                #  ++++++ CHANGER LA LIGNE CONTEXTUAL_KWARGS ------------------------------------------------------------
+                                'use_target_as_context':True, 
+                                # 'use_target_as_context':False, 
+
+
                                 'loss_function_type':'HuberLoss',
                                 'Kt': 2,
                                 'stblock_num': 4,
@@ -136,7 +143,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'batch_size': 128,
                                 'lr': 0.00071,
                                 'dropout': 0.145169206052754,
-                                'epochs': 50,
+                                'epochs': 100,
                                 'standardize': False,
                                 'minmaxnorm': True,
 
@@ -155,7 +162,8 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'step_ahead': horizon,
 
                                 'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
+                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in (contextual_dataset_names + [target_data]) },  
+                                # 'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
                                 'denoising_names':[],
                                 }  
 
@@ -185,7 +193,6 @@ if __name__ == "__main__":
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,
-                                'use_target_as_context':False,
 
                                 'device': torch.device('cuda:0')
         }
