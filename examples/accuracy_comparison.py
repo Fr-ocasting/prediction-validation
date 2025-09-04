@@ -636,7 +636,7 @@ if __name__ == '__main__':
         calendar_str = 'calendar_embedding'
     if model_name == 'STAEformer':
         calendar_str = 'calendar'
-    SAVE_DIRECTORY = f"../{SAVE_DIRECTORY}"
+    SAVE_DIRECTORY = f"{SAVE_DIRECTORY}"
     subfolder = f'K_fold_validation/training_wo_HP_tuning/optim/subway_in_{model_name}'
     path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
     model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))

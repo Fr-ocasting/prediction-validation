@@ -225,7 +225,7 @@ if __name__ == "__main__":
     weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
     trial_id = f"{args_init.model_name}_{'_'.join(args_init.dataset_names)}_fold_{str(fold_to_evaluate[0])}_epochs_{args_init.epochs}"
     save_folder = f"{weights_save_folder}/{trial_id}"
-    save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
+    save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
 
     print(f"Save folder: {save_folder_with_root}")
     if not os.path.exists(save_folder_with_root):

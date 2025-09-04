@@ -26,7 +26,7 @@ else:
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
     
-SAVE_DIRECTORY = 'save'
+SAVE_DIRECTORY = os.path.expanduser('~/../../home/rrochas/prediction-validation/save')
 
 
 DATASET_IMPORT_PATHS = {

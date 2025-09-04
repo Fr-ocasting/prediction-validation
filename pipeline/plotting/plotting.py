@@ -232,7 +232,9 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False,
                           cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False
                           ,v_min=None,v_max=None,
                           display_values = False,
-                          bool_plot = None):
+                          bool_plot = None,cbar_magic_args = False,
+                          figsize = None
+                          ):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
 
@@ -240,7 +242,11 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False,
         data = np.log(data + 1)
     
     data[data == 0] = np.nan
-    cax = plt.matshow(data.values, cmap=cmap,fignum=False)  #
+    if figsize is not None:
+        matfig = plt.figure(figsize=figsize)
+        cax = plt.matshow(data.values, cmap=cmap,aspect='auto',fignum=matfig.number)  #
+    else:
+        cax = plt.matshow(data.values, cmap=cmap,fignum=False)  #
 
     #cmap_perso = plt.get_cmap(cmap)
     if bool_reversed: 
@@ -272,7 +278,11 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False,
     plt.gca().set_yticklabels(y_labels, fontsize=8)
 
     # Add a colorbar to the right of the figure
-    cbar = plt.colorbar(cax, aspect=10)
+
+    if cbar_magic_args :
+        cbar = plt.colorbar(cax,fraction=0.046, pad=0.04)
+    else:
+        cbar = plt.colorbar(cax, aspect=10)
     cbar.set_label(cbar_label)  # You can customize the label as needed
 
     ## Plot values if needed: 

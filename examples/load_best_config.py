@@ -47,7 +47,7 @@ def parse_lists_in_series(pd_serie: pd.Series):
 
 
 def load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name):
-    path_to_model_args = f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models"
+    path_to_model_args = f"{SAVE_DIRECTORY}/{save_folder}/best_models"
     dic_args = pickle.load(open(f"{path_to_model_args}/model_args.pkl",'rb'))
     args_models = dic_args['model'][f"{trial_id}{add_name_id}_f{fold_name}"]['args']
     args_models = Namespace(**args_models)
@@ -182,7 +182,7 @@ def get_trainer_and_ds_from_saved_trial(trial_id = None,
 
     # Load Trained Weights 
     if save_folder is not None:
-        model_param = torch.load(f"{working_dir}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
+        model_param = torch.load(f"{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
     elif model_save_path is not None:
         model_param = torch.load(f"{model_save_path}")
     else: 

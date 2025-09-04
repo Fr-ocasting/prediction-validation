@@ -118,7 +118,7 @@ if __name__ == "__main__":
                 
                 weights_save_folder = f"K_fold_validation/training_wo_HP_tuning"
                 save_folder = f"{weights_save_folder}/{subfolder}/{trial_id}"
-                save_folder_with_root = f"{os.path.expanduser('~')}/prediction-validation/{SAVE_DIRECTORY}/{save_folder}"
+                save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
                 print(f"Save folder: {save_folder_with_root}")
                 if not os.path.exists(save_folder_with_root):
                     os.makedirs(save_folder_with_root)

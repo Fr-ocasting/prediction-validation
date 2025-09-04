@@ -27,7 +27,7 @@ def display_consistency(trainer,ds,save_folder,trial_id,add_name_id,training_mod
     full_predict1= full_predict1.detach().clone().reshape(-1)    
     error_pred1 = ((Y_true - full_predict1)**2).mean()
 
-    df_metrics1 = pd.read_csv(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}{add_name_id}.csv")
+    df_metrics1 = pd.read_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}{add_name_id}.csv")
     print(f"MSE errror on {training_mode} by loading trained model : {'{:.2f}'.format(error_pred1.item())}\n")
     return df_metrics1
 
@@ -82,7 +82,7 @@ def get_trainer_and_ds_from_saved_trial(trial_id,add_name_id,save_folder,modific
 
 
     # Load Trained Weights 
-    model_param = torch.load(f"{current_path}/{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
+    model_param = torch.load(f"{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
     model.load_state_dict(model_param['state_dict'],strict=True)
 
 

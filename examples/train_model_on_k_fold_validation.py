@@ -224,13 +224,13 @@ def get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,d
     return df_results,df_metrics,df_metrics_by_folds
 def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id):
     df_results,df_metrics,df_metrics_by_folds =  get_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,dic_results)
-    if not os.path.exists(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}"):
-        os.makedirs(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}")
-    print('Saving results in: ',f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/")
-    df_results.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
-    df_loss.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
-    df_metrics.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
-    df_metrics_by_folds.to_csv(f"{parent_dir}/{SAVE_DIRECTORY}/{save_folder}/METRICS_BY_FOLD{trial_id}.csv")
+    if not os.path.exists(f"{SAVE_DIRECTORY}/{save_folder}"):
+        os.makedirs(f"{SAVE_DIRECTORY}/{save_folder}")
+    print('Saving results in: ',f"{SAVE_DIRECTORY}/{save_folder}/")
+    df_results.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/VALID_{trial_id}.csv")
+    df_loss.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/Losses_{trial_id}.csv")
+    df_metrics.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_{trial_id}.csv")
+    df_metrics_by_folds.to_csv(f"{SAVE_DIRECTORY}/{save_folder}/METRICS_BY_FOLD{trial_id}.csv")
 
     #print('df metrics: ',df_metrics)
 
