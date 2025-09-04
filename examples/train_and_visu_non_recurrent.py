@@ -241,7 +241,10 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
             col1 = column(p1,select) 
     height_loss = int((2+1/3)*height) if p2 is not None else height
     col2 = plot_loss_from_trainer(trainer,width=width//2,height=height_loss,bool_show=False)
-    grid = row(col1,col2)
+    if col2 is None:
+        grid = col1
+    else:
+        grid = row(col1,col2)
 
     output_notebook()
     show(grid)

@@ -41,6 +41,10 @@ class AttentionLayer(nn.Module):
     def forward(self, query: Tensor, key: Tensor, value: Tensor) -> Tensor:
         # Q    (batch_size, ..., tgt_length, model_dim)
         # K, V (batch_size, ..., src_length, model_dim)
+        print('query size:', query.size())
+        print('key size:', key.size())
+        print('value size:', value.size())
+
         batch_size = query.shape[0]
         tgt_length = query.shape[-2]
         src_length = key.shape[-2]
@@ -70,13 +74,16 @@ class AttentionLayer(nn.Module):
 
         attn_score = torch.softmax(attn_score, dim=-1)
         self.attn_score = attn_score
+
+        print('attn_score size:', attn_score.size())
+        print('value size:', value.size())
         out = attn_score @ value  # (num_heads * batch_size, ..., tgt_length, head_dim)
         out = torch.cat(
             torch.split(out, batch_size, dim=0), dim=-1
         )  # (batch_size, ..., tgt_length, head_dim * num_heads = model_dim)
-
+        print('out size before out_proj:', out.size())
         out = self.out_proj(out)
-
+        print('out size after out_proj:', out.size())
         return out
 
 
@@ -280,10 +287,10 @@ class STAEformer(nn.Module):
 
 
             for attn in self.attn_layers_t:
-                # print('\n--- Temporal attention layer ---')
+                print('\n--- Temporal attention layer ---')
                 x = attn(x, dim=1)
             for attn in self.attn_layers_s:
-                # print('\n--- Spatial attention layer ---')
+                print('\n--- Spatial attention layer ---')
                 x = attn(x, dim=2)
             # (batch_size, in_steps, num_nodes, model_dim)
             # print('x.size(): ',x.size())

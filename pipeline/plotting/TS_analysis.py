@@ -227,6 +227,8 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
               else:
                     raise NotImplementedError(f"Loss function {trainer.args.loss_function_type} not implemented for plotting")
               layout = column(p, text)
+       else:
+             return None
 
        if bool_show:
               output_notebook()
