@@ -522,6 +522,7 @@ class OutputBlock(nn.Module):
             cat_list.append(x_calendar)
         if len(context_list) > 0:
             cat_list = cat_list+context_list
+
         if len(cat_list) > 0:
             # print('x size before concatenation late: ',x.size())
             x = [x]+cat_list

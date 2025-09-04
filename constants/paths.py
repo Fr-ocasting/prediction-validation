@@ -57,7 +57,7 @@ DATASET_IMPORT_PATHS = {
 
     # NetMob: 
     'netmob': 'load_inputs.Lyon.netmob',
-    'netmob_POIs': 'load_inputs.Lyon.netmob_POIs', 
+    'netmob_POIs': 'load_inputs.Lyon.netmob.netmob_POIs', 
     'netmob_POIs_per_station': 'load_inputs.Lyon.netmob_POIs_per_station',
     'netmob_image_per_station': 'load_inputs.Lyon.netmob_image_per_station',
     'netmob_video_lyon': 'load_inputs.Lyon.netmob_video_lyon',

@@ -103,6 +103,7 @@ def parse_results_to_dataframe(data_string, bis = False,
 
     # Update columns: 
     df['contextuals'] = df.apply(lambda row : '_'.join([ds_name for ds_name in ['subway_in','subway_out','bike_in','bike_out','weather'] if row[ds_name]]),axis=1)
+    print("df['horizon'].unique():",df['horizon'].unique())
     df['horizon'] = df['horizon'].apply(lambda h : int(h[1:-3]))
     df['bis'] = df['bis'].astype(int)
     df = df.fillna(False)

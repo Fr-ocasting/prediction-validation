@@ -139,12 +139,11 @@ class full_model(nn.Module):
 
 
             
-
         if dataset.target_data in args.dataset_names :
             self.remove_trafic_inputs = False
         else:
             self.remove_trafic_inputs = True
-            print('\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
+            print('\n------------------------------------------------------------------------\nPREDICTION WILL BE BASED SOLELY ON CONTEXTUAL DATA !\n')
         # ...
 
         """ # To remove : 
@@ -416,6 +415,7 @@ class full_model(nn.Module):
         if self.remove_trafic_inputs:
             #x = torch.Tensor().to(x)
             x = torch.empty(0, device=x.device, dtype=x.dtype)
+
             # x = x[:, :0].contiguous()
 
         # print('\nx before stacking new channels:',x.size())
@@ -587,7 +587,7 @@ def load_model(dataset, args):
 
         # Useless in this version :
         if hasattr(args,'adj_type'): 
-            raise notImplementedError('STGformer with adjacency matrix has not been implemented yet')
+            raise NotImplementedError('STGformer with adjacency matrix has not been implemented yet')
             adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold= args.threshold)
             adj_mx = normalize_adj_mx(adj_mx, args.adj_normalize_method, return_type="dense")
             supports = [torch.tensor(i).to(args.device) for i in adj_mx]

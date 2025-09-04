@@ -103,16 +103,85 @@ possible_contextual_kwargs = {'subway_out': {'need_global_attn':True,
 
 
 modifications = {}
+
+
+# for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
+#     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
+#     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
+#     for contextual_dataset_names in [[],['subway_out'],['subway_out','bike_out']]:  # 'weather'
+#         # for horizon in [1,2,3,4]:
+#         for horizon in [4]:
+#             for n_bis in range(1,6): # range(1,6):
+#                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar_embedding']
+#                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
+#                 name_i = f"{'_'.join(dataset_names)}_TargetAsContext_SAttnl1h1_e200_h{horizon}_bis{n_bis}"
+#                 config_i =  {'target_data': target_data,
+#                                 'dataset_names': dataset_names,
+#                                 'dataset_for_coverage': ['subway_in'],
+#                                 'embedding_calendar_types': ['dayofweek', 'hour'],
+
+
+#                                 #  ATTENTION A MODIFIER PROCHAINE FOIS  
+#                                 #  ++++++ CHANGER LA LIGNE CONTEXTUAL_KWARGS ------------------------------------------------------------
+#                                 'use_target_as_context':True, 
+#                                 # 'use_target_as_context':False, 
+
+
+#                                 'loss_function_type':'HuberLoss',
+#                                 'Kt': 2,
+#                                 'stblock_num': 4,
+#                                 'Ks': 2,
+#                                 'graph_conv_type': 'graph_conv',
+#                                 'gso_type': 'sym_renorm_adj',
+#                                 'enable_bias': True,
+#                                 'adj_type': 'corr',
+#                                 'enable_padding': True,
+#                                 'threshold': 0.3,
+#                                 'act_func': 'glu',
+#                                 'temporal_h_dim': 64,
+#                                 'spatial_h_dim': 256,
+#                                 'output_h_dim': 64,
+#                                 'weight_decay': 0.0014517707449388,
+#                                 'batch_size': 128,
+#                                 'lr': 0.00071,
+#                                 'dropout': 0.145169206052754,
+#                                 'epochs': 200,
+#                                 'standardize': False,
+#                                 'minmaxnorm': True,
+
+#                                 'TE_embedding_dim': 64,
+#                                 'TE_out_h_dim': 64,
+#                                 'TE_concatenation_late': True,
+#                                 'TE_concatenation_early':False,
+
+#                                 'optimizer': 'adamw',
+#                                 'batch_size': 128,
+#                                 'freq': '15min',
+#                                 'H':6,
+#                                 'D':1,
+#                                 'W':0,
+#                                 'horizon_step': horizon,
+#                                 'step_ahead': horizon,
+
+#                                 'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+#                                 'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in (contextual_dataset_names + [target_data]) },  
+#                                 # 'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
+#                                 'denoising_names':[],
+#                                 }  
+
+#                 modifications[name_i] = config_i
+
+
 for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [[]]:  # 'weather'
+    for contextual_dataset_names in [[],['subway_out'],['subway_out','bike_out']]:  # 'weather'
         # for horizon in [1,2,3,4]:
-        for horizon in [1,4]:
+        for horizon in [4]:
             for n_bis in range(1,6): # range(1,6):
-                dataset_names =  [target_data] +contextual_dataset_names+ ['calendar_embedding']
+                dataset_names = [target_data] + contextual_dataset_names+ ['calendar_embedding']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_SAttnl1h1_e200_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
@@ -121,8 +190,8 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
 
                                 #  ATTENTION A MODIFIER PROCHAINE FOIS  
                                 #  ++++++ CHANGER LA LIGNE CONTEXTUAL_KWARGS ------------------------------------------------------------
-                                'use_target_as_context':True, 
-                                # 'use_target_as_context':False, 
+                                # 'use_target_as_context':True, 
+                                'use_target_as_context':False, 
 
 
                                 'loss_function_type':'HuberLoss',
@@ -143,7 +212,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'batch_size': 128,
                                 'lr': 0.00071,
                                 'dropout': 0.145169206052754,
-                                'epochs': 100,
+                                'epochs': 200,
                                 'standardize': False,
                                 'minmaxnorm': True,
 
@@ -162,13 +231,12 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                                 'step_ahead': horizon,
 
                                 'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in (contextual_dataset_names + [target_data]) },  
-                                # 'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
+                                # 'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in (contextual_dataset_names + [target_data]) },  
+                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
                                 'denoising_names':[],
                                 }  
 
                 modifications[name_i] = config_i
-
 
 if __name__ == "__main__":
 
@@ -199,7 +267,7 @@ if __name__ == "__main__":
     
 
     log_final  = f"\n--------- Resume ---------\n"
-    subfolder = f'{target_data}_{model_name}_bis'
+    subfolder = f'{target_data}_{model_name}'
     for trial_id,modification_i in modifications.items():
         print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
         config = modification_init.copy()

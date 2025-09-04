@@ -13,9 +13,9 @@ from pipeline.build_inputs.load_adj import load_adj
 from pipeline.dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 def is_condition(args):
-    condition1 = not(len(vars(args.args_vision))>0) and not(getattr(args.args_embedding,'concatenation_early'))
+    condition1 = not(hasattr(args,'args_vision') and len(vars(args.args_vision)) > 0)  and not(getattr(args.args_embedding,'concatenation_early'))
     condition2 = not(len(vars(args.args_embedding))>0) and not(getattr(args.args_vision,'concatenation_early'))
-    condition3 = ((len(vars(args.args_embedding))>0) and (len(vars(args.args_vision))>0)) and (not(getattr(args.args_embedding,'concatenation_early')) and not(getattr(args.args_vision,'concatenation_early')))
+    condition3 = (len(vars(args.args_embedding))>0) and (hasattr(args,'args_vision') and len(vars(args.args_vision)) > 0) and (not(getattr(args.args_embedding,'concatenation_early')) and not(getattr(args.args_vision,'concatenation_early')))
     return(condition1 or condition2 or condition3)
 
 
