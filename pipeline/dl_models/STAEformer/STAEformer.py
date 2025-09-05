@@ -150,9 +150,10 @@ class STAEformer(nn.Module):
         horizon_step = 1,
         added_dim_output = 0,
         added_dim_input = 0,
+        contextual_kwargs = {},
     ):
         super().__init__()
-
+        #  ---  self attributes: ---
         self.num_nodes: int = num_nodes
         self.in_steps = L
         self.out_steps = step_ahead
@@ -167,6 +168,7 @@ class STAEformer(nn.Module):
         self.adaptive_embedding_dim = adaptive_embedding_dim
         self.added_dim_output = added_dim_output
         self.added_dim_input = added_dim_input
+        self.sum_contextual_dim = sum(contextual_kwargs[k]['emb_dim'] for k in contextual_kwargs.keys() if 'emb_dim' in contextual_kwargs[k].keys())
         self.model_dim = (
             input_embedding_dim
             + tod_embedding_dim
@@ -174,6 +176,7 @@ class STAEformer(nn.Module):
             + spatial_embedding_dim
             + adaptive_embedding_dim
             + added_dim_input
+            + self.sum_contextual_dim
         )
         self.output_model_dim = self.model_dim + self.added_dim_output
         
@@ -182,6 +185,8 @@ class STAEformer(nn.Module):
         self.use_mixed_proj = use_mixed_proj
 
         self.input_proj = nn.Linear(self.input_dim, input_embedding_dim)
+        #  --- 
+
         if tod_embedding_dim > 0:
             self.tod_embedding = nn.Embedding(self.steps_per_day, tod_embedding_dim)
         else:
@@ -202,10 +207,22 @@ class STAEformer(nn.Module):
 
         if adaptive_embedding_dim > 0:
             self.adaptive_embedding = nn.init.xavier_uniform_(
-                nn.Parameter(torch.empty(self.in_steps, self.num_nodes, adaptive_embedding_dim))
+                              nn.Parameter(
+                 torch.empty(self.in_steps, self.num_nodes, adaptive_embedding_dim))
             )
         else:
             self.adaptive_embedding = None
+
+        self.contextual_kwargs = contextual_kwargs
+        self.contextual_emb = nn.ModuleDict()
+        self.contextual_spatial_proj = nn.ModuleDict()
+        if self.sum_contextual_dim>0:
+            for ds_name, kwargs_i in self.contextual_kwargs.items():
+                if 'emb_dim' in kwargs_i.keys():
+                    self.contextual_emb[ds_name] = nn.Linear(kwargs_i['C'], kwargs_i['emb_dim'])
+                    if 'n_spatial_unit' in kwargs_i.keys() and kwargs_i['n_spatial_unit'] is not None:
+                        self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
+
 
         if use_mixed_proj:
             self.output_proj = nn.Linear(self.in_steps * self.output_model_dim, self.out_steps * self.output_dim// self.horizon_step)
@@ -227,6 +244,7 @@ class STAEformer(nn.Module):
                 for _ in range(num_layers)
             ]
         )
+        self.contextual_positions = contextual_positions
         self.pos_tod = contextual_positions.get("calendar_timeofday", None)
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
 
@@ -278,10 +296,31 @@ class STAEformer(nn.Module):
                 adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
                 features = torch.cat([features, adp_emb], dim=-1)
 
+            # Heterogeneous or Homogenous spatial units others contextual features: 
+            for ds_name, _ in self.contextual_emb.items():
+                contextual_i = contextual[self.contextual_positions[ds_name]] 
+                # Align the dimensions
+                if contextual_i.dim() ==3:
+                    contextual_i = contextual_i.unsqueeze(-1) # [B,L,P] -> [B,L,P,1]
+                # Embedding on channel dim: 
+                contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,L,P,C] -> [B,L,P,emb_dim]
+
+                # Spatial Projection : 
+                if ds_name in self.contextual_spatial_proj.keys():
+                    print('contextual_i.size()',contextual_i.size())
+                    print('contextual_i.permute(0,3,1,2).size()',contextual_i.permute(0,3,2,1).size())
+                    print('linear layer: ',self.contextual_spatial_proj[ds_name])
+                    contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
+                    contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
+
+                features = torch.cat([features, contextual_i], dim=-1)
+
             if x_vision is not None:
                 # [B,N,L,C] ->   [B,L,N,C] 
                 x_vision = x_vision.transpose(2,1)  
                 features = torch.cat([features, x_vision], dim=-1)
+
+
 
             x = torch.cat([x, features], dim=-1)
 

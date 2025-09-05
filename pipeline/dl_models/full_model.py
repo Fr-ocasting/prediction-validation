@@ -110,7 +110,11 @@ class full_model(nn.Module):
         self.ds_which_need_spatial_attn_per_station             = list(args.ds_which_need_spatial_attn_per_station)
 
         # Will be stacked 
-        self.dict_pos_node_attr_which_does_not_need_attn2ds     = {p:ds_name for ds_name,p in self.dict_pos_node_attr2ds.items() if (p not in self.ds_which_need_global_attn) and (p not in self.ds_which_need_global_attn_late)}
+        self.dict_pos_node_attr_which_does_not_need_attn2ds     = {ds_name:p for p,ds_name in self.dict_pos_node_attr2ds.items() if ((p not in self.ds_which_need_global_attn) and 
+                                                                                                                                     (p not in self.ds_which_need_global_attn_late) and
+                                                                                                                                     ('stacked_contextual' in args.contextual_kwargs[ds_name].keys()) and
+                                                                                                                                     (args.contextual_kwargs[ds_name]['stacked_contextual'])
+                                                                                                                                     )}
         self.pos_node_attr_which_does_not_need_attn             = list(self.dict_pos_node_attr_which_does_not_need_attn2ds.values())
         self.dict_ds2added_dim                                  = {}
 
@@ -118,7 +122,7 @@ class full_model(nn.Module):
         self.te= None        
 
         self.spatial_attn_per_station = nn.ModuleDict()   # même nom conservé
-        self.spatial_attn_poi        = nn.ModuleDict()
+        self.global_s_attn        = nn.ModuleDict()
         self.dic_stacked_contextual = {}
         self.dic_stacked_consistant_contextual = {}
         # ------- 
@@ -229,18 +233,18 @@ class full_model(nn.Module):
                 raise NotImplementedError(f"Dataset {ds_name} has not been implemented for spatial selection / spatial attention")
             
         for ds_name in self.ds_which_need_global_attn:
-            if ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()):
-                L_out = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out']
-            else:
-                L_out = None
+            # if ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('L_out' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()):
+            #     L_out = args.contextual_kwargs[ds_name]['attn_kwargs']['L_out']
+            # else:
+            #     L_out = None
             # condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
-            self.spatial_attn_poi[ds_name] = load_spatial_attn_model(args,ds_name, 
+            self.global_s_attn[ds_name] = load_spatial_attn_model(args,ds_name, 
                                                                      query_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L, 
                                                                      key_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L,
                                                                     #  output_temporal_dim = L_out,
                                                                     #  stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if condition_i else False
                                                                      )
-        self.spatial_attn_poi_keys = list(self.spatial_attn_poi.keys())
+        self.KEY_global_s_attn = list(self.global_s_attn.keys())
 
             
     def stack_node_attributes_from_attn(self,x: torch.Tensor, 
@@ -341,9 +345,9 @@ class full_model(nn.Module):
         >>> it can be stacked on x (on the channel dimension)
         >>> or it can be concatenated to extracted_features (on the last dimension), in order to be concatenated at the end of the core model.
         '''
-        # for ds_name_i,attention_module_i in self.spatial_attn_poi.items():
-        for ds_name_i in self.spatial_attn_poi_keys:
-            attention_module_i = self.spatial_attn_poi[ds_name_i]
+        # for ds_name_i,attention_module_i in self.global_s_attn.items():
+        for ds_name_i in self.KEY_global_s_attn:
+            attention_module_i = self.global_s_attn[ds_name_i]
             # print('\nds_name_i: ',ds_name_i)
             #print('Attention Module: ',attention_module_i)
             
@@ -465,45 +469,8 @@ class full_model(nn.Module):
         x = reshaping(x,B)
         #print('x after reshaping: ',x.size())
         return(x)
-    
-    # =========================================================================== #
-    ## ==== SHOULD BE USELESS FOR FUTURE ====================================
-    """ # To remove
-    def foward_image_per_stations(self,netmob_video_batch:Tensor)-> Tensor:
-        ''' Foward for input shape [B,C,N,H,W,L]'''
-        B,N,C_netmob,H,W,L = netmob_video_batch.size()
+ 
 
-        # Reshape:  [B,N,C,H,W,L] -> [B*N,C,H,W,L]
-        netmob_video_batch = netmob_video_batch.reshape(B*N,C_netmob,H,W,L)
-
-        # Forward : [B*N,C,H,W,L] ->  [B,C,N,Z]
-        extracted_feature = self.netmob_vision(netmob_video_batch)
-
-        # Reshape  [B*N,Z] -> [B,C,N,Z]
-        extracted_feature = extracted_feature.reshape(B,self.num_nodes,-1)
-        extracted_feature = extracted_feature.unsqueeze(1)
-
-        return extracted_feature
-
-    def forward_unique_image_through_lyon(self,netmob_video_batch:Tensor)-> Tensor:
-        ''' Foward for input shape [B,C,H,W,L]'''
-        B,C_netmob,H,W,L = netmob_video_batch.size()
-
-        # Forward : [B,C,H,W,L] ->  [B,N*Z]
-        extracted_feature = self.netmob_vision(netmob_video_batch)
-
-        # [B,N*Z] ->  [B,N,Z]
-        B,NZ = extracted_feature.size()
-        Z = NZ//self.num_nodes
-        extracted_feature = extracted_feature.view(B,self.num_nodes,Z) 
-        # ...
-
-        extracted_feature = extracted_feature.unsqueeze(1)   # [B,N,Z] ->  [B,1,N,Z]
-        return extracted_feature
-    
-    ## ==========================================================================
-    # =========================================================================== #
-    """
 def reshaping(x,B):
     if x.dim()==4:
         x = x.squeeze()
