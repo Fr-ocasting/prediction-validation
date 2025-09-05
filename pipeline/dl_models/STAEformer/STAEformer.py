@@ -307,9 +307,6 @@ class STAEformer(nn.Module):
 
                 # Spatial Projection : 
                 if ds_name in self.contextual_spatial_proj.keys():
-                    print('contextual_i.size()',contextual_i.size())
-                    print('contextual_i.permute(0,3,1,2).size()',contextual_i.permute(0,3,2,1).size())
-                    print('linear layer: ',self.contextual_spatial_proj[ds_name])
                     contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
                     contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
 
@@ -340,10 +337,12 @@ class STAEformer(nn.Module):
                 x = torch.cat([x, x_vision], dim=-1)
                 # print("x.size() after concat 'vision': ",x.size())
 
+
             if self.temporal_proj is None:
                 out = x.transpose(1, 2)  # (batch_size, num_nodes, in_steps, model_dim)
                 out = out.reshape( batch_size, self.num_nodes, self.in_steps * self.model_dim)
-                out = self.output_proj(out).view(batch_size, self.num_nodes, self.out_steps//self.horizon_step, self.output_dim)
+                out = self.output_proj(out)
+                out = out.view(batch_size, self.num_nodes, self.out_steps//self.horizon_step, self.output_dim)
                 out = out.transpose(1, 2)  # (batch_size, self.out_steps//self.horizon_step, num_nodes, output_dim)
             else:
                 out = x.transpose(1, 3)  # (batch_size, model_dim, num_nodes, in_steps)

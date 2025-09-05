@@ -155,7 +155,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
             for n_bis in range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],

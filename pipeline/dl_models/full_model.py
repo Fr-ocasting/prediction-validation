@@ -513,9 +513,9 @@ def load_model(dataset, args):
             if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
                 added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
             else:
-                L_add = L_add + args.contextual_kwargs[name_i]['out_dim']
+                if ('need_global_attn' in args.contextual_kwargs[name_i].keys() and args.contextual_kwargs[name_i]['need_global_attn']):
+                    L_add = L_add + args.contextual_kwargs[name_i]['out_dim']
             
-
     if 'calendar_embedding' in args.dataset_names: #if not empty 
         # IF Early concatenation : 
         TE_concatenation_late = args.args_embedding.concatenation_late
