@@ -132,7 +132,11 @@ def load_subway_in_df(args,FOLDER_PATH,filename,coverage_period,name=NAME):
 
 
     if args.freq != FREQ :
-        assert int(args.freq.replace('min',''))> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
+        if args.freq[-1] == 'H': 
+            freq_i = int(args.freq.replace('H',''))*60
+        else:
+            freq_i = int(args.freq.replace('min',''))
+        assert int(freq_i)> int(FREQ.replace('min','')), f'Trying to apply a a {args.freq} temporal aggregation while the minimal possible one is {FREQ}'
         df = df.resample(args.freq).sum()
 
     # Temporal Restriction: 
