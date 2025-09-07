@@ -177,7 +177,12 @@ def load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modificati
             raise ValueError("fold_to_evaluate should contain only one fold cause only one training will be done here.")
         
 
-        trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)
+        trainer = Trainer(ds,model,args,optimizer,loss_function,
+                          scheduler = scheduler,
+                          show_figure = False,
+                          trial_id = trial_id, 
+                          fold=fold,
+                          save_folder = save_folder)
     return trainer,ds,model,args
 
 def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):

@@ -353,6 +353,8 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
     Load trainer and dataset from two trials.
     Will be used to compare the two models.
     """
+    print('Trial ID 1: ',trial_id1)
+    print('Trial ID 2: ',trial_id2)
     # Sometimes trial_id is given with a unnecessary prefix '_':
     if trial_id1_in_bis :
         print('trial_id1 supposed to be in bis')
@@ -379,27 +381,31 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
     print('model_save_path for trial id1: ',model_save_path)
     trainer1, ds1, args_init1 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init=ds1_init,args_init = args_init1)
 
-
+    # Trial id dans model_args_bis : 
     if trial_id2_in_bis :
-        print('trial_id2 supposed to be in bis')
         if (trial_id2[1:] in model_args_bis['model'].keys()):
             trial_id2 = trial_id2[1:]
         args = model_args_bis['model'][trial_id2]['args']
         path = path_model_args_bis
+    # Sinon : 
     else: 
         if (trial_id2[1:] in model_args['model'].keys()):
             trial_id2 = trial_id2[1:]
         if trial_id2 in model_args['model'].keys():
             args = model_args['model'][trial_id2]['args']
             path  = path_model_args
+
+        # Si on trouve quand même pas dans model_args normal : 
+        elif (model_args_bis is not None):
+                if (trial_id2[1:] in model_args_bis['model'].keys()):
+                    trial_id2 = trial_id2[1:]
+                if trial_id2 in model_args_bis['model'].keys():
+                    args = model_args_bis['model'][trial_id2]['args']
+                    path = path_model_args_bis
+                else:
+                    raise ValueError(f"Trial ID 2 {trial_id2} not found in model_args_bis.")
         else:
-            if (trial_id2[1:] in model_args_bis['model'].keys()):
-                trial_id2 = trial_id2[1:]
-            if trial_id2 in model_args_bis['model'].keys():
-                args = model_args_bis['model'][trial_id2]['args']
-                path = path_model_args_bis
-            else:
-                raise ValueError(f"Trial ID 2 {trial_id2} not found in model_args or model_args_bis.")
+            raise ValueError(f"Trial ID 2 {trial_id2} not found in model_args")
     
     model_save_path = f"{path}/{trial_id2}.pkl"
     print('model_save_path for trial id2: ',model_save_path)

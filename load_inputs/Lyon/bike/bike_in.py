@@ -22,7 +22,7 @@ FILE_BASE_NAME = 'velov'
 DIRECTION = 'attracted' # attracted
 FILE_PATTERN = f'{FILE_BASE_NAME}_{DIRECTION}_by_station' # Sera complété par args.freq
 DATA_SUBFOLDER = f'agg_data/{FILE_BASE_NAME}' # Sous-dossier dans FOLDER_PATH
-
+CITY = 'Lyon'
 
 # Couverture théorique
 START = '2019-01-01' 
@@ -88,19 +88,28 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
 
     # Filtering outliers : 
     df_filtered = remove_outliers_based_on_quantile(df_filtered,args,name)
-    # if hasattr(args,'contextual_kwargs') and name in args.contextual_kwargs.keys() and 'quantile_filter_outliers' in args.contextual_kwargs[name] and args.contextual_kwargs[name]['quantile_filter_outliers'] is not None:
-    #     for c in df_filtered.columns:
-    #         treshold = df_filtered[c].quantile(args.contextual_kwargs[name]['quantile_filter_outliers']).astype(df_filtered[c].dtype)
-    #         df_filtered.loc[df_filtered.loc[:,c] > treshold,c] = treshold
 
-   
     
     
     # Spatial Agg: 
-    if ('agg_iris_target_n' in args.contextual_kwargs[name].keys()) and (args.contextual_kwargs[name]['agg_iris_target_n'] is not None):
-        target_n = args.contextual_kwargs[name]['agg_iris_target_n']
-        threshold_volume_min = args.contextual_kwargs[name]['threshold_volume_min']
+    if (name in args.contextual_kwargs.keys()) and ('loading_contextual_data' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['loading_contextual_data']:
+         if ('agg_iris_target_n' in args.contextual_kwargs[name].keys()) and (args.contextual_kwargs[name]['agg_iris_target_n'] is not None):
+            target_n = args.contextual_kwargs[name]['agg_iris_target_n']
+         if ('threshold_volume_min' in args.contextual_kwargs[name].keys()) and (args.contextual_kwargs[name]['threshold_volume_min'] is not None):
+            threshold_volume_min = args.contextual_kwargs[name]['threshold_volume_min']
+    elif (name in args.target_kwargs.keys()) :
+        if ('agg_iris_target_n' in args.target_kwargs[name].keys()) and (args.target_kwargs[name]['agg_iris_target_n'] is not None):
+            target_n = args.target_kwargs[name]['agg_iris_target_n']
+        if ('threshold_volume_min' in args.target_kwargs[name].keys()) and (args.target_kwargs[name]['threshold_volume_min'] is not None):
+            threshold_volume_min = args.target_kwargs[name]['threshold_volume_min']
+    else:
+        raise ValueError(f"ERROR: {name} not in args.target_kwargs (keys: {args.target_kwargs.keys()})neither in args.contextual_kwargs (keys: {args.contextual_kwargs.keys()})")
+    if 'target_n' not in locals():
+        target_n = None
+    if 'threshold_volume_min' not in locals():
+        threshold_volume_min = None
 
+    if target_n is not None:
         #Load Data: 
         s_zone2stations_path = f"{FOLDER_PATH}/lyon_iris_agg{target_n}/zone2stations.csv"
         s_zone2stations = pd.read_csv(s_zone2stations_path,index_col = 0)
@@ -111,7 +120,10 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
             columns = list(map(int,station_id.split(' ')))
             effective_columns = [c for c in columns if c in df_filtered.columns]
             agg_df[idx] = df_filtered[effective_columns].sum(axis=1)
+    else:
+        agg_df = df_filtered.copy()
 
+    if threshold_volume_min is not None:
         mask = agg_df.mean() > threshold_volume_min
         kept_zones = list(mask[mask].index)
         df_filtered = agg_df.T[mask].T
@@ -132,5 +144,6 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
     processed_input.C = C
     processed_input.periods = None 
     processed_input.kept_zones = kept_zones
+    processed_input.city = CITY
     return processed_input
 

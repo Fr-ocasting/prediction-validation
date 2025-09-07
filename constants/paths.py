@@ -26,7 +26,8 @@ else:
     ABS_PATH_PACKAGE = '/Users/rrochas/Desktop/Code/prediction-validation'
     #FILE_NAME = 'data_bidon' #.csv
     
-SAVE_DIRECTORY = os.path.expanduser('~/../../home/rrochas/prediction-validation/save')
+# SAVE_DIRECTORY = os.path.expanduser('~/../../home/rrochas/prediction-validation/save')    
+SAVE_DIRECTORY = os.path.expanduser(f'{parent_dir}/save')
 
 
 DATASET_IMPORT_PATHS = {
@@ -95,7 +96,3 @@ DATASET_IMPORT_PATHS = {
 
 # Load CRITER data : 
 #FILE_NAME = 'preprocessed_CRITER_6min.csv'
-
-results_folder = f"{parent_dir}/{SAVE_DIRECTORY}/results/"
-if not(os.path.exists(results_folder)):
-    os.makedirs(results_folder)

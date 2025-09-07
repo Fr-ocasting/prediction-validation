@@ -250,7 +250,7 @@ if __name__ == "__main__":
         save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
         print(f"Save folder: {save_folder_with_root}")
         if not os.path.exists(save_folder_with_root):
-            os.makedirs(save_folder_with_root)
+            os.mkdir(save_folder_with_root)
             
         # Train Model
         trainer,ds,model,args = main(fold_to_evaluate,

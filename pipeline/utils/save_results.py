@@ -74,11 +74,10 @@ def update_json(args,json_file,trial_id,performance,json_save_path):
 
 def save_best_model_and_update_json(checkpoint,trial_id,performance,args,save_dir,update_checkpoint=True):
     ''' '''
-    path_folder = f"{parent_dir}/{save_dir}"
-    json_file = load_json_file(path_folder)
-    update_json(args,json_file,trial_id,performance,json_save_path = f"{path_folder}/model_args.pkl")
+    json_file = load_json_file(save_dir)
+    update_json(args,json_file,trial_id,performance,json_save_path = f"{save_dir}/model_args.pkl")
     if update_checkpoint: 
-        torch.save(checkpoint, f"{path_folder}/{trial_id}.pkl")
+        torch.save(checkpoint, f"{save_dir}/{trial_id}.pkl")
     
 
     
