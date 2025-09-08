@@ -127,6 +127,57 @@ class SelfAttentionLayer(nn.Module):
         return out
 
 
+class ContextualInputEmbedding(nn.Module):
+    def __init__(
+        self,
+        num_nodes,
+        contextual_kwargs = {},
+        sum_contextual_dim = 0,
+        contextual_positions = {},
+    ):
+
+        super().__init__()
+        self.num_nodes: int = num_nodes
+        self.sum_contextual_dim = sum_contextual_dim
+        self.contextual_kwargs = contextual_kwargs
+        self.contextual_positions = contextual_positions
+        self.contextual_emb = nn.ModuleDict()
+        self.contextual_spatial_proj = nn.ModuleDict()
+
+        if self.sum_contextual_dim>0:
+            for ds_name, kwargs_i in self.contextual_kwargs.items():
+                if 'emb_dim' in kwargs_i.keys():
+                    self.contextual_emb[ds_name] = nn.Linear(kwargs_i['C'], kwargs_i['emb_dim'])
+                    if ('n_spatial_unit' in kwargs_i.keys()) and (kwargs_i['n_spatial_unit']) is not None and ((not 'repeat_spatial' in kwargs_i.keys()) or (not kwargs_i['repeat_spatial'])):
+                        self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
+
+
+    def forward(self, features : Tensor, contextual: Optional[list[Tensor]]= None) -> Tensor:
+        # Heterogeneous or Homogenous spatial units others contextual features: 
+        for ds_name, _ in self.contextual_emb.items():
+            # print('\nds_name: ',ds_name)
+            contextual_i = contextual[self.contextual_positions[ds_name]] 
+            # print(f'contextual shape before embedding:', contextual_i.size())
+            # Align the dimensions
+            if contextual_i.dim() ==3:
+                contextual_i = contextual_i.unsqueeze(-1) # [B,P,L] -> [B,P,L,1]
+            # Embedding on channel dim: 
+            contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,P,L,C] -> [B,P,L,emb_dim]
+
+            # --- Spatial Projection : 
+            # Repeat Tensor if common for all nodes : 
+            if contextual_i.size(1) == 1:
+                contextual_i = contextual_i.repeat(1,self.num_nodes,1,1) # [B,1,L,emb_dim] -> [B,N,L,emb_dim]
+                contextual_i = contextual_i.transpose(1,2) # [B,N,L,emb_dim] -> [B,L,N,emb_dim]
+
+            # Otherwise spatial projection if n_spatial_unit != num_nodes
+            if ds_name in self.contextual_spatial_proj.keys():
+                contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
+                contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
+            features = torch.cat([features, contextual_i], dim=-1)
+        return features
+
+
 class STAEformer(nn.Module):
     def __init__(
         self,
@@ -212,16 +263,20 @@ class STAEformer(nn.Module):
             )
         else:
             self.adaptive_embedding = None
-
+            
         self.contextual_kwargs = contextual_kwargs
-        self.contextual_emb = nn.ModuleDict()
-        self.contextual_spatial_proj = nn.ModuleDict()
-        if self.sum_contextual_dim>0:
-            for ds_name, kwargs_i in self.contextual_kwargs.items():
-                if 'emb_dim' in kwargs_i.keys():
-                    self.contextual_emb[ds_name] = nn.Linear(kwargs_i['C'], kwargs_i['emb_dim'])
-                    if 'n_spatial_unit' in kwargs_i.keys() and kwargs_i['n_spatial_unit'] is not None:
-                        self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
+        self.contextual_positions = contextual_positions
+        self.contextual_input_embedding =  ContextualInputEmbedding(self.num_nodes,self.contextual_kwargs,self.sum_contextual_dim,self.contextual_positions)
+
+        # self.contextual_kwargs = contextual_kwargs
+        # self.contextual_emb = nn.ModuleDict()
+        # self.contextual_spatial_proj = nn.ModuleDict()
+        # if self.sum_contextual_dim>0:
+        #     for ds_name, kwargs_i in self.contextual_kwargs.items():
+        #         if 'emb_dim' in kwargs_i.keys():
+        #             self.contextual_emb[ds_name] = nn.Linear(kwargs_i['C'], kwargs_i['emb_dim'])
+        #             if ('n_spatial_unit' in kwargs_i.keys()) and (kwargs_i['n_spatial_unit']) is not None and ((not 'repeat_spatial' in kwargs_i.keys()) or (not kwargs_i['repeat_spatial'])):
+        #                 self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
 
 
         if use_mixed_proj:
@@ -244,7 +299,7 @@ class STAEformer(nn.Module):
                 for _ in range(num_layers)
             ]
         )
-        self.contextual_positions = contextual_positions
+
         self.pos_tod = contextual_positions.get("calendar_timeofday", None)
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
 
@@ -296,23 +351,29 @@ class STAEformer(nn.Module):
                 adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
                 features = torch.cat([features, adp_emb], dim=-1)
 
-            # Heterogeneous or Homogenous spatial units others contextual features: 
-            for ds_name, _ in self.contextual_emb.items():
-                # print('\nds_name: ',ds_name)
-                contextual_i = contextual[self.contextual_positions[ds_name]] 
-                # print(f'contextual shape before embedding:', contextual_i.size())
-                # Align the dimensions
-                if contextual_i.dim() ==3:
-                    contextual_i = contextual_i.unsqueeze(-1) # [B,L,P] -> [B,L,P,1]
-                # Embedding on channel dim: 
-                contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,L,P,C] -> [B,L,P,emb_dim]
+            features = self.contextual_input_embedding(features,contextual)
+            # # Heterogeneous or Homogenous spatial units others contextual features: 
+            # for ds_name, _ in self.contextual_emb.items():
+            #     # print('\nds_name: ',ds_name)
+            #     contextual_i = contextual[self.contextual_positions[ds_name]] 
+            #     # print(f'contextual shape before embedding:', contextual_i.size())
+            #     # Align the dimensions
+            #     if contextual_i.dim() ==3:
+            #         contextual_i = contextual_i.unsqueeze(-1) # [B,L,P] -> [B,L,P,1]
+            #     # Embedding on channel dim: 
+            #     contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,L,P,C] -> [B,L,P,emb_dim]
 
-                # Spatial Projection : 
-                if ds_name in self.contextual_spatial_proj.keys():
-                    contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
-                    contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
-                # print(f'contextual shape after spatial projection:', contextual_i.size())
-                features = torch.cat([features, contextual_i], dim=-1)
+            #     # --- Spatial Projection : 
+            #     # Repeat Tensor if common for all nodes : 
+            #     if contextual_i.size(1) == 1:
+            #         contextual_i = contextual_i.repeat(1,self.num_nodes,1,1)
+
+            #     # Otherwise spatial projection if n_spatial_unit != num_nodes
+            #     if ds_name in self.contextual_spatial_proj.keys():
+            #         contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
+            #         contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
+            #     # print(f'contextual shape after spatial projection:', contextual_i.size())
+            #     features = torch.cat([features, contextual_i], dim=-1)
 
             if x_vision is not None:
                 # [B,N,L,C] ->   [B,L,N,C] 

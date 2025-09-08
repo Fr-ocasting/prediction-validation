@@ -27,9 +27,9 @@ from examples.train_model_on_k_fold_validation import save_model_metrics,get_con
 possible_target_kwargs = {
     'subway_out': {'quantile_filter_outliers': 0.99  },  
      'subway_in': { 'quantile_filter_outliers': 0.99 }, 
-     'bike_out': {'agg_iris_target_n':None,
+     'bike_out': {'agg_iris_target_n':100,
                   'threshold_volume_min': 1},
-     'bike_in': {'agg_iris_target_n':None,
+     'bike_in': {'agg_iris_target_n':100,
                   'threshold_volume_min': 1},
       }
 
@@ -92,21 +92,31 @@ possible_contextual_kwargs = {
                         #                     'attn_kwargs': {},
                         #                                     },  
 
-                        'weather': {'emb_dim' : 12,
+                        'weather': {'emb_dim' : 24,
                                        'need_global_attn':False, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
+                                        'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                                        'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
                                         'attn_kwargs': {},
                                                             },  
 
+                        # 'subway_in': {'emb_dim' : 24,
+                        #               'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                                        
+                        #                 'attn_kwargs': {},
+                        #             }, 
                         'subway_in': {'need_global_attn':True, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
-                                        
                                         'attn_kwargs': {
                                                         'dim_feedforward' : 128,
                                                         'num_heads' : 1,
@@ -164,15 +174,24 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['weather'],['subway_in'],['weather','subway_in']]:
+    for contextual_dataset_names in [['subway_in']]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
         for horizon in [1]: #[1,2]:
-            for n_bis in range(1,2): # range(1,6): # range(1,6):
+            for n_bis in range(1,4): # range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-                if 'subway_in' in contextual_dataset_names:
-                    name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
+                if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
+                    if 'weather' in contextual_dataset_names:
+                        # name_i = f"{'_'.join(dataset_names)}_RepeatWeather_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_RepeatWeather_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                    else:
+                        # name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDim_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                 else:
-                    name_i = f"{'_'.join(dataset_names)}_Freq1H_e100_h{horizon}_bis{n_bis}"
+                    if 'weather' in contextual_dataset_names:
+                        name_i = f"{'_'.join(dataset_names)}_RepeatWeather_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                    else:
+                        name_i = f"{'_'.join(dataset_names)}_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
@@ -234,7 +253,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  False,# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' :  'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,

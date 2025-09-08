@@ -76,6 +76,9 @@ def load_preprocessed_weather_df(args,coverage_period,folder_path):
     else:
         raise ValueError(f"Frequency {args.freq} not supported for weather data.")
 
+    if ('unique_serie' in args.contextual_kwargs['weather'].keys()) and (args.contextual_kwargs['weather']['unique_serie']):
+        interpolated_weather = pd.DataFrame(interpolated_weather.mean(axis=1))
+
     return interpolated_weather
 
 
