@@ -118,11 +118,26 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                                        'dim_feedforward' : 128,
-                                                        'num_heads' : 1,
-                                                        'dim_model' : 32,
-                                                        'nb_layers': 1,
-                                                        'latent_dim': 32,
+                                                        'dim_feedforward' : 128, # 128
+                                                        'num_heads' : 4, # 1
+                                                        'dim_model' : 128, # 32
+                                                        'nb_layers': 3, # 1
+                                                        'latent_dim': 32, # 32 
+                                                        'keep_temporal_dim': True, 
+                                                            },
+                                    }, 
+
+                        'subway_out': {'need_global_attn':True, 
+                                        'stacked_contextual': False,
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False,
+                                        'quantile_filter_outliers': 0.99 ,
+                                        'attn_kwargs': {
+                                                        'dim_feedforward' : 128, # 128
+                                                        'num_heads' : 4, # 1
+                                                        'dim_model' : 128, # 32
+                                                        'nb_layers': 3, # 1
+                                                        'latent_dim': 32, # 32 
                                                         'keep_temporal_dim': True, 
                                                             },
                                     }, 
@@ -174,10 +189,10 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_in']]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+    for contextual_dataset_names in [['subway_in','subway_out'],['subway_in'],['subway_out']]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
         for horizon in [1]: #[1,2]:
-            for n_bis in range(1,4): # range(1,6): # range(1,6):
+            for n_bis in range(1,6): # range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
                     if 'weather' in contextual_dataset_names:
