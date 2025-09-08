@@ -44,7 +44,7 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
     )
     box_width = 0.2
     
-    palette = Category10[len(df[f"{legend_group}_str"].unique())]
+    palette = Category10[max(3,len(df[f"{legend_group}_str"].unique()))]
     legend_groups = sorted(df[f"{legend_group}_str"].unique())
     
     renderers = []

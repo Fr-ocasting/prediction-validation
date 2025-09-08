@@ -61,16 +61,21 @@ def load_preprocessed_weather_df(args,coverage_period,folder_path):
     coverage_local = pd.date_range(start=START, end=END, freq=args.freq)[:-1]
     if args.freq in ['15min','30min']:
         pivoted_df_weather = pivoted_df_weather.reindex(coverage_local)
+        pivoted_df_weather = restrain_df_to_specific_period(pivoted_df_weather,coverage_period)
+        pivoted_df_weather = remove_outliers_based_on_quantile(pivoted_df_weather,args,NAME)
+
+        # Interpolation : 
+        interpolated_weather = pivoted_df_weather.copy()
+        interpolated_weather = interpolated_weather.interpolate(method='polynomial', order=2)
+        interpolated_weather[interpolated_weather<1e-3] = 0
+    elif 'H' in args.freq :
+        pivoted_df_weather = pivoted_df_weather.resample(args.freq.lower()).mean()
+        pivoted_df_weather = restrain_df_to_specific_period(pivoted_df_weather,coverage_period)
+        pivoted_df_weather = remove_outliers_based_on_quantile(pivoted_df_weather,args,NAME)
+        interpolated_weather = pivoted_df_weather.copy()
     else:
-        raise NotImplementedError(f"Frequency {args.freq} not implemented")
-    pivoted_df_weather = restrain_df_to_specific_period(pivoted_df_weather,coverage_period)
-    pivoted_df_weather = remove_outliers_based_on_quantile(pivoted_df_weather,args,NAME)
+        raise ValueError(f"Frequency {args.freq} not supported for weather data.")
 
-
-    # Interpolation : 
-    interpolated_weather = pivoted_df_weather.copy()
-    interpolated_weather = interpolated_weather.interpolate(method='polynomial', order=2)
-    interpolated_weather[interpolated_weather<1e-3] = 0
     return interpolated_weather
 
 

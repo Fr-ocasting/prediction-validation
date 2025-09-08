@@ -298,7 +298,9 @@ class STAEformer(nn.Module):
 
             # Heterogeneous or Homogenous spatial units others contextual features: 
             for ds_name, _ in self.contextual_emb.items():
+                # print('\nds_name: ',ds_name)
                 contextual_i = contextual[self.contextual_positions[ds_name]] 
+                # print(f'contextual shape before embedding:', contextual_i.size())
                 # Align the dimensions
                 if contextual_i.dim() ==3:
                     contextual_i = contextual_i.unsqueeze(-1) # [B,L,P] -> [B,L,P,1]
@@ -309,11 +311,12 @@ class STAEformer(nn.Module):
                 if ds_name in self.contextual_spatial_proj.keys():
                     contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
                     contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
-
+                # print(f'contextual shape after spatial projection:', contextual_i.size())
                 features = torch.cat([features, contextual_i], dim=-1)
 
             if x_vision is not None:
                 # [B,N,L,C] ->   [B,L,N,C] 
+                # print('x_vision before transpose and concat:', x_vision.size())
                 x_vision = x_vision.transpose(2,1)  
                 features = torch.cat([features, x_vision], dim=-1)
 

@@ -11,7 +11,12 @@ def f_name(row,methods):
     return f"{add_name}_{row['contextuals']}_{'_'.join([m for m in methods if row[m]])}_{row['epochs']}_h{row['horizon']}"
 
 def parse_results_to_dataframe(data_string, bis = False,
-                               contextual_datasets = ['subway_in','subway_out','bike_in','bike_out','weather','calendar_embedding','calendar']):
+                               contextual_datasets = ['subway_in','subway_out','bike_in','bike_out','weather','calendar_embedding','calendar'],
+                                   horizon_map = {'h1': '+15min',
+                                                'h2': '+30min',
+                                                'h3': '+45min',
+                                                'h4': '+60min', # Correction du h5 de la demande en h4 présent dans les données
+                                                }):
     """
     Analyse une chaîne de caractères de résultats de modèles pour la convertir en DataFrame Pandas.
     """
@@ -22,12 +27,7 @@ def parse_results_to_dataframe(data_string, bis = False,
     methods = []
 
     # Correspondance entre l'horizon et le temps
-    horizon_map = {
-        'h1': '+15min',
-        'h2': '+30min',
-        'h3': '+45min',
-        'h4': '+60min', # Correction du h5 de la demande en h4 présent dans les données
-    }
+
 
     # Expression régulière pour extraire les informations de chaque ligne
     # Elle capture le nom de l'expérience et les valeurs des métriques.

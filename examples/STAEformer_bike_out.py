@@ -35,39 +35,39 @@ possible_target_kwargs = {
 
 
 possible_contextual_kwargs = {
-                        'subway_out': {'emb_dim' : 12,
-                                       'need_global_attn':False, 
-                                        'stacked_contextual': False,
-                                        'vision_model_name' : None,
-                                        'use_only_for_common_dates': False,
-                                        'quantile_filter_outliers': 0.99 ,
-                                        'attn_kwargs': {},
-                                                            },  
+                        # 'subway_out': {'emb_dim' : 12,
+                        #                'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                        #                 'attn_kwargs': {},
+                        #                                     },  
 
-                        'subway_in': {'emb_dim' : 12,
-                                      'need_global_attn':False, 
-                                        'stacked_contextual': False,
-                                        'vision_model_name' : None,
-                                        'use_only_for_common_dates': False,
-                                        'quantile_filter_outliers': 0.99 ,
+                        # 'subway_in': {'emb_dim' : 12,
+                        #               'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
                                         
-                                        'attn_kwargs': {},
-                                    }, 
+                        #                 'attn_kwargs': {},
+                        #             }, 
 
-                        'bike_in':{'emb_dim' : 12,
-                                         'need_global_attn':False, 
-                                        'stacked_contextual': False,
-                                        'agg_iris_target_n':50,
-                                        'threshold_volume_min': 1,
-                                        'attn_kwargs': {},
-                                    },
-                        'bike_out':{'emb_dim' : 12,
-                                         'need_global_attn':False, 
-                                        'stacked_contextual': False,
-                                         'agg_iris_target_n':50,
-                                        'threshold_volume_min': 1,
-                                        'attn_kwargs': {},
-                                    },
+                        # 'bike_in':{'emb_dim' : 12,
+                        #                  'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 'attn_kwargs': {},
+                        #             },
+                        # 'bike_out':{'emb_dim' : 12,
+                        #                  'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                  'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 'attn_kwargs': {},
+                        #             },
 
                         # 'subway_out': {'need_global_attn':True, 
                         #                     'stacked_contextual': False,
@@ -92,21 +92,30 @@ possible_contextual_kwargs = {
                         #                     'attn_kwargs': {},
                         #                                     },  
 
+                        'weather': {'emb_dim' : 12,
+                                       'need_global_attn':False, 
+                                        'stacked_contextual': False,
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False,
+                                        'quantile_filter_outliers': 0.99 ,
+                                        'attn_kwargs': {},
+                                                            },  
 
-                        # 'subway_in': {'need_global_attn':True, 
-                        #                 'stacked_contextual': False,
-                        #                 'vision_model_name' : None,
-                        #                 'use_only_for_common_dates': False,
-                        #                 'quantile_filter_outliers': 0.99 ,
+                        'subway_in': {'need_global_attn':True, 
+                                        'stacked_contextual': False,
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False,
+                                        'quantile_filter_outliers': 0.99 ,
                                         
-                        #                 'attn_kwargs': {
-                        #                                 'dim_feedforward' : 128,
-                        #                                 'num_heads' : 1,
-                        #                                 'dim_model' : 32,
-                        #                                 'nb_layers': 1,
-                        #                                 'latent_dim': 32,
-                        #                                     },
-                        #             }, 
+                                        'attn_kwargs': {
+                                                        'dim_feedforward' : 128,
+                                                        'num_heads' : 1,
+                                                        'dim_model' : 32,
+                                                        'nb_layers': 1,
+                                                        'latent_dim': 32,
+                                                        'keep_temporal_dim': True, 
+                                                            },
+                                    }, 
 
                         # 'bike_in':{'need_global_attn':True, 
                         #                 'stacked_contextual': False,
@@ -155,12 +164,15 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_in'],['subway_out'],['subway_in','subway_out']]:
+    for contextual_dataset_names in [['weather'],['subway_in'],['weather','subway_in']]:
         # for horizon in [1,2,3,4]:
-        for horizon in [1,2]:
-            for n_bis in range(1,6): # range(1,6):
+        for horizon in [1]: #[1,2]:
+            for n_bis in range(1,2): # range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-                name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_Freq1H_e100_h{horizon}_bis{n_bis}"
+                if 'subway_in' in contextual_dataset_names:
+                    name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
+                else:
+                    name_i = f"{'_'.join(dataset_names)}_Freq1H_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
