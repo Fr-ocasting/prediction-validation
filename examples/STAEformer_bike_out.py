@@ -118,7 +118,7 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                                        'dim_feedforward' : 128, # 128
+                                                        'dim_feedforward' : 256, # 128
                                                         'num_heads' : 4, # 1
                                                         'dim_model' : 128, # 32
                                                         'nb_layers': 3, # 1
@@ -133,7 +133,7 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                                        'dim_feedforward' : 128, # 128
+                                                        'dim_feedforward' : 256, # 128
                                                         'num_heads' : 4, # 1
                                                         'dim_model' : 128, # 32
                                                         'nb_layers': 3, # 1
@@ -189,21 +189,21 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_in','subway_out'],['subway_in'],['subway_out']]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+    for contextual_dataset_names in [['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
-        for horizon in [1]: #[1,2]:
+        for horizon in [1,2]: #[1,2]:
             for n_bis in range(1,6): # range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
                     if 'weather' in contextual_dataset_names:
                         # name_i = f"{'_'.join(dataset_names)}_RepeatWeather_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_RepeatWeather_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                     else:
                         # name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDim_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                 else:
                     if 'weather' in contextual_dataset_names:
-                        name_i = f"{'_'.join(dataset_names)}_RepeatWeather_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                     else:
                         name_i = f"{'_'.join(dataset_names)}_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
 
