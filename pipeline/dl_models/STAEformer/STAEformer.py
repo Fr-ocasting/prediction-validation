@@ -41,7 +41,7 @@ class AttentionLayer(nn.Module):
     def forward(self, query: Tensor, key: Tensor, value: Tensor) -> Tensor:
         # Q    (batch_size, ..., tgt_length, model_dim)
         # K, V (batch_size, ..., src_length, model_dim)
-        # print('query size:', query.size())
+        # print('\nquery size:', query.size())
         # print('key size:', key.size())
         # print('value size:', value.size())
 
@@ -52,12 +52,10 @@ class AttentionLayer(nn.Module):
         query = self.FC_Q(query)
         key = self.FC_K(key)
         value = self.FC_V(value)
-
         # Qhead, Khead, Vhead (num_heads * batch_size, ..., length, head_dim)
         query = torch.cat(torch.split(query, self.head_dim, dim=-1), dim=0)
         key = torch.cat(torch.split(key, self.head_dim, dim=-1), dim=0)
         value = torch.cat(torch.split(value, self.head_dim, dim=-1), dim=0)
-
         key = key.transpose(
             -1, -2
         )  # (num_heads * batch_size, ..., head_dim, src_length)
@@ -104,13 +102,15 @@ class SelfAttentionLayer(nn.Module):
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
 
-    def forward(self, x: Tensor, dim: int = -2) -> Tensor:
-        # print('\ninit: ',x.size())
+    def forward(self, x: Tensor, dim: int = -2,x_contextual: Tensor = None) -> Tensor:
         x = x.transpose(dim, -2)
-        # print('permuted : ',x.size())
         # x: (batch_size, ..., length, model_dim)
         residual = x
-        out = self.attn(x, x, x)  # (batch_size, ..., length, model_dim)
+        if x_contextual is not None:
+            x_contextual = x_contextual.transpose(dim, -2)
+            out = self.attn(x, x_contextual, x_contextual)  # (batch_size, ..., length, model_dim)
+        else:
+            out = self.attn(x, x, x)  # (batch_size, ..., length, model_dim)
         # print('context: ',out.size())
         out = self.dropout1(out)
         out = self.ln1(residual + out)
@@ -229,6 +229,13 @@ class STAEformer(nn.Module):
             + added_dim_input
             + self.sum_contextual_dim
         )
+        # print('input embedding dim:', self.input_embedding_dim)
+        # print('tod_embedding_dim:', self.tod_embedding_dim)
+        # print('dow_embedding_dim:', self.dow_embedding_dim)
+        # print('spatial_embedding_dim:', self.spatial_embedding_dim)
+        # print('adaptive_embedding_dim:', self.adaptive_embedding_dim)
+        # print('added_dim_input:', self.added_dim_input)
+        # print('sum_contextual_dim:', self.sum_contextual_dim)
         self.output_model_dim = self.model_dim + self.added_dim_output
         
         self.num_heads = num_heads
@@ -418,6 +425,34 @@ class STAEformer(nn.Module):
 
             return out
 
+
+
+class MultiLayerCrossAttention(nn.Module):
+    def __init__(
+        self, model_dim, feed_forward_dim=2048, num_heads=8,num_layers = 3, dropout=0, mask=False,
+    ):
+        super().__init__()
+        self.input_proj = nn.Linear(1, model_dim) 
+        self.contextual_proj = nn.Linear(1, model_dim)
+        self.attn_layers = nn.ModuleList(
+            [
+                SelfAttentionLayer(model_dim, feed_forward_dim, num_heads, dropout)
+                for _ in range(num_layers)
+            ]
+        )
+
+    def forward(self, x: Tensor, dim: int = -2,x_contextual: Tensor = None) -> Tensor:
+        if x.dim()==3:
+            x = x.unsqueeze(-1)
+            x = self.input_proj(x)
+        if x_contextual is not None and x_contextual.dim()==3:
+            x_contextual = x_contextual.unsqueeze(-1)
+            x_contextual = self.contextual_proj(x_contextual)
+
+        
+        for attn in self.attn_layers:
+            out = attn(x, dim = dim,x_contextual = x_contextual)
+        return out
 
 if __name__ == "__main__":
     import torch

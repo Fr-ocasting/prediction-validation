@@ -8,6 +8,7 @@ if torch.cuda.is_available():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32  = True
 import inspect
+from argparse import Namespace
 from typing import List, Dict, Optional, Tuple, Any
 # 
 # Relative path:
@@ -48,21 +49,26 @@ import importlib
 
 
 def load_spatial_attn_model(args,ds_name,query_dim,key_dim,output_temporal_dim = None,stack_consistent_datasets = False):
-    script = importlib.import_module(f"pipeline.dl_models.SpatialAttn.SpatialAttn")
-    scrip_args = importlib.import_module(f"pipeline.dl_models.SpatialAttn.load_config")
-    importlib.reload(scrip_args)
-    args_ds_i = scrip_args.args
-    args_ds_i.dropout = args.dropout
-    args_ds_i.query_dim = query_dim  # input dim of Query 
-    args_ds_i.key_dim = key_dim  # input dim of Key 
-    args_ds_i.output_temporal_dim = output_temporal_dim 
-    args_ds_i.stack_consistent_datasets = stack_consistent_datasets
+    # script = importlib.import_module(f"pipeline.dl_models.SpatialAttn.SpatialAttn")
+    # scrip_args = importlib.import_module(f"pipeline.dl_models.SpatialAttn.load_config")
+    # scrip_args = importlib.import_module(f"pipeline.dl_models.STAEformer.load_config")
+    # importlib.reload(scrip_args)
+    # args_ds_i = scrip_args.args
+    # args_ds_i.dropout = args.dropout
+    # args_ds_i.query_dim = query_dim  # input dim of Query 
+    # args_ds_i.key_dim = key_dim  # input dim of Key 
+    # args_ds_i.output_temporal_dim = output_temporal_dim 
+    # args_ds_i.stack_consistent_datasets = stack_consistent_datasets
     
+    script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
+    args_ds_i = {}
+    args_ds_i = Namespace(**args_ds_i)
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
 
     importlib.reload(script)
-    func = script.model
+    # func = script.model
+    func = script.MultiLayerCrossAttention
     filered_args = filter_args(func, args_ds_i)
 
     return func(**filered_args)   
@@ -348,17 +354,17 @@ class full_model(nn.Module):
         # for ds_name_i,attention_module_i in self.global_s_attn.items():
         for ds_name_i in self.KEY_global_s_attn:
             attention_module_i = self.global_s_attn[ds_name_i]
-            # print('\nds_name_i: ',ds_name_i)
             #print('Attention Module: ',attention_module_i)
             
             pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
             node_attr = contextual[pos_i] 
             # Spatial Attention: 
-            projected_x,node_attr = attention_module_i(x,node_attr)   # [B,N,Z*L]
+            # print('node_attr size before attn: ',node_attr.size())
             # print('projected_x size: ',projected_x.size())
             # print('node_attr size: ',node_attr.size())
 
             if self.dic_stacked_contextual[ds_name_i]:
+                projected_x,node_attr = attention_module_i(x,x_contextual = node_attr, dim = 1)   # [B,N,Z*L]
                 if self.dic_stacked_consistant_contextual[ds_name_i]:
                     if node_attr.dim() == 3:
                         node_attr = node_attr.unsqueeze(1)
@@ -372,6 +378,7 @@ class full_model(nn.Module):
                 L_node_attributes.append(node_attr)
 
             else:
+                node_attr = attention_module_i(x,x_contextual = node_attr, dim = 1)   # [B,N,Z*L]
                 if extracted_features is not None:
                     extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
                 else:

@@ -118,13 +118,14 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                                        'dim_feedforward' : 256, # 128
-                                                        'num_heads' : 4, # 1
-                                                        'dim_model' : 128, # 32
-                                                        'nb_layers': 3, # 1
-                                                        'latent_dim': 32, # 32 
-                                                        'keep_temporal_dim': True, 
-                                                            },
+                                            'model_dim': 24, 
+                                            'latent_dim':  24,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True
+                                            },
                                     }, 
 
                         'subway_out': {'need_global_attn':True, 
@@ -133,12 +134,13 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                                        'dim_feedforward' : 256, # 128
-                                                        'num_heads' : 4, # 1
-                                                        'dim_model' : 128, # 32
-                                                        'nb_layers': 3, # 1
-                                                        'latent_dim': 32, # 32 
-                                                        'keep_temporal_dim': True, 
+                                            'model_dim': 24, 
+                                            'latent_dim':  24,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True
                                                             },
                                     }, 
 
@@ -189,7 +191,7 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+    for contextual_dataset_names in [['subway_out'],['subway_in'],['subway_in','weather'],['subway_out','weather'],['subway_in','subway_out'],['subway_in','subway_out','weather']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
         for horizon in [1,2]: #[1,2]:
             for n_bis in range(1,6): # range(1,6): # range(1,6):
@@ -197,10 +199,12 @@ for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
                 if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
                     if 'weather' in contextual_dataset_names:
                         # name_i = f"{'_'.join(dataset_names)}_RepeatWeather_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        # name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnSTAEformerH4L3D24FF128_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                     else:
                         # name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        # name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_AttnSTAEformerH4L3D24FF128_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                 else:
                     if 'weather' in contextual_dataset_names:
                         name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
@@ -268,7 +272,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' :  False, # 'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,
