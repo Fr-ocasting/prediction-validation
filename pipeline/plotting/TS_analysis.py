@@ -99,7 +99,8 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
        if 'min' in freq:
              freq_num = int(freq.replace('min','')) 
              freq_label = 'min'
-       elif 'h' in freq:
+       elif ('h' in freq) or ('H' in freq):
+             freq = freq.lower()
              freq_num = int(freq.replace('h','')) 
              freq_label = 'h'
        elif 'd' in freq:
