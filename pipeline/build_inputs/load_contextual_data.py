@@ -151,6 +151,7 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
             if hasattr(contextual_ds_i,'kept_zones') : args.contextual_kwargs[dataset_name]['kept_zones'] = contextual_ds_i.kept_zones
             if hasattr(contextual_ds_i,'C') : args.contextual_kwargs[dataset_name]['C'] = contextual_ds_i.C
             args.contextual_kwargs[dataset_name]['n_spatial_unit'] = contextual_ds_i.U_train.size(1) 
+            args.contextual_kwargs[dataset_name]['spatial_unit'] = contextual_ds_i.spatial_unit
     ### Match the dates of the contextual datasets with the target dataset if differents: 
     target_ds,contextual_ds = restrain_all_ds_to_common_dates(target_ds,contextual_ds)
 

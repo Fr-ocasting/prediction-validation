@@ -61,7 +61,10 @@ def load_spatial_attn_model(args,ds_name,query_dim,key_dim,output_temporal_dim =
     # args_ds_i.stack_consistent_datasets = stack_consistent_datasets
     
     script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
-    args_ds_i = {}
+    args_ds_i = {'steps_per_day' : 24*args.time_step_per_hour,
+                    'pos_tod' : args.contextual_positions.get("calendar_timeofday", None),
+                    'pos_dow' : args.contextual_positions.get("calendar_dayofweek", None),
+                    }
     args_ds_i = Namespace(**args_ds_i)
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
@@ -99,6 +102,7 @@ class full_model(nn.Module):
 
         # Init for jit script 
         # self.nb_add_channel = torch.jit.Attribute(0, int)
+        args.time_step_per_hour = int(dataset.time_step_per_hour)
 
         # ------- Init for the model
         self.dict_pos_node_attr2ds                              = args.dict_pos_node_attr2ds
@@ -187,7 +191,6 @@ class full_model(nn.Module):
                  raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         
         # === Trafic Model ===
-        args.time_step_per_hour = int(dataset.time_step_per_hour)
         core_model, args = load_model(dataset, args)
         self.core_model = core_model
         self.L = args.L
@@ -195,8 +198,12 @@ class full_model(nn.Module):
 
         
     def forward_calendar_model(self,x:Tensor,
-                               contextual:List[Tensor])->Tuple[Tensor,Optional[Tensor]]:
-        if self.te is not None:
+                               contextual:List[Tensor],
+                               x_calendar: Tensor =  None
+                               )->Tuple[Tensor,Optional[Tensor]]:
+        if self.te is not None and x_calendar is not None:
+            raise ValueError('Calendar input should be None if TE module is used')
+        if self.te is not None and x_calendar is None:
             x_calendar = [contextual[pos]for _,pos in self.pos_calendar.items()]
             x_calendar = [elt.long() for elt in x_calendar] # x_calendar.long()
             x_calendar = self.te(x,x_calendar) # Extract feature: [B] -> [B,C,N,L_calendar]
@@ -204,11 +211,6 @@ class full_model(nn.Module):
             if self.TE_concatenation_early:
                 # Concat: [B,C,N,L],[B,C,N,L_calendar] -> [B,C,N,L+L_calendar]
                 x = torch.cat([x,x_calendar],dim = -1)
-        elif (self.te is None) and (len(self.pos_calendar)>0):
-            x_calendar = torch.stack([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
-        else:
-            x_calendar = None
-            # ... 
 
         return x,x_calendar  
  
@@ -332,7 +334,8 @@ class full_model(nn.Module):
                                   extracted_features: torch.Tensor,
                                     x: torch.Tensor,
                                     contextual: List[torch.Tensor],
-                                    L_projected_x: List[torch.Tensor]
+                                    L_projected_x: List[torch.Tensor],
+                                    x_calendar: Optional[torch.Tensor] = None
                                   )-> List[torch.Tensor]:
         '''
         Compute Spatial Attention between all the spatials units of the target data and the contextual data.
@@ -364,7 +367,7 @@ class full_model(nn.Module):
             # print('node_attr size: ',node_attr.size())
 
             if self.dic_stacked_contextual[ds_name_i]:
-                projected_x,node_attr = attention_module_i(x,x_contextual = node_attr, dim = 1)   # [B,N,Z*L]
+                projected_x,node_attr = attention_module_i(x,x_contextual = node_attr)   # [B,N,Z*L]
                 if self.dic_stacked_consistant_contextual[ds_name_i]:
                     if node_attr.dim() == 3:
                         node_attr = node_attr.unsqueeze(1)
@@ -378,7 +381,7 @@ class full_model(nn.Module):
                 L_node_attributes.append(node_attr)
 
             else:
-                node_attr = attention_module_i(x,x_contextual = node_attr, dim = 1)   # [B,N,Z*L]
+                node_attr = attention_module_i(x,x_contextual = node_attr, x_calendar = x_calendar,dim = 2 )  
                 if extracted_features is not None:
                     extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
                 else:
@@ -426,8 +429,11 @@ class full_model(nn.Module):
         if self.remove_trafic_inputs:
             #x = torch.Tensor().to(x)
             x = torch.empty(0, device=x.device, dtype=x.dtype)
-
             # x = x[:, :0].contiguous()
+
+        # Get calendar input for STAEformer:
+        if (self.te is None) and (len(self.pos_calendar)>0):
+            x_calendar = torch.stack([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
 
         # print('\nx before stacking new channels:',x.size())
         # print('Contextual size : ',[c_i.size() for c_i in contextual])
@@ -435,7 +441,7 @@ class full_model(nn.Module):
         L_node_attributes,extracted_features = self.local_spatial_attention(x,contextual)
         # print('L_node_attributes after local spatial attn: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after local spatial attn: ',extracted_features.size() if extracted_features is not None else None)
-        L_node_attributes,L_projected_x,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual,L_projected_x)
+        L_node_attributes,L_projected_x,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual,L_projected_x,x_calendar)
         # print('L_node_attributes after global spatial attn: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after global spatial attn: ',extracted_features.size() if extracted_features is not None else None)
         L_node_attributes = self.stack_direct_node_attributes(L_node_attributes,contextual)
@@ -449,22 +455,15 @@ class full_model(nn.Module):
             # [B,1,N,L] -> [B,C,N,L]
             x = self.stack_node_attributes_from_attn(x,L_node_attributes,L_projected_x)
 
-        """ #A retirer 
-        x,extracted_feature = self.forward_feature_extractor_model(x,contextual)        # Tackle NetMob (if exists):
-        """
-
 
         # print('x after stacking node attribute: ',x.size())
         # print('extracted_feature: ',extracted_features.size() if extracted_features is not None else None)
-        x,x_calendar = self.forward_calendar_model(x,contextual)         # Tackle Calendar Data (if exists)
+        x,x_calendar = self.forward_calendar_model(x,contextual,x_calendar)         # Tackle Calendar Data (if exists)
 
         # print('x after Calendar model: ',x.size())
         #print('CalendarEmbedded Vector: ',time_elt.size() if time_elt is not None else None)
 
         # Core model 
-        """ #A retirer 
-        vision_late = self.vision_concatenation_late
-        """
         if self.core_model is not None:
             x= self.core_model(x,
                                x_vision = extracted_features,
@@ -519,6 +518,12 @@ def load_model(dataset, args):
         if 'out_dim' in args.contextual_kwargs[name_i].keys():
             if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
                 added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
+
+                if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                    added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
+                if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                    added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
+                    
             else:
                 if ('need_global_attn' in args.contextual_kwargs[name_i].keys() and args.contextual_kwargs[name_i]['need_global_attn']):
                     L_add = L_add + args.contextual_kwargs[name_i]['out_dim']

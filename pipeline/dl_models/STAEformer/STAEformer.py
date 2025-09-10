@@ -152,7 +152,12 @@ class ContextualInputEmbedding(nn.Module):
                         self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
 
 
-    def forward(self, features : Tensor, contextual: Optional[list[Tensor]]= None) -> Tensor:
+    def forward(self, 
+                features : Tensor, 
+                contextual: Optional[list[Tensor]]= None,
+                ) -> Tensor:
+
+
         # Heterogeneous or Homogenous spatial units others contextual features: 
         for ds_name, _ in self.contextual_emb.items():
             # print('\nds_name: ',ds_name)
@@ -273,7 +278,10 @@ class STAEformer(nn.Module):
             
         self.contextual_kwargs = contextual_kwargs
         self.contextual_positions = contextual_positions
-        self.contextual_input_embedding =  ContextualInputEmbedding(self.num_nodes,self.contextual_kwargs,self.sum_contextual_dim,self.contextual_positions)
+        self.pos_tod = contextual_positions.get("calendar_timeofday", None)
+        self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
+        self.contextual_input_embedding =  ContextualInputEmbedding(self.num_nodes,self.contextual_kwargs,
+                                                                    self.sum_contextual_dim,self.contextual_positions)
 
         # self.contextual_kwargs = contextual_kwargs
         # self.contextual_emb = nn.ModuleDict()
@@ -307,8 +315,7 @@ class STAEformer(nn.Module):
             ]
         )
 
-        self.pos_tod = contextual_positions.get("calendar_timeofday", None)
-        self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
+
 
         
     def forward(self,  x: Tensor,
@@ -357,35 +364,13 @@ class STAEformer(nn.Module):
             if self.adaptive_embedding is not None:
                 adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
                 features = torch.cat([features, adp_emb], dim=-1)
-
+            
+            # Add contextual features as inputs (Embedding + concatenation early)
             features = self.contextual_input_embedding(features,contextual)
-            # # Heterogeneous or Homogenous spatial units others contextual features: 
-            # for ds_name, _ in self.contextual_emb.items():
-            #     # print('\nds_name: ',ds_name)
-            #     contextual_i = contextual[self.contextual_positions[ds_name]] 
-            #     # print(f'contextual shape before embedding:', contextual_i.size())
-            #     # Align the dimensions
-            #     if contextual_i.dim() ==3:
-            #         contextual_i = contextual_i.unsqueeze(-1) # [B,L,P] -> [B,L,P,1]
-            #     # Embedding on channel dim: 
-            #     contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,L,P,C] -> [B,L,P,emb_dim]
 
-            #     # --- Spatial Projection : 
-            #     # Repeat Tensor if common for all nodes : 
-            #     if contextual_i.size(1) == 1:
-            #         contextual_i = contextual_i.repeat(1,self.num_nodes,1,1)
-
-            #     # Otherwise spatial projection if n_spatial_unit != num_nodes
-            #     if ds_name in self.contextual_spatial_proj.keys():
-            #         contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
-            #         contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
-            #     # print(f'contextual shape after spatial projection:', contextual_i.size())
-            #     features = torch.cat([features, contextual_i], dim=-1)
 
             if x_vision is not None:
                 # [B,N,L,C] ->   [B,L,N,C] 
-                # print('x_vision before transpose and concat:', x_vision.size())
-                x_vision = x_vision.transpose(2,1)  
                 features = torch.cat([features, x_vision], dim=-1)
 
 
@@ -429,30 +414,77 @@ class STAEformer(nn.Module):
 
 class MultiLayerCrossAttention(nn.Module):
     def __init__(
-        self, model_dim, feed_forward_dim=2048, num_heads=8,num_layers = 3, dropout=0, mask=False,
+        self, model_dim, feed_forward_dim=2048, num_heads=8,num_layers = 3, 
+        dropout=0, 
+        mask=False,
+        steps_per_day = 288,
+        tod_embedding_dim=0,
+        dow_embedding_dim=0,
+        pos_tod = None,
+        pos_dow = None,
     ):
         super().__init__()
         self.input_proj = nn.Linear(1, model_dim) 
         self.contextual_proj = nn.Linear(1, model_dim)
         self.attn_layers = nn.ModuleList(
             [
-                SelfAttentionLayer(model_dim, feed_forward_dim, num_heads, dropout)
+                SelfAttentionLayer(model_dim+tod_embedding_dim+dow_embedding_dim, feed_forward_dim, num_heads, dropout)
                 for _ in range(num_layers)
             ]
         )
+        self.tod_embedding_dim = tod_embedding_dim
+        self.dow_embedding_dim = dow_embedding_dim
+        self.steps_per_day = steps_per_day
 
-    def forward(self, x: Tensor, dim: int = -2,x_contextual: Tensor = None) -> Tensor:
+        if self.tod_embedding_dim > 0:
+            self.tod_embedding = nn.Embedding(self.steps_per_day, self.tod_embedding_dim)
+            self.pos_tod = pos_tod
+        else:
+            self.tod_embedding = None
+
+        if self.dow_embedding_dim > 0:
+            self.dow_embedding = nn.Embedding(7, self.dow_embedding_dim)
+            self.pos_dow = pos_dow
+        else:
+            self.dow_embedding = None
+
+
+
+    def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = -2,) -> Tensor:
         if x.dim()==3:
             x = x.unsqueeze(-1)
             x = self.input_proj(x)
+            x  = x.transpose(1,2)
+
         if x_contextual is not None and x_contextual.dim()==3:
             x_contextual = x_contextual.unsqueeze(-1)
             x_contextual = self.contextual_proj(x_contextual)
+            x_contextual  = x_contextual.transpose(1,2) if x_contextual is not None else None
+        
+
+        calendar_features = torch.empty(x.size(0), x.size(1),1, 0,dtype=x.dtype, device=x.device)
+        if x_calendar is not None:
+            if x_calendar.size(-1) != 2:
+                    raise ValueError(f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
+            if x_calendar.dim() ==3:
+                    x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
+            if self.tod_embedding is not None:
+                tod = x_calendar[..., self.pos_tod]
+                tod_emb = self.tod_embedding( (tod * self.steps_per_day).long() )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
+                calendar_features = torch.cat([calendar_features, tod_emb], dim=-1)
+
+            if self.dow_embedding is not None:
+                dow = x_calendar[..., self.pos_dow]
+                dow_emb = self.dow_embedding(dow.long())  # (batch_size, in_steps, num_nodes, dow_embedding_dim)
+                calendar_features = torch.cat([calendar_features, dow_emb], dim=-1)
+
+            x = torch.cat([x, calendar_features.repeat(1,1,x.size(2),1)], dim=-1)
+            x_contextual = torch.cat([x_contextual, calendar_features.repeat(1,1,x_contextual.size(2),1)], dim=-1)
 
         
         for attn in self.attn_layers:
-            out = attn(x, dim = dim,x_contextual = x_contextual)
-        return out
+            x = attn(x, dim = dim,x_contextual = x_contextual)
+        return x
 
 if __name__ == "__main__":
     import torch

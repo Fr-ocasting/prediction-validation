@@ -38,15 +38,33 @@ possible_contextual_kwargs = {
                                         'attn_kwargs': {},
                                                             },  
 
-                        'subway_in': {'emb_dim' : 12,
-                                      'need_global_attn':False, 
+                        # 'subway_in': {'emb_dim' : 12,
+                        #               'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                                        
+                        #                 'attn_kwargs': {},
+                        #             }, 
+
+                        'subway_in': {'need_global_attn':True, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
-                                        
-                                        'attn_kwargs': {},
-                                    }, 
+                                        'attn_kwargs': {
+                                            'model_dim': 24, 
+                                            'latent_dim':  24,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
+                                            },
+                                    },  
 
                         'bike_in':{'emb_dim' : 12,
                                          'need_global_attn':False, 
@@ -146,16 +164,17 @@ possible_contextual_kwargs = {
 
 
 modifications = {}
-for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
+for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
+    for contextual_dataset_names in [[]]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
         # for horizon in [1,2,3,4]:
-        for horizon in [1,4]:
-            for n_bis in range(1,6): # range(1,6):
+        for horizon in [1]:
+            for n_bis in range(1,2): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_e100_h{horizon}_bis{n_bis}"
+                # name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
@@ -200,7 +219,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
 
 if __name__ == "__main__":
 
-    target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+    target_data = 'subway_out' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     model_name = 'STAEformer'
     loger = LOG()
 
@@ -249,6 +268,9 @@ if __name__ == "__main__":
         save_folder = f"{weights_save_folder}/{trial_id}"
         save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
         print(f"Save folder: {save_folder_with_root}")
+
+        if not os.path.exists(f"{SAVE_DIRECTORY}/{weights_save_folder}"):
+            os.mkdir(f"{SAVE_DIRECTORY}/{weights_save_folder}")
         if not os.path.exists(save_folder_with_root):
             os.mkdir(save_folder_with_root)
             

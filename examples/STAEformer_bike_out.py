@@ -124,7 +124,9 @@ possible_contextual_kwargs = {
                                             'num_heads':4,
                                             'num_layers':3,
                                             'mask':False,
-                                            'keep_temporal_dim': True
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
                                             },
                                     }, 
 
@@ -140,7 +142,9 @@ possible_contextual_kwargs = {
                                             'num_heads':4,
                                             'num_layers':3,
                                             'mask':False,
-                                            'keep_temporal_dim': True
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
                                                             },
                                     }, 
 
@@ -191,20 +195,20 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_out'],['subway_in'],['subway_in','weather'],['subway_out','weather'],['subway_in','subway_out'],['subway_in','subway_out','weather']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+    for contextual_dataset_names in [['subway_out'],['subway_in']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
-        for horizon in [1,2]: #[1,2]:
-            for n_bis in range(1,6): # range(1,6): # range(1,6):
+        for horizon in [1]: #[1,2]:
+            for n_bis in range(1,2): # range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
                     if 'weather' in contextual_dataset_names:
                         # name_i = f"{'_'.join(dataset_names)}_RepeatWeather_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
                         # name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnSTAEformerH4L3D24FF128_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_CalendarAttnSTAEformerH4L3D24FF128_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                     else:
                         # name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                         # name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_AttnSTAEformerH4L3D24FF128_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+                        name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
                 else:
                     if 'weather' in contextual_dataset_names:
                         name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
