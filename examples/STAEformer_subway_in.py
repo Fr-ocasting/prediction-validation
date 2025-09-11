@@ -66,20 +66,55 @@ possible_contextual_kwargs = {
                                             },
                                     },  
 
-                        'bike_in':{'emb_dim' : 12,
-                                         'need_global_attn':False, 
+                        'bike_in':{
+                                         'need_global_attn':True, 
                                         'stacked_contextual': False,
-                                        'agg_iris_target_n':50,
+                                        'agg_iris_target_n':100,
                                         'threshold_volume_min': 1,
-                                        'attn_kwargs': {},
+                                        'attn_kwargs': {
+                                            'model_dim': 24, 
+                                            'latent_dim':  24,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
+                                        },
                                     },
-                        'bike_out':{'emb_dim' : 12,
-                                         'need_global_attn':False, 
+                        'bike_out':{
+                                         'need_global_attn':True, 
                                         'stacked_contextual': False,
-                                         'agg_iris_target_n':50,
+                                         'agg_iris_target_n':100,
                                         'threshold_volume_min': 1,
-                                        'attn_kwargs': {},
+                                        'attn_kwargs': {
+                                            'model_dim': 24, 
+                                            'latent_dim':  24,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
+                                        },
                                     },
+
+                        # 'bike_in':{'emb_dim' : 12,
+                        #                  'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 'attn_kwargs': {},
+                        #             },
+                        # 'bike_out':{'emb_dim' : 12,
+                        #                  'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                  'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 'attn_kwargs': {},
+                        #             },
 
                         # 'subway_out': {'need_global_attn':True, 
                         #                     'stacked_contextual': False,
@@ -167,14 +202,14 @@ modifications = {}
 for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [[]]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
+    for contextual_dataset_names in [['subway_in'],[],['bike_in','subway_in'],['bike_out','subway_in'],['bike_in','bike_out','subway_in']]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
         # for horizon in [1,2,3,4]:
-        for horizon in [1]:
-            for n_bis in range(1,2): # range(1,6):
+        for horizon in [1,4]:
+            for n_bis in range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
                 # name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_e100_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
@@ -236,7 +271,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  False,# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' :  'compile', #'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,
