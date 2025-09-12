@@ -148,7 +148,18 @@ class ContextualInputEmbedding(nn.Module):
             for ds_name, kwargs_i in self.contextual_kwargs.items():
                 if 'emb_dim' in kwargs_i.keys():
                     self.contextual_emb[ds_name] = nn.Linear(kwargs_i['C'], kwargs_i['emb_dim'])
-                    if ('n_spatial_unit' in kwargs_i.keys()) and (kwargs_i['n_spatial_unit']) is not None and ((not 'repeat_spatial' in kwargs_i.keys()) or (not kwargs_i['repeat_spatial'])):
+                    if (
+                        'n_spatial_unit' in kwargs_i.keys()
+                        and kwargs_i['n_spatial_unit'] is not None
+                        and (
+                            'repeat_spatial' not in kwargs_i.keys()
+                            or not kwargs_i['repeat_spatial']
+                            )
+                        and (
+                            'spatial_proj' not in kwargs_i.keys()
+                            or kwargs_i['spatial_proj']
+                        )
+                    ):
                         self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
 
 
@@ -179,6 +190,8 @@ class ContextualInputEmbedding(nn.Module):
             if ds_name in self.contextual_spatial_proj.keys():
                 contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
                 contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
+            else:
+                contextual_i = contextual_i.transpose(1,2)
             features = torch.cat([features, contextual_i], dim=-1)
         return features
 
@@ -366,16 +379,20 @@ class STAEformer(nn.Module):
                 features = torch.cat([features, adp_emb], dim=-1)
             
             # Add contextual features as inputs (Embedding + concatenation early)
+            # print('features size before contextual: ',features.size())
             features = self.contextual_input_embedding(features,contextual)
+            # print('features size after contextual: ',features.size())
 
 
             if x_vision is not None:
                 # [B,N,L,C] ->   [B,L,N,C] 
                 features = torch.cat([features, x_vision], dim=-1)
+            # print('features size after vision concat: ',features.size())
 
 
 
             x = torch.cat([x, features], dim=-1)
+            # print('x size after adding all embeddings:', x.size())
 
 
             for attn in self.attn_layers_t:
