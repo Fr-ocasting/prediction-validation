@@ -329,6 +329,50 @@ class STAEformer(nn.Module):
         )
 
 
+# ---- PREDICTION SUBWAY-OUT ----
+
+# --- NATIVEMENT STAEformer : 
+# subway-out --Embedding--> Z_subway_out
+# calendar   --Embedding--> Z_calendar
+# input_STAEformer = concat(Z_subway_out, Z_calendar)
+
+
+# --- MODIFIED STAEformer : 
+# subway-out (1 channel) --Embedding--> Z_subway_out                                                Size:     [B, Z_sub_out , N, L])
+# subway-in (1 channel)  --Embedding--> Z_subway_in                                                 Size:     [B, Z_sub_in  , N, L]) ---- ## ADDED  ##-----
+# bike-dropoff(1 channel) --Embedding--> Z_bike_dropoff                                             Size:     [B, Z_bike_out, P, L]) ---- ## ADDED  ##-----
+# 
+
+#     Embedding spatial (display all possibilities):
+#     - With spatial Embedding      
+#         [B, Z_bike_out, P, L] --Fully Connected Layer(P,N) --> [B, Z_bike_out, N, L]   
+#     - With spatial attention : 
+#         Query (Subway-out), Key (bike-out), Value (bike-out)  -- Attetion On Spatial Dim --> [B, Z_bike_out, N, L]
+
+# calendar  (2 channel)  --Embedding--> Z_calendar     ( 2*6 channels  [B, Z_calendar, 1, L]) --Repeat x N--> [B, Z_calendar, N, L]
+
+# - Block concat on Channel dim :
+# input_STAEformer = concat(Z_subway_out, Z_subway_in, Z_calendar, Z_bike_dropoff)                  Size:     [B,Z_tot,N,L]
+
+# - Feed embeding: 
+# input_STAEformer --Feed--> STAEformer --> output_STAEformer
+
+# -----
+
+
+# --- BEFORE STAEformer --- : 
+# concat[subway-out,subway_in]) --Embedding--> Z_subway_out_in
+# calendar   --Embedding--> Z_calendar
+# input_STAEformer = concat(Z_subway_out, Z_subway_in, Z_calendar)
+
+
+
+#  [B,1,N,L] , [B,1,N,L]  --STACK CHANNEL--> [B,2,N,L]   --Channel Proj  --> [B,C,N,L]
+#  [B,1,N,L] , [B,1,N,L]  --Concat--> [B,1,N,2L] 
+
+
+
+
 
         
     def forward(self,  x: Tensor,

@@ -39,7 +39,7 @@ possible_contextual_kwargs = {
                                                             },  
 
                         'subway_in': {'emb_dim' : 48,
-                                      'spatial_proj' : True,
+                                      'spatial_proj' : False,
                                       'need_global_attn':False, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
@@ -68,16 +68,16 @@ possible_contextual_kwargs = {
                         #             },  
 
                         'bike_in':{
-                                         'need_global_attn':True, 
+                                        'need_global_attn':True, 
                                         'stacked_contextual': False,
                                         'agg_iris_target_n':100,
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
                                             'latent_dim':  24,# has to be = model_dim)
-                                            'feed_forward_dim':128, 
+                                            'feed_forward_dim':64, 
                                             'num_heads':4,
-                                            'num_layers':3,
+                                            'num_layers':1,
                                             'mask':False,
                                             'keep_temporal_dim': True,
                                              'tod_embedding_dim' : 6,
@@ -85,16 +85,16 @@ possible_contextual_kwargs = {
                                         },
                                     },
                         'bike_out':{
-                                         'need_global_attn':True, 
+                                        'need_global_attn':True, 
                                         'stacked_contextual': False,
-                                         'agg_iris_target_n':100,
+                                        'agg_iris_target_n':100,
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
                                             'latent_dim':  24,# has to be = model_dim)
-                                            'feed_forward_dim':128, 
+                                            'feed_forward_dim':64, 
                                             'num_heads':4,
-                                            'num_layers':3,
+                                            'num_layers':1,
                                             'mask':False,
                                             'keep_temporal_dim': True,
                                              'tod_embedding_dim' : 6,
@@ -203,14 +203,14 @@ modifications = {}
 for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_in']]: #[['subway_in'],[],['bike_in','subway_in'],['bike_out','subway_in'],['bike_in','bike_out','subway_in']]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
+    for contextual_dataset_names in [['subway_in','bike_in'],['subway_in','bike_in','bike_out']]: #[['subway_in'],[],['bike_in','subway_in'],['bike_out','subway_in'],['bike_in','bike_out','subway_in']]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
         # for horizon in [1,2,3,4]:
         for horizon in [1,4]:
             for n_bis in range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
                 # name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_SpatialProj_StackChannelAsInput_e100_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_StackSubwayInChannelAsInput_BikeCalendarAttnSTAEformerH4L1D24FF64_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
