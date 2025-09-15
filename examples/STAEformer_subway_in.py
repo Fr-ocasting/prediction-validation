@@ -73,6 +73,7 @@ possible_contextual_kwargs = {
                                         'agg_iris_target_n':100,
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
+                                            'concatenation_late': True, 
                                             'model_dim': 24, 
                                             'latent_dim':  24,# has to be = model_dim)
                                             'feed_forward_dim':64, 
@@ -90,6 +91,7 @@ possible_contextual_kwargs = {
                                         'agg_iris_target_n':100,
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
+                                            'concatenation_late': True, 
                                             'model_dim': 24, 
                                             'latent_dim':  24,# has to be = model_dim)
                                             'feed_forward_dim':64, 
@@ -210,7 +212,7 @@ for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
                 # name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_StackSubwayInChannelAsInput_BikeCalendarAttnSTAEformerH4L1D24FF64_e100_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_StackSubwayInChannelAsInput_ConcatLateBikeCalendarAttnSTAEformerH4L1D24FF64_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
@@ -272,7 +274,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  'compile', #'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' :  'compile', # 'compile', #'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,

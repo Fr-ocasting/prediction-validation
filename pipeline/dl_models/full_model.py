@@ -381,9 +381,13 @@ class full_model(nn.Module):
                 L_node_attributes.append(node_attr)
 
             else:
+                # print('\nds_name_i: ',ds_name_i)
+                # print('init node_attr size: ',node_attr.size())
                 node_attr = attention_module_i(x,x_contextual = node_attr, x_calendar = x_calendar,dim = 2 )  
                 if extracted_features is not None:
                     extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
+                    # print('node_attr after feature extraction: ',node_attr.size())
+                    # print('extracted_features size after cat: ',extracted_features.size())
                 else:
                     extracted_features = node_attr
 
@@ -494,56 +498,55 @@ def reshaping(x,B):
     return x
 
 def load_model(dataset, args):
-    # --- Init L_add and added_dim_input
-    if hasattr(args,'args_vision') and (len(vars(args.args_vision))>0):   #if not empty 
-        # IF Early concatenation : 
-        vision_concatenation_late = args.args_vision.concatenation_late
-        vision_out_dim = args.args_vision.out_dim
-        if args.args_vision.concatenation_early:
-            if False:
-                # Depend wether out_dim is implicit or defined by other parameters:
-                if hasattr(args.args_vision,'out_dim'):
-                    L_add = args.args_vision.out_dim
-                else:
-                    L_add = args.args_vision.L*args.args_vision.h_dim//2
-            L_add = 7
-            raise NotImplementedError("This method has not been updated")
-    else:
-        L_add = 0
-        vision_concatenation_late = False
-        vision_out_dim = None
+    # --- Init added_dim_output and added_dim_input
+    vision_concatenation_late = False
+    vision_out_dim = None
     added_dim_input = 0 
+    added_dim_output = 0 
     # ---
     for name_i in args.contextual_kwargs.keys():
-        if 'out_dim' in args.contextual_kwargs[name_i].keys():
-            if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
+        if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
+            # If concatenation late: 
+            if 'concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']:
+                added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
+
+                if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
+                if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
+
+            # If concatenation early : 
+            else:
                 added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
 
                 if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
                     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
                 if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
                     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
-                    
-            else:
-                if ('need_global_attn' in args.contextual_kwargs[name_i].keys() and args.contextual_kwargs[name_i]['need_global_attn']):
-                    L_add = L_add + args.contextual_kwargs[name_i]['out_dim']
+
+
+                
+        else:
+            if ('need_global_attn' in args.contextual_kwargs[name_i].keys() and args.contextual_kwargs[name_i]['need_global_attn']):
+                added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
             
     if 'calendar_embedding' in args.dataset_names: #if not empty 
         # IF Early concatenation : 
         TE_concatenation_late = args.args_embedding.concatenation_late
         TE_embedding_dim = args.args_embedding.embedding_dim
         if args.args_embedding.concatenation_early:
-            L_add = L_add + args.args_embedding.embedding_dim
+            added_dim_output = added_dim_output + args.args_embedding.embedding_dim
     else:
         TE_concatenation_late = False
         TE_embedding_dim = None
 
     if args.model_name == 'STAEformer':
-        args.added_dim_output = L_add
+        args.added_dim_output = added_dim_output
         args.added_dim_input = added_dim_input
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}
+        print( '\ncontextual_kwargs: ', filtered_args['contextual_kwargs'])
         model = STAEformer(**filtered_args).to(args.device)
 
     if args.model_name == 'DSTRformer':
@@ -593,7 +596,7 @@ def load_model(dataset, args):
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(MTGNN.__init__).parameters.keys()}
         model = MTGNN(**filtered_args,
-                    L_add=L_add,
+                    L_add=added_dim_output,
                     seq_length=args.L,
                     vision_concatenation_late = vision_concatenation_late,
                     TE_concatenation_late = TE_concatenation_late,
@@ -626,7 +629,7 @@ def load_model(dataset, args):
         model = STGCN(args,gso=gso, blocks = args.blocks,Ko = Ko).to(args.device)
         
     if args.model_name == 'CNN': 
-        model = CNN(args,L_add = L_add,vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None)
+        model = CNN(args,L_add = added_dim_output,vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None)
 
     if args.model_name in ['LSTM','GRU','RNN']:
         filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(RNN.__init__).parameters.keys()}
@@ -636,7 +639,7 @@ def load_model(dataset, args):
         from pipeline.dl_models.MLP.MLP import MLP_output 
         print('\n>>>>Model == MLP, keep in mind Concatenation Late DOES NOT WORK here. Only Concatenation Early')
         print(f'>>>>Also Stupid model. Input_dim = h_dim = L+L_add. Output_dim = {args.out_dim}')
-        input_dim = args.L+L_add
+        input_dim = args.L+added_dim_output
         model = MLP_output(input_dim=input_dim,out_h_dim=input_dim,num_nodes=None,embedding_dim=args.out_dim,multi_embedding=False,dropout=args.dropout).to(args.device)
 
     if args.model_name == 'ARIMA':

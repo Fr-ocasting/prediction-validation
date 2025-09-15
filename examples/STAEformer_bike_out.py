@@ -119,7 +119,7 @@ possible_contextual_kwargs = {
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
-                                            'latent_dim':  24,# has to be = model_dim)
+                                            'latent_dim':  24,# has to be = output_model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
                                             'num_layers':3,

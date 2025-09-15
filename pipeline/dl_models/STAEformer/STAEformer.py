@@ -223,6 +223,7 @@ class STAEformer(nn.Module):
     ):
         super().__init__()
         #  ---  self attributes: ---
+        self.concatenation_late = added_dim_output > 0
         self.num_nodes: int = num_nodes
         self.in_steps = L
         self.out_steps = step_ahead
@@ -253,8 +254,13 @@ class STAEformer(nn.Module):
         # print('spatial_embedding_dim:', self.spatial_embedding_dim)
         # print('adaptive_embedding_dim:', self.adaptive_embedding_dim)
         # print('added_dim_input:', self.added_dim_input)
+        # print('added_dim_output:', self.added_dim_output)
         # print('sum_contextual_dim:', self.sum_contextual_dim)
+        # print('Total model_dim:', self.model_dim)
+        # print('Total output_model_dim:', self.output_model_dim)
+
         self.output_model_dim = self.model_dim + self.added_dim_output
+
         
         self.num_heads = num_heads
         self.num_layers = num_layers
@@ -328,52 +334,6 @@ class STAEformer(nn.Module):
             ]
         )
 
-
-# ---- PREDICTION SUBWAY-OUT ----
-
-# --- NATIVEMENT STAEformer : 
-# subway-out --Embedding--> Z_subway_out
-# calendar   --Embedding--> Z_calendar
-# input_STAEformer = concat(Z_subway_out, Z_calendar)
-
-
-# --- MODIFIED STAEformer : 
-# subway-out (1 channel) --Embedding--> Z_subway_out                                                Size:     [B, Z_sub_out , N, L])
-# subway-in (1 channel)  --Embedding--> Z_subway_in                                                 Size:     [B, Z_sub_in  , N, L]) ---- ## ADDED  ##-----
-# bike-dropoff(1 channel) --Embedding--> Z_bike_dropoff                                             Size:     [B, Z_bike_out, P, L]) ---- ## ADDED  ##-----
-# 
-
-#     Embedding spatial (display all possibilities):
-#     - With spatial Embedding      
-#         [B, Z_bike_out, P, L] --Fully Connected Layer(P,N) --> [B, Z_bike_out, N, L]   
-#     - With spatial attention : 
-#         Query (Subway-out), Key (bike-out), Value (bike-out)  -- Attetion On Spatial Dim --> [B, Z_bike_out, N, L]
-
-# calendar  (2 channel)  --Embedding--> Z_calendar     ( 2*6 channels  [B, Z_calendar, 1, L]) --Repeat x N--> [B, Z_calendar, N, L]
-
-# - Block concat on Channel dim :
-# input_STAEformer = concat(Z_subway_out, Z_subway_in, Z_calendar, Z_bike_dropoff)                  Size:     [B,Z_tot,N,L]
-
-# - Feed embeding: 
-# input_STAEformer --Feed--> STAEformer --> output_STAEformer
-
-# -----
-
-
-# --- BEFORE STAEformer --- : 
-# concat[subway-out,subway_in]) --Embedding--> Z_subway_out_in
-# calendar   --Embedding--> Z_calendar
-# input_STAEformer = concat(Z_subway_out, Z_subway_in, Z_calendar)
-
-
-
-#  [B,1,N,L] , [B,1,N,L]  --STACK CHANNEL--> [B,2,N,L]   --Channel Proj  --> [B,C,N,L]
-#  [B,1,N,L] , [B,1,N,L]  --Concat--> [B,1,N,2L] 
-
-
-
-
-
         
     def forward(self,  x: Tensor,
                 x_vision: Optional[Tensor] = None, 
@@ -398,7 +358,7 @@ class STAEformer(nn.Module):
             batch_size = x.shape[0]
             x = self.input_proj(x)  # (batch_size, in_steps, num_nodes, input_embedding_dim)
             # print('x size after input_proj:', x.size())
-            #print('x_calendar shape:', x_calendar.shape)
+            # print('x_calendar shape:', x_calendar.shape)
             
             # Init features with empty tensor with 0 channels
             features = torch.empty(x.size(0), x.size(1), x.size(2), 0,dtype=x.dtype, device=x.device)  
@@ -429,8 +389,8 @@ class STAEformer(nn.Module):
 
 
             if x_vision is not None:
-                # [B,N,L,C] ->   [B,L,N,C] 
-                features = torch.cat([features, x_vision], dim=-1)
+                if not(self.concatenation_late):
+                    features = torch.cat([features, x_vision], dim=-1)
             # print('features size after vision concat: ',features.size())
 
 
@@ -446,18 +406,20 @@ class STAEformer(nn.Module):
                 # print('\n--- Spatial attention layer ---')
                 x = attn(x, dim=2)
             # (batch_size, in_steps, num_nodes, model_dim)
-            # print('x.size(): ',x.size())
+            # print('\nx.size() after T-attn and S-attn : ',x.size())
 
-            if x_vision is not None and x_vision.dim()==3: 
-                raise NotImplementedError("x_vision with 3 dims  and with concatenation late. Need to finish the implementation")
-                x_vision = x_vision.unsqueeze().permute(0,3,2,1)
-                x = torch.cat([x, x_vision], dim=-1)
-                # print("x.size() after concat 'vision': ",x.size())
-
+            if x_vision is not None:
+                if self.concatenation_late:
+                    x = torch.cat([x, x_vision], dim=-1)
+            # print('x.size() after concat late x_contextual: ',x.size())
 
             if self.temporal_proj is None:
                 out = x.transpose(1, 2)  # (batch_size, num_nodes, in_steps, model_dim)
-                out = out.reshape( batch_size, self.num_nodes, self.in_steps * self.model_dim)
+                # print('out size before mixed proj:', out.size())
+                # print('batch_size, num_nodes, in_steps, output_model_dim:', batch_size, self.num_nodes, self.in_steps, self.output_model_dim)
+                # print('model dim + added_dim_output= ',self.added_dim_output + self.model_dim)
+
+                out = out.reshape( batch_size, self.num_nodes, self.in_steps * (self.model_dim+self.added_dim_output))
                 out = self.output_proj(out)
                 out = out.view(batch_size, self.num_nodes, self.out_steps//self.horizon_step, self.output_dim)
                 out = out.transpose(1, 2)  # (batch_size, self.out_steps//self.horizon_step, num_nodes, output_dim)
