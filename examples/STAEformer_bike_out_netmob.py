@@ -59,27 +59,29 @@ possible_contextual_kwargs = {
                         #                 'vision_model_name' : None,
                         #                 'use_only_for_common_dates': False,
                         #                 'quantile_filter_outliers': 0.99 ,
+                        #                 'use_future_values': 4, # 1hour ahead 
                         #                 'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
                         #                 'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
                         #                 'attn_kwargs': {},
                         #                                     },  
-                        'weather': {'need_global_attn':True, 
-                                        'stacked_contextual': False,
-                                        'vision_model_name' : None,
-                                        'use_only_for_common_dates': False,
-                                        'quantile_filter_outliers': 0.99 ,
-                                        'attn_kwargs': {
-                                            'model_dim': 24, 
-                                            'latent_dim':  24,# has to be = output_model_dim)
-                                            'feed_forward_dim':64, 
-                                            'num_heads':4,
-                                            'num_layers':3,
-                                            'mask':False,
-                                            'keep_temporal_dim': True,
-                                             'tod_embedding_dim' : 6,
-                                             'dow_embedding_dim': 6,
-                                            },
-                                    }, 
+                        # 'weather': {'need_global_attn':True, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                        #                 'use_future_values': 4, # 1hour ahead 
+                        #                 'attn_kwargs': {
+                        #                     'model_dim': 24, 
+                        #                     'latent_dim':  24,# has to be = output_model_dim)
+                        #                     'feed_forward_dim':64, 
+                        #                     'num_heads':4,
+                        #                     'num_layers':3,
+                        #                     'mask':False,
+                        #                     'keep_temporal_dim': True,
+                        #                      'tod_embedding_dim' : 6,
+                        #                      'dow_embedding_dim': 6,
+                        #                     },
+                        #             }, 
                         # 'subway_in': {'emb_dim' : 24,
                         #               'need_global_attn':False, 
                         #                 'stacked_contextual': False,
@@ -127,71 +129,194 @@ possible_contextual_kwargs = {
                     }
 
 
+weather_dict_config=  {
+'1hAheadRepeatWeatherEmb8': {'emb_dim' : 8,
+               'need_global_attn':False, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+                'attn_kwargs': {},
+                                    },  
+'1hAheadRepeatWeatherEmb12': {'emb_dim' : 12,
+               'need_global_attn':False, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+                'attn_kwargs': {},
+                                    },  
+'1hAheadRepeatWeatherEmb16': {'emb_dim' : 16,
+               'need_global_attn':False, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+                'attn_kwargs': {},
+                                    },  
+
+'1hAheadWeatherConcatLateAttnH4L3D48FF128':{'need_global_attn':True, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'attn_kwargs': {
+                    'model_dim': 48, 
+                    'latent_dim':  48,# has to be = output_model_dim)
+                    'feed_forward_dim':128, 
+                    'num_heads':4,
+                    'num_layers':3,
+                    'mask':False,
+                    'keep_temporal_dim': True,
+                     'tod_embedding_dim' : 6,
+                     'dow_embedding_dim': 6,
+                    },
+            }, 
+
+'1hAheadWeatherConcatLateAttnH4L3D24FF64':{'need_global_attn':True, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'attn_kwargs': {
+                    'model_dim': 24, 
+                    'latent_dim':  24,# has to be = output_model_dim)
+                    'feed_forward_dim':64, 
+                    'num_heads':4,
+                    'num_layers':3,
+                    'mask':False,
+                    'keep_temporal_dim': True,
+                     'tod_embedding_dim' : 6,
+                     'dow_embedding_dim': 6,
+                    },
+            }, 
+'1hAheadWeatherConcatLateAttnH4L3D24FF128':{'need_global_attn':True, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'attn_kwargs': {
+                    'model_dim': 24, 
+                    'latent_dim':  24,# has to be = output_model_dim)
+                    'feed_forward_dim':128, 
+                    'num_heads':4,
+                    'num_layers':3,
+                    'mask':False,
+                    'keep_temporal_dim': True,
+                     'tod_embedding_dim' : 6,
+                     'dow_embedding_dim': 6,
+                    },
+            }, 
+
+'1hAheadWeatherConcatLateAttnH4L1D24FF64':{'need_global_attn':True, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'attn_kwargs': {
+                    'model_dim': 24, 
+                    'latent_dim':  24,# has to be = output_model_dim)
+                    'feed_forward_dim':64, 
+                    'num_heads':4,
+                    'num_layers':3,
+                    'mask':False,
+                    'keep_temporal_dim': True,
+                     'tod_embedding_dim' : 6,
+                     'dow_embedding_dim': 6,
+                    },
+            }, 
+
+'1hAheadWeatherConcatLateAttnH4L1D24FF128':{'need_global_attn':True, 
+                'stacked_contextual': False,
+                'vision_model_name' : None,
+                'use_only_for_common_dates': False,
+                'quantile_filter_outliers': 0.99 ,
+                'use_future_values': 4, # 1hour ahead 
+                'attn_kwargs': {
+                    'model_dim': 24, 
+                    'latent_dim':  24,# has to be = output_model_dim)
+                    'feed_forward_dim':128, 
+                    'num_heads':4,
+                    'num_layers':1,
+                    'mask':False,
+                    'keep_temporal_dim': True,
+                     'tod_embedding_dim' : 6,
+                     'dow_embedding_dim': 6,
+                    },
+            }, 
+}
+
 modifications = {}
-for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
-    # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
-    # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['weather']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
-        # for horizon in [1,2,3,4]:
-        for horizon in [1]: #[1,2]:
-            for n_bis in range(1,6): # range(1,6): # range(1,6):
-                dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-                if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
-                    if 'weather' in contextual_dataset_names:
-                        # name_i = f"{'_'.join(dataset_names)}_RepeatWeather_AttnKeepTempDim_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        # name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb6_Agg100_Freq15min_e100_h{horizon}_bis{n_bis}"
-                    else:
-                        # name_i = f"{'_'.join(dataset_names)}_ConcatLateSTEmbAndSpatialProj_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        # name_i = f"{'_'.join(dataset_names)}_AttnKeepTempDimH4L3D128FF256_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_Agg100_Freq15min_e100_h{horizon}_bis{n_bis}"
-                else:
-                    if 'weather' in contextual_dataset_names:
-                        # name_i = f"{'_'.join(dataset_names)}_RepeatWeatherEmb24_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
-                        name_i = f"{'_'.join(dataset_names)}_WeatherConcatLateAttnH4L3D24FFD128_Agg100_Freq15min_e100_h{horizon}_bis{n_bis}"
-                    else:
-                        name_i = f"{'_'.join(dataset_names)}_Agg100_Freq1H_e100_h{horizon}_bis{n_bis}"
+for weather_method in ['1hAheadWeatherConcatLateAttnH4L1D24FF64', '1hAheadWeatherConcatLateAttnH4L1D24FF128',
+                       '1hAheadWeatherConcatLateAttnH4L3D48FF128','1hAheadRepeatWeatherEmb8', '1hAheadRepeatWeatherEmb12', '1hAheadRepeatWeatherEmb16',
+                       '1hAheadWeatherConcatLateAttnH4L3D24FF64','1hAheadWeatherConcatLateAttnH4L3D24FF128',
+                       ]:
 
-                config_i =  {'target_data': target_data,
-                                'dataset_names': dataset_names,
-                                'dataset_for_coverage': ['subway_in','netmob_POIs'],
-                                'calendar_types':['dayofweek', 'timeofday'],
+    for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
+        # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
+        # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
+        for contextual_dataset_names in [['weather']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+            possible_contextual_kwargs['weather'] = weather_dict_config[weather_method]
+            # for horizon in [1,2,3,4]:
+            for horizon in [1,4]: #[1,2]:
+                for n_bis in range(1,6): # range(1,6): # range(1,6):
+                    dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
 
-                                'input_embedding_dim': 48, # 24
-                                'adaptive_embedding_dim': 32,
-                                'tod_embedding_dim': 6,
-                                'dow_embedding_dim': 6,
-                                'feed_forward_dim': 256,
-                                'num_heads': 4,
-                                'num_layers': 3,
+                    name_i = f"{'_'.join(dataset_names)}_{weather_method}_Agg100_Freq15min_e100_h{horizon}_bis{n_bis}"
 
-                                'use_mixed_proj': True,
-                                'freq': '15min',
-                                'H':6,
-                                'D':1,
-                                'W':0,
+                    config_i =  {'target_data': target_data,
+                                    'dataset_names': dataset_names,
+                                    'dataset_for_coverage': ['subway_in','netmob_POIs'],
+                                    'calendar_types':['dayofweek', 'timeofday'],
 
-                                'lr': 0.001,
-                                'weight_decay':  0.0015,
-                                'dropout': 0.2,
-                                'torch_scheduler_milestone': 20,
-                                'torch_scheduler_gamma':0.9925,
-                                'torch_scheduler_type': 'warmup',
-                                'torch_scheduler_lr_start_factor': 0.3,
-                                'standardize': False,
-                                'minmaxnorm': True,
-                                'batch_size': 128,
-                                'epochs':200,
+                                    'input_embedding_dim': 48, # 24
+                                    'adaptive_embedding_dim': 32,
+                                    'tod_embedding_dim': 6,
+                                    'dow_embedding_dim': 6,
+                                    'feed_forward_dim': 256,
+                                    'num_heads': 4,
+                                    'num_layers': 3,
 
-                                'horizon_step': horizon,
-                                'step_ahead': horizon,
+                                    'use_mixed_proj': True,
+                                    'freq': '15min',
+                                    'H':6,
+                                    'D':1,
+                                    'W':0,
 
-                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
-                                'denoising_names':[],
-                                }  
+                                    'lr': 0.001,
+                                    'weight_decay':  0.0015,
+                                    'dropout': 0.2,
+                                    'torch_scheduler_milestone': 20,
+                                    'torch_scheduler_gamma':0.9925,
+                                    'torch_scheduler_type': 'warmup',
+                                    'torch_scheduler_lr_start_factor': 0.3,
+                                    'standardize': False,
+                                    'minmaxnorm': True,
+                                    'batch_size': 128,
+                                    'epochs':300,
 
-                modifications[name_i] = config_i
+                                    'horizon_step': horizon,
+                                    'step_ahead': horizon,
+
+                                    'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                                    'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
+                                    'denoising_names':[],
+                                    }  
+
+                    modifications[name_i] = config_i
 
 
 if __name__ == "__main__":

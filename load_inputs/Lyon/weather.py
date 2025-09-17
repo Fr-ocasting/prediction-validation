@@ -33,6 +33,9 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     PersonalInput object. Containing a 2-th order tensor [T,R]
     '''
     interpolated_weather = load_preprocessed_weather_df(args,coverage_period,folder_path = FOLDER_PATH)
+
+    if 'use_future_values' in args.contextual_kwargs['weather'].keys() and args.contextual_kwargs['weather']['use_future_values']:
+        data_T = torch.roll(torch.Tensor(interpolated_weather.values), shifts=-args.contextual_kwargs['weather']['use_future_values'], dims=0)
     data_T = torch.tensor(interpolated_weather.values).float()  # Tensor of shape [T,N]
     
     dims = [0]# [0]  -> We are normalizing each time-serie independantly 
