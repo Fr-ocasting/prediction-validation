@@ -92,7 +92,7 @@ possible_contextual_kwargs = {
                         #                     'attn_kwargs': {},
                         #                                     },  
 
-                        'weather': {'emb_dim' : 24,
+                        'weather': {'emb_dim' : 6,
                                        'need_global_attn':False, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
@@ -195,7 +195,7 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_out'],['subway_in']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+    for contextual_dataset_names in [[],['bike_out'],['subway_out'],['subway_in']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
         for horizon in [1]: #[1,2]:
             for n_bis in range(1,2): # range(1,6): # range(1,6):

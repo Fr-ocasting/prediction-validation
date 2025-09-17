@@ -31,6 +31,7 @@ class AttentionLayer(nn.Module):
         self.mask = mask
 
         self.head_dim = model_dim // num_heads
+        assert ( self.head_dim * num_heads == model_dim), f"model_dim {model_dim} must be divisible by num_heads {num_heads}"
 
         self.FC_Q = nn.Linear(model_dim, model_dim)
         self.FC_K = nn.Linear(model_dim, model_dim)
@@ -53,6 +54,7 @@ class AttentionLayer(nn.Module):
         key = self.FC_K(key)
         value = self.FC_V(value)
         # Qhead, Khead, Vhead (num_heads * batch_size, ..., length, head_dim)
+
         query = torch.cat(torch.split(query, self.head_dim, dim=-1), dim=0)
         key = torch.cat(torch.split(key, self.head_dim, dim=-1), dim=0)
         value = torch.cat(torch.split(value, self.head_dim, dim=-1), dim=0)
@@ -172,6 +174,7 @@ class ContextualInputEmbedding(nn.Module):
         # Heterogeneous or Homogenous spatial units others contextual features: 
         for ds_name, _ in self.contextual_emb.items():
             # print('\nds_name: ',ds_name)
+            transposed = False
             contextual_i = contextual[self.contextual_positions[ds_name]] 
             # print(f'contextual shape before embedding:', contextual_i.size())
             # Align the dimensions
@@ -179,19 +182,25 @@ class ContextualInputEmbedding(nn.Module):
                 contextual_i = contextual_i.unsqueeze(-1) # [B,P,L] -> [B,P,L,1]
             # Embedding on channel dim: 
             contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,P,L,C] -> [B,P,L,emb_dim]
-
+            # print('contextual shape after temporal proj:', contextual_i.size())
             # --- Spatial Projection : 
             # Repeat Tensor if common for all nodes : 
             if contextual_i.size(1) == 1:
                 contextual_i = contextual_i.repeat(1,self.num_nodes,1,1) # [B,1,L,emb_dim] -> [B,N,L,emb_dim]
                 contextual_i = contextual_i.transpose(1,2) # [B,N,L,emb_dim] -> [B,L,N,emb_dim]
+                transposed = True
+                # print('contextual shape after repeat:', contextual_i.size())
 
             # Otherwise spatial projection if n_spatial_unit != num_nodes
             if ds_name in self.contextual_spatial_proj.keys():
                 contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
                 contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
+                # print('contextual shape after spatial proj:', contextual_i.size())
             else:
-                contextual_i = contextual_i.transpose(1,2)
+                if not transposed:
+                    contextual_i = contextual_i.transpose(1,2)
+            # print('contextual shape after all transformation :', contextual_i.size())
+            # print('features shape before contextual concat :', features.size())
             features = torch.cat([features, contextual_i], dim=-1)
         return features
 
@@ -396,6 +405,7 @@ class STAEformer(nn.Module):
 
 
             x = torch.cat([x, features], dim=-1)
+            
             # print('x size after adding all embeddings:', x.size())
 
 

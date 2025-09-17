@@ -74,11 +74,11 @@ possible_contextual_kwargs = {
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
                                             'concatenation_late': True, 
-                                            'model_dim': 24, 
-                                            'latent_dim':  24,# has to be = model_dim)
-                                            'feed_forward_dim':64, 
+                                            'model_dim': 48, 
+                                            'latent_dim':  48,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
                                             'num_heads':4,
-                                            'num_layers':1,
+                                            'num_layers':3,
                                             'mask':False,
                                             'keep_temporal_dim': True,
                                              'tod_embedding_dim' : 6,
@@ -92,11 +92,11 @@ possible_contextual_kwargs = {
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
                                             'concatenation_late': True, 
-                                            'model_dim': 24, 
-                                            'latent_dim':  24,# has to be = model_dim)
-                                            'feed_forward_dim':64, 
+                                            'model_dim': 48, 
+                                            'latent_dim':  48,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
                                             'num_heads':4,
-                                            'num_layers':1,
+                                            'num_layers':3,
                                             'mask':False,
                                             'keep_temporal_dim': True,
                                              'tod_embedding_dim' : 6,
@@ -212,7 +212,7 @@ for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
                 # name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_StackSubwayInChannelAsInput_ConcatLateBikeCalendarAttnSTAEformerH4L1D24FF64_e100_h{horizon}_bis{n_bis}"
+                name_i = f"{'_'.join(dataset_names)}_StackSubwayInChannelAsInput_ConcatLateBikeCalendarAttnSTAEformerH4L3D48FF256_e100_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
                                 'dataset_for_coverage': ['subway_in'],
