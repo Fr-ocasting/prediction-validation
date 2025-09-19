@@ -57,7 +57,7 @@ def load_preprocessed_weather_df(args,coverage_period,folder_path):
                             'RR1':'precip','DRR1':'duree_prec','FF':'wind_ms','GLO':'solar'}
                             )
                 
-    df_weather = df_weather.applymap(lambda x: float(x.replace(',','.')) if isinstance(x,str) else x)
+    df_weather = df_weather.map(lambda x: float(x.replace(',','.')) if isinstance(x,str) else x)
     pivoted_df_weather = df_weather.pivot_table(index='date',columns='id_station',values='precip')
 
     # Restraint df: 

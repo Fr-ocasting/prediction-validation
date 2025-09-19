@@ -97,8 +97,8 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                            'model_dim': 24, 
-                                            'latent_dim':  24,# has to be = output_model_dim)
+                                            'model_dim': 48, 
+                                            'latent_dim':  48,# has to be = output_model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
                                             'num_layers':3,
@@ -115,8 +115,8 @@ possible_contextual_kwargs = {
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                            'model_dim': 24, 
-                                            'latent_dim':  24,# has to be = model_dim)
+                                            'model_dim': 48, 
+                                            'latent_dim':  48,# has to be = model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
                                             'num_layers':3,
@@ -260,26 +260,39 @@ weather_dict_config=  {
 }
 
 modifications = {}
-for weather_method in ['1hAheadWeatherConcatLateAttnH4L1D24FF64', '1hAheadWeatherConcatLateAttnH4L1D24FF128',
-                       '1hAheadWeatherConcatLateAttnH4L3D48FF128','1hAheadRepeatWeatherEmb8', '1hAheadRepeatWeatherEmb12', '1hAheadRepeatWeatherEmb16',
-                       '1hAheadWeatherConcatLateAttnH4L3D24FF64','1hAheadWeatherConcatLateAttnH4L3D24FF128',
-                       ]:
-
+# for weather_method in ['1hAheadWeatherConcatLateAttnH4L1D24FF64', '1hAheadWeatherConcatLateAttnH4L1D24FF128',
+#                        '1hAheadWeatherConcatLateAttnH4L3D48FF128','1hAheadRepeatWeatherEmb8', '1hAheadRepeatWeatherEmb12', '1hAheadRepeatWeatherEmb16',
+#                        '1hAheadWeatherConcatLateAttnH4L3D24FF64','1hAheadWeatherConcatLateAttnH4L3D24FF128',
+#                        ]:
+for weather_method in ['1hAheadRepeatWeatherEmb16']:
     for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
         # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
         # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-        for contextual_dataset_names in [['weather']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
-            possible_contextual_kwargs['weather'] = weather_dict_config[weather_method]
+        for contextual_dataset_names in [['subway_in','subway_out','weather'],
+                                         ['subway_in','weather'],
+                                         ['subway_out','weather'],
+                                         ['subway_in'],
+                                         ['subway_out'],
+                                         ['weather'],
+                                         [],]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+            if 'weather'in contextual_dataset_names:
+                possible_contextual_kwargs['weather'] = weather_dict_config[weather_method]
             # for horizon in [1,2,3,4]:
-            for horizon in [1,4]: #[1,2]:
+            for horizon in [1,2,4]: #[1,2]:
                 for n_bis in range(1,6): # range(1,6): # range(1,6):
                     dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-
-                    name_i = f"{'_'.join(dataset_names)}_{weather_method}_Agg100_Freq15min_e100_h{horizon}_bis{n_bis}"
+                    name_i = f"{'_'.join(dataset_names)}"
+                    name_i_end = f"_Agg100_Freq15min_e100_h{horizon}_bis{n_bis}"
+                    if 'subway_in' in contextual_dataset_names or 'subway_out' in contextual_dataset_names:
+                        name_i = f"{name_i}_ConcatLateAttnH4L3D48FF128"
+                    if 'weather'in contextual_dataset_names:
+                        name_i = f"{name_i}_{weather_method}"
+                    name_i = f"{name_i}_{name_i_end}"
+                        
 
                     config_i =  {'target_data': target_data,
                                     'dataset_names': dataset_names,
-                                    'dataset_for_coverage': ['subway_in','netmob_POIs'],
+                                    'dataset_for_coverage': ['subway_in'],  # ['subway_in','netmob_POIs'],
                                     'calendar_types':['dayofweek', 'timeofday'],
 
                                     'input_embedding_dim': 48, # 24
@@ -338,18 +351,18 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  False, # 'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' : 'compile', # 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,
                                 'use_target_as_context':False,
-
                                 'device': torch.device('cuda:0')
-        }
+                                }
     
 
     log_final  = f"\n--------- Resume ---------\n"
-    subfolder = f'{target_data}_{model_name}_coverage_NetMob'
+    subfolder = f'{target_data}_{model_name}'
+    # subfolder = f'{target_data}_{model_name}_coverage_NetMob'
     for trial_id,modification_i in modifications.items():
         print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
         config = modification_init.copy()

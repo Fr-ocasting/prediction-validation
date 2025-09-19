@@ -12,7 +12,7 @@ from bokeh.palettes import Blues9,Reds9, Greens9
 from bokeh.palettes import Plasma256 
 from bokeh.palettes import Turbo256 as palette
 import itertools
-
+from pipeline.utils.metrics import load_fun
 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
@@ -248,20 +248,13 @@ def get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode):
     X = ds1.normalizer.unormalize_tensor(inputs = X,feature_vect = True) # unormalize input cause prediction is unormalized 
     return(full_predict1,full_predict2,Y_true,X)
 
-# def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,step_ahead,step_ahead_max):
-#     previous = X[:,:,-(step_ahead_max+1-step_ahead)]
-#     predict1 = full_predict1[:,:,step_ahead-1]
-#     predict2 = full_predict2[:,:,step_ahead-1]
-#     real = Y_true[:,:,step_ahead-1]
-#     return previous,predict1,predict2,real
-
 def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx):
     predict1 = full_predict1[:,:,h_idx-1]
     predict2 = full_predict2[:,:,h_idx-1]
     real = Y_true[:,:,h_idx-1]
-    try: 
+    if h_idx-2 >= 0:
         previous = Y_true[...,h_idx-2]
-    except:
+    else:
         previous = X[...,-1]
     return previous,predict1,predict2,real
 
@@ -321,7 +314,7 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
     """
     
     step_ahead_max = args_init1.step_ahead
-    print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1)
+    print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1,X)
     dic_error_agg_h = {}
 
     # -- Comparison plotting for each horizon : 
@@ -420,11 +413,21 @@ def load_trainer_ds_from_1_args(args_init,modification = {},save_folder = None,t
     return trainer,ds 
 
 
-def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1):
+def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1,X):
     print('Model1 correspond to : ',trial_id1)
     print('Model2 correspond to : ',trial_id2)
     horizon_list = f"{'/'.join(list(map(str,np.arange(ds1.horizon_step,ds1.step_ahead+1,ds1.horizon_step))))}"
-    for metric in ['mae','mse','rmse']:
+
+    # Get Previous : 
+    previous = torch.zeros_like(Y_true)
+    for h_idx in range(Y_true.size(-1)):
+        previous_h,_,_,_ = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
+        previous[...,h_idx] = previous_h
+    # ---
+
+
+
+    for metric in ['mae','mse','rmse','mase']:
         for horizon_group in ['per','all']:
             if horizon_group == 'all': axis = None
             if horizon_group == 'per': axis = [0,1]
@@ -438,15 +441,34 @@ def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1
             elif metric == 'rmse':
                 err1 = ((Y_true - full_predict1)**2).mean(axis = axis).sqrt()
                 err2 =  ((Y_true - full_predict2)**2).mean(axis = axis).sqrt()
+            elif metric == 'mase':
+                MAE_naiv = torch.mean(torch.abs(Y_true-previous),axis=axis)
+                err1 = torch.mean(torch.abs(Y_true-full_predict1),axis=axis)/MAE_naiv
+                err2 = torch.mean(torch.abs(Y_true-full_predict2),axis=axis)/MAE_naiv
 
             if horizon_group == 'per':
                 gain_per_horizon = ((err2/err1 - 1)*100).numpy()
                 gain_per_horizon = [f'{val:.2f}' for val in gain_per_horizon]
-                gain_per_horizon = ' / '.join(gain_per_horizon)    
+                gain_per_horizon = ' / '.join(gain_per_horizon)   
+
+                err_per1 = err1.numpy()
+                err_per1 = [f'{val:.2f}' for val in err_per1]
+                err_per2 = err2.numpy()
+                err_per2 = [f'{val:.2f}' for val in err_per2]
+
             if horizon_group == 'all':
                 gain_all_horizon = ((err2.mean()/err1.mean() - 1)*100).numpy().item()
                 gain_all_horizon = f'{gain_all_horizon:.2f}'
-        print(f'Global {metric.upper()} gain (%) from Model2 compared to Model1 at horizon {horizon_list}: {gain_per_horizon} // All horizon : {gain_all_horizon}')
+
+                err_all1 = err1.mean().numpy().item()
+                err_all1 = f'{err_all1:.2f}'
+                err_all2 = err2.mean().numpy().item()
+                err_all2 = f'{err_all2:.2f}'
+
+
+        print(f'\nGlobal {metric.upper()} gain (%) from Model2 compared to Model1 at horizon {horizon_list}: {gain_per_horizon} // All horizon : {gain_all_horizon}')
+        print(f'Global {metric.upper()} error from Model1  at horizon {horizon_list}: {err_per1} // All horizon : {err_all1}')
+        print(f'Global {metric.upper()} error from Model2  at horizon {horizon_list}: {err_per2} // All horizon : {err_all2}')
 
 
 
