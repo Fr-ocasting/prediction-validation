@@ -246,7 +246,16 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                     ## Get the new added dimension: 
                     #    Case 2.i:   in case we compute node attributes with attention or in case 'per_station' is in the name of the contextual dataset:
                     if (kwargs_i['need_global_attn']) or ('per_station' in name_i): 
-                        latent_dim = kwargs_i['attn_kwargs']['latent_dim']
+                        if 'latent_dim' in kwargs_i['attn_kwargs'].keys() :
+                            latent_dim = kwargs_i['attn_kwargs']['latent_dim'] 
+                            
+                        # If Spatial Attention inspired from STAEformer: 
+                        else:
+                            latent_dim = (kwargs_i['attn_kwargs']['input_embedding_dim'] 
+                                        + kwargs_i['attn_kwargs']['adaptive_embedding_dim'] if 'adaptive_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0
+                                        + kwargs_i['attn_kwargs']['tod_embedding_dim'] if 'tod_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0
+                                        + kwargs_i['attn_kwargs']['dow_embedding_dim'] if 'dow_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0
+                            )
                     #     Case 2.ii:
                     else:
                         latent_dim = 1

@@ -350,7 +350,7 @@ class STAEformer(nn.Module):
                 contextual: Optional[list[Tensor]]= None,
                 ) -> Tensor:
         
-        # print('x shape before input_proj:', x.shape)
+        # print('\nx shape before input_proj:', x.shape)
 
         if x_calendar is None:
             raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
@@ -405,7 +405,7 @@ class STAEformer(nn.Module):
 
 
             x = torch.cat([x, features], dim=-1)
-            
+        
             # print('x size after adding all embeddings:', x.size())
 
 
@@ -447,7 +447,7 @@ class STAEformer(nn.Module):
 
 class MultiLayerCrossAttention(nn.Module):
     def __init__(
-        self, model_dim, feed_forward_dim=2048, num_heads=8,num_layers = 3, 
+        self, input_embedding_dim, feed_forward_dim=2048, num_heads=8,num_layers = 3, 
         dropout=0, 
         mask=False,
         steps_per_day = 288,
@@ -455,17 +455,18 @@ class MultiLayerCrossAttention(nn.Module):
         dow_embedding_dim=0,
         pos_tod = None,
         pos_dow = None,
-        in_steps = L,
+        in_steps = 7,
         Q_num_nodes = 40,
         KV_num_nodes = 13,
         init_adaptive_query_dim = 0 ,
         adaptive_embedding_dim = 0, 
     ):
         super().__init__()
-        self.contextual_proj = nn.Linear(1, model_dim)
+        self.contextual_proj = nn.Linear(1, input_embedding_dim)
+        self.model_dim = input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
         self.attn_layers = nn.ModuleList(
             [
-                SelfAttentionLayer(model_dim+tod_embedding_dim+dow_embedding_dim, feed_forward_dim, num_heads, dropout)
+                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
                 for _ in range(num_layers)
             ]
         )
@@ -473,8 +474,10 @@ class MultiLayerCrossAttention(nn.Module):
         self.dow_embedding_dim = dow_embedding_dim
         self.steps_per_day = steps_per_day
         self.in_steps = in_steps
-        self.num_nodes = num_nodes 
-        self.adaptive_query_dim = adaptive_query_dim
+        self.Q_num_nodes = Q_num_nodes 
+        self.KV_num_nodes = KV_num_nodes
+        self.init_adaptive_query_dim = init_adaptive_query_dim
+        self.adaptive_embedding_dim = adaptive_embedding_dim
         
         if self.tod_embedding_dim > 0:
             self.tod_embedding = nn.Embedding(self.steps_per_day, self.tod_embedding_dim)
@@ -488,16 +491,18 @@ class MultiLayerCrossAttention(nn.Module):
         else:
             self.dow_embedding = None
 
-        if self.init_adaptive_query_dim >0
+        # -- Query Initialization : choose between adaptive tensor or input x
+        if self.init_adaptive_query_dim >0:
             self.init_adaptive_query = nn.init.xavier_uniform_(
-                nn.Parameter(
-                    torch.empty(self.in_steps, self.Q_num_nodes, self.init_adaptive_query_dim))
+                nn.Parameter(torch.empty(self.in_steps, self.Q_num_nodes, self.init_adaptive_query_dim)))
             self.input_proj = None
  
         else:
-            self.adaptive_embedding = None
-            self.input_proj = nn.Linear(1, model_dim) 
+            self.init_adaptive_query = None
+            self.input_proj = nn.Linear(1, input_embedding_dim) 
+        # ----
 
+        # -- Adaptive Embedding for added to Query and Key,Value
         if adaptive_embedding_dim > 0:
             self.Q_adaptive_embedding = nn.init.xavier_uniform_(
                               nn.Parameter(torch.empty(self.in_steps, self.Q_num_nodes, adaptive_embedding_dim)))
@@ -506,6 +511,7 @@ class MultiLayerCrossAttention(nn.Module):
         else:
             self.Q_adaptive_embedding = None
             self.KV_adaptive_embedding = None
+        # ----
 
 
     def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = -2) -> Tensor:
@@ -513,8 +519,9 @@ class MultiLayerCrossAttention(nn.Module):
         batch_size = x.size(0)
 
         # Use Adapive Tensor as Query : 
-        if self.adaptive_embedding is not None:
-            query_init = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_query_dim))
+        if self.init_adaptive_query is not None:
+            # print('generate Query from adaptive tensor')
+            query_init = self.init_adaptive_query.expand(size=(batch_size, self.in_steps, self.Q_num_nodes, self.init_adaptive_query_dim))
         # ...
         
         # Use X as query : 
@@ -522,7 +529,8 @@ class MultiLayerCrossAttention(nn.Module):
             if x.dim()==3:
                 x = x.unsqueeze(-1)
                 x = self.input_proj(x)
-                query_init  = x.transpose(1,2)
+                x = x.transpose(1,2)  
+            query_init  = x
         # ...
 
         if x_contextual is not None and x_contextual.dim()==3:
@@ -554,11 +562,17 @@ class MultiLayerCrossAttention(nn.Module):
         if self.Q_adaptive_embedding is not None:
             Q_adp_emb = self.Q_adaptive_embedding.expand(size=(batch_size, self.in_steps, self.Q_num_nodes, self.adaptive_embedding_dim))
             KV_adp_emb = self.KV_adaptive_embedding.expand(size=(batch_size, self.in_steps, self.KV_num_nodes, self.adaptive_embedding_dim))
+            # print('Q_adp_emb,KV_adp_emb: ',Q_adp_emb.size(),KV_adp_emb.size())
             query = torch.cat([query, KV_adp_emb], dim=-1)
             x_contextual = torch.cat([x_contextual, KV_adp_emb], dim=-1)
+
+
         # ...
         
         for attn in self.attn_layers:
+            # print('\n--- Cross attention layer ---')
+            # print('query size before attn:', query.size())
+            # print('x_contextual size before attn:', x_contextual.size())
             query = attn(query, dim = dim,x_contextual = x_contextual)
         return query
 

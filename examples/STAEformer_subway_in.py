@@ -38,16 +38,40 @@ possible_contextual_kwargs = {
                                         'attn_kwargs': {},
                                                             },  
 
-                        'subway_in': {'emb_dim' : 48,
-                                      'spatial_proj' : False,
-                                      'need_global_attn':False, 
+                        # # SUBWAY-IN if Early Fusion without feature extraction : 
+                        # 'subway_in': {'emb_dim' : 48,
+                        #               'spatial_proj' : False,
+                        #               'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                                        
+                        #                 'attn_kwargs': {},
+                        #             }, 
+
+                        # # SUBWAY-IN if Late Fusion with feature extraction : 
+                        'subway_in': {
+                                      'need_global_attn':True, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         
-                                        'attn_kwargs': {},
-                                    }, 
+                                        'attn_kwargs': {'input_embedding_dim': 24, 
+                                                        'init_adaptive_query_dim' : 24,    # Do not use Target data as query 
+                                                        'adaptive_embedding_dim' : 24,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                                        'feed_forward_dim':128, 
+                                                        'num_heads':4,
+                                                        'num_layers':3,
+                                                        'mask':False,
+                                                        'keep_temporal_dim': True,
+                                                        'tod_embedding_dim' : 6,
+                                                        'dow_embedding_dim': 6,
+                                        },
+                        },
+                                                    
+                                            
 
                         # 'subway_in': {'need_global_attn':True, 
                         #                 'stacked_contextual': False,
@@ -74,8 +98,7 @@ possible_contextual_kwargs = {
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
                                             'concatenation_late': True, 
-                                            'model_dim': 48, 
-                                            'latent_dim':  48,# has to be = model_dim)
+                                            'input_embedding_dim': 48, 
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
                                             'num_layers':3,
@@ -92,8 +115,7 @@ possible_contextual_kwargs = {
                                         'threshold_volume_min': 1,
                                         'attn_kwargs': {
                                             'concatenation_late': True, 
-                                            'model_dim': 48, 
-                                            'latent_dim':  48,# has to be = model_dim)
+                                            'input_embedding_dim': 48, 
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
                                             'num_layers':3,
@@ -199,60 +221,157 @@ possible_contextual_kwargs = {
                             #                                 },
                             #         },
                     }
+subway_in_dict_config = {'LateFusion_AdpEmb24':{
+                                      'need_global_attn':True, 
+                                    'stacked_contextual': False,
+                                    'vision_model_name' : None,
+                                    'use_only_for_common_dates': False,
+                                    'quantile_filter_outliers': 0.99 ,
+                                    
+                                    'attn_kwargs': {'input_embedding_dim': 24, 
+                                                    'concatenation_late': True,
+                                                    'init_adaptive_query_dim' : 0,    # Do not use Target data as query 
+                                                    'adaptive_embedding_dim' : 24,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                                    'feed_forward_dim':128, 
+                                                    'num_heads':4,
+                                                    'num_layers':3,
+                                                    'mask':False,
+                                                    'keep_temporal_dim': True,
+                                                    'tod_embedding_dim' : 6,
+                                                    'dow_embedding_dim': 6,
+                                        },
+                        },
 
+                        'LateFusion_QueryAdp48_AdpEmb32': {
+                                                            'need_global_attn':True, 
+                                                            'stacked_contextual': False,
+                                                            'vision_model_name' : None,
+                                                            'use_only_for_common_dates': False,
+                                                            'quantile_filter_outliers': 0.99 ,
+                                                            
+                                                            'attn_kwargs': {'input_embedding_dim': 48,
+                                                                            'concatenation_late': True, 
+                                                                            'init_adaptive_query_dim' : 48,    # Do not use Target data as query 
+                                                                            'adaptive_embedding_dim' : 32,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                                                            'feed_forward_dim':128, 
+                                                                            'num_heads':4,
+                                                                            'num_layers':3,
+                                                                            'mask':False,
+                                                                            'keep_temporal_dim': True,
+                                                                            'tod_embedding_dim' : 6,
+                                                                            'dow_embedding_dim': 6,
+                                                                },
+                                                },
+                        'LateFusion_QueryAdp24_AdpEmb24':{
+                                                            'need_global_attn':True, 
+                                                            'stacked_contextual': False,
+                                                            'vision_model_name' : None,
+                                                            'use_only_for_common_dates': False,
+                                                            'quantile_filter_outliers': 0.99 ,
+                                                            
+                                                            'attn_kwargs': {'input_embedding_dim': 24,
+                                                                            'concatenation_late': True, 
+                                                                            'init_adaptive_query_dim' : 24,    # Do not use Target data as query 
+                                                                            'adaptive_embedding_dim' : 24,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                                                            'feed_forward_dim':128, 
+                                                                            'num_heads':4,
+                                                                            'num_layers':3,
+                                                                            'mask':False,
+                                                                            'keep_temporal_dim': True,
+                                                                            'tod_embedding_dim' : 6,
+                                                                            'dow_embedding_dim': 6,
+                                                                },
+                                                },
+                        'LateFusion_QueryAdp24':{
+                                                'need_global_attn':True, 
+                                                'stacked_contextual': False,
+                                                'vision_model_name' : None,
+                                                'use_only_for_common_dates': False,
+                                                'quantile_filter_outliers': 0.99 ,
+                                                
+                                                'attn_kwargs': {'input_embedding_dim': 24, 
+                                                                'concatenation_late': True,
+                                                                'init_adaptive_query_dim' : 24,    # Do not use Target data as query 
+                                                                'adaptive_embedding_dim' : 0,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                                                'feed_forward_dim':128, 
+                                                                'num_heads':4,
+                                                                'num_layers':3,
+                                                                'mask':False,
+                                                                'keep_temporal_dim': True,
+                                                                'tod_embedding_dim' : 6,
+                                                                'dow_embedding_dim': 6,
+                                                                },
+                                                },
+                        'EarlyFusion':  {'emb_dim' : 48,
+                                        'spatial_proj' : False,
+                                        'need_global_attn':False, 
+                                        'stacked_contextual': False,
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False,
+                                        'quantile_filter_outliers': 0.99 ,
+                                        'attn_kwargs': {},
+                                    }, 
+                        }
 
 modifications = {}
-for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
-    # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
-    # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [['subway_in','bike_in'],['subway_in','bike_in','bike_out']]: #[['subway_in'],[],['bike_in','subway_in'],['bike_out','subway_in'],['bike_in','bike_out','subway_in']]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
-        # for horizon in [1,2,3,4]:
-        for horizon in [1,4]:
-            for n_bis in range(1,6): # range(1,6):
-                dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-                # name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
-                # name_i = f"{'_'.join(dataset_names)}_CalendarAttnSTAEformerH4L3D24FF128_e100_h{horizon}_bis{n_bis}"
-                name_i = f"{'_'.join(dataset_names)}_StackSubwayInChannelAsInput_ConcatLateBikeCalendarAttnSTAEformerH4L3D48FF256_e100_h{horizon}_bis{n_bis}"
-                config_i =  {'target_data': target_data,
-                                'dataset_names': dataset_names,
-                                'dataset_for_coverage': ['subway_in'],
-                                'calendar_types':['dayofweek', 'timeofday'],
+for subway_in_method in ['LateFusion_QueryAdp48_AdpEmb32','LateFusion_QueryAdp24_AdpEmb24','LateFusion_AdpEmb24','LateFusion_QueryAdp24','EarlyFusion']:
+    for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
+        # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
+        # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
+        # for contextual_dataset_names in [['subway_in','bike_in'],['subway_in','bike_in','bike_out']]: #[['subway_in'],[],['bike_in','subway_in'],['bike_out','subway_in'],['bike_in','bike_out','subway_in']]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
+        for contextual_dataset_names in [['subway_in']]:
+            if 'subway_in' in contextual_dataset_names:
+                possible_contextual_kwargs['subway_in'] = subway_in_dict_config[subway_in_method]
+            # for horizon in [1,2,3,4]:
+            for horizon in [4]:
+                for n_bis in range(1,6): # range(1,6):
+                    dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
+                    name_i = f"{'_'.join(dataset_names)}"
+                    name_i_end = f"_e100_h{horizon}_bis{n_bis}"
+                    if 'subway_in' in contextual_dataset_names:
+                        name_i = f"{name_i}_{subway_in_method}"
+                    name_i = f"{name_i}_{name_i_end}"
 
-                                'input_embedding_dim': 48, # 24
-                                'adaptive_embedding_dim': 32,
-                                'tod_embedding_dim': 6,
-                                'dow_embedding_dim': 6,
-                                'feed_forward_dim': 256,
-                                'num_heads': 4,
-                                'num_layers': 3,
+                    config_i =  {'target_data': target_data,
+                                    'dataset_names': dataset_names,
+                                    'dataset_for_coverage': ['subway_in'],
+                                    'calendar_types':['dayofweek', 'timeofday'],
 
-                                'use_mixed_proj': True,
-                                'freq': '15min',
-                                'H':6,
-                                'D':1,
-                                'W':0,
+                                    'input_embedding_dim': 48, # 24
+                                    'adaptive_embedding_dim': 32,
+                                    'tod_embedding_dim': 6,
+                                    'dow_embedding_dim': 6,
+                                    'feed_forward_dim': 256,
+                                    'num_heads': 4,
+                                    'num_layers': 3,
 
-                                'lr': 0.001,
-                                'weight_decay':  0.0015,
-                                'dropout': 0.2,
-                                'torch_scheduler_milestone': 20,
-                                'torch_scheduler_gamma':0.9925,
-                                'torch_scheduler_type': 'warmup',
-                                'torch_scheduler_lr_start_factor': 0.3,
-                                'standardize': False,
-                                'minmaxnorm': True,
-                                'batch_size': 128,
-                                'epochs':100,
+                                    'use_mixed_proj': True,
+                                    'freq': '15min',
+                                    'H':6,
+                                    'D':1,
+                                    'W':0,
 
-                                'horizon_step': horizon,
-                                'step_ahead': horizon,
+                                    'lr': 0.001,
+                                    'weight_decay':  0.0015,
+                                    'dropout': 0.2,
+                                    'torch_scheduler_milestone': 20,
+                                    'torch_scheduler_gamma':0.9925,
+                                    'torch_scheduler_type': 'warmup',
+                                    'torch_scheduler_lr_start_factor': 0.3,
+                                    'standardize': False,
+                                    'minmaxnorm': True,
+                                    'batch_size': 128,
+                                    'epochs':100,
 
-                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
-                                'denoising_names':[],
-                                }  
+                                    'horizon_step': horizon,
+                                    'step_ahead': horizon,
 
-                modifications[name_i] = config_i
+                                    'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                                    'contextual_kwargs' : {ds_name:possible_contextual_kwargs[ds_name] for ds_name in contextual_dataset_names },  
+                                    'denoising_names':[],
+                                    }  
+
+                    modifications[name_i] = config_i
 
 
 if __name__ == "__main__":
