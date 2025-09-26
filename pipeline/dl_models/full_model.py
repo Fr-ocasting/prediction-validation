@@ -64,10 +64,14 @@ def load_spatial_attn_model(args,ds_name,query_dim,key_dim,output_temporal_dim =
     args_ds_i = {'steps_per_day' : 24*args.time_step_per_hour,
                     'pos_tod' : args.contextual_positions.get("calendar_timeofday", None),
                     'pos_dow' : args.contextual_positions.get("calendar_dayofweek", None),
+                    'in_steps': args.L,
+                    'Q_num_nodes': args.num_nodes,
+                    'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit']
                     }
     args_ds_i = Namespace(**args_ds_i)
     for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
         setattr(args_ds_i,key,value)
+
 
     importlib.reload(script)
     # func = script.model

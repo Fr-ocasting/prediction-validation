@@ -119,6 +119,8 @@ possible_contextual_kwargs = {
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
+                                            'init_adaptive_query_dim' = 24,
+                                            'adaptive_embedding_dim' = 24,
                                             'latent_dim':  24,# has to be = output_model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
@@ -137,6 +139,8 @@ possible_contextual_kwargs = {
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
+                                            'init_adaptive_query_dim' = 24,    # Do not use Target data as query 
+                                            'adaptive_embedding_dim' = 24,     # Add two separate adaptive Embedding within Query and Key/Values.
                                             'latent_dim':  24,# has to be = model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
