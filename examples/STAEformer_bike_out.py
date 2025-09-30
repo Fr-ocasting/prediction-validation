@@ -119,8 +119,8 @@ possible_contextual_kwargs = {
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
-                                            'init_adaptive_query_dim' = 24,
-                                            'adaptive_embedding_dim' = 24,
+                                            'init_adaptive_query_dim' : 24,
+                                            'adaptive_embedding_dim' : 24,
                                             'latent_dim':  24,# has to be = output_model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
@@ -139,8 +139,8 @@ possible_contextual_kwargs = {
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
                                             'model_dim': 24, 
-                                            'init_adaptive_query_dim' = 24,    # Do not use Target data as query 
-                                            'adaptive_embedding_dim' = 24,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                            'init_adaptive_query_dim' : 24,    # Do not use Target data as query 
+                                            'adaptive_embedding_dim' : 24,     # Add two separate adaptive Embedding within Query and Key/Values.
                                             'latent_dim':  24,# has to be = model_dim)
                                             'feed_forward_dim':128, 
                                             'num_heads':4,
@@ -199,10 +199,10 @@ modifications = {}
 for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
-    for contextual_dataset_names in [[],['bike_out'],['subway_out'],['subway_in']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
+    for contextual_dataset_names in  [[]]: # [[],['bike_out'],['subway_out'],['subway_in']]: #[['subway_in','subway_out','weather'],['subway_in','subway_out'],['subway_in'],['subway_out'],['subway_in','weather'],['subway_out','weather'],[]]:  # ['subway_in'],['weather','subway_in'],[],['weather'],
         # for horizon in [1,2,3,4]:
-        for horizon in [1]: #[1,2]:
-            for n_bis in range(1,2): # range(1,6): # range(1,6):
+        for horizon in [1,4]: #[1,2]:
+            for n_bis in range(1,3): # range(1,6): # range(1,6):
                 dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                 if ('subway_in' in contextual_dataset_names) or ('subway_out' in contextual_dataset_names):
                     if 'weather' in contextual_dataset_names:
@@ -221,7 +221,7 @@ for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
 
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
-                                'dataset_for_coverage': ['subway_in'],
+                                'dataset_for_coverage': ['subway_in','netmob_POIs'],
                                 'calendar_types':['dayofweek', 'timeofday'],
 
                                 'input_embedding_dim': 48, # 24
@@ -233,7 +233,7 @@ for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
                                 'num_layers': 3,
 
                                 'use_mixed_proj': True,
-                                'freq': '1H',
+                                'freq': '15min',
                                 'H':6,
                                 'D':1,
                                 'W':0,
@@ -280,7 +280,7 @@ if __name__ == "__main__":
                                 'prefetch_factor' : 4, # None, 2,3,4,5 ... 
                                 'drop_last' : False,  # True
                                 'mixed_precision' : False, # True # False
-                                'torch_compile' :  False, # 'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
+                                'torch_compile' :  'compile', # False, # 'compile',# 'compile',# 'compile', #'compile' # 'jit_script' #'trace' # False
                                 'loss_function_type':'HuberLoss',
                                 'optimizer': 'adamw',
                                 'unormalize_loss' : True,
@@ -291,7 +291,7 @@ if __name__ == "__main__":
     
 
     log_final  = f"\n--------- Resume ---------\n"
-    subfolder = f'{target_data}_{model_name}'
+    subfolder = f'{target_data}_{model_name}_netmob_coverage'
     for trial_id,modification_i in modifications.items():
         print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
         config = modification_init.copy()

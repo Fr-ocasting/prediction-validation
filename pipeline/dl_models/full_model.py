@@ -442,6 +442,8 @@ class full_model(nn.Module):
         # Get calendar input for STAEformer:
         if (self.te is None) and (len(self.pos_calendar)>0):
             x_calendar = torch.stack([contextual[pos]for _,pos in self.pos_calendar.items()],-1)
+        else:
+            x_calendar = None
 
         # print('\nx before stacking new channels:',x.size())
         # print('Contextual size : ',[c_i.size() for c_i in contextual])

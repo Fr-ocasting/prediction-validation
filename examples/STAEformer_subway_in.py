@@ -314,20 +314,21 @@ subway_in_dict_config = {'LateFusion_AdpEmb24':{
                         }
 
 modifications = {}
-for subway_in_method in ['LateFusion_QueryAdp48_AdpEmb32','LateFusion_QueryAdp24_AdpEmb24','LateFusion_AdpEmb24','LateFusion_QueryAdp24','EarlyFusion']:
-    for target_data in ['subway_out']: # ['subway_in']: # ['subway_out']:
+# for subway_in_method in ['LateFusion_QueryAdp48_AdpEmb32','LateFusion_QueryAdp24_AdpEmb24','LateFusion_AdpEmb24','LateFusion_QueryAdp24','EarlyFusion']:
+for k in [1]:
+    for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
         # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
         # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
         # for contextual_dataset_names in [['subway_in','bike_in'],['subway_in','bike_in','bike_out']]: #[['subway_in'],[],['bike_in','subway_in'],['bike_out','subway_in'],['bike_in','bike_out','subway_in']]: # ['bike_out','subway_in'],['bike_out','subway_out'],[],['subway_out'],['bike_out']]:
-        for contextual_dataset_names in [['subway_in']]:
+        for contextual_dataset_names in [[]]: # [['subway_in']]:
             if 'subway_in' in contextual_dataset_names:
                 possible_contextual_kwargs['subway_in'] = subway_in_dict_config[subway_in_method]
             # for horizon in [1,2,3,4]:
-            for horizon in [4]:
-                for n_bis in range(1,6): # range(1,6):
+            for horizon in [1,4]:
+                for n_bis in range(1,3): # range(1,6):
                     dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                     name_i = f"{'_'.join(dataset_names)}"
-                    name_i_end = f"_e100_h{horizon}_bis{n_bis}"
+                    name_i_end = f"_e200_h{horizon}_bis{n_bis}"
                     if 'subway_in' in contextual_dataset_names:
                         name_i = f"{name_i}_{subway_in_method}"
                     name_i = f"{name_i}_{name_i_end}"
@@ -361,7 +362,7 @@ for subway_in_method in ['LateFusion_QueryAdp48_AdpEmb32','LateFusion_QueryAdp24
                                     'standardize': False,
                                     'minmaxnorm': True,
                                     'batch_size': 128,
-                                    'epochs':100,
+                                    'epochs':200,
 
                                     'horizon_step': horizon,
                                     'step_ahead': horizon,
@@ -376,7 +377,7 @@ for subway_in_method in ['LateFusion_QueryAdp48_AdpEmb32','LateFusion_QueryAdp24
 
 if __name__ == "__main__":
 
-    target_data = 'subway_out' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+    target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     model_name = 'STAEformer'
     loger = LOG()
 

@@ -24,83 +24,176 @@ from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
 
 
-possible_target_kwargs = {'subway_out': {'quantile_filter_outliers': 0.99  },  
-                        'subway_in': { 'quantile_filter_outliers': 0.99 }, 
-                                    }
 
-possible_contextual_kwargs = {'subway_out': {'need_global_attn':True, 
-                                            'stacked_contextual': False,
-                                            'vision_model_name' : None,
-                                            'use_only_for_common_dates': False,
-                                            'quantile_filter_outliers': 0.99 ,
+possible_target_kwargs = {
+    'subway_out': {'quantile_filter_outliers': 0.99  },  
+     'subway_in': { 'quantile_filter_outliers': 0.99 }, 
+     'bike_out': {'agg_iris_target_n':100,
+                  'threshold_volume_min': 1},
+     'bike_in': {'agg_iris_target_n':100,
+                  'threshold_volume_min': 1},
+      }
+
+
+possible_contextual_kwargs = {
+                        # 'subway_out': {'emb_dim' : 12,
+                        #                'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                        #                 'attn_kwargs': {},
+                        #                                     },  
+
+                        # 'subway_in': {'emb_dim' : 12,
+                        #               'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                                        
+                        #                 'attn_kwargs': {},
+                        #             }, 
+
+                        # 'bike_in':{'emb_dim' : 12,
+                        #                  'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 'attn_kwargs': {},
+                        #             },
+                        # 'bike_out':{'emb_dim' : 12,
+                        #                  'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                  'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 'attn_kwargs': {},
+                        #             },
+
+                        # 'subway_out': {'need_global_attn':True, 
+                        #                     'stacked_contextual': False,
+                        #                     'vision_model_name' : None,
+                        #                     'use_only_for_common_dates': False,
+                        #                     'quantile_filter_outliers': 0.99 ,
                                             
-                                            'attn_kwargs': {
-                                                            'dim_feedforward' : 128,
-                                                            'num_heads' : 1,
-                                                            'dim_model' : 32,
-                                                            'nb_layers': 1,
-                                                            'latent_dim': 32,
-                                                                },
+                        #                     'attn_kwargs': {
+                        #                                     'dim_feedforward' : 128,
+                        #                                     'num_heads' : 1,
+                        #                                     'dim_model' : 32,
+                        #                                     'nb_layers': 1,
+                        #                                     'latent_dim': 32,
+                        #                                     'keep_temporal_dim': True,  # If True : Garde la dimension temporelle pour l'attention
+                        #                                         },
+                        #                                     },  
+                        # 'subway_out': {'need_global_attn':False, 
+                        #                     'stacked_contextual': True,
+                        #                     'vision_model_name' : None,
+                        #                     'use_only_for_common_dates': False,
+                        #                     'quantile_filter_outliers': 0.99 ,
+                        #                     'attn_kwargs': {},
+                        #                                     },  
+
+                        'weather': {'emb_dim' : 6,
+                                       'need_global_attn':False, 
+                                        'stacked_contextual': False,
+                                        'vision_model_name' : None,
+                                        'use_only_for_common_dates': False,
+                                        'quantile_filter_outliers': 0.99 ,
+                                        'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                                        'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+                                        'attn_kwargs': {},
                                                             },  
 
-                            'subway_in': {'need_global_attn':True, 
+                        # 'subway_in': {'emb_dim' : 24,
+                        #               'need_global_attn':False, 
+                        #                 'stacked_contextual': False,
+                        #                 'vision_model_name' : None,
+                        #                 'use_only_for_common_dates': False,
+                        #                 'quantile_filter_outliers': 0.99 ,
+                                        
+                        #                 'attn_kwargs': {},
+                        #             }, 
+                        'subway_in': {'need_global_attn':True, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers': 0.99 ,
                                         'attn_kwargs': {
-                                                        'dim_feedforward' : 128,
-                                                        'num_heads' : 1,
-                                                        'dim_model' : 32,
-                                                        'nb_layers': 1,
-                                                        'latent_dim': 32,
-                                                            },
+                                            'model_dim': 24, 
+                                            'init_adaptive_query_dim' : 24,
+                                            'adaptive_embedding_dim' : 24,
+                                            'latent_dim':  24,# has to be = output_model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
+                                            },
                                     }, 
 
-                            'bike_in':{'need_global_attn':True, 
-                                        'stacked_contextual': False,
-                                        'agg_iris_target_n':50,
-                                        'threshold_volume_min': 1,
-                                       'quantile_filter_outliers': 0.99,
-                                        'attn_kwargs': {
-                                                        'dim_feedforward' : 128,
-                                                        'num_heads' : 1,
-                                                        'dim_model' : 32,
-                                                        'nb_layers': 1,
-                                                        'latent_dim': 32,
-                                                            },
-                                    },
-                                    
-                            'bike_out':{'need_global_attn':True, 
-                                        'stacked_contextual': False,
-                                         'agg_iris_target_n':50,
-                                        'threshold_volume_min': 1,
-                                         'quantile_filter_outliers': 0.99,
-                                        'attn_kwargs': {
-                                                        'dim_feedforward' : 128,
-                                                        'num_heads' : 1,
-                                                        'dim_model' : 32,
-                                                        'nb_layers': 1,
-                                                        'latent_dim': 32,
-                                                            },
-                                    },
-                            'weather': {'need_global_attn':True, 
+                        'subway_out': {'need_global_attn':True, 
                                         'stacked_contextual': False,
                                         'vision_model_name' : None,
                                         'use_only_for_common_dates': False,
-                                        'quantile_filter_outliers': 0.995 ,
-                                        
-                                        'attn_kwargs': {'dim_feedforward' : 64,
-                                                        'num_heads' : 1,
-                                                        'dim_model' : 32,
-                                                        'nb_layers': 1,
-                                                        'latent_dim': 32,
-                                                        'attn_late' : False,     # Attention entre le sortie des STblocks et les données NetMob Raw
-                                                        'keep_temporal_dim': False,  # If True : Garde la dimension temporelle pour l'attention
+                                        'quantile_filter_outliers': 0.99 ,
+                                        'attn_kwargs': {
+                                            'model_dim': 24, 
+                                            'init_adaptive_query_dim' : 24,    # Do not use Target data as query 
+                                            'adaptive_embedding_dim' : 24,     # Add two separate adaptive Embedding within Query and Key/Values.
+                                            'latent_dim':  24,# has to be = model_dim)
+                                            'feed_forward_dim':128, 
+                                            'num_heads':4,
+                                            'num_layers':3,
+                                            'mask':False,
+                                            'keep_temporal_dim': True,
+                                             'tod_embedding_dim' : 6,
+                                             'dow_embedding_dim': 6,
                                                             },
-                                    },         
-                    }
+                                    }, 
 
+                        # 'bike_in':{'need_global_attn':True, 
+                        #                 'stacked_contextual': False,
+                        #                 'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #             #    'quantile_filter_outliers': 0.99,
+                        #                 'attn_kwargs': {
+                        #                                 'dim_feedforward' : 128,
+                        #                                 'num_heads' : 1,
+                        #                                 'dim_model' : 32,
+                        #                                 'nb_layers': 1,
+                        #                                 'latent_dim': 32,
+                        #                                     },
+                        #             },
+                        # 'bike_out':{'need_global_attn':True, 
+                        #                 'stacked_contextual': False,
+                        #                  'agg_iris_target_n':50,
+                        #                 'threshold_volume_min': 1,
+                        #                 #  'quantile_filter_outliers': 0.99,
+                        #                 'attn_kwargs': {
+                        #                                 'dim_feedforward' : 128,
+                        #                                 'num_heads' : 4,
+                        #                                 'dim_model' : 32,
+                        #                                 'nb_layers': 3,
+                        #                                 'latent_dim': 24,
+                        #                                 'keep_temporal_dim': True, 
+                        #                                     },
+                        #             },
+                            # 'bike_out':{'need_global_attn':True, 
+                            #             'stacked_contextual': False,
+                            #              'agg_iris_target_n':50,
+                            #             'threshold_volume_min': 1,
+                            #              'quantile_filter_outliers': 0.99,
+                            #             'attn_kwargs': {
+                            #                             'dim_feedforward' : 128,
+                            #                             'num_heads' : 1,
+                            #                             'dim_model' : 32,
+                            #                             'nb_layers': 1,
+                            #                             'latent_dim': 32,
+                            #                                 },
+                            #         },
+                    }
 
 modifications = {}
 
@@ -172,7 +265,7 @@ modifications = {}
 #                 modifications[name_i] = config_i
 
 
-for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
+for target_data in ['bike_out']: # ['subway_in']: # ['subway_out']:
     # for contextual_dataset_names in [['subway_in','bike_in','bike_out'],['subway_in','bike_out']]: #[ ['subway_in','bike_in'],['subway_in'],['bike_in'],[],['bike_in','bike_out'] ]:
     # for contextual_dataset_names in [['subway_out','bike_in','bike_out'],['subway_out','bike_out'], ['subway_out','bike_in'],['subway_out'],['bike_in'],['bike_out'],['bike_in','bike_out'] ]:
     for contextual_dataset_names in [[]]:  # 'weather'
@@ -184,7 +277,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
                 name_i = f"{'_'.join(dataset_names)}_h{horizon}_bis{n_bis}"
                 config_i =  {'target_data': target_data,
                                 'dataset_names': dataset_names,
-                                'dataset_for_coverage': ['subway_in'],
+                                'dataset_for_coverage': ['subway_in','netmob_POIs'],
                                 'embedding_calendar_types': ['dayofweek', 'hour'],
 
 
@@ -240,7 +333,7 @@ for target_data in ['subway_in']: # ['subway_in']: # ['subway_out']:
 
 if __name__ == "__main__":
 
-    target_data = 'subway_in' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
+    target_data = 'bike_out' # 'PeMS08_flow' # 'CRITER_3_4_5_lanes_flow' #'subway_in'  # PeMS03 # PeMS04 # PeMS07 # PeMS08 # METR_LA # criter
     model_name = 'STGCN'
     loger = LOG()
 
