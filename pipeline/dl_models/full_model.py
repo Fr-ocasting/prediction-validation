@@ -48,37 +48,98 @@ import importlib
 #     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,ds_name,query_dim,key_dim,output_temporal_dim = None,stack_consistent_datasets = False):
-    # script = importlib.import_module(f"pipeline.dl_models.SpatialAttn.SpatialAttn")
-    # scrip_args = importlib.import_module(f"pipeline.dl_models.SpatialAttn.load_config")
-    # scrip_args = importlib.import_module(f"pipeline.dl_models.STAEformer.load_config")
-    # importlib.reload(scrip_args)
-    # args_ds_i = scrip_args.args
-    # args_ds_i.dropout = args.dropout
-    # args_ds_i.query_dim = query_dim  # input dim of Query 
-    # args_ds_i.key_dim = key_dim  # input dim of Key 
-    # args_ds_i.output_temporal_dim = output_temporal_dim 
-    # args_ds_i.stack_consistent_datasets = stack_consistent_datasets
-    
-    script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
-    args_ds_i = {'steps_per_day' : 24*args.time_step_per_hour,
-                    'pos_tod' : args.contextual_positions.get("calendar_timeofday", None),
-                    'pos_dow' : args.contextual_positions.get("calendar_dayofweek", None),
-                    'in_steps': args.L,
-                    'Q_num_nodes': args.num_nodes,
-                    'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit']
+def load_spatial_attn_model(args,ds_name):
+    # ---- If feature extractor is a simple temporal projection (Linear layer) :
+    if ('attn_kwargs' in args.contextual_kwargs[ds_name].keys())  and ('simple_embedding_dim' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()) and (args.contextual_kwargs[ds_name]['attn_kwargs']['simple_embedding_dim']>0):
+        class simple_t_embedding(nn.Module):
+            def __init__(self, embedding_dim):
+                super(simple_t_embedding,self).__init__()
+                self.linear = nn.Linear(1,embedding_dim)
+
+            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = None) -> Tensor:
+                # print('\nStart simple temporal embedding')
+                # print('   x_contextual size before embedding: ',x_contextual.size())
+                if x_contextual.dim()==3:
+                    x_contextual = x_contextual.unsqueeze(-1)
+                x_contextual = self.linear(x_contextual)
+                x_contextual  = x_contextual.transpose(1,2) 
+                # print('   x_contextual size after unsqueeze, embedding and transpose: ',x_contextual.size())
+                return x_contextual
+            
+        return simple_t_embedding(args.contextual_kwargs[ds_name]['attn_kwargs']['simple_embedding_dim'])
+    #  ------------------------------------------------
+
+
+
+    # --- If feature extractor if Backbone model STAEformer : 
+    elif ('backbone_model' in args.contextual_kwargs[ds_name].keys()) and (args.contextual_kwargs[ds_name]['backbone_model']):
+        script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
+        added_dim_input, _, _, _ = get_added_dim(args)
+        args_ds_i = {
+            'num_nodes' : args.num_nodes,
+            'L' : args.L,
+            'time_step_per_hour': args.time_step_per_hour,
+            'time_step_per_hour': args.time_step_per_hour,
+            'C': args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1,
+            'out_dim_factor': args.out_dim_factor,
+            'dropout': args.dropout,
+            'use_mixed_proj': True,
+            'contextual_positions': args.contextual_positions,
+            'horizon_step': args.horizon_step,
+            'added_dim_input': added_dim_input,
+            'contextual_kwargs': args.contextual_kwargs,
                     }
-    args_ds_i = Namespace(**args_ds_i)
-    for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
-        setattr(args_ds_i,key,value)
+        args_ds_i = Namespace(**args_ds_i)
+        for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
+                setattr(args_ds_i,key,value)
+
+        importlib.reload(script)
+        func = script.backbone_model
+        filered_args = filter_args(func, args_ds_i)
+        backbone_model = func(**filered_args)
+
+        class wrapper_backbone_model(nn.Module):
+            def __init__(self,model):
+                super(wrapper_backbone_model,self).__init__()
+                self.model = model
+
+            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = None) -> Tensor:
+                # print('\nStart backbone model')
+                # print('   x_contextual size before backbone model: ',x_contextual.size())
+                if x_contextual.dim()==3:
+                    x_contextual = x_contextual.unsqueeze(1)
+                x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar)
+                # print('   x_contextual size after backbone model and transpose: ',x_contextual.size())
+                return x_contextual
+        return wrapper_backbone_model(backbone_model)
+    #  ------------------------------------------------
+
+    # ---- If feature extractor is our own spatial-attn module : 
+    elif ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and len(args.contextual_kwargs[ds_name]['attn_kwargs']) > 0:
+        script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
+        args_ds_i = {'steps_per_day' : 24*args.time_step_per_hour,
+                        'pos_tod' : args.contextual_positions.get("calendar_timeofday", None),
+                        'pos_dow' : args.contextual_positions.get("calendar_dayofweek", None),
+                        'in_steps': args.L,
+                        'Q_num_nodes': args.num_nodes,
+                        'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit'],
+                        'dropout': args.dropout,
+                        }
+        args_ds_i = Namespace(**args_ds_i)
+        for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
+            setattr(args_ds_i,key,value)
 
 
-    importlib.reload(script)
-    # func = script.model
-    func = script.MultiLayerCrossAttention
-    filered_args = filter_args(func, args_ds_i)
+        importlib.reload(script)
+        # func = script.model
+        func = script.MultiLayerCrossAttention
+        filered_args = filter_args(func, args_ds_i)
 
-    return func(**filered_args)   
+        return func(**filered_args)   
+    #  ------------------------------------------------
+
+    else:
+        raise NotImplementedError(f"Dataset {ds_name} has not been implemented for spatial selection / spatial attention")
 
 class full_model(nn.Module):
     
@@ -238,7 +299,7 @@ class full_model(nn.Module):
             if ('netmob' in ds_name) or ('subway_out' in ds_name):
                 init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))] # range(len(self.contextual_positions[ds_name]))
                 self.spatial_attn_per_station[ds_name] = nn.ModuleList([
-                    load_spatial_attn_model(args,ds_name, query_dim=1, key_dim=init_spatial_dim)
+                    load_spatial_attn_model(args,ds_name)
                     for init_spatial_dim in init_spatial_dims
                 ])
             else:
@@ -251,8 +312,8 @@ class full_model(nn.Module):
             #     L_out = None
             # condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
             self.global_s_attn[ds_name] = load_spatial_attn_model(args,ds_name, 
-                                                                     query_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L, 
-                                                                     key_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L,
+                                                                    #  query_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L, 
+                                                                    #  key_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L,
                                                                     #  output_temporal_dim = L_out,
                                                                     #  stack_consistent_datasets = args.contextual_kwargs[ds_name]['stack_consistent_datasets'] if condition_i else False
                                                                      )
@@ -503,10 +564,8 @@ def reshaping(x,B):
         x = x.unsqueeze(-1) 
     return x
 
-def load_model(dataset, args):
-    # --- Init added_dim_output and added_dim_input
-    vision_concatenation_late = False
-    vision_out_dim = None
+
+def get_added_dim(args):
     added_dim_input = 0 
     added_dim_output = 0 
     # ---
@@ -516,20 +575,23 @@ def load_model(dataset, args):
             if 'concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']:
                 added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
 
-                if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
-                if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
+                # if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                #     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
+                # if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                #     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
+                # if 'adaptive_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                #     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['adaptive_embedding_dim']
 
             # If concatenation early : 
             else:
-                added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
+                added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']  
 
-                if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                    added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
-                if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                    added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
-
+                # if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
+                # if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
+                # if 'adaptive_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
+                #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['adaptive_embedding_dim']
 
                 
         else:
@@ -545,6 +607,15 @@ def load_model(dataset, args):
     else:
         TE_concatenation_late = False
         TE_embedding_dim = None
+    return added_dim_input, added_dim_output, TE_concatenation_late, TE_embedding_dim
+
+
+def load_model(dataset, args):
+    # --- Init added_dim_output and added_dim_input
+    vision_concatenation_late = False
+    vision_out_dim = None
+    added_dim_input, added_dim_output, TE_concatenation_late, TE_embedding_dim = get_added_dim(args)
+
 
     if args.model_name == 'STAEformer':
         args.added_dim_output = added_dim_output

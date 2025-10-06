@@ -250,12 +250,15 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                             latent_dim = kwargs_i['attn_kwargs']['latent_dim'] 
                             
                         # If Spatial Attention inspired from STAEformer: 
+                        elif 'simple_embedding_dim' in kwargs_i['attn_kwargs'].keys() and (kwargs_i['attn_kwargs']['simple_embedding_dim'] > 0):
+                            latent_dim = kwargs_i['attn_kwargs']['simple_embedding_dim']
                         else:
                             latent_dim = (kwargs_i['attn_kwargs']['input_embedding_dim'] 
-                                        + kwargs_i['attn_kwargs']['adaptive_embedding_dim'] if 'adaptive_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0
-                                        + kwargs_i['attn_kwargs']['tod_embedding_dim'] if 'tod_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0
-                                        + kwargs_i['attn_kwargs']['dow_embedding_dim'] if 'dow_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0
+                                        + (kwargs_i['attn_kwargs']['adaptive_embedding_dim'] if 'adaptive_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
+                                        + (kwargs_i['attn_kwargs']['tod_embedding_dim'] if 'tod_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
+                                        + (kwargs_i['attn_kwargs']['dow_embedding_dim'] if 'dow_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
                             )
+                      
                     #     Case 2.ii:
                     else:
                         latent_dim = 1

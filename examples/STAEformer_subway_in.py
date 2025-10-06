@@ -404,7 +404,7 @@ if __name__ == "__main__":
         }
     
 
-    log_final  = f"\n--------- Resume ---------\n"
+
     subfolder = f'{target_data}_{model_name}'
     for trial_id,modification_i in modifications.items():
         print('\n>>>>>>>>>>>> TRIAL ID:',trial_id)
