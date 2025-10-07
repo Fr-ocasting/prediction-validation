@@ -348,7 +348,8 @@ class OutputBlock(nn.Module):
                  concatenation_late,extracted_feature_dim,
                  TE_concatenation_late,embedding_dim,temporal_graph_transformer_encoder,
                  TGE_num_layers=None, TGE_num_heads=None,TGE_FC_hdim=None,
-                 ModuleContextualAttnLate = nn.ModuleDict(),dict_ds_which_need_attn_late2pos = {},attn_late_dim = 0
+                 ModuleContextualAttnLate = nn.ModuleDict(),dict_ds_which_need_attn_late2pos = {},attn_late_dim = 0,
+                 added_dim_output = 0
                  ):
         super(OutputBlock, self).__init__()
 
@@ -384,6 +385,8 @@ class OutputBlock(nn.Module):
         # print('channels : ',channels[0])
         # print('num_nodes : ',num_nodes)
         self.temporal_conv_out = TemporalConvLayer(Ko, last_block_channel, channels[0], num_nodes, act_func,enable_padding = False)
+
+        self.out_temporal_conv_vision = TemporalConvLayer(Ko, added_dim_output, added_dim_output, num_nodes, act_func,enable_padding = False)
 
 
         # Design Input Dimension according to contextual data integration or not: 
@@ -476,13 +479,13 @@ class OutputBlock(nn.Module):
         # print('x.size after temporal conv + permute: ',x.size())
 
         # ---- Tackle Spatial Attention Late ----
-        # print('------------------------\nStart Spatial Attention Late')
+        # print('------------------------\nStart Concatenation Late')
         context_list = []
         for ds_name in self.ModuleContextualAttnLate_keys:
             spatial_attn = self.ModuleContextualAttnLate[ds_name]
             pos = self.dict_ds_which_need_attn_late2pos[ds_name] 
             inputs_attn = contextual[pos]
-            # print('inputs_attn.size: ',inputs_attn.size())
+            # print(f'   Spatial Attention Late for contextual data source {ds_name} of size: ',inputs_attn.size())
             _,context = spatial_attn(x.squeeze(), inputs_attn)
             if context.dim() == 3:
                 # If context is [B,N,C] -> [B,1,N,C]
@@ -495,12 +498,12 @@ class OutputBlock(nn.Module):
 
             context_list.append(context)
         #     print('context.size: ',context.size())
-        # print('End Spatial Attention Late\n------------------------\n')
         # ----
 
         ## Concatenate Late if exists:
         cat_list: List[Tensor] = []
         if self.concatenation_late and x_vision is not None:
+            # print('   Concatenation Late with x_vision of size: ',x_vision.size())
             #assert x_vision is not None
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
             # print('x_vision.size(): ',x_vision.size())
@@ -509,11 +512,17 @@ class OutputBlock(nn.Module):
 
             # IF Spatial Attention while keeping temporal dim
             if x_vision.dim() == 4 and x_vision.size(1) != 1:
-                x_vision = x_vision.permute(0,3,1,2) # [B,N,L,C] -> [B,C,N,L]
-                raise NotImplementedError('ERROR: Spatial Attention Late while keeping temporal dimension has not been implemented yet.\n Need to implement a temporal convolution to reduce L to 1 for each contextual data source with spatial attention and their specific embedding dim ')
+                x_vision = x_vision.permute(0,3,1,2) # [B,L,N,C] -> [B,C,L,N]
+                x_vision = self.out_temporal_conv_vision(x_vision) # [B,C,L,N] -> [B,Z,1,N]
+                x_vision = x_vision.permute(0,2,3,1) #  [B,Z,1,N] -> [B,1,N,Z]
+            # print('x_vision reduced',x_vision.size())
+
 
             cat_list.append(x_vision) 
+
+        # print('x_calendar.size(): ',x_calendar.size() if x_calendar is not None else None)
         if self.TE_concatenation_late and x_calendar is not None:
+            # print('   Time Embedding Concatenation Late with x_calendar of size: ',x_calendar.size())
             # Reduce channel dim of calendar to 1 (cause correspond to repeated channel and x channel has been reduce to 1)
             # print('x_calendar.size(): ',x_calendar.size())
             x_calendar = x_calendar[:,0:1,:,:]  # [B,C,N,L_calendar] -> [B,1,N,L_calendar]

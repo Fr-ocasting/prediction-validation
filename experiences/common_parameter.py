@@ -76,18 +76,74 @@ model_configurations = {
                         'epochs':100,
     },
     'STGCN': {
+        'use_target_as_context':False, 
+
+        'embedding_calendar_types': ['dayofweek', 'hour'],
+        'TE_embedding_dim': 64,
+        'TE_out_h_dim': 64,
+        'TE_concatenation_late': True,
+        'TE_concatenation_early':False,
+
+        'Kt': 2,
+        'stblock_num': 4,
+        'Ks': 2,
+        'graph_conv_type': 'graph_conv',
+        'gso_type': 'sym_renorm_adj',
+        'enable_bias': True,
+        'adj_type': 'corr',
+        'enable_padding': True,
+        'threshold': 0.3,
+        'act_func': 'glu',
+        'temporal_h_dim': 64,
+        'spatial_h_dim': 256,
+        'output_h_dim': 64,
+
+        'weight_decay': 0.0014517707449388,
+        'batch_size': 128,
+        'lr': 0.00071,
+        'dropout': 0.145169206052754,
+
+        'standardize': False,
+        'minmaxnorm': True,
+        'H':6,
+        'D':1,
+        'W':0,
+
+        'batch_size': 128,
+        'epochs': 200,
     },
 } 
 
 
 subway_possible_contextual_kwargs = {
-                    'late_fusion': {'feature_extractor':dict(feature_extractor_model_configurations),
-                                    
-                                    
-                                     'traffic_model_backbone':dict(feature_extractor_model_configurations),
+
+                    'early_fusion': { 
+                                       'independant_embedding':{'emb_dim' : INPUT_EMBEDDING_DIM,
+                                                'need_global_attn':False, 
+                                                'stacked_contextual': False,
+                                                'vision_model_name' : None,
+                                                'use_only_for_common_dates': False,
+                                                'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                                'attn_kwargs': {},
+                                                },
+                                                
+                                        'shared_embedding':{  
+                                                            'need_global_attn':False, 
+                                                            'stacked_contextual': True,
+                                                            'vision_model_name' : None,
+                                                            'use_only_for_common_dates': False,
+                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                                            'attn_kwargs': {},
+                                                            },
 
 
-                                     'simple_embedding':{ 'need_global_attn':True, 
+                                        'feature_extractor': dict(feature_extractor_model_configurations),
+                                        
+
+                                                },
+
+
+                    'late_fusion': { 'simple_embedding':{ 'need_global_attn':True, 
                                                         'stacked_contextual': False,
                                                         'vision_model_name' : None,
                                                         'use_only_for_common_dates': False,
@@ -98,32 +154,19 @@ subway_possible_contextual_kwargs = {
                                                             'concatenation_late': True,
                                                             },
                                                     },
+                        
+                                   'traffic_model_backbone':dict(feature_extractor_model_configurations),
+
+                                     'feature_extractor':dict(feature_extractor_model_configurations),
+
+
+
                             
 
                                     },
 
 
-                    'early_fusion': {
-                                    'independant_embedding':{'emb_dim' : INPUT_EMBEDDING_DIM,
-                                            'need_global_attn':False, 
-                                            'stacked_contextual': False,
-                                            'vision_model_name' : None,
-                                            'use_only_for_common_dates': False,
-                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                            'attn_kwargs': {},
-                                            },
-
-                                    'feature_extractor': dict(feature_extractor_model_configurations),
-                                    
-                                    'shared_embedding':{  
-                                                        'need_global_attn':False, 
-                                                        'stacked_contextual': True,
-                                                        'vision_model_name' : None,
-                                                        'use_only_for_common_dates': False,
-                                                        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                        'attn_kwargs': {},
-                                                        },
-                                    },
+           
                     }
 
 subway_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = True

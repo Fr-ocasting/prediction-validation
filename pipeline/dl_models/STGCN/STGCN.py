@@ -132,8 +132,24 @@ class STGCN(nn.Module):
                     if args_ds_i.stack_consistent_datasets:
                         attn_late_dim = attn_late_dim+args_ds_i.dim_model
                     else:
-                        attn_late_dim = attn_late_dim+args.contextual_kwargs[ds_name]['attn_kwargs']['latent_dim']
+                        attn_late_dim = (attn_late_dim
+                                        + (args.contextual_kwargs[ds_name]['attn_kwargs']['input_embedding_dim'])
+                                        + (args.contextual_kwargs[ds_name]['attn_kwargs']['adaptive_embedding_dim'] if 'adaptive_embedding_dim' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else 0)
+                                        + (args.contextual_kwargs[ds_name]['attn_kwargs']['tod_embedding_dim'] if 'tod_embedding_dim' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else 0)
+                                        + (args.contextual_kwargs[ds_name]['attn_kwargs']['dow_embedding_dim'] if 'dow_embedding_dim' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else 0)
+                                    )
         # -----
+
+        # ---- Added dim output:
+        added_dim_output = 0
+        for name_i in args.contextual_kwargs.keys():
+            if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
+                if 'concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']:
+                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
+                    
+            else:
+                if ('need_global_attn' in args.contextual_kwargs[name_i].keys() and args.contextual_kwargs[name_i]['need_global_attn']):
+                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
 
 
 
@@ -149,7 +165,8 @@ class STGCN(nn.Module):
                                              TGE_FC_hdim=args.TGE_FC_hdim if args.temporal_graph_transformer_encoder else None, 
                                              ModuleContextualAttnLate = ModuleContextualAttnLate,
                                              dict_ds_which_need_attn_late2pos = args.dict_ds_which_need_attn_late2pos,
-                                             attn_late_dim = attn_late_dim
+                                             attn_late_dim = attn_late_dim,
+                                             added_dim_output = added_dim_output
                                              )
         elif self.Ko == 0:
             self.fc1 = nn.Linear(in_features=in_feature_fc1, out_features=blocks[-2][0], bias=args.enable_bias)
