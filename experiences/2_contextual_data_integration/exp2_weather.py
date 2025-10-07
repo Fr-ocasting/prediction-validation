@@ -83,7 +83,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from pipeline.utils.loger import LOG
-from experiences.common_parameter import possible_target_kwargs, subway_possible_contextual_kwargs, bike_possible_contextual_kwargs, model_configurations
+from experiences.common_parameter import possible_target_kwargs, weather_possible_contextual_kwargs, model_configurations
 from experiences.common_parameter import REPEAT_TRIAL
 from experiences.compilation_parameter import compilation_modification
 from experiences.loop_train_save_log import loop_train_save_log
@@ -93,13 +93,13 @@ loger = LOG()
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
-init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp1'
-device = torch.device('cuda:0')
+init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp2'
+device = torch.device('cuda:1')
 
 freq = '15min'  
 horizons = [4]  #[1,4]
-target_data = 'subway_out' 
-contextual_dataset_names = ['subway_in']
+target_data = 'bike_out' 
+contextual_dataset_names = ['weather']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
@@ -111,7 +111,7 @@ dic_configs = {}
 # Exp i. Fusion Strategy on STAEformer 
 # --- Create configurations to evaluate ---
 if True: 
-    for fusion_type, config_contextual_kwargs in subway_possible_contextual_kwargs.items():
+    for fusion_type, config_contextual_kwargs in weather_possible_contextual_kwargs.items():
         for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
             for horizon in horizons:
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
@@ -136,39 +136,40 @@ if True:
 
 
                     config_i['device'] = device
-                    config_i['torch_compile'] = 'compile' # False 
+                    config_i['torch_compile'] = False 
                     # config_i['epochs'] = 1
 
                     dic_configs[name_i] = config_i
 
+# # Already done with exp1.
+# if False:
+#     for horizon in horizons:
+#         for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
+#             dataset_names =  [target_data] + ['calendar']
+#             name_i = f"{model_name}_{'_'.join(dataset_names)}"
+#             name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
+#             name_i = f"{name_i}_{name_i_end}"
 
-    for horizon in horizons:
-        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-            dataset_names =  [target_data] + ['calendar']
-            name_i = f"{model_name}_{'_'.join(dataset_names)}"
-            name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-            name_i = f"{name_i}_{name_i_end}"
-
-            config_i =  {'target_data': target_data,
-                        'dataset_names': dataset_names,
-                        'model_name': model_name,
-                        'dataset_for_coverage': [target_data],
-                        'freq': freq,
-                        'horizon_step': horizon,
-                        'step_ahead': horizon,
-                        'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                        'contextual_kwargs' : {},
-                        'denoising_names':[],
-                        } 
-            config_i.update(config_backbone_model)
-            config_i.update(compilation_modification)
+#             config_i =  {'target_data': target_data,
+#                         'dataset_names': dataset_names,
+#                         'model_name': model_name,
+#                         'dataset_for_coverage': [target_data],
+#                         'freq': freq,
+#                         'horizon_step': horizon,
+#                         'step_ahead': horizon,
+#                         'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+#                         'contextual_kwargs' : {},
+#                         'denoising_names':[],
+#                         } 
+#             config_i.update(config_backbone_model)
+#             config_i.update(compilation_modification)
 
 
-            config_i['device'] = device
-            config_i['torch_compile'] = 'compile' # False
-            # config_i['epochs'] = 1
+#             config_i['device'] = device
+#             config_i['torch_compile'] = False 
+#             # config_i['epochs'] = 1
 
-            dic_configs[name_i] = config_i
+#             dic_configs[name_i] = config_i
 
 
 
@@ -183,7 +184,7 @@ if True:
 if False:
     model_name = 'STGCN'
     config_backbone_model = model_configurations[model_name]
-    for fusion_type, config_contextual_kwargs in subway_possible_contextual_kwargs.items():
+    for fusion_type, config_contextual_kwargs in weather_possible_contextual_kwargs.items():
         for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
             if (feature_extractor_type == 'feature_extractor'):
                 continue
@@ -218,34 +219,36 @@ if False:
                     # config_i['epochs'] = 1
 
                     dic_configs[name_i] = config_i
+                    
+# # Already done with exp1.
+# if False:
+#     for horizon in horizons:
+#         for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
+#             dataset_names =  [target_data] + ['calendar_embedding']
+#             name_i = f"{model_name}_{'_'.join(dataset_names)}"
+#             name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
+#             name_i = f"{name_i}_{name_i_end}"
 
-    for horizon in horizons:
-        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-            dataset_names =  [target_data] + ['calendar_embedding']
-            name_i = f"{model_name}_{'_'.join(dataset_names)}"
-            name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-            name_i = f"{name_i}_{name_i_end}"
-
-            config_i =  {'target_data': target_data,
-                        'dataset_names': dataset_names,
-                        'model_name': model_name,
-                        'dataset_for_coverage': [target_data],
-                        'freq': freq,
-                        'horizon_step': horizon,
-                        'step_ahead': horizon,
-                        'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                        'contextual_kwargs' : {},
-                        'denoising_names':[],
-                        } 
-            config_i.update(config_backbone_model)
-            config_i.update(compilation_modification)
+#             config_i =  {'target_data': target_data,
+#                         'dataset_names': dataset_names,
+#                         'model_name': model_name,
+#                         'dataset_for_coverage': [target_data],
+#                         'freq': freq,
+#                         'horizon_step': horizon,
+#                         'step_ahead': horizon,
+#                         'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+#                         'contextual_kwargs' : {},
+#                         'denoising_names':[],
+#                         } 
+#             config_i.update(config_backbone_model)
+#             config_i.update(compilation_modification)
 
 
-            config_i['device'] = device
-            config_i['torch_compile'] = False 
-            # config_i['epochs'] = 1
+#             config_i['device'] = device
+#             config_i['torch_compile'] = False 
+#             # config_i['epochs'] = 1
 
-            dic_configs[name_i] = config_i
+#             dic_configs[name_i] = config_i
 
 # --- Evaluate configurations ---
 loop_train_save_log(loger,dic_configs,init_save_folder = init_save_folder) 

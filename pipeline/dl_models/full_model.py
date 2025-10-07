@@ -184,6 +184,27 @@ class full_model(nn.Module):
         # Local Attn:
         self.ds_which_need_spatial_attn_per_station             = list(args.ds_which_need_spatial_attn_per_station)
 
+        # Early of Late fusion : 
+        self.Early_fusion_names = [ds_name for ds_name in args.contextual_kwargs.keys()
+                                   if ( ( 
+                                       ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and 
+                                       ('concatenation_late' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()) and 
+                                       (not args.contextual_kwargs[ds_name]['attn_kwargs']['concatenation_late']) 
+                                        ) or 
+                                        (
+                                       ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and 
+                                       (not('concatenation_late' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()))
+                                        ) 
+                                       )
+                                       ]
+        self.Late_fusion_names = [ds_name for ds_name in args.contextual_kwargs.keys()
+                                   if ( 
+                                       ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and 
+                                       ('concatenation_late' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()) and 
+                                       (args.contextual_kwargs[ds_name]['attn_kwargs']['concatenation_late']) 
+                                       )
+                                       ]
+
         # Will be stacked 
         self.dict_pos_node_attr_which_does_not_need_attn2ds     = {ds_name:p for p,ds_name in self.dict_pos_node_attr2ds.items() if ((p not in self.ds_which_need_global_attn) and 
                                                                                                                                      (p not in self.ds_which_need_global_attn_late) and
@@ -215,6 +236,9 @@ class full_model(nn.Module):
             if ds_name in self.ds_which_need_global_attn_late:
                 self.dict_ds_which_need_attn_late2pos[ds_name]= pos
         args.dict_ds_which_need_attn_late2pos = self.dict_ds_which_need_attn_late2pos
+        args.Late_fusion_names = self.Late_fusion_names
+        args.Early_fusion_names = self.Early_fusion_names
+
 
 
             
@@ -362,7 +386,8 @@ class full_model(nn.Module):
 
         #print('Spatial Attention for Node Attributes')
         L_node_attributes   : List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
-        L_extracted_feature : List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
+        L_early_extracted_feature : List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
+        L_late_extracted_feature : List[torch.Tensor] = torch.jit.annotate(List[torch.Tensor], [])
 
         #print('ds_which_need_spatial_attn_per_station: ',self.ds_which_need_spatial_attn_per_station)
         # print('self.spatial_attn_per_station.keys(): ',self.spatial_attn_per_station.keys())
@@ -386,17 +411,30 @@ class full_model(nn.Module):
             if self.dic_stacked_contextual[ds_name]:
                 L_node_attributes.append(extracted_feature_for_spatial_unit_i)
             else:
-                L_extracted_feature.append(extracted_feature_for_spatial_unit_i)
-        if len(L_extracted_feature) > 0:
-            extracted_features = torch.cat(L_extracted_feature,dim= -1)
+                if ds_name in self.Early_fusion_names:
+                    L_early_extracted_feature.append(extracted_feature_for_spatial_unit_i)
+                if ds_name in self.Late_fusion_names:
+                    L_late_extracted_feature.append(extracted_feature_for_spatial_unit_i)
+
+
+        if len(L_early_extracted_feature) > 0:
+            early_extracted_features = torch.cat(L_early_extracted_feature,dim= -1)
         else:
-            extracted_features = None
-        return L_node_attributes,extracted_features
+            early_extracted_features = None
+        if len(L_late_extracted_feature) > 0:
+            late_extracted_features = torch.cat(L_late_extracted_feature,dim= -1)
+        else:
+            late_extracted_features = None
+
+        return L_node_attributes,early_extracted_features,late_extracted_features
     
+
 
     def global_spatial_attention(self, 
                                   L_node_attributes: List[torch.Tensor], 
-                                  extracted_features: torch.Tensor,
+                                  Early_extracted_features : torch.Tensor,
+                                  Late_extracted_features : torch.Tensor,
+                                  #extracted_features: torch.Tensor,
                                     x: torch.Tensor,
                                     contextual: List[torch.Tensor],
                                     L_projected_x: List[torch.Tensor],
@@ -449,14 +487,29 @@ class full_model(nn.Module):
                 # print('\nds_name_i: ',ds_name_i)
                 # print('init node_attr size: ',node_attr.size())
                 node_attr = attention_module_i(x,x_contextual = node_attr, x_calendar = x_calendar,dim = 2 )  
-                if extracted_features is not None:
-                    extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
-                    # print('node_attr after feature extraction: ',node_attr.size())
-                    # print('extracted_features size after cat: ',extracted_features.size())
-                else:
-                    extracted_features = node_attr
+                # Tackle case where Extracted feature need to be Fusion at the Early stage of the backbone model :
+                if ds_name_i in self.Early_fusion_names:
+                    # print('Early fusion for dataset: ',ds_name_i)
+                    if Early_extracted_features is not None:
+                        Early_extracted_features = torch.cat([Early_extracted_features,node_attr],dim=-1)
+                    else:
+                        Early_extracted_features = node_attr
+                # Tackle case where Extracted feature need to be Fusion at the Late stage of the backbone model :
+                if ds_name_i in self.Late_fusion_names:
+                    # print('Late fusion for dataset: ',ds_name_i)
+                    if Late_extracted_features is not None:
+                        Late_extracted_features = torch.cat([Late_extracted_features,node_attr],dim=-1)
+                    else:
+                        Late_extracted_features = node_attr
+            
+                # if extracted_features is not None:
+                #     extracted_features = torch.cat([extracted_features,node_attr],dim=-1)
+                #     # print('node_attr after feature extraction: ',node_attr.size())
+                #     # print('extracted_features size after cat: ',extracted_features.size())
+                # else:
+                #     extracted_features = node_attr
 
-        return L_node_attributes,L_projected_x,extracted_features
+        return L_node_attributes,L_projected_x,Early_extracted_features,Late_extracted_features
     
     def stack_direct_node_attributes(self, L_node_attributes: List[torch.Tensor], 
                                     contextual: List[torch.Tensor]
@@ -509,10 +562,11 @@ class full_model(nn.Module):
         # print('\nx before stacking new channels:',x.size())
         # print('Contextual size : ',[c_i.size() for c_i in contextual])
         # Spatial Attention and attributing node information: 
-        L_node_attributes,extracted_features = self.local_spatial_attention(x,contextual)
+        L_node_attributes,Early_extracted_features,Late_extracted_features = self.local_spatial_attention(x,contextual)
         # print('L_node_attributes after local spatial attn: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after local spatial attn: ',extracted_features.size() if extracted_features is not None else None)
-        L_node_attributes,L_projected_x,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual,L_projected_x,x_calendar)
+        # L_node_attributes,L_projected_x,extracted_features = self.global_spatial_attention(L_node_attributes,extracted_features,x,contextual,L_projected_x,x_calendar)
+        L_node_attributes,L_projected_x,Early_extracted_features,Late_extracted_features = self.global_spatial_attention(L_node_attributes,Early_extracted_features,Late_extracted_features,x,contextual,L_projected_x,x_calendar)
         # print('L_node_attributes after global spatial attn: ',[xb.size() for xb in L_node_attributes])
         # print('extracted_features after global spatial attn: ',extracted_features.size() if extracted_features is not None else None)
         L_node_attributes = self.stack_direct_node_attributes(L_node_attributes,contextual)
@@ -537,7 +591,9 @@ class full_model(nn.Module):
         # Core model 
         if self.core_model is not None:
             x= self.core_model(x,
-                               x_vision = extracted_features,
+                            #    x_vision = extracted_features,
+                               x_vision_early = Early_extracted_features,
+                               x_vision_late = Late_extracted_features,
                                x_calendar = x_calendar,
                                 contextual = contextual )
             #print('x after Core Model: ',x.size())
@@ -570,33 +626,37 @@ def get_added_dim(args):
     added_dim_output = 0 
     # ---
     for name_i in args.contextual_kwargs.keys():
-        if 'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
-            # If concatenation late: 
-            if 'concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']:
-                added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
+        # print('\nname_i: ',name_i)
+        # ---- If Fusion with Attention :
+        #      Need only to precise if 'late'. Otherwise it's considered as early.
+        attn_kwargs_not_empty = ('attn_kwargs' in args.contextual_kwargs[name_i].keys()) and (len(args.contextual_kwargs[name_i]['attn_kwargs'])>0)
+        if attn_kwargs_not_empty : #'attn_kwargs' in args.contextual_kwargs[name_i].keys() and 'keep_temporal_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys() and args.contextual_kwargs[name_i]['attn_kwargs']['keep_temporal_dim']:
+            # - If Concatenation late:    # Concatenation late has to be specified
+            if ('concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys()) and args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']:
+                if 'emb_dim' in args.contextual_kwargs[name_i].keys():
+                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['emb_dim']
+                else:
+                    added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
+                # print('added_dim_output: ',added_dim_output) 
+            # - If concatenation early : 
+            elif ('concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys()) and (not args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']):
+                if not('emb_dim' in args.contextual_kwargs[name_i].keys()):
+                    added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim'] 
+            else :  # If not('concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys())
+                if not('emb_dim' in args.contextual_kwargs[name_i].keys()):
+                    added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
 
-                # if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                #     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
-                # if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                #     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
-                # if 'adaptive_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                #     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['attn_kwargs']['adaptive_embedding_dim']
+                # print('added_dim_input: ',added_dim_input) 
+        # ----  
 
-            # If concatenation early : 
-            else:
-                added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']  
-
-                # if 'tod_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['tod_embedding_dim']
-                # if 'dow_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['dow_embedding_dim']
-                # if 'adaptive_embedding_dim' in args.contextual_kwargs[name_i]['attn_kwargs'].keys():
-                #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['attn_kwargs']['adaptive_embedding_dim']
-
-                
+        # ---- If no attention module for fusion :
         else:
             if ('need_global_attn' in args.contextual_kwargs[name_i].keys() and args.contextual_kwargs[name_i]['need_global_attn']):
                 added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
+                # print('added_dim_output w global attn & wo attn_kwargs: ',added_dim_output) 
+            # PEUT ETRE A DE-COMMENTER
+            # else: 
+            #     added_dim_input = added_dim_input + args.contextual_kwargs[name_i]['out_dim']
             
     if 'calendar_embedding' in args.dataset_names: #if not empty 
         # IF Early concatenation : 

@@ -1,3 +1,4 @@
+import copy
 # Description of Contextual Data Integration strategies: 
 # Early fusion 
 # --- Shared Embedding
@@ -73,7 +74,7 @@ model_configurations = {
                         'D':1,
                         'W':0,
                         'batch_size': 128,
-                        'epochs':100,
+                        'epochs':200,
     },
     'STGCN': {
         'use_target_as_context':False, 
@@ -117,6 +118,26 @@ model_configurations = {
 
 subway_possible_contextual_kwargs = {
 
+                    'late_fusion': {  'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
+                                    
+                                    
+                                     'simple_embedding':{ 'need_global_attn':True, 
+                                                        'stacked_contextual': False,
+                                                        'vision_model_name' : None,
+                                                        'use_only_for_common_dates': False,
+                                                        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+
+                                                        'attn_kwargs': {
+                                                            'simple_embedding_dim': INPUT_EMBEDDING_DIM,
+                                                            'concatenation_late': True,
+                                                            },
+                                                    },
+                        
+
+
+                                     'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
+                                    },
+
                     'early_fusion': { 
                                        'independant_embedding':{'emb_dim' : INPUT_EMBEDDING_DIM,
                                                 'need_global_attn':False, 
@@ -137,33 +158,10 @@ subway_possible_contextual_kwargs = {
                                                             },
 
 
-                                        'feature_extractor': dict(feature_extractor_model_configurations),
+                                        'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),
                                         
 
                                                 },
-
-
-                    'late_fusion': { 'simple_embedding':{ 'need_global_attn':True, 
-                                                        'stacked_contextual': False,
-                                                        'vision_model_name' : None,
-                                                        'use_only_for_common_dates': False,
-                                                        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-
-                                                        'attn_kwargs': {
-                                                            'simple_embedding_dim': INPUT_EMBEDDING_DIM,
-                                                            'concatenation_late': True,
-                                                            },
-                                                    },
-                        
-                                   'traffic_model_backbone':dict(feature_extractor_model_configurations),
-
-                                     'feature_extractor':dict(feature_extractor_model_configurations),
-
-
-
-                            
-
-                                    },
 
 
            
@@ -195,22 +193,50 @@ bike_possible_contextual_kwargs = {
                                                         'attn_kwargs': {},
                                                         },  
 
-                                    'feature_extractor': dict(feature_extractor_model_configurations),         
+                                    'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),         
                                     },
 
                     'late_fusion': {'simple_embedding':{'emb_dim' : 12,
                                                         },  
 
-                                    'feature_extractor':dict(feature_extractor_model_configurations),   
+                                    'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),   
 
                                     'traffic_model_backbone':{
                                                             },
                     },
 }
 
-
 weather_possible_contextual_kwargs = {
-                    'early_fusion': { 'repeat_t_proj': {'emb_dim' : 6,
+
+                    'late_fusion': {  'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
+
+                                       's_proj_t_proj': {'emb_dim' : 8,
+                                                            'need_global_attn':False, 
+                                                            'stacked_contextual': False,
+                                                            'vision_model_name' : None,
+                                                            'use_only_for_common_dates': False,
+                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                                                            'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
+                                                            'attn_kwargs': {'concatenation_late':True},
+                                                           }, 
+
+                                                           
+                                        'repeat_t_proj': {'emb_dim' : 8,
+                                                            'need_global_attn':False, 
+                                                            'stacked_contextual': False,
+                                                            'vision_model_name' : None,
+                                                            'use_only_for_common_dates': False,
+                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+                                                            'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+                                                            'attn_kwargs': {'concatenation_late':True},
+                                                      },  
+                                    }, 
+
+                    'early_fusion': {         
+
+                                     'repeat_t_proj': {'emb_dim' : 8,
                                                             'need_global_attn':False, 
                                                             'stacked_contextual': False,
                                                             'vision_model_name' : None,
@@ -219,9 +245,8 @@ weather_possible_contextual_kwargs = {
                                                             'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
                                                             'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
                                                             'attn_kwargs': {},
-                                                         },  
-
-                                        's_proj_t_proj': {'emb_dim' : 6,
+                                                         }, 
+                                        's_proj_t_proj': {'emb_dim' : 8,
                                                             'need_global_attn':False, 
                                                             'stacked_contextual': False,
                                                             'vision_model_name' : None,
@@ -232,34 +257,36 @@ weather_possible_contextual_kwargs = {
                                                             'attn_kwargs': {},
                                                          }, 
 
-                                        'feature_extractor':{'conv_channels' : [16, 32],                    
-                                                            },
-
+                                     'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),  
                                     }, 
 
-                    'late_fusion': { 'repeat_t_proj': {'emb_dim' : 6,
-                                                            'need_global_attn':False, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
-                                                            'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
-                                                            'attn_kwargs': {},
-                                                      },  
-
-                                        's_proj_t_proj': {'emb_dim' : 6,
-                                                            'need_global_attn':False, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
-                                                            'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
-                                                            'attn_kwargs': {},
-                                                           }, 
-
-                                    'feature_extractor':{'conv_channels' : [16, 32],       
-                                        },
-                                    }, 
                         }
+
+# ---- Modify Feature Extractor parameter for weather data: (make it simple) ----
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['unique_serie'] = True
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = False
+
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['input_embedding_dim'] = 8
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['feed_forward_dim'] = 64
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['num_heads'] = 4
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['num_layers'] = 1
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['tod_embedding_dim'] = 4 # 0
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['dow_embedding_dim'] = 4 # 0
+weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['adaptive_embedding_dim'] = 4 # 0
+
+
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = True
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['unique_serie'] = True
+
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['input_embedding_dim'] = 8
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['feed_forward_dim'] = 64
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['num_heads'] = 4
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['num_layers'] = 1
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['tod_embedding_dim'] = 4 # 0
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['dow_embedding_dim'] = 4 # 0
+weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['adaptive_embedding_dim'] = 4 # 0
+
+
+# weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['adaptive_embedding_dim'] = 0 # 32 
+# weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['fusion_type'] = 'sum' # 'concat'
+
