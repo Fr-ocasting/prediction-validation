@@ -102,13 +102,17 @@ def load_spatial_attn_model(args,ds_name):
             def __init__(self,model):
                 super(wrapper_backbone_model,self).__init__()
                 self.model = model
+                self.cross_attention = args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False
 
             def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = None) -> Tensor:
                 # print('\nStart backbone model')
                 # print('   x_contextual size before backbone model: ',x_contextual.size())
                 if x_contextual.dim()==3:
                     x_contextual = x_contextual.unsqueeze(1)
-                x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar)
+                if self.cross_attention:
+                    x_contextual = self.model(x = x,x_contextual= x_contextual,x_calendar = x_calendar)
+                else:
+                    x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar)
                 # print('   x_contextual size after backbone model and transpose: ',x_contextual.size())
                 return x_contextual
         return wrapper_backbone_model(backbone_model)

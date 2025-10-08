@@ -36,6 +36,41 @@ STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e100_h4_
 STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e100_h4_bis5:   All Steps RMSE = 40.968, MAE = 22.433, MASE = 0.698, MAPE = 22.662
 
 
+STAEformer_subway_out_calendar__e200_h4_bis1:   All Steps RMSE = 43.249, MAE = 23.358, MASE = 0.723, MAPE = 23.654
+STAEformer_subway_out_calendar__e200_h4_bis2:   All Steps RMSE = 42.971, MAE = 23.346, MASE = 0.723, MAPE = 23.951
+STAEformer_subway_out_calendar__e200_h4_bis3:   All Steps RMSE = 42.518, MAE = 23.092, MASE = 0.715, MAPE = 23.519
+STAEformer_subway_out_calendar__e200_h4_bis4:   All Steps RMSE = 42.247, MAE = 22.982, MASE = 0.712, MAPE = 23.632
+STAEformer_subway_out_calendar__e200_h4_bis5:   All Steps RMSE = 42.659, MAE = 23.224, MASE = 0.719, MAPE = 23.576
+STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e200_h4_bis1:   All Steps RMSE = 40.447, MAE = 22.196, MASE = 0.691, MAPE = 22.478
+STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e200_h4_bis2:   All Steps RMSE = 40.998, MAE = 22.523, MASE = 0.701, MAPE = 22.914
+STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e200_h4_bis3:   All Steps RMSE = 40.760, MAE = 22.406, MASE = 0.698, MAPE = 23.151
+STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e200_h4_bis4:   All Steps RMSE = 41.514, MAE = 22.631, MASE = 0.704, MAPE = 22.851
+STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e200_h4_bis5:   All Steps RMSE = 40.847, MAE = 22.407, MASE = 0.698, MAPE = 23.711
+STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4_bis1:   All Steps RMSE = 41.634, MAE = 22.754, MASE = 0.708, MAPE = 23.255
+STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4_bis2:   All Steps RMSE = 41.618, MAE = 22.836, MASE = 0.711, MAPE = 23.600
+STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4_bis3:   All Steps RMSE = 41.694, MAE = 23.000, MASE = 0.716, MAPE = 23.672
+STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4_bis4:   All Steps RMSE = 42.123, MAE = 22.998, MASE = 0.716, MAPE = 23.814
+STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4_bis5:   All Steps RMSE = 41.536, MAE = 22.643, MASE = 0.705, MAPE = 23.336
+STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 41.443, MAE = 22.631, MASE = 0.705, MAPE = 22.891
+STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4_bis2:   All Steps RMSE = 40.453, MAE = 22.215, MASE = 0.692, MAPE = 23.103
+STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4_bis3:   All Steps RMSE = 41.016, MAE = 22.489, MASE = 0.700, MAPE = 22.807
+STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4_bis4:   All Steps RMSE = 40.923, MAE = 22.421, MASE = 0.698, MAPE = 23.082
+STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4_bis5:   All Steps RMSE = 41.110, MAE = 22.784, MASE = 0.709, MAPE = 23.319
+STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e200_h4_bis1:   All Steps RMSE = 41.024, MAE = 22.626, MASE = 0.704, MAPE = 22.563
+STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e200_h4_bis2:   All Steps RMSE = 40.902, MAE = 22.683, MASE = 0.706, MAPE = 22.875
+STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e200_h4_bis3:   All Steps RMSE = 40.729, MAE = 22.388, MASE = 0.697, MAPE = 22.606
+STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e200_h4_bis4:   All Steps RMSE = 41.173, MAE = 22.714, MASE = 0.707, MAPE = 22.538
+STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e200_h4_bis5:   All Steps RMSE = 41.126, MAE = 22.756, MASE = 0.708, MAPE = 22.479
+STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4_bis1:   All Steps RMSE = 40.577, MAE = 22.283, MASE = 0.694, MAPE = 22.912
+STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4_bis2:   All Steps RMSE = 41.404, MAE = 22.574, MASE = 0.703, MAPE = 22.663
+STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4_bis3:   All Steps RMSE = 40.644, MAE = 22.207, MASE = 0.691, MAPE = 22.509
+STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4_bis4:   All Steps RMSE = 40.883, MAE = 22.406, MASE = 0.697, MAPE = 23.030
+STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4_bis5:   All Steps RMSE = 40.292, MAE = 22.030, MASE = 0.686, MAPE = 22.624
+STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 40.350, MAE = 22.164, MASE = 0.690, MAPE = 23.209
+STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4_bis2:   All Steps RMSE = 40.212, MAE = 22.306, MASE = 0.694, MAPE = 22.333
+STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4_bis3:   All Steps RMSE = 40.544, MAE = 22.236, MASE = 0.692, MAPE = 22.722
+STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4_bis4:   All Steps RMSE = 40.547, MAE = 22.412, MASE = 0.698, MAPE = 22.359
+STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4_bis5:   All Steps RMSE = 40.671, MAE = 22.220, MASE = 0.692, MAPE = 22.796
 
 
 STGCN_subway_out_subway_in_calendar_embedding_early_fusion_shared_embedding__e200_h4_bis1:   All Steps RMSE = 42.362, MAE = 23.007, MASE = 0.716, MAPE = 23.110

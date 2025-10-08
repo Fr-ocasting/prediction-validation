@@ -117,28 +117,43 @@ model_configurations = {
 
 
 subway_possible_contextual_kwargs = {
-
+    
                     'late_fusion': {  'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
-                                    
-                                    
-                                     'simple_embedding':{ 'need_global_attn':True, 
-                                                        'stacked_contextual': False,
-                                                        'vision_model_name' : None,
-                                                        'use_only_for_common_dates': False,
-                                                        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                        
+                                        
+                                        'simple_embedding':{ 'need_global_attn':True, 
+                                                            'stacked_contextual': False,
+                                                            'vision_model_name' : None,
+                                                            'use_only_for_common_dates': False,
+                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
 
-                                                        'attn_kwargs': {
-                                                            'simple_embedding_dim': INPUT_EMBEDDING_DIM,
-                                                            'concatenation_late': True,
-                                                            },
-                                                    },
-                        
+                                                            'attn_kwargs': {
+                                                                'simple_embedding_dim': INPUT_EMBEDDING_DIM,
+                                                                'concatenation_late': True,
+                                                                },
+                                                        },
+                            
 
 
-                                     'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
-                                    },
+                                        'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
+                                        },
 
-                    'early_fusion': { 
+
+                        'early_fusion': { 
+                            
+                            
+                                        's_proj_t_proj': {'emb_dim' : INPUT_EMBEDDING_DIM,
+                                                                        'need_global_attn':False, 
+                                                                        'stacked_contextual': False,
+                                                                        'vision_model_name' : None,
+                                                                        'use_only_for_common_dates': False,
+                                                                        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                                                        'unique_serie': False,   # If true then agregate all (2) weather stations into one unique serie
+                                                                        'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
+                                                                        'attn_kwargs': {'concatenation_late':False},
+                                                                    }, 
+
+
                                        'independant_embedding':{'emb_dim' : INPUT_EMBEDDING_DIM,
                                                 'need_global_attn':False, 
                                                 'stacked_contextual': False,
@@ -157,14 +172,15 @@ subway_possible_contextual_kwargs = {
                                                             'attn_kwargs': {},
                                                             },
 
-
                                         'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),
+
+
+
                                         
 
                                                 },
 
 
-           
                     }
 
 subway_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = True

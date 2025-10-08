@@ -1,4 +1,4 @@
-# Homogenous spatial unit 
+# Unique spatial unit 
 
 
 # ----------------------------------------------------------------
@@ -110,7 +110,7 @@ dic_configs = {}
 
 # Exp i. Fusion Strategy on STAEformer 
 # --- Create configurations to evaluate ---
-if True: 
+if False: 
     for fusion_type, config_contextual_kwargs in weather_possible_contextual_kwargs.items():
         for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
             for horizon in horizons:
@@ -141,35 +141,35 @@ if True:
 
                     dic_configs[name_i] = config_i
 
-# # Already done with exp1.
-# if False:
-#     for horizon in horizons:
-#         for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-#             dataset_names =  [target_data] + ['calendar']
-#             name_i = f"{model_name}_{'_'.join(dataset_names)}"
-#             name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-#             name_i = f"{name_i}_{name_i_end}"
 
-#             config_i =  {'target_data': target_data,
-#                         'dataset_names': dataset_names,
-#                         'model_name': model_name,
-#                         'dataset_for_coverage': [target_data],
-#                         'freq': freq,
-#                         'horizon_step': horizon,
-#                         'step_ahead': horizon,
-#                         'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-#                         'contextual_kwargs' : {},
-#                         'denoising_names':[],
-#                         } 
-#             config_i.update(config_backbone_model)
-#             config_i.update(compilation_modification)
+if True:
+    for horizon in horizons:
+        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
+            dataset_names =  [target_data] + ['calendar']
+            name_i = f"{model_name}_{'_'.join(dataset_names)}"
+            name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
+            name_i = f"{name_i}_{name_i_end}"
+
+            config_i =  {'target_data': target_data,
+                        'dataset_names': dataset_names,
+                        'model_name': model_name,
+                        'dataset_for_coverage': [target_data],
+                        'freq': freq,
+                        'horizon_step': horizon,
+                        'step_ahead': horizon,
+                        'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                        'contextual_kwargs' : {},
+                        'denoising_names':[],
+                        } 
+            config_i.update(config_backbone_model)
+            config_i.update(compilation_modification)
 
 
-#             config_i['device'] = device
-#             config_i['torch_compile'] = False 
-#             # config_i['epochs'] = 1
+            config_i['device'] = device
+            config_i['torch_compile'] = False 
+            # config_i['epochs'] = 1
 
-#             dic_configs[name_i] = config_i
+            dic_configs[name_i] = config_i
 
 
 
