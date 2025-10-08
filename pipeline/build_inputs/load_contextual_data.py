@@ -245,6 +245,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
 
                     ## Get the new added dimension: 
                     #    Case 2.i:   in case we compute node attributes with attention or in case 'per_station' is in the name of the contextual dataset:
+                    weather_in_backbone = ('weather' in args.contextual_kwargs.keys()) and ('emb_dim' in args.contextual_kwargs['weather'].keys()) and ('backbone_model' in kwargs_i.keys()) and kwargs_i['backbone_model']
                     if (kwargs_i['need_global_attn']) or ('per_station' in name_i): 
                         if 'latent_dim' in kwargs_i['attn_kwargs'].keys() :
                             latent_dim = kwargs_i['attn_kwargs']['latent_dim'] 
@@ -253,10 +254,12 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                         elif 'simple_embedding_dim' in kwargs_i['attn_kwargs'].keys() and (kwargs_i['attn_kwargs']['simple_embedding_dim'] > 0):
                             latent_dim = kwargs_i['attn_kwargs']['simple_embedding_dim']
                         else:
-                            latent_dim = (kwargs_i['attn_kwargs']['input_embedding_dim'] 
+                            latent_dim = ( 
+                                          (kwargs_i['attn_kwargs']['input_embedding_dim'] if 'init_adaptive_query_dim' not in kwargs_i['attn_kwargs'].keys() else kwargs_i['attn_kwargs']['init_adaptive_query_dim'])
                                         + (kwargs_i['attn_kwargs']['adaptive_embedding_dim'] if 'adaptive_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
                                         + (kwargs_i['attn_kwargs']['tod_embedding_dim'] if 'tod_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
                                         + (kwargs_i['attn_kwargs']['dow_embedding_dim'] if 'dow_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
+                                        + (args.contextual_kwargs['weather']['emb_dim'] if weather_in_backbone else 0)
                             )
                       
                     #     Case 2.ii:

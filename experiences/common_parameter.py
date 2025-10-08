@@ -118,7 +118,9 @@ model_configurations = {
 
 subway_possible_contextual_kwargs = {
 
-           'late_fusion': {'cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
+           'late_fusion': {'adp_query_cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
+                           
+                           'cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
                                     
                                     'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
 
@@ -186,6 +188,11 @@ subway_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['attn
 subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
 subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
 subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['backbone_model'] = True
+
+subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
+subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
+subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['backbone_model'] = True
+subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['init_adaptive_query_dim'] = INPUT_EMBEDDING_DIM
 
 # subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
 # subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False

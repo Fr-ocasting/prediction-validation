@@ -117,6 +117,8 @@ if True:
                 continue
             if (feature_extractor_type == 'cross_attn_traffic_model_backbone'):
                 continue
+            if (feature_extractor_type == 'adp_query_cross_attn_traffic_model_backbone'):
+                continue
             for horizon in horizons:
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
                     dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
