@@ -99,30 +99,51 @@ device = torch.device('cuda:0')
 freq = '1H' #'15min'  
 horizons = [1] # [4]  #[1,4]
 target_data = 'bike_out' 
-contextual_dataset_names = ['subway_in','subway_out']
+contextual_dataset_names = ['subway_out','weather']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
 
 
 dic_configs = {}
-# REPEAT_TRIAL  = 1 
+REPEAT_TRIAL  = 1 
 
 # Exp i. Fusion Strategy on STAEformer 
 # --- Create configurations to evaluate ---
 
 
 """
-En théorie, pourrait rajouter "feature extractor" en early fusion. 
+En théorie, pourrait rajouter "feature extractor" en early fusion. Mais pas utile de tester ici.
 
 """
+
+weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['repeat_t_proj']
+
 if True: 
     for fusion_type, config_contextual_kwargs in subway_possible_contextual_kwargs.items():
-        for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
+        for feature_extractor_type, contextual_kwargs_i in config_contextual_kwargs.items():
             if (feature_extractor_type == 'shared_embedding'):
                 continue
-            if (fusion_type == 'early_fusion') and (feature_extractor_type == 'feature_extractor'):
+            if feature_extractor_type == 'feature_extractor':
                 continue
+            if feature_extractor_type == 'traffic_model_backbone':
+                continue
+            if feature_extractor_type == 'simple_embedding':
+                continue
+            if feature_extractor_type == 'independant_embedding':
+                continue
+
+            contextual_kwargs ={'subway_out':contextual_kwargs_i,
+                                'subway_in':contextual_kwargs_i,
+                                'weather':weather_contextual_kwargs}
+            
+            if 'weather' not in contextual_dataset_names:
+                contextual_kwargs.pop('weather',None)  
+            if 'subway_in' not in contextual_dataset_names:
+                contextual_kwargs.pop('subway_in',None)  
+            if 'subway_out' not in contextual_dataset_names:
+                contextual_kwargs.pop('subway_out',None)
+
 
             for horizon in horizons:
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
@@ -139,7 +160,7 @@ if True:
                                 'horizon_step': horizon,
                                 'step_ahead': horizon,
                                 'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {data_i:contextual_kwargs for data_i in contextual_dataset_names},
+                                'contextual_kwargs' : contextual_kwargs,
                                 'denoising_names':[],
                                 } 
                     config_i.update(config_backbone_model)
@@ -148,7 +169,7 @@ if True:
 
                     config_i['device'] = device
                     config_i['torch_compile'] = False 
-                    # config_i['epochs'] = 1
+                    config_i['epochs'] = 1
 
                     dic_configs[name_i] = config_i
 
@@ -178,7 +199,7 @@ if True:
 
             config_i['device'] = device
             config_i['torch_compile'] = False 
-            # config_i['epochs'] = 1
+            config_i['epochs'] = 1
 
             dic_configs[name_i] = config_i
 

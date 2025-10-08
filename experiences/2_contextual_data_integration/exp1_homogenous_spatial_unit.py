@@ -115,6 +115,8 @@ if True:
         for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
             if (fusion_type == 'early_fusion') and (feature_extractor_type == 's_proj_t_proj'):
                 continue
+            if (feature_extractor_type == 'cross_attn_traffic_model_backbone'):
+                continue
             for horizon in horizons:
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
                     dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
@@ -194,6 +196,8 @@ if False:
             if (feature_extractor_type == 'independant_embedding'):
                 continue
             if (fusion_type == 'early_fusion') and (feature_extractor_type == 's_proj_t_proj'):
+                continue
+            if (feature_extractor_type == 'cross_attn_traffic_model_backbone'):
                 continue
             for horizon in horizons:
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):

@@ -88,6 +88,12 @@ def load_spatial_attn_model(args,ds_name):
             'horizon_step': args.horizon_step,
             'added_dim_input': added_dim_input,
             'contextual_kwargs': args.contextual_kwargs,
+            'Q_num_nodes': args.num_nodes,
+            'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit'],
+            'cross_attention': args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False,
+            'Early_fusion_names': args.Early_fusion_names,
+            'Late_fusion_names': args.Late_fusion_names,
+
                     }
         args_ds_i = Namespace(**args_ds_i)
         for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
@@ -104,15 +110,15 @@ def load_spatial_attn_model(args,ds_name):
                 self.model = model
                 self.cross_attention = args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False
 
-            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = None) -> Tensor:
+            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dic_t_emb: Tensor = None, dim: int = None) -> Tensor:
                 # print('\nStart backbone model')
                 # print('   x_contextual size before backbone model: ',x_contextual.size())
                 if x_contextual.dim()==3:
                     x_contextual = x_contextual.unsqueeze(1)
                 if self.cross_attention:
-                    x_contextual = self.model(x = x,x_contextual= x_contextual,x_calendar = x_calendar)
+                    x_contextual = self.model(x = x,x_contextual= x_contextual,x_calendar = x_calendar,dic_t_emb=dic_t_emb)
                 else:
-                    x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar)
+                    x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar,dic_t_emb=dic_t_emb)
                 # print('   x_contextual size after backbone model and transpose: ',x_contextual.size())
                 return x_contextual
         return wrapper_backbone_model(backbone_model)
@@ -490,7 +496,8 @@ class full_model(nn.Module):
             else:
                 # print('\nds_name_i: ',ds_name_i)
                 # print('init node_attr size: ',node_attr.size())
-                node_attr = attention_module_i(x,x_contextual = node_attr, x_calendar = x_calendar,dim = 2 )  
+                dic_t_emb = contextual
+                node_attr = attention_module_i(x,x_contextual = node_attr, x_calendar = x_calendar,dic_t_emb=dic_t_emb, dim = 2 )  
                 # Tackle case where Extracted feature need to be Fusion at the Early stage of the backbone model :
                 if ds_name_i in self.Early_fusion_names:
                     # print('Early fusion for dataset: ',ds_name_i)

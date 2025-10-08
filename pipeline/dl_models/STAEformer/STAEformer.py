@@ -7,6 +7,12 @@ import torch
 from typing import Optional,List
 
 
+def repeat_transpose(x: Tensor, n_repeat: int) -> Tensor:
+    if x.size(1) == 1:
+        x = x.repeat(1, n_repeat, 1, 1)  # [B,1,L,emb_dim] -> [B,N,L,emb_dim]
+        x = x.transpose(1, 2)  # [B,N,L,emb_dim] -> [B,L,N,emb_dim]
+    return x
+
 
 class AttentionLayer(nn.Module):
     """Perform attention across the -2 dim (the -1 dim is `model_dim`).
@@ -130,6 +136,9 @@ class SelfAttentionLayer(nn.Module):
 
 
 class ContextualInputEmbedding(nn.Module):
+    """
+    Contextual features embedding + Keep track on extracted feature for early and late fusion.
+    """
     def __init__(
         self,
         num_nodes,
@@ -149,8 +158,8 @@ class ContextualInputEmbedding(nn.Module):
         self.contextual_spatial_proj = nn.ModuleDict()
         self.Early_fusion_names = Early_fusion_names
         self.Late_fusion_names = Late_fusion_names
-
-
+        self.projected_contextual = {}
+        # --- Define Temporal and Spatial Embedding (or Spatial Repeat) layers:
         for ds_name, kwargs_i in self.contextual_kwargs.items():
             if 'emb_dim' in kwargs_i.keys():
                 # Temporal Proj 
@@ -170,15 +179,27 @@ class ContextualInputEmbedding(nn.Module):
                     )
                 ):
                     self.contextual_spatial_proj[ds_name] = nn.Linear(kwargs_i['n_spatial_unit'], self.num_nodes)
+        # ---
+
 
     def forward(self, 
-                features : Tensor, 
                 contextual: Optional[list[Tensor]]= None,
                 ) -> Tensor:
         
-        early_features = torch.empty(features.size(0), features.size(1), features.size(2), 0,dtype=features.dtype, device=features.device)
-        late_features = torch.empty(features.size(0), features.size(1), features.size(2), 0,dtype=features.dtype, device=features.device)
-        # Heterogeneous or Homogenous spatial units others contextual features: 
+        # Temporal Embedding
+        self.t_embedding(contextual)
+
+        # Spatial Embedding (or Repeat) if needed :
+        self.s_embedding(n_repeat = self.num_nodes)
+
+        early_features = [contextual_i for ds_name, contextual_i in self.projected_contextual.items() if ds_name in self.Early_fusion_names]
+        self.early_features = torch.cat(early_features, dim=-1) if len(early_features)>0 else torch.empty(0)
+
+        late_features = [contextual_i for ds_name, contextual_i in self.projected_contextual.items() if ds_name in self.Late_fusion_names]
+        self.late_features = torch.cat(late_features, dim=-1) if len(late_features)>0 else torch.empty(0)
+
+
+    def t_embedding(self,contextual):
         for ds_name, _ in self.contextual_emb.items():
             print('    ds_name: ',ds_name, '(','Late fusion' if ds_name in self.Late_fusion_names else 'Early fusion' if ds_name in self.Early_fusion_names else 'No fusion',')')
             contextual_i = contextual[self.contextual_positions[ds_name]] 
@@ -190,27 +211,23 @@ class ContextualInputEmbedding(nn.Module):
             contextual_i = self.contextual_emb[ds_name](contextual_i)  # [B,P,L,C] -> [B,P,L,emb_dim]
             print('        Temporal proj:', contextual_i.size())
 
-            # --- Spatial Projection : 
-            # if Need spatial projection : 
+            self.projected_contextual[ds_name] = contextual_i
+
+    def s_embedding(self,n_repeat):
+        # if Need spatial projection : 
+        for ds_name, _ in self.contextual_emb.items():
+            contextual_i = self.projected_contextual[ds_name]
+
             if ds_name in self.contextual_spatial_proj.keys():
                 contextual_i = self.contextual_spatial_proj[ds_name](contextual_i.permute(0,3,2,1))  # [B,P,L,emb_dim] -permute-> [B,emb_dim,L,P] -> [B,emb_dim,L,N]
                 contextual_i = contextual_i.permute(0,2,3,1)  # [B,emb_dim,L,N] -> [B,L,N,emb_dim]
                 print('        Spatial projection: ', contextual_i.size())
 
             # If not projected and need to repeat on spatial dim:  
-            if contextual_i.size(1) == 1:
-                contextual_i = contextual_i.repeat(1,self.num_nodes,1,1) # [B,1,L,emb_dim] -> [B,N,L,emb_dim]
-                contextual_i = contextual_i.transpose(1,2)
-                print('        Repeat:', contextual_i.size())
+            contextual_i = repeat_transpose(contextual_i, n_repeat)
+            
 
-            # --- Concatenation early or late : 
-            if ds_name in self.Early_fusion_names: 
-                early_features = torch.cat([early_features, contextual_i], dim=-1)
-            if ds_name in self.Late_fusion_names:
-                late_features = torch.cat([late_features, contextual_i], dim=-1)
-
-        self.early_features = early_features
-        self.late_features = late_features
+            self.projected_contextual[ds_name] = contextual_i
 
     def concat_features(self, 
                         x: Tensor, 
@@ -377,11 +394,11 @@ class STAEformer(nn.Module):
             raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
 
         else: 
+            if x_calendar.dim() ==3:
+                x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
             x = x.permute(0,3,2,1) # [B,C,N,L] -> [B,L,N,C]
             if x_calendar.size(-1) != 2:
                 raise ValueError(f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
-            if x_calendar.dim() ==3:
-                x_calendar = x_calendar.unsqueeze(2)  # [B,L,2] -> [B,L,1,2]
             x_calendar = x_calendar.repeat(1,1,self.num_nodes,1) # [B,L,1,2]-> [B,L,N,2]
 
             # x: (batch_size, in_steps, num_nodes, input_dim+tod+dow=3)
@@ -397,7 +414,11 @@ class STAEformer(nn.Module):
             if self.tod_embedding is not None:
                 print('   add TOD embedding')
                 tod = x_calendar[..., self.pos_tod]
+                print('      tod shape before embedding:', tod.size())
                 tod_emb = self.tod_embedding( (tod * self.steps_per_day).long() )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
+
+                print('      tod_emb shape after embedding:', tod_emb.size())
+                print('      features shape before adding tod_emb:', features.size())
                 features = torch.cat([features, tod_emb], dim=-1)
 
             if self.dow_embedding is not None:
@@ -417,7 +438,7 @@ class STAEformer(nn.Module):
             
             # Add contextual features as inputs (Embedding + concatenation early)
             print('   features size before  Early Fusion of Embedding of Contextual: ',features.size())
-            self.contextual_input_embedding(features,contextual)
+            self.contextual_input_embedding(contextual)
             features = self.contextual_input_embedding.concat_features(features, self.contextual_input_embedding.early_features)
             print('   features size after Early Fusion of Embedding of Contextual: ',features.size())
 
@@ -458,6 +479,11 @@ class STAEformer(nn.Module):
                 # print('out size before mixed proj:', out.size())
                 # print('batch_size, num_nodes, in_steps, output_model_dim:', batch_size, self.num_nodes, self.in_steps, self.output_model_dim)
                 # print('model dim + added_dim_output= ',self.added_dim_output + self.model_dim)
+                print('   self.model_dim:',self.model_dim)
+                print('   self.added_dim_output:',self.added_dim_output)
+                print('   self.output_model_dim:',self.output_model_dim)
+                print('   output_proj:',self.output_proj)
+
 
                 out = out.reshape( batch_size, self.num_nodes, self.in_steps * (self.model_dim+self.added_dim_output))
                 out = self.output_proj(out)
@@ -644,6 +670,9 @@ class backbone_model(nn.Module):
         Q_num_nodes = 40,
         KV_num_nodes = 13,
         init_adaptive_query_dim = 0 ,
+        Early_fusion_names = [],
+        Late_fusion_names = [],
+        cross_attention = False,
     ):
         super().__init__()
         #  ---  self attributes: ---
@@ -667,6 +696,9 @@ class backbone_model(nn.Module):
         self.KV_num_nodes = KV_num_nodes
         self.num_heads = num_heads
         self.num_layers = num_layers
+        self.Early_fusion_names = Early_fusion_names
+        self.Late_fusion_names = Late_fusion_names
+        self.cross_attention = cross_attention
     
         self.sum_contextual_dim = 0
         for k in contextual_kwargs.keys():
@@ -722,23 +754,45 @@ class backbone_model(nn.Module):
         self.contextual_positions = contextual_positions
         self.pos_tod = contextual_positions.get("calendar_timeofday", None)
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
+
         self.contextual_input_embedding =  ContextualInputEmbedding(self.num_nodes,self.contextual_kwargs,
-                                                                    self.sum_contextual_dim,self.contextual_positions)
-
-
-        self.attn_layers_t = nn.ModuleList(
-            [
-                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
-                for _ in range(num_layers)
-            ]
-        )
-
+                                                                    self.sum_contextual_dim,self.contextual_positions,
+                                                                    self.Early_fusion_names,self.Late_fusion_names)
+        
+        # --- Temporal Attention Layers :
+        if self.cross_attention :
+            self.Q_attn_layers_t = nn.ModuleList(
+                [
+                    SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                    for _ in range(num_layers)
+                ]
+            )
+            self.KV_attn_layers_t = nn.ModuleList(
+                [
+                    SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                    for _ in range(num_layers)
+                ]
+            )
+            self.attn_layers_t = None
+        else:
+            self.attn_layers_t = nn.ModuleList(
+                [
+                    SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                    for _ in range(num_layers)
+                ]
+            )
+            self.Q_attn_layers_t = None
+            self.KV_attn_layers_t = None
+        # --- 
+            
+        # --- Spatial  Attention Layers :
         self.attn_layers_s = nn.ModuleList(
             [
                 SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
                 for _ in range(num_layers)
             ]
         )
+        # ---
 
         # --- Adaptive Embedding for added to Query and Key,Value
         if adaptive_embedding_dim > 0:
@@ -764,10 +818,11 @@ class backbone_model(nn.Module):
     def forward(self,  x: Tensor,
                 x_contextual: Tensor = None,
                 x_calendar : Tensor = None,
+                dic_t_emb : Tensor = None,
                 dim: int = None
                 ) -> Tensor:
-        # print('\nStart BACKBONE forward')
-        # print('   x shape before input_proj:', x.shape)
+        print('\nStart BACKBONE forward')
+        print('   x shape before input_proj:', x.shape)
 
 
         batch_size = x.size(0)
@@ -775,58 +830,57 @@ class backbone_model(nn.Module):
         # ---------- Set Initial Query, Key and Values ---------- : 
         #  --- Adaptive Tensor as Query : 
         if self.init_adaptive_query is not None:
-            # print('generate Query from adaptive tensor')
+            print('   generate Query from adaptive tensor')
             query_init = self.init_adaptive_query.expand(size=(batch_size, self.in_steps, self.Q_num_nodes, self.init_adaptive_query_dim))
         
         # --- Use X as query : 
         else:
-            # print('init x.size(): ',x.size())
             if x.dim()==3:
                 x = x.unsqueeze(-1)
-            # print('after unsqueeze: ',x.size())
             x = self.input_proj(x)
             x = x.transpose(1,2)  
-            # print('x.size() after input proj and transpose: ',x.size())
+            print('   x.size() after input proj and transpose: ',x.size())
             query_init  = x
 
         # --- Use Contextual as Key, Values if exists: 
         if x_contextual is not None:
-            # print('init x_contextual.size(): ',x_contextual.size())
+            print('   init x_contextual.size(): ',x_contextual.size())
             if x_contextual.dim()==3:
                 x_contextual = x_contextual.unsqueeze(-1)
-            # print('after unsqueeze: ',x.size())
+            else:
+                x_contextual = x_contextual.transpose(1,3)
             x_contextual = self.contextual_proj(x_contextual)
-            x_contextual  = x_contextual.transpose(1,2) if x_contextual is not None else None
-            # print('x_contextual.size() after contextual proj and transpose: ',x.size())
+            print('   x_contextual.size() after contextual proj and transpose: ',x_contextual.size())
         else:
             x_contextual = query_init
         # ---------- 
 
 
 
-        Q_features = torch.empty(x.size(0), x.size(1), x.size(2), 0,dtype=x.dtype, device=x.device) 
+        Q_features = torch.empty(query_init.size(0), query_init.size(1), query_init.size(2), 0,dtype=x.dtype, device=x.device) 
         KV_features = torch.empty(x_contextual.size(0), x_contextual.size(1), x_contextual.size(2), 0,dtype=x_contextual.dtype, device=x_contextual.device) 
 
 
-
+        print('\nAdd Embeddings to Query and Key,Value : ')
         # ---------- Calendar Embedding : 
         if (self.tod_embedding is not None) or (self.dow_embedding is not None):
             if x_calendar is None:
                 raise ValueError("x_calendar is None. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
-            
-            calendar_features = torch.empty(query_init.size(0), query_init.size(1),1, 0,dtype=query_init.dtype, device=query_init.device)
+            print('    init x_calendar.size(): ',x_calendar.size())
+            calendar_features = torch.empty(query_init.size(0), query_init.size(1), 0,dtype=query_init.dtype, device=query_init.device)
             if self.tod_embedding is not None:
-                # print('   add TOD embedding')
+                print('   add TOD embedding')
                 tod = x_calendar[..., self.pos_tod]
                 tod_emb = self.tod_embedding( (tod * self.steps_per_day).long() )  # (batch_size, in_steps, num_nodes, tod_embedding_dim)
                 calendar_features = torch.cat([calendar_features, tod_emb], dim=-1)
 
             if self.dow_embedding is not None:
-                # print('   add DOW embedding')
+                print('   add DOW embedding')
                 dow = x_calendar[..., self.pos_dow]
                 dow_emb = self.dow_embedding(dow.long())  # (batch_size, in_steps, num_nodes, dow_embedding_dim)
                 calendar_features = torch.cat([calendar_features, dow_emb], dim=-1)
-        
+            calendar_features = calendar_features.unsqueeze(2)  # [B,L,emb_dim] -> [B,L,1,emb_dim]
+            print('   calendar_features size: ',calendar_features.size())
             Q_features = torch.cat([Q_features, calendar_features.repeat(1,1,Q_features.size(2),1)], dim=-1)
             KV_features = torch.cat([KV_features, calendar_features.repeat(1,1,KV_features.size(2),1)], dim=-1)
         # ---------- 
@@ -837,16 +891,16 @@ class backbone_model(nn.Module):
         # ---------- Adaptive Embedding : 
         #       - If Self Attention 
         if self.adaptive_embedding is not None:
-            # print('   add adpt embedding')
+            print('\nadd common adpt embedding')
             adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
             Q_features = torch.cat([Q_features, adp_emb], dim=-1)
             KV_features = torch.cat([KV_features, adp_emb], dim=-1)
 
         #       - If Cross Attention 
         if self.Q_adaptive_embedding is not None:
+            print('\nadd Q_adp_emb and KV_adp_emb embedding')
             Q_adp_emb = self.Q_adaptive_embedding.expand(size=(batch_size, self.in_steps, self.Q_num_nodes, self.adaptive_embedding_dim))
             KV_adp_emb = self.KV_adaptive_embedding.expand(size=(batch_size, self.in_steps, self.KV_num_nodes, self.adaptive_embedding_dim))
-            # print('Q_adp_emb,KV_adp_emb: ',Q_adp_emb.size(),KV_adp_emb.size())
             Q_features = torch.cat([Q_features, Q_adp_emb], dim=-1)
             KV_features = torch.cat([KV_features, KV_adp_emb], dim=-1)
         # ----------
@@ -855,30 +909,57 @@ class backbone_model(nn.Module):
 
         # ---------- Other Contextual Embedding : 
         # Add contextual features as inputs (Embedding + concatenation early)
-        # SHOULD CHANGE IF NEEDED, BUT HERE WE DO NOT HAVE CONTEXTUAL FUSION EXCEPT CALENDAR AND ADAPTIVE EMBEDDING
-        self.contextual_input_embedding(features,x_contextual)
-        features = self.contextual_input_embedding.concat_features(features, self.contextual_input_embedding.early_features)
-
-        x = torch.cat([x, features], dim=-1)
-        # print('   x size after adding all embeddings:', x.size())
+        # DO NOT ADD LATE FEATURE AS IT WILL BE ALREADY ADDED AT THE OUTPUT HEAD
+        self.contextual_input_embedding.t_embedding(dic_t_emb)
+        early_features = [contextual_i for ds_name, contextual_i in self.contextual_input_embedding.projected_contextual.items() if ds_name in self.Early_fusion_names]
+        early_features = torch.cat(early_features, dim=-1) if len(early_features)>0 else torch.empty(0)
+        late_features = [contextual_i for ds_name, contextual_i in self.contextual_input_embedding.projected_contextual.items() if ds_name in self.Late_fusion_names]
+        late_features = torch.cat(late_features, dim=-1) if len(late_features)>0 else torch.empty(0)
+        
+        if late_features.size(-1) >0:
+            raise NotImplementedError("Late fusion of contextual features should be forbiden here as all the backbone model for heterogenous spatial unit will produce repeated embedding of contextual data which will be concatenated at the output head of the main traffic model.")
+        if early_features.size(-1) >0:
+            print('\nadd contextual early features')
+            Q_features = self.contextual_input_embedding.concat_features(Q_features, repeat_transpose(x = early_features, n_repeat = self.Q_num_nodes))
+            KV_features = self.contextual_input_embedding.concat_features(KV_features, repeat_transpose(x = early_features, n_repeat = self.KV_num_nodes))
+            print('   Q_features.size() after adding contextual early features : ',Q_features.size())
+            print('   KV_features.size() after adding contextual early features : ',KV_features.size())
         # ----------
 
 
+        query_init = torch.cat([query_init, Q_features], dim=-1)
+        x_contextual = torch.cat([x_contextual, KV_features], dim=-1)
 
         # FEATURE EXTRACTION
+        print('\nStart Feature Extraction with Attention layers')
+        print('   query_init.size() before attn-layers: ',query_init.size())
+        print('   x_contextual.size() before attn-layers: ',x_contextual.size())
         # ----------  Temporal & Spatial Attention Layers  : 
-        for attn in self.attn_layers_t:
-            # print('\n--- Temporal attention layer ---')
-            x = attn(x, dim=1)
-        for attn in self.attn_layers_s:
-            # print('\n--- Spatial attention layer ---')
-            x = attn(x, dim=2)
+
+        #if Cross Attention,  Need to first project into spatial dimension  ==> INVERSE ORDER OF ATTENTION LAYERS
+        if self.cross_attention:
+            print('   Use Cross Attention layers')
+            for attn in self.Q_attn_layers_t:
+                query_init = attn(query_init, dim=1)
+            for attn in self.KV_attn_layers_t:
+                x_contextual = attn(x_contextual, dim=1) 
+
+            for attn in self.attn_layers_s:
+                query_init = attn(query_init, dim=2, x_contextual = x_contextual)
+
+
+        # Else, keep normal STAEformer:  
+        else:
+            print('   Use Self Attention layers')
+            for attn in self.attn_layers_t:
+                query_init = attn(query_init, dim=1)
+            for attn in self.attn_layers_s:
+                query_init = attn(query_init, dim=2)
+
         # (batch_size, in_steps, num_nodes, model_dim)
-        # print('   x.size() after T-attn and S-attn : ',x.size())
+        print('   x.size() after T-attn and S-attn : ',query_init.size())
         # ---------- 
-
-
-        return x
+        return query_init
 
 
 
