@@ -93,11 +93,11 @@ loger = LOG()
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
-init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp3'
-device = torch.device('cuda:0')
+init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp3_bike_15min_h4'
+device = torch.device('cuda:1')
 
-freq = '1H' #'15min'  
-horizons = [1] # [4]  #[1,4]
+freq = '15min' #'15min'  
+horizons = [4] # [4]  #[1,4]
 target_data = 'bike_out' 
 contextual_dataset_names = ['subway_out','weather']
 
