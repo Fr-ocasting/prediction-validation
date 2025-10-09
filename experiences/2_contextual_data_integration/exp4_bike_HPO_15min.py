@@ -110,7 +110,6 @@ config_backbone_model['epochs'] = 80
 compilation_modification['torch_compile'] = 'compile' # 'compile'  # False 
 # REPEAT_TRIAL  = 1 
 
-
 dic_configs = {}
 
 
