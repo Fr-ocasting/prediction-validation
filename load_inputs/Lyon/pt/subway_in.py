@@ -42,7 +42,6 @@ num_nodes = 40
 
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True,filename=None,name=NAME,tensor_limits_keeper = None):
     dataset = load_DataSet(args,FOLDER_PATH,coverage_period = coverage_period,filename=filename,name=name)
-    args_DataSet = filter_args(DataSet, args)
 
     if  hasattr(args,'contextual_kwargs') and (name in args.contextual_kwargs.keys()) and ('use_future_values' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['use_future_values'] and ('loading_contextual_data' in args.contextual_kwargs[name].keys()) and args.contextual_kwargs[name]['loading_contextual_data']:
         data_T = torch.roll(torch.Tensor(dataset.raw_values), shifts=-1, dims=0)

@@ -37,6 +37,7 @@ DATASET_IMPORT_PATHS = {
     'subway_out': 'load_inputs.Lyon.pt.subway_out',
     'subway_indiv': 'load_inputs.Lyon.pt.subway_indiv',
     'subway_out_per_station': 'load_inputs.Lyon.pt.subway_out_per_station',
+    'subway_in_subway_out': 'load_inputs.Lyon.pt.subway_in_subway_out',
     'tramway_indiv': 'load_inputs.Lyon.pt.tramway_indiv',
     'buses_indiv': 'load_inputs.Lyon.pt.buses_indiv',
 

@@ -36,7 +36,7 @@ feature_extractor_model_configurations = {'need_global_attn':True,
                                         'use_only_for_common_dates': False,
                                         'quantile_filter_outliers':QUANTILE_FILTER_OUTLIERS_DEFAULT ,
                                         'attn_kwargs': {
-                                            'input_embedding_dim': 48, 
+                                            'input_embedding_dim': INPUT_EMBEDDING_DIM, 
                                             # 'init_adaptive_query_dim' : 24,    # Do not use Target data as query 
                                             'adaptive_embedding_dim' : 32,     # Add two separate adaptive Embedding within Query and Key/Values.
                                             'feed_forward_dim':256, 

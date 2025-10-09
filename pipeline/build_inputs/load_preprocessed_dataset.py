@@ -114,7 +114,7 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
                                                                                                                              dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late)
              
 
-        elif dataset_name in ['subway_out','subway_in','subway_indiv','PeMS08_flow','PeMS08_occupancy','PeMS08_speed']:
+        elif dataset_name in ['subway_out','subway_in','subway_indiv','PeMS08_flow','PeMS08_occupancy','PeMS08_speed','subway_in_subway_out']:
             need_local_spatial_attn = False
             contextual_tensors,target_ds,ds_which_need_spatial_attn_per_station,contextual_positions,dict_pos_node_attr2ds,ds_which_need_global_attn,ds_which_need_global_attn_late = update_contextual_tensor(dataset_name,args,need_local_spatial_attn,
                                                                                                                              target_ds,contextual_tensors,contextual_ds_i,

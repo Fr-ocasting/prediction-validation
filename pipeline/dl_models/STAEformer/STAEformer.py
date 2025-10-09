@@ -29,10 +29,11 @@ class AttentionLayer(nn.Module):
 
     """
 
-    def __init__(self, model_dim, num_heads=8, mask=False):
+    def __init__(self, model_dim, num_heads=8, mask=False,KV_model_dim = None):
         super().__init__()
 
         self.model_dim = model_dim
+        self.KV_model_dim = KV_model_dim if KV_model_dim is not None else model_dim
         self.num_heads = num_heads
         self.mask = mask
 
@@ -40,8 +41,8 @@ class AttentionLayer(nn.Module):
         assert ( self.head_dim * num_heads == model_dim), f"model_dim {model_dim} must be divisible by num_heads {num_heads}"
 
         self.FC_Q = nn.Linear(model_dim, model_dim)
-        self.FC_K = nn.Linear(model_dim, model_dim)
-        self.FC_V = nn.Linear(model_dim, model_dim)
+        self.FC_K = nn.Linear(self.KV_model_dim, model_dim)
+        self.FC_V = nn.Linear(self.KV_model_dim, model_dim)
 
         self.out_proj = nn.Linear(model_dim, model_dim)
 
@@ -95,11 +96,11 @@ class AttentionLayer(nn.Module):
 
 class SelfAttentionLayer(nn.Module):
     def __init__(
-        self, model_dim, feed_forward_dim=2048, num_heads=8, dropout=0, mask=False
+        self, model_dim, feed_forward_dim=2048, num_heads=8, dropout=0, mask=False,KV_model_dim = None
     ):
         super().__init__()
 
-        self.attn = AttentionLayer(model_dim, num_heads, mask)
+        self.attn = AttentionLayer(model_dim, num_heads, mask,KV_model_dim)
         self.feed_forward = nn.Sequential(
             nn.Linear(model_dim, feed_forward_dim),
             nn.ReLU(inplace=True),
@@ -471,19 +472,21 @@ class STAEformer(nn.Module):
 
             if x_vision_late is not None: 
                 # print('   concat x_vision late')
+                # print('      x.size() before concat x_vision_late: ',x.size())
+                # print('      x_vision_late.size(): ',x_vision_late.size())
                 x = torch.cat([x, x_vision_late], dim=-1)
-                # print('      x.size() after concat x_vision_late: ',x.size())
 
             if self.temporal_proj is None:
                 out = x.transpose(1, 2)  # (batch_size, num_nodes, in_steps, model_dim)
-                # print('out size before mixed proj:', out.size())
-                # print('batch_size, num_nodes, in_steps, output_model_dim:', batch_size, self.num_nodes, self.in_steps, self.output_model_dim)
-                # print('model dim + added_dim_output= ',self.added_dim_output + self.model_dim)
+                # print('\out size before mixed proj:', out.size())
+                # print(f"    Number of each elmt in 'out': , {out.numel()/batch_size}")
+                # print('   self.num_nodes:',self.num_nodes)
+                # print('   self.in_steps:',self.in_steps)
                 # print('   self.model_dim:',self.model_dim)
                 # print('   self.added_dim_output:',self.added_dim_output)
+                # print('   Expected reshaped last dim: in_steps *(model_dim + added_dim_output) = ', self.in_steps, 'x' ,(self.model_dim+self.added_dim_output),'=', self.in_steps * (self.model_dim+self.added_dim_output))
                 # print('   self.output_model_dim:',self.output_model_dim)
                 # print('   output_proj:',self.output_proj)
-
 
                 out = out.reshape( batch_size, self.num_nodes, self.in_steps * (self.model_dim+self.added_dim_output))
                 out = self.output_proj(out)
@@ -654,6 +657,7 @@ class backbone_model(nn.Module):
         C=1,
         out_dim_factor = 1,
         input_embedding_dim=24,
+        contextual_input_embedding_dim = None,
         tod_embedding_dim=24,
         dow_embedding_dim=24,
         spatial_embedding_dim=0,
@@ -707,8 +711,10 @@ class backbone_model(nn.Module):
             if 'emb_dim' in contextual_kwargs[k].keys() and not( concatenation_late_bool ):
                 self.sum_contextual_dim = self.sum_contextual_dim + contextual_kwargs[k]['emb_dim']
 
-        self.model_dim = (
-            (input_embedding_dim if  self.init_adaptive_query_dim == 0 else self.init_adaptive_query_dim)
+        Q_input_dim = input_embedding_dim if  self.init_adaptive_query_dim == 0 else self.init_adaptive_query_dim
+        KV_input_dim = contextual_input_embedding_dim if contextual_input_embedding_dim is not None else Q_input_dim
+        self.Q_model_dim = (
+            Q_input_dim
             + tod_embedding_dim
             + dow_embedding_dim
             + spatial_embedding_dim
@@ -716,10 +722,21 @@ class backbone_model(nn.Module):
             + added_dim_input
             + self.sum_contextual_dim
         )
-        self.output_model_dim = self.model_dim + self.added_dim_output
 
 
-        self.contextual_proj = nn.Linear(1, input_embedding_dim)
+        self.KV_model_dim = (
+            KV_input_dim
+            + tod_embedding_dim
+            + dow_embedding_dim
+            + spatial_embedding_dim
+            + adaptive_embedding_dim
+            + added_dim_input
+            + self.sum_contextual_dim
+        )
+
+
+
+        self.contextual_proj = nn.Linear(self.input_dim, contextual_input_embedding_dim if contextual_input_embedding_dim is not None else input_embedding_dim)
 
         if self.init_adaptive_query_dim >0:
             self.init_adaptive_query = nn.init.xavier_uniform_(
@@ -727,7 +744,7 @@ class backbone_model(nn.Module):
             self.input_proj = None
         else:
             self.init_adaptive_query = None
-            self.input_proj = nn.Linear(self.input_dim, input_embedding_dim) 
+            self.input_proj = nn.Linear(1, input_embedding_dim) 
         #  --- 
 
         if tod_embedding_dim > 0:
@@ -763,13 +780,13 @@ class backbone_model(nn.Module):
         if self.cross_attention :
             self.Q_attn_layers_t = nn.ModuleList(
                 [
-                    SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                    SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout)
                     for _ in range(num_layers)
                 ]
             )
             self.KV_attn_layers_t = nn.ModuleList(
                 [
-                    SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                    SelfAttentionLayer(self.KV_model_dim, feed_forward_dim, num_heads, dropout)
                     for _ in range(num_layers)
                 ]
             )
@@ -777,7 +794,7 @@ class backbone_model(nn.Module):
         else:
             self.attn_layers_t = nn.ModuleList(
                 [
-                    SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                    SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout)
                     for _ in range(num_layers)
                 ]
             )
@@ -788,7 +805,7 @@ class backbone_model(nn.Module):
         # --- Spatial  Attention Layers :
         self.attn_layers_s = nn.ModuleList(
             [
-                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
+                SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout,KV_model_dim = self.KV_model_dim)
                 for _ in range(num_layers)
             ]
         )
@@ -940,11 +957,18 @@ class backbone_model(nn.Module):
         if self.cross_attention:
             # print('   Use Cross Attention layers')
             for attn in self.Q_attn_layers_t:
+                # print(    'query_init size before attn:', query_init.size())
+                # print(    'attn_layer:', attn)
                 query_init = attn(query_init, dim=1)
             for attn in self.KV_attn_layers_t:
+                # print(    '\nx_contextual size before attn:', x_contextual.size())
+                # print(    'attn_layer:', attn)
                 x_contextual = attn(x_contextual, dim=1) 
 
             for attn in self.attn_layers_s:
+                # print(    '\nquery_init size before attn:', query_init.size())
+                # print(    'x_contextual size before attn:', x_contextual.size())
+                # print(    'attn_layer:', attn)
                 query_init = attn(query_init, dim=2, x_contextual = x_contextual)
 
 
@@ -959,6 +983,18 @@ class backbone_model(nn.Module):
         # (batch_size, in_steps, num_nodes, model_dim)
         # print('   x.size() after T-attn and S-attn : ',query_init.size())
         # ---------- 
+
+        # print('input embedding dim:', self.input_embedding_dim)
+        # print('tod_embedding_dim:', self.tod_embedding_dim)
+        # print('dow_embedding_dim:', self.dow_embedding_dim)
+        # print('spatial_embedding_dim:', self.spatial_embedding_dim)
+        # print('adaptive_embedding_dim:', self.adaptive_embedding_dim)
+        # print('added_dim_input:', self.added_dim_input)
+        # print('added_dim_output:', self.added_dim_output)
+        # print('sum_contextual_dim:', self.sum_contextual_dim)
+        # print('Total model_dim:', self.Q_model_dim)
+        # print('input_embedding_dim:', self.input_embedding_dim ) 
+        # print('init_adaptive_query_dim: ', self.init_adaptive_query_dim)
         return query_init
 
 

@@ -174,7 +174,8 @@ if True:
                     dic_configs[name_i] = config_i
 
 
-if True:
+# Already done 
+if False:
     for horizon in horizons:
         for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
             dataset_names =  [target_data] + ['calendar']

@@ -54,7 +54,8 @@ def load_spatial_attn_model(args,ds_name):
         class simple_t_embedding(nn.Module):
             def __init__(self, embedding_dim):
                 super(simple_t_embedding,self).__init__()
-                self.linear = nn.Linear(1,embedding_dim)
+                input_dim = args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1
+                self.linear = nn.Linear(input_dim,embedding_dim)
 
             def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = None) -> Tensor:
                 # print('\nStart simple temporal embedding')
@@ -93,11 +94,11 @@ def load_spatial_attn_model(args,ds_name):
             'cross_attention': args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False,
             'Early_fusion_names': args.Early_fusion_names,
             'Late_fusion_names': args.Late_fusion_names,
-
                     }
         args_ds_i = Namespace(**args_ds_i)
         for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
                 setattr(args_ds_i,key,value)
+
 
         importlib.reload(script)
         func = script.backbone_model
@@ -130,6 +131,7 @@ def load_spatial_attn_model(args,ds_name):
         args_ds_i = {'steps_per_day' : 24*args.time_step_per_hour,
                         'pos_tod' : args.contextual_positions.get("calendar_timeofday", None),
                         'pos_dow' : args.contextual_positions.get("calendar_dayofweek", None),
+                        'C': args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1,
                         'in_steps': args.L,
                         'Q_num_nodes': args.num_nodes,
                         'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit'],

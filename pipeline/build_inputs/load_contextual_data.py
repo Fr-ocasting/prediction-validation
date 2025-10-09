@@ -141,6 +141,7 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
                                         normalize=normalize,
                                         tensor_limits_keeper = target_ds.tensor_limits_keeper if hasattr(target_ds,'tensor_limits_keeper') else None,
                                         )
+        contextual_ds_i.C = module.C
         contextual_ds[dataset_name] = contextual_ds_i
 
         ### Update args with contextual dataset information:
@@ -149,9 +150,9 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
             if hasattr(contextual_ds_i,'dictionnary_aggregated_iris') : args.contextual_kwargs[dataset_name]['dictionnary_aggregated_iris'] = contextual_ds_i.dictionnary_aggregated_iris
             if hasattr(contextual_ds_i,'dict_label2agg') : args.contextual_kwargs[dataset_name]['dict_label2agg'] = contextual_ds_i.dict_label2agg
             if hasattr(contextual_ds_i,'kept_zones') : args.contextual_kwargs[dataset_name]['kept_zones'] = contextual_ds_i.kept_zones
-            if hasattr(contextual_ds_i,'C') : args.contextual_kwargs[dataset_name]['C'] = contextual_ds_i.C
-            args.contextual_kwargs[dataset_name]['n_spatial_unit'] = contextual_ds_i.U_train.size(1) 
+            args.contextual_kwargs[dataset_name]['C'] = contextual_ds_i.C
             args.contextual_kwargs[dataset_name]['spatial_unit'] = contextual_ds_i.spatial_unit
+            args.contextual_kwargs[dataset_name]['n_spatial_unit'] = len(contextual_ds_i.spatial_unit) 
     ### Match the dates of the contextual datasets with the target dataset if differents: 
     target_ds,contextual_ds = restrain_all_ds_to_common_dates(target_ds,contextual_ds)
 
@@ -255,7 +256,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                             latent_dim = kwargs_i['attn_kwargs']['simple_embedding_dim']
                         else:
                             latent_dim = ( 
-                                          (kwargs_i['attn_kwargs']['input_embedding_dim'] if 'init_adaptive_query_dim' not in kwargs_i['attn_kwargs'].keys() else kwargs_i['attn_kwargs']['init_adaptive_query_dim'])
+                                          (kwargs_i['attn_kwargs']['input_embedding_dim'] if ('init_adaptive_query_dim' not in kwargs_i['attn_kwargs'].keys() or kwargs_i['attn_kwargs']['init_adaptive_query_dim'] == 0) else kwargs_i['attn_kwargs']['init_adaptive_query_dim'])
                                         + (kwargs_i['attn_kwargs']['adaptive_embedding_dim'] if 'adaptive_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
                                         + (kwargs_i['attn_kwargs']['tod_embedding_dim'] if 'tod_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
                                         + (kwargs_i['attn_kwargs']['dow_embedding_dim'] if 'dow_embedding_dim' in kwargs_i['attn_kwargs'].keys() else 0)
@@ -269,7 +270,8 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                     if ('netmob_POIs' in name_i) and (not kwargs_i['need_global_attn']):
                         add_dim = len(kwargs_i['NetMob_selected_apps'])*len(kwargs_i['NetMob_transfer_mode'])*len(kwargs_i['NetMob_selected_tags']) 
                     else:
-                        add_dim =  latent_dim*contextual_ds_i.C 
+                        # add_dim =  latent_dim*contextual_ds_i.C 
+                        add_dim =  latent_dim
                     args.contextual_kwargs[name_i]['added_dim'] = add_dim
 
 
