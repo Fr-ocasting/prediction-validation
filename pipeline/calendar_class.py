@@ -57,7 +57,7 @@ def get_temporal_mask(s_dates: pd.Series,
     -----
         pd.Series: Boolean mask indicating whether each date falls within the specified time range.
     """
-    
+
     if temporal_agg == 'morning_peak':
         filter_mask = get_mask_working_day(s_dates,is_morning_peak(s_dates),city)
     elif temporal_agg == 'evening_peak':
@@ -65,9 +65,10 @@ def get_temporal_mask(s_dates: pd.Series,
     elif temporal_agg == 'off_peak':
         filter_mask = get_mask_working_day(s_dates,~is_morning_peak(s_dates) & ~is_evening_peak(s_dates),city)
     elif temporal_agg == 'bank_holiday':
+        weekday_mask = is_weekday(s_dates)
         dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
         usefull_hours =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
-        filter_mask = usefull_hours & (~weekday_mask | ~dates_is_bank_holidays)
+        filter_mask = usefull_hours & (~weekday_mask | dates_is_bank_holidays)
     elif temporal_agg == 'business_day':
         weekday_mask = is_weekday(s_dates)
         dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))

@@ -1,7 +1,8 @@
 from bokeh.plotting import figure
-from bokeh.models import Legend,BoxAnnotation,DatetimeTickFormatter,RangeTool
+from bokeh.models import Legend,BoxAnnotation,DatetimeTickFormatter,RangeTool,Band,ColumnDataSource,LegendItem,CustomJS,FixedTicker
 import torch 
 from datetime import timedelta
+import datetime
 import pandas as pd 
 from bokeh.palettes import Set3_12 
 from bokeh.palettes import Plasma256 
@@ -46,6 +47,81 @@ def plot_subway_patterns(df,Metro_A_stations,palette,width=1500, height=600,titl
     p.add_layout(legend, 'right')
     
     return(p)
+
+
+
+def plot_line_and_buffer(mean_df, median_df, std_df,title, columns = None ,colors = None, width=800, height=400, legend_str = None):
+    
+    dummy_date = datetime.date(2025, 1, 1)
+    mean_df_internal = mean_df.copy()
+    std_df_internal = std_df.copy()
+    
+    mean_df_internal.index = [datetime.datetime.combine(dummy_date, i) for i in mean_df_internal.index]
+    std_df_internal.index = [datetime.datetime.combine(dummy_date, i) for i in std_df_internal.index]
+    
+    p = figure(title=title, width=width, height=height, x_axis_type="datetime")
+    use_palette = False
+    legend_items = []
+    if colors is None:
+        colors = palette
+        use_palette = True
+    if columns is None:
+        columns = mean_df_internal.columns
+    nb_cols = len(columns)
+    for k, column in enumerate(columns):
+        if use_palette:
+            pos = int(k * (255 / nb_cols))
+        else:
+            pos = k
+        color_i = colors[pos]
+
+        line_renderer = p.line(x=mean_df_internal.index, y=mean_df_internal[column], alpha=0.8, color=color_i)
+
+        dict_source = {
+            'time': std_df_internal.index,
+            'lower': mean_df_internal[column].values - std_df_internal[column].values,
+            'upper': mean_df_internal[column].values + std_df_internal[column].values
+        }
+        source_interval = ColumnDataSource(pd.DataFrame(dict_source))
+        band = Band(base="time", lower="lower", upper="upper", source=source_interval,
+                    fill_alpha=0.3, fill_color=color_i, line_width=0)
+        p.add_layout(band)
+
+        callback = CustomJS(args={'band': band}, code="band.visible = this.visible;")
+        line_renderer.js_on_change('visible', callback)
+
+        band_proxy_renderer = p.patch([], [], fill_color=color_i, fill_alpha=0.3, line_width=0)
+        
+        if legend_str is None:
+              legend_label = str(column)
+        else:
+              legend_label = legend_str[k]
+        
+        legend_item = LegendItem(label=legend_label, renderers=[line_renderer, band_proxy_renderer])
+        legend_items.append(legend_item)
+
+    # 1. On sélectionne les graduations souhaitées sous forme de DatetimeIndex
+    desired_ticks_dt = mean_df_internal.index[::2]
+    
+    # 2. CORRECTION FINALE : On convertit ces dates en millisecondes pour le FixedTicker
+    ticks_in_ms = (desired_ticks_dt.astype('int64') // 10**6).tolist()
+    
+    # 3. On passe la liste de nombres (millisecondes) au FixedTicker
+    p.xaxis.ticker = FixedTicker(ticks=ticks_in_ms)
+    
+    # Le formatter saura interpréter ces millisecondes comme des dates et les afficher en HH:MM
+    p.xaxis.formatter = DatetimeTickFormatter(hours=["%H:%M"], days=["%H:%M"], months=["%H:%M"], years=["%H:%M"])
+
+    p.xaxis.major_label_orientation = 1.2
+    
+    legend = Legend(items=legend_items) # , location="center"
+    
+    legend.click_policy = "hide"
+    p.add_layout(legend)
+#     p.add_layout(legend, 'right')
+    
+    output_notebook()
+    show(p)
 
 def drag_selection_box(df,p1,p2=None,p3=None, width=1500, height=150):
 
