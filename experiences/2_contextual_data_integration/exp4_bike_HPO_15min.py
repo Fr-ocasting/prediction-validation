@@ -96,7 +96,7 @@ loger = LOG()
 # Set seed : NO 
 
 init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp4_15min'
-device = torch.device('cuda:1')
+device = torch.device('cuda:0')
 
 freq = '15min' #'15min'  
 horizons = [4] # [4]  #[1,4]
@@ -105,9 +105,9 @@ contextual_dataset_names = ['subway_in_subway_out']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
-config_backbone_model['device'] = device
 config_backbone_model['epochs'] = 80
 compilation_modification['torch_compile'] = 'compile' # 'compile'  # False 
+compilation_modification['device'] = device
 # REPEAT_TRIAL  = 1 
 
 dic_configs = {}
