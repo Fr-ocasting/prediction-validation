@@ -96,7 +96,7 @@ loger = LOG()
 # Set seed : NO 
 
 init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp4_15min'
-device = torch.device('cuda:0')
+device = torch.device('cuda:1')
 
 freq = '15min' #'15min'  
 horizons = [4] # [4]  #[1,4]
@@ -105,10 +105,10 @@ contextual_dataset_names = ['subway_in_subway_out']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
-config_backbone_model['epochs'] = 80
+config_backbone_model['epochs'] = 50 #80
 compilation_modification['torch_compile'] = 'compile' # 'compile'  # False 
 compilation_modification['device'] = device
-# REPEAT_TRIAL  = 1 
+REPEAT_TRIAL  = 1 
 
 dic_configs = {}
 
@@ -117,10 +117,10 @@ weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['
 
 
 # ------ Possible configurations :
-L_input_embedding_dim = [8,24]
-L_adaptive_embedding_dim = [0,16,32]
-L_init_adaptive_query_dim = [0,8,24]
-L_contextual_input_embedding_dim = [8,24] # [8,24,32,48]
+L_input_embedding_dim = [24,48] # [8,24]
+L_adaptive_embedding_dim = [16,32] # [0,16,32] 
+L_init_adaptive_query_dim = [0,24,48] #  [0,8,24]
+L_contextual_input_embedding_dim = [24,48] # [8,24] # [8,24,32,48]
 
 adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_contextual_input_embedding_dim,L_input_embedding_dim))
 # adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_input_embedding_dim))

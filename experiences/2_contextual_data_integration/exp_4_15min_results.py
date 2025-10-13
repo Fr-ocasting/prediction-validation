@@ -5,7 +5,6 @@ STAEformer_bike_out_calendar__e200_h4_bis2:   All Steps RMSE = 4.884, MAE = 3.05
 STAEformer_bike_out_calendar__e200_h4_bis3:   All Steps RMSE = 4.839, MAE = 3.033, MASE = 0.787, MAPE = 48.618
 STAEformer_bike_out_calendar__e200_h4_bis4:   All Steps RMSE = 4.891, MAE = 3.041, MASE = 0.790, MAPE = 48.940
 STAEformer_bike_out_calendar__e200_h4_bis5:   All Steps RMSE = 4.869, MAE = 3.056, MASE = 0.793, MAPE = 50.259
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp0_adpQ0__e80_h4_bis1:   All Steps RMSE = 4.827, MAE = 3.028, MASE = 0.786, MAPE = 48.677
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp0_adpQ0__e80_h4_bis2:   All Steps RMSE = 4.927, MAE = 3.089, MASE = 0.802, MAPE = 51.241
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp0_adpQ0__e80_h4_bis3:   All Steps RMSE = 4.882, MAE = 3.054, MASE = 0.793, MAPE = 50.232
@@ -66,25 +65,21 @@ STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp0_adpQ24__e80_h4_bis3:   All Steps RMSE = 4.949, MAE = 3.094, MASE = 0.803, MAPE = 50.541
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp0_adpQ24__e80_h4_bis4:   All Steps RMSE = 4.885, MAE = 3.082, MASE = 0.800, MAPE = 51.931
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp0_adpQ24__e80_h4_bis5:   All Steps RMSE = 4.924, MAE = 3.062, MASE = 0.795, MAPE = 48.262
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ0__e80_h4_bis1:   All Steps RMSE = 4.847, MAE = 3.055, MASE = 0.793, MAPE = 50.638
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ0__e80_h4_bis2:   All Steps RMSE = 4.893, MAE = 3.052, MASE = 0.793, MAPE = 49.539
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ0__e80_h4_bis3:   All Steps RMSE = 4.879, MAE = 3.059, MASE = 0.794, MAPE = 49.934
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ0__e80_h4_bis4:   All Steps RMSE = 4.816, MAE = 3.024, MASE = 0.785, MAPE = 49.339
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ0__e80_h4_bis5:   All Steps RMSE = 4.931, MAE = 3.098, MASE = 0.805, MAPE = 52.432
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ0__e80_h4_bis1:   All Steps RMSE = 4.850, MAE = 3.043, MASE = 0.790, MAPE = 50.327
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ0__e80_h4_bis2:   All Steps RMSE = 4.828, MAE = 3.035, MASE = 0.788, MAPE = 50.633
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ0__e80_h4_bis3:   All Steps RMSE = 4.850, MAE = 3.048, MASE = 0.791, MAPE = 50.666
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ0__e80_h4_bis4:   All Steps RMSE = 4.833, MAE = 3.047, MASE = 0.791, MAPE = 50.002
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ0__e80_h4_bis5:   All Steps RMSE = 4.908, MAE = 3.060, MASE = 0.795, MAPE = 49.524
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ0__e80_h4_bis1:   All Steps RMSE = 4.845, MAE = 3.053, MASE = 0.793, MAPE = 50.236
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ0__e80_h4_bis2:   All Steps RMSE = 4.929, MAE = 3.076, MASE = 0.799, MAPE = 50.224
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ0__e80_h4_bis3:   All Steps RMSE = 4.852, MAE = 3.055, MASE = 0.793, MAPE = 51.361
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ0__e80_h4_bis4:   All Steps RMSE = 4.825, MAE = 3.023, MASE = 0.785, MAPE = 49.174
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ0__e80_h4_bis5:   All Steps RMSE = 4.947, MAE = 3.099, MASE = 0.805, MAPE = 50.915
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ0__e80_h4_bis1:   All Steps RMSE = 4.939, MAE = 3.074, MASE = 0.798, MAPE = 49.409
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ0__e80_h4_bis2:   All Steps RMSE = 4.956, MAE = 3.129, MASE = 0.813, MAPE = 53.019
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ0__e80_h4_bis3:   All Steps RMSE = 4.896, MAE = 3.058, MASE = 0.794, MAPE = 49.971
@@ -95,7 +90,6 @@ STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ8__e80_h4_bis3:   All Steps RMSE = 4.912, MAE = 3.116, MASE = 0.809, MAPE = 53.706
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ8__e80_h4_bis4:   All Steps RMSE = 4.879, MAE = 3.051, MASE = 0.792, MAPE = 49.639
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp16_adpQ8__e80_h4_bis5:   All Steps RMSE = 4.885, MAE = 3.066, MASE = 0.796, MAPE = 50.241
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ8__e80_h4_bis1:   All Steps RMSE = 4.962, MAE = 3.089, MASE = 0.802, MAPE = 50.014
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ8__e80_h4_bis2:   All Steps RMSE = 4.849, MAE = 3.044, MASE = 0.790, MAPE = 49.663
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ8__e80_h4_bis3:   All Steps RMSE = 4.861, MAE = 3.069, MASE = 0.797, MAPE = 51.521
@@ -121,13 +115,11 @@ STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ24__e80_h4_bis3:   All Steps RMSE = 4.876, MAE = 3.072, MASE = 0.798, MAPE = 51.549
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ24__e80_h4_bis4:   All Steps RMSE = 4.866, MAE = 3.050, MASE = 0.792, MAPE = 50.141
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb8_adp16_adpQ24__e80_h4_bis5:   All Steps RMSE = 4.820, MAE = 3.028, MASE = 0.786, MAPE = 49.888
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ24__e80_h4_bis1:   All Steps RMSE = 4.810, MAE = 3.023, MASE = 0.785, MAPE = 50.105
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ24__e80_h4_bis2:   All Steps RMSE = 4.831, MAE = 3.048, MASE = 0.791, MAPE = 50.401
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ24__e80_h4_bis3:   All Steps RMSE = 4.834, MAE = 3.038, MASE = 0.789, MAPE = 50.558
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ24__e80_h4_bis4:   All Steps RMSE = 4.912, MAE = 3.099, MASE = 0.805, MAPE = 52.966
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb24_adp16_adpQ24__e80_h4_bis5:   All Steps RMSE = 4.918, MAE = 3.082, MASE = 0.800, MAPE = 49.765
-
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24__e80_h4_bis1:   All Steps RMSE = 4.860, MAE = 3.054, MASE = 0.793, MAPE = 49.615
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24__e80_h4_bis2:   All Steps RMSE = 4.868, MAE = 3.046, MASE = 0.791, MAPE = 49.851
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24__e80_h4_bis3:   All Steps RMSE = 4.960, MAE = 3.093, MASE = 0.803, MAPE = 50.446
@@ -173,6 +165,7 @@ STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp32_adpQ8__e80_h4_bis3:   All Steps RMSE = 4.988, MAE = 3.119, MASE = 0.810, MAPE = 51.446
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp32_adpQ8__e80_h4_bis4:   All Steps RMSE = 4.961, MAE = 3.105, MASE = 0.806, MAPE = 51.523
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp32_adpQ8__e80_h4_bis5:   All Steps RMSE = 4.855, MAE = 3.048, MASE = 0.792, MAPE = 49.976
-STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp32_adpQ24__e80_h4_bis1:   All Steps RMSE = 4.887, MAE = 3.064, MASE = 0.796, MAPE = 50.330
-STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp32_adpQ24__e80_h4_bis2:   All Steps RMSE = 4.853, MAE = 3.055, MASE = 0.793, MAPE = 50.386
 """
+
+# STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp32_adpQ24__e80_h4_bis1:   All Steps RMSE = 4.887, MAE = 3.064, MASE = 0.796, MAPE = 50.330
+# STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp32_adpQ24__e80_h4_bis2:   All Steps RMSE = 4.853, MAE = 3.055, MASE = 0.793, MAPE = 50.386

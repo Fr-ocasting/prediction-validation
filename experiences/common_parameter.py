@@ -316,3 +316,40 @@ weather_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwa
 # weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['adaptive_embedding_dim'] = 0 # 32 
 # weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['fusion_type'] = 'sum' # 'concat'
 
+
+
+percent_train_size = {
+    '5p': {'calib_prop' : 0.95},
+    '10p': {'calib_prop' : 0.90},
+    '15p': {'calib_prop' : 0.85},
+    '25p':  {'calib_prop' : 0.75},
+    # '35p':  {'calib_prop' : 0.65},
+    '50p':  {'calib_prop' : 0.5},
+    '75p':  {'calib_prop' : 0.25},
+    # '80p':  {'calib_prop' : 0.2},
+    # '85p':  {'calib_prop' : 0.15},
+    # '90p':  {'calib_prop' : 0.1},
+    # '95p':  {'calib_prop' : 0.05},
+    '100p': {'calib_prop': None},
+     }
+
+
+def modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage):
+    if (
+        ((target_data in ['bike_out','bike_in','subway_in','subway_out']) and (freq == '1H'))
+        or 
+        ('netmob_POIs' in dataset_for_coverage)
+        ):
+        if int(percent[:-1]) <= 50:
+            if int(percent[:-1]) > 0: 
+                modif_percent['batch_size'] = 16
+            elif int(percent[:-1]) > 25:
+                modif_percent['batch_size'] = 32
+            elif int(percent[:-1]) >= 50:
+                modif_percent['batch_size'] = 64
+            else:
+                raise ValueError(f"Percent {percent} not expected")
+    else:
+        if int(percent[:-1]) == 5:
+            modif_percent['batch_size'] = 32
+    return modif_percent
