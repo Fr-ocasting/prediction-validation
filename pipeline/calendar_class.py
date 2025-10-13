@@ -41,7 +41,12 @@ def get_temporal_mask(s_dates: pd.Series,
                       start: datetime.time = datetime.time(7, 0), 
                       end: datetime.time = datetime.time(21, 0),
                       temporal_agg: str = None,
-                      city = None) -> pd.Series:
+                      city = None,
+                      start_morning_peak: datetime.time = datetime.time(7, 30),
+                      end_morning_peak: datetime.time = datetime.time(9, 0),
+                      start_evening_peak: datetime.time = datetime.time(17, 0),
+                      end_evening_peak: datetime.time = datetime.time(19, 0)
+                      ) -> pd.Series:
     """
     Create a mask for the specified time range within the given dates.
     
@@ -59,11 +64,11 @@ def get_temporal_mask(s_dates: pd.Series,
     """
 
     if temporal_agg == 'morning_peak':
-        filter_mask = get_mask_working_day(s_dates,is_morning_peak(s_dates),city)
+        filter_mask = get_mask_working_day(s_dates,is_morning_peak(s_dates,start_morning_peak,end_morning_peak),city)
     elif temporal_agg == 'evening_peak':
-        filter_mask = get_mask_working_day(s_dates,is_evening_peak(s_dates),city)
+        filter_mask = get_mask_working_day(s_dates,is_evening_peak(s_dates,start_evening_peak,end_evening_peak),city)
     elif temporal_agg == 'off_peak':
-        filter_mask = get_mask_working_day(s_dates,~is_morning_peak(s_dates) & ~is_evening_peak(s_dates),city)
+        filter_mask = get_mask_working_day(s_dates,~is_morning_peak(s_dates,start_morning_peak,end_morning_peak) & ~is_evening_peak(s_dates,start_evening_peak,end_evening_peak),city)
     elif temporal_agg == 'bank_holiday':
         weekday_mask = is_weekday(s_dates)
         dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
