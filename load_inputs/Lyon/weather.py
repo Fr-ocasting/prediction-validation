@@ -45,6 +45,8 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
                                            name=NAME, minmaxnorm=minmaxnorm,
                                            standardize=standardize,
                                            tensor_limits_keeper=tensor_limits_keeper) 
+
+    preprocessed_ds.spatial_unit = interpolated_weather.columns.tolist()
     return preprocessed_ds
 
 

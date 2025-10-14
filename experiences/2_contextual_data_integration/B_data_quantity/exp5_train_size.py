@@ -67,6 +67,11 @@ for target_data in ['bike_out','subway_out']:
 
         for contextual_dataset_names in L_contextual_dataset_names:
 
+            # ALREADY DONE
+            if (target_data == 'bike_out')  and contextual_dataset_names == [] and (horizon ==4):
+                continue
+            # -------
+
             # --- Get Associated contextual kwargs (only one single here)
             contextual_kwargs_i = subway_possible_contextual_kwargs['early_fusion']['shared_embedding']
             if 'weather' in contextual_dataset_names:
