@@ -11,7 +11,10 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.mixture import GaussianMixture
 from scipy.cluster.hierarchy import dendrogram, linkage
 from pipeline.calendar_class import get_temporal_mask
-
+import matplotlib.colors as mcolors
+from matplotlib.colorbar import ColorbarBase
+import geopandas as gpd
+import itertools
 
 def filter_by_temporal_agg(df: pd.DataFrame, temporal_agg: str, city : str,
         start = datetime.time(7, 00),
@@ -35,6 +38,7 @@ def filter_by_temporal_agg(df: pd.DataFrame, temporal_agg: str, city : str,
     df_filtered = df[filter_mask]
     print('Number of remaining time-slots after filtering', len(df_filtered))
     return df_filtered
+
 
 
 
@@ -166,7 +170,12 @@ class TimeSeriesClusterer:
                 else:
                     clusters[-1] = []
 
-            for series_name, label in zip(self.df_init.columns, self.labels):
+
+            sorted_indices = np.argsort(self.labels)
+            sorted_series_names = self.df_init.columns[sorted_indices]
+            sorted_labels = self.labels[sorted_indices]
+
+            for series_name, label in zip(sorted_series_names, sorted_labels):
                 if label in clusters.keys():
                      clusters[label].append(series_name)
                 else:
@@ -207,7 +216,15 @@ class TimeSeriesClusterer:
         self.model = AgglomerativeClustering(
             n_clusters=n_clusters, metric=metric, linkage=linkage_method,distance_threshold = distance_threshold
         )
-        self.labels = self.model.fit_predict(dist_matrix)
+
+        ### OLD 
+        # self.labels = self.model.fit_predict(dist_matrix)
+        ### NEW
+        raw_labels = self.model.fit_predict(dist_matrix.values)
+        station_to_label_map = dict(zip(dist_matrix.index, raw_labels))
+        self.labels = np.array([station_to_label_map[station] for station in self.corr_matrix.columns])
+        # ----
+
         self._format_output()
         print(f"Agglomerative clustering completed with {n_clusters} clusters.")
 
@@ -245,7 +262,16 @@ class TimeSeriesClusterer:
         print(f"GMM clustering completed with {n_clusters} clusters.")
         return self
 
-    def plot_clusters(self,heatmap: bool = True, daily_profile: bool = False, dendrogram: bool = False,bool_plot: bool = True,folder_path: Optional[str] = None,save_name: Optional[str] = None):
+    def plot_clusters(self,heatmap: bool = True, daily_profile: bool = False, 
+                      dendrogram: bool = False,
+                      bool_plot: bool = True,
+                      folder_path: Optional[str] = None,
+                      save_name: Optional[str] = None,
+                      spatial_unit_distance_to_zones: Optional[gpd.GeoDataFrame] = None,
+                      vmax = 1.0,
+                      vmin = 0.0,
+                      cmap = 'viridis',
+                      heatmap_title = 'Correlation Matrix Heatmap (Ordered by Cluster)'):
         """
         Visualizes the clustering results based on the method used.
         """
@@ -256,6 +282,11 @@ class TimeSeriesClusterer:
         self.bool_plot = bool_plot
         self.folder_path = folder_path
         self.save_name = save_name
+        self.vmax = vmax
+        self.vmin =vmin
+        self.cmap =cmap
+        self.spatial_unit_distance_to_zones = spatial_unit_distance_to_zones
+        self.heatmap_title = heatmap_title
         if self.method == 'agglomerative':
             self._plot_agglomerative(heatmap,daily_profile,dendrogram)
         elif self.method == 'gmm':
@@ -302,13 +333,93 @@ class TimeSeriesClusterer:
                 os.makedirs(f"{self.folder_path}/dendrogram")
             plt.savefig(f"{self.folder_path}/dendrogram/{self.save_name}_dendrogram.pdf", bbox_inches='tight')
 
-    def _plot_heatmap_corr(self):
+    def _personnalise_ticks(self,tick_label,cmap_red_to_gray,norm):
+        station_name = tick_label.get_text()
+        station_info = self.spatial_unit_distance_to_zones.loc[station_name]
+        distance = station_info['min_dist_to_polygons_m']
+        is_hub = station_info['hub']
         
-        clustered_series_order = self.corr_matrix.columns[np.argsort(self.labels)]
-        sns.clustermap(self.corr_matrix.loc[clustered_series_order, clustered_series_order], 
-                    row_cluster=True, col_cluster=True, 
-                    cmap='viridis', figsize=(10, 10))
-        plt.suptitle('Correlation Matrix Heatmap (Ordered by Cluster)', y=1.02)
+        # Appliquer la couleur en fonction de la distance
+        color = cmap_red_to_gray(norm(distance))
+        tick_label.set_color(color)
+        
+        # Mettre en gras si c'est un hub
+        if is_hub:
+            tick_label.set_bbox(dict(boxstyle='square,pad=0.2',
+                            facecolor='none',
+                            edgecolor='black',
+                            linestyle='--'))
+
+    def _change_ticks_color(self,g):
+        cmap_red_to_gray = mcolors.LinearSegmentedColormap.from_list('RedToGray', ['red', 'darkgray'])
+        norm = mcolors.Normalize(vmin=0, vmax=500)
+        g.ax_heatmap.tick_params(axis='both', which='both', length=0)   # Remove tick marks
+        ax = g.ax_heatmap
+
+        # Personnalise Yticks : 
+        for tick_label in ax.get_yticklabels():
+            self._personnalise_ticks(tick_label,cmap_red_to_gray,norm)
+        # Personnalise Xticks : 
+        for tick_label in ax.get_xticklabels():
+            self._personnalise_ticks(tick_label,cmap_red_to_gray,norm)
+        
+        
+        # --- Ajout d'une barre de couleur pour les étiquettes ---
+        cbar_ax = g.fig.add_axes([0.8, 1, 0.2, 0.02]) # Position [left, below, width, height]
+        cb = ColorbarBase(cbar_ax, cmap=cmap_red_to_gray, norm=norm, orientation='horizontal')
+        cb.set_label('Distance to Activity Zone (m)')
+        
+        # Améliorer la lisibilité
+        plt.setp(g.ax_heatmap.get_xticklabels(), rotation=90)
+        # plt.tight_layout(rect=[0, 0, 1, 0.95])   # suptitle area 
+    def _add_cluster_separators(self, g):
+        ax = g.ax_heatmap 
+        
+        # Get cluster boundaries and labels from self.clusters
+        cluster_sizes = [len(v) for v in self.clusters.values()]
+        boundaries = np.cumsum(cluster_sizes)  
+        label_positions = boundaries - np.array(cluster_sizes) / 2  
+        cluster_labels = [f"Cluster {k}" for k in self.clusters.keys()]  
+        
+        # Draw separator lines on the heatmap
+        for pos in boundaries[:-1]:  
+            ax.axhline(y=pos, color='white', linewidth=2.5, linestyle='--')  
+            ax.axvline(x=pos, color='white', linewidth=2.5, linestyle='--')  
+            
+        # Add cluster labels on a new y-axis (right side)
+        ax_labels_y = ax.twinx()  
+        ax_labels_y.set_ylim(ax.get_ylim())  
+        ax_labels_y.set_yticks(label_positions)  
+        ax_labels_y.set_yticklabels(cluster_labels, fontsize=12, va='center')  
+        ax_labels_y.tick_params(axis='y', length=0, pad=5)  
+        
+        # Add cluster labels on a new x-axis (top side)
+        ax_labels_x = ax.twiny()  
+        ax_labels_x.set_xlim(ax.get_xlim())  
+        ax_labels_x.set_xticks(label_positions)  
+        ax_labels_x.set_xticklabels(cluster_labels, rotation=90, fontsize=12, ha='center')  
+        ax_labels_x.tick_params(axis='x', length=0, pad=5)  
+
+    def _plot_heatmap_corr(self):
+        clustered_series_order = [series_names for  _,series_names in self.clusters.items()]
+        clustered_series_order = list(itertools.chain.from_iterable(clustered_series_order))
+
+        ordered_corr_matrix = self.corr_matrix.loc[clustered_series_order, clustered_series_order]
+        g = sns.clustermap(ordered_corr_matrix,
+                           row_cluster=False, # False, #True, 
+                           col_cluster=False, # False, #True, 
+                           cmap=self.cmap, 
+                            vmin=self.vmin,
+                            vmax=self.vmax,
+                           figsize=(10, 10))
+        plt.suptitle(self.heatmap_title, y=1.02, fontsize=16)
+        
+        self._add_cluster_separators(g)
+     
+
+        if self.spatial_unit_distance_to_zones is not None:
+            self._change_ticks_color(g)
+
         if self.bool_plot:
             plt.show()
 
@@ -363,6 +474,10 @@ class TimeSeriesClusterer:
             if not os.path.exists(f"{self.folder_path}/daily_profiles"):
                 os.makedirs(f"{self.folder_path}/daily_profiles")
             plt.savefig(f"{self.folder_path}/daily_profiles/{self.save_name}_daily_profiles.pdf", bbox_inches='tight')
+
+
+
+
 
 
 
