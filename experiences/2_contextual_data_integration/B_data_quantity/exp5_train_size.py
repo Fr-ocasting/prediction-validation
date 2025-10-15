@@ -54,10 +54,10 @@ compilation_modification['device'] = device
 weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['repeat_t_proj']
 
 
+loger = LOG()
 # --- Set Combinaison (Target, Conrtextual Datasets)
-for target_data in ['bike_out','subway_out']:
+for target_data in ['subway_out','bike_out']:
     for horizon in horizons:
-        loger = LOG()
         if target_data == 'bike_out':
             L_contextual_dataset_names = [[],['weather']]
             dataset_for_coverage = ['bike_out']
@@ -131,5 +131,5 @@ for target_data in ['bike_out','subway_out']:
                     config_i.update(modif_percent)
 
                     dic_configs[name_i] = config_i
-                    
-        loop_train_save_log(loger,dic_configs,init_save_folder = init_save_folder) 
+
+loop_train_save_log(loger,dic_configs,init_save_folder = init_save_folder) 
