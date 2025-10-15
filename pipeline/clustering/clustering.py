@@ -16,13 +16,20 @@ from pipeline.calendar_class import get_temporal_mask
 def filter_by_temporal_agg(df: pd.DataFrame, temporal_agg: str, city : str,
         start = datetime.time(7, 00),
         end=datetime.time(21, 00),
+        start_morning_peak = datetime.time(7,30), 
+        end_morning_peak = datetime.time(9,0),
+        start_evening_peak = datetime.time(17,0), 
+        end_evening_peak = datetime.time(19,0)
         ) -> pd.DataFrame:
     s_dates = df.index.to_series()
     filter_mask = get_temporal_mask(s_dates=s_dates,
                                     start=start,
                                     end=end, 
                                     temporal_agg=temporal_agg,
-                                    city = city)
+                                    city = city,
+                                     start_morning_peak=start_morning_peak,end_morning_peak=end_morning_peak,
+                                  start_evening_peak=start_evening_peak,end_evening_peak=end_evening_peak
+                                    )
   
         
     df_filtered = df[filter_mask]
@@ -88,7 +95,12 @@ class TimeSeriesClusterer:
                         index: str = 'Station',
                         city: str = 'Lyon',
                         start = datetime.time(7, 00),
-                        end=datetime.time(21, 00),):
+                        end=datetime.time(21, 00),
+                        start_morning_peak= datetime.time(7,30),
+                        end_morning_peak = datetime.time(9,0), 
+                        start_evening_peak= datetime.time(17,0),
+                        end_evening_peak= datetime.time(19,0),
+                        ):
         """
         Filters the initial DataFrame based on a temporal window.
         The result is stored in `self.df_preprocessed`.
@@ -108,7 +120,11 @@ class TimeSeriesClusterer:
                                                       temporal_agg=temporal_agg, 
                                                       city=city,
                                                       start=start,
-                                                      end=end )
+                                                      end=end,
+                                                    start_morning_peak=start_morning_peak,
+                                                    end_morning_peak=end_morning_peak,
+                                                    start_evening_peak=start_evening_peak,
+                                                    end_evening_peak=end_evening_peak)
         self.normalize(normalisation_type)
 
         # --- Build Temporal Profil 
@@ -120,8 +136,8 @@ class TimeSeriesClusterer:
         df_copy=df_copy.reset_index(level=1)
         df_copy['date'] = df_copy.index.date
         df_copy['time'] = df_copy.index.time
-        max_group = df_copy.groupby(['Station', df_copy.index.date]).count().max().max()
-        df_copy = df_copy.groupby(['Station', df_copy.index.date]).filter(lambda group: len(group) == max_group)
+        max_group = df_copy.groupby([index, df_copy.index.date]).count().max().max()
+        df_copy = df_copy.groupby([index, df_copy.index.date]).filter(lambda group: len(group) == max_group)
 
         # Pivot into daily profile
         self.representative_profiles = df_copy.pivot_table(index = index,columns = 'time', values = 'values', aggfunc = 'mean')
