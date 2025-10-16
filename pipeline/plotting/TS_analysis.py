@@ -4,7 +4,7 @@ import torch
 from datetime import timedelta
 import datetime
 import pandas as pd 
-from bokeh.palettes import Set3_12 
+from bokeh.palettes import Set3_12,Dark2
 from bokeh.palettes import Plasma256 
 from bokeh.palettes import Turbo256 as palette
 from bokeh.models.widgets import Div
@@ -322,20 +322,32 @@ def plot_TS(list_df_ts,width=1500,height=400,bool_show=False,title=f"Time Serie 
              p = figure(title=title,
                             width=width,height=height)
        legend_it = []
-       colors = palette
+
+
 
        if not(type(list_df_ts)==list):
               list_df_ts= [list_df_ts]
        
        nb_cols = [df_i.shape[1] for df_i in list_df_ts]
        total_nb_ts = int(np.sum(np.array(nb_cols)))
+       col_ind = 0
        for i,df_i in enumerate(list_df_ts):
               for k,column in enumerate(df_i.columns):
-                     col_ind = np.sum(np.array(nb_cols[:i]))+k
-                     if scatter: 
-                            c = p.scatter(x=df_i.index, y=df_i[column], alpha=0.8,color = colors[int(col_ind*(255/total_nb_ts))])
+                     if total_nb_ts > 12:
+                            col_ind = np.sum(np.array(nb_cols[:i]))+k
+                            color_i = palette[int(col_ind*(255/total_nb_ts))]
+                     elif total_nb_ts > 8:
+                           color_i = Set3_12[col_ind]
+                           col_ind = col_ind+1
                      else:
-                            c = p.line(x=df_i.index, y=df_i[column], alpha=0.8,color = colors[int(col_ind*(255/total_nb_ts))])
+                           color_i = Dark2[8][col_ind]
+                           col_ind = col_ind+1
+
+                           
+                     if scatter: 
+                            c = p.scatter(x=df_i.index, y=df_i[column], alpha=0.8,color = color_i)
+                     else:
+                            c = p.line(x=df_i.index, y=df_i[column], alpha=0.8,color = color_i)
                      displayed_legend = str(column)
                      legend_it.append((displayed_legend, [c]))
 
