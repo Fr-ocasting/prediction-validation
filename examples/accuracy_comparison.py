@@ -31,7 +31,10 @@ from bokeh.plotting import figure, show,output_notebook
 from bokeh.models import Legend,DatetimeTickFormatter
 from bokeh.layouts import row,column
 from pipeline.calendar_class import is_bank_holidays 
-
+from load_inputs.Lyon.weather import load_preprocessed_weather_df
+from load_inputs.Lyon.weather import START as START_weather
+from load_inputs.Lyon.weather import END as END_weather
+from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 ##### ==================================================
 
 ##### ==================================================
@@ -625,6 +628,157 @@ class ComparisonPlotter:
                 self.fig.savefig(f"{folder_path}/{metric}/{save_name}_gain.pdf", bbox_inches='tight')
 
         return self.dic_gain_agg,self.dic_error_agg
+
+
+
+
+
+
+
+
+
+def get_rainy_indices(args,ds,training_mode = 'test'):
+  # Load Weather DF : 
+  df_weather = load_preprocessed_weather_df(args= args,coverage_period=pd.date_range(start=START_weather, end=END_weather, freq=args.freq)[:-1],folder_path=FOLDER_PATH)
+
+  # Test time slots: 
+  time_slots = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}").iloc[:,-1]
+
+  # Rainy Mask : 
+  mask = (df_weather > 0)
+  mask = mask.loc[time_slots,:].any(axis=1)
+
+  # Extract Rainy Time Slots and rainy indices : 
+  time_slots.name = 'timestamp'
+  df_time_slots = pd.DataFrame(time_slots) 
+  df_time_slots = df_time_slots.reset_index(drop=True)
+  df_time_slots['indices'] = df_time_slots.index
+  df_time_slots = df_time_slots.set_index('timestamp')
+  rainy_indices = df_time_slots[mask].indices
+  rainy_indices = torch.Tensor(rainy_indices.values).long()
+  return mask,rainy_indices,df_weather
+
+
+def get_cluster(df,temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city='Lyon',
+                n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
+                heatmap= True, daily_profile=True, dendrogram=True):
+    # Get Clustering of stations from these inputs: 
+    clusterer = TimeSeriesClusterer(df)
+    clusterer.preprocess(temporal_agg=temporal_agg, normalisation_type =normalisation_type,index= index,city=city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+    clusterer.run_agglomerative(n_clusters=n_clusters, linkage_method=linkage_method, metric=metric,min_samples=min_samples)
+    # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=4,distance_threshold = 0.35)
+    clusterer.plot_clusters(heatmap= heatmap, daily_profile=daily_profile, dendrogram=dendrogram)
+    return clusterer
+
+def get_model_args(target_data,model_name,save_folder_name = 'optim/subway_in_STGCN', save_folder_name_bis = 'optim/config/subway_in_STGCN' ):
+    subfolder = f'K_fold_validation/training_wo_HP_tuning/{save_folder_name}'
+    path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
+    model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
+    if save_folder_name_bis is not None: 
+        subfolder_bis = f'K_fold_validation/training_wo_HP_tuning/{save_folder_name_bis}'
+        path_model_args_bis = f"{SAVE_DIRECTORY}/{subfolder_bis}/best_models"
+        model_args_bis = pickle.load(open(f"{path_model_args_bis}/model_args.pkl", 'rb'))
+    else:
+        subfolder_bis,path_model_args_bis,model_args_bis = None, None, None
+    return model_args,model_args_bis,path_model_args,path_model_args_bis
+
+
+def get_desagregated_comparison_plot(trial_id1,trial_id2,
+                                     model_args,model_args_bis,path_model_args,path_model_args_bis,
+                                     range_k = range(1,6),
+                                    model_name = 'STGCN',
+                                    target_data = 'subway_in',
+                                    trial_id1_in_bis=False,
+                                    trial_id2_in_bis=False,
+                                    vmax_coeff = 4,
+                                    station = 'CHA',
+                                    temporal_agg_for_matshow_attn_weight = ['all_day'],
+                                    temporal_agg_for_folium_map = ['morning_peak','evening_peak'], # ['morning_peak','evening_peak','all_day','off_peak','business_day','bank_holiday']
+                                    colmumn_name = 'Station',
+                                    comparison_on_rainy_events = False,
+                                    ):
+
+
+
+    modification = {'shuffle':False,
+                    'data_augmentation':False,
+                    'torch_compile': False,
+                    }
+    training_mode = 'test'
+
+    ds1,ds2,args_init1,args_init2 = None, None, None, None
+
+    for k in range_k:
+        trial_id1_updated = f"_{trial_id1}{k}_f5"
+        trial_id2_updated = f"_{trial_id2}{k}_f5"
+        trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(trial_id1_updated,trial_id2_updated,modification = modification,
+                                                                                        model_args=model_args,
+                                                                                        path_model_args=path_model_args,
+                                                                                        path_model_args_bis = path_model_args_bis,
+                                                                                        ds1_init=ds1,ds2_init=ds2,
+                                                                                        args_init1=args_init1,args_init2=args_init2,
+                                                                                        model_args_bis = model_args_bis,
+                                                                                        trial_id1_in_bis = trial_id1_in_bis, trial_id2_in_bis = trial_id2_in_bis
+                                                                                        )
+                                                                                        
+
+        full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
+        globals()[f"trainer1_bis{k}"] = trainer1
+        globals()[f"trainer2_bis{k}"] = trainer2
+        globals()[f"ds1_bis{k}"] = ds1
+        globals()[f"ds2_bis{k}"] = ds2
+        globals()[f"full_predict1_bis{k}"] = full_predict1
+        globals()[f"full_predict2_bis{k}"] = full_predict2
+
+
+    full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k]).mean(0)
+    full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k]).mean(0)
+    metric_list   = ['mae'] # ['mae','mase','rmse']
+    temporal_aggs = ['working_day_hour']
+    stations      = list(ds1.spatial_unit) 
+    # ---- 
+
+    # --- Get Cluster : 
+    # Load Train inputs: 
+    train_input = ds2.train_input
+    train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
+    train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
+    train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init2.freq))
+    train_input.columns.name = colmumn_name
+    # Get Clustering of stations from these inputs:
+    clusterer = get_cluster(train_input,temporal_agg='business_day', normalisation_type ='minmax',index= colmumn_name,city=ds2.city,
+                    n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
+                    heatmap= False, daily_profile=False, dendrogram=False)
+    # ---
+
+
+    # ---- Plot Accuracy Comparison ---- 
+    plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
+                                        stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
+                                        clustered_stations = clusterer.clusters)   
+    
+
+    if comparison_on_rainy_events:
+        print("\nComparison on between models across all time-slots followed by comparison on Rainy Events Only")
+        _,train_rainy_indices,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'train')
+        print(f"Number of rainy time-slots in the train set: {len(train_rainy_indices)}, i.e {len(train_rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_train)*100:.2f} % of the train set")
+        # ---- Plot Accuracy comparison on rainy moments only ----
+        mask,rainy_indices,df_weather = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'test')
+        print(f"Number of rainy time-slots in the test set: {len(rainy_indices)}, i.e {len(rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_test)*100:.2f} % of the test set\n")
+        # Analysis on these specific rainy time-slots: 
+        plot_analysis_comparison_2_config(trial_id1,trial_id2,
+                                        torch.index_select(full_predict1,0,rainy_indices),
+                                        torch.index_select(full_predict2,0,rainy_indices),
+                                        torch.index_select(Y_true,0,rainy_indices),
+                                        torch.index_select(X,0,rainy_indices),
+                                        ds1,args_init1,stations,temporal_aggs,
+                                        training_mode,metric_list,min_flow = 20,station = None,
+                                        clustered_stations = clusterer.clusters,
+                                        dates = mask[mask].index
+                                        )
+ 
+
+    return clusterer,full_predict1,full_predict2,train_input
 
 
 if __name__ == '__main__':

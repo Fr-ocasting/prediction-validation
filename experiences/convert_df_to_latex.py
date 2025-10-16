@@ -77,12 +77,13 @@ def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser:
     col_spec = 'l' * num_custom_cols + 'c' * num_metric_cols
 
     # --- 3. Build LaTeX String ---
-    col_spec_str = f"@{{ {col_spec} @}}"
+    col_spec_str = f"{{{col_spec}}}"
     latex_parts = [
-        r"\begin{table}[H]",
+        r"\begin{table}[!htb]",
         r"    \centering",
         fr"    \caption{{{caption}}}",
         fr"    \label{{tab:{label}}}",
+        r"    \resizebox{\textwidth}{!}{",
         fr"    \begin{{tabular}}{{{col_spec_str}}}",
         r"        \toprule"
     ]
@@ -112,11 +113,11 @@ def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser:
         
         row_str_parts = [str(row[c]) for c in custom_cols]
         for metric in metrics:
-            row_str_parts.append(f"{row[(metric, 'mean')]:.4f}")
+            row_str_parts.append(f"{row[(metric, 'mean')]}")
             row_str_parts.append(f"{row[(metric, 'std')]:.4f}")
         
         latex_parts.append("        " + " & ".join(row_str_parts) + r" \\")
 
-    latex_parts.extend([r"        \bottomrule", r"    \end{tabular}", r"\end{table}"])
+    latex_parts.extend([r"        \bottomrule", r"    \end{tabular}", r"}",r"\end{table}"])
     
     return "\n".join(latex_parts)
