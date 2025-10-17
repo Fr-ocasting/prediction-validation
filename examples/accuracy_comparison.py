@@ -35,6 +35,7 @@ from load_inputs.Lyon.weather import load_preprocessed_weather_df
 from load_inputs.Lyon.weather import START as START_weather
 from load_inputs.Lyon.weather import END as END_weather
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
+from pipeline.clustering.clustering import TimeSeriesClusterer
 ##### ==================================================
 
 ##### ==================================================
@@ -670,7 +671,7 @@ def get_cluster(df,temporal_agg='business_day', normalisation_type ='minmax',ind
     clusterer.plot_clusters(heatmap= heatmap, daily_profile=daily_profile, dendrogram=dendrogram)
     return clusterer
 
-def get_model_args(target_data,model_name,save_folder_name = 'optim/subway_in_STGCN', save_folder_name_bis = 'optim/config/subway_in_STGCN' ):
+def get_model_args(save_folder_name = 'optim/subway_in_STGCN', save_folder_name_bis = 'optim/config/subway_in_STGCN' ):
     subfolder = f'K_fold_validation/training_wo_HP_tuning/{save_folder_name}'
     path_model_args = f"{SAVE_DIRECTORY}/{subfolder}/best_models"
     model_args = pickle.load(open(f"{path_model_args}/model_args.pkl", 'rb'))
@@ -696,6 +697,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     temporal_agg_for_folium_map = ['morning_peak','evening_peak'], # ['morning_peak','evening_peak','all_day','off_peak','business_day','bank_holiday']
                                     colmumn_name = 'Station',
                                     comparison_on_rainy_events = False,
+                                    station_clustering = True,
                                     ):
 
 
@@ -739,16 +741,20 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
     # ---- 
 
     # --- Get Cluster : 
-    # Load Train inputs: 
-    train_input = ds2.train_input
-    train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
-    train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
-    train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init2.freq))
-    train_input.columns.name = colmumn_name
-    # Get Clustering of stations from these inputs:
-    clusterer = get_cluster(train_input,temporal_agg='business_day', normalisation_type ='minmax',index= colmumn_name,city=ds2.city,
-                    n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
-                    heatmap= False, daily_profile=False, dendrogram=False)
+    if station_clustering:
+        train_input = ds2.train_input
+        train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
+        train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
+        train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init2.freq))
+        train_input.columns.name = colmumn_name
+        # Get Clustering of stations from these inputs:
+        clusterer = get_cluster(train_input,temporal_agg='business_day', normalisation_type ='minmax',index= colmumn_name,city=ds2.city,
+                        n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
+                        heatmap= False, daily_profile=False, dendrogram=False)
+    else:
+        clusterer = lambda : None
+        clusterer.clusters = None
+        train_input = None
     # ---
 
 
@@ -782,7 +788,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
 
 
 if __name__ == '__main__':
-    from pipeline.clustering.clustering import TimeSeriesClusterer
+
     from constants.paths import SAVE_DIRECTORY
     ## -----------------FULL DATA 1 AN---------------------------------------------------------------------------------------------------------
     ## Prediction on 4 consecutives horizons 

@@ -99,16 +99,16 @@ init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp4_15min'
 device = torch.device('cuda:1')
 
 freq = '15min' #'15min'  
-horizons = [4] # [4]  #[1,4]
+horizons = [1] # [4]  #[1,4]
 target_data = 'bike_out' 
 contextual_dataset_names = ['subway_in_subway_out']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
-config_backbone_model['epochs'] = 50 #80
+config_backbone_model['epochs'] = 80 #80
 compilation_modification['torch_compile'] = 'compile' # 'compile'  # False 
 compilation_modification['device'] = device
-REPEAT_TRIAL  = 1 
+# REPEAT_TRIAL  = 1 
 
 dic_configs = {}
 
@@ -117,10 +117,10 @@ weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['
 
 
 # ------ Possible configurations :
-L_input_embedding_dim = [24,48] # [8,24]
-L_adaptive_embedding_dim = [16,32] # [0,16,32] 
-L_init_adaptive_query_dim = [0,24,48] #  [0,8,24]
-L_contextual_input_embedding_dim = [24,48] # [8,24] # [8,24,32,48]
+L_input_embedding_dim = [12,24] # [24,48] # [8,24]
+L_adaptive_embedding_dim = [16] # [16,32] # [0,16,32] 
+L_init_adaptive_query_dim = [0,24] #  [0,24,48] #  [0,8,24]
+L_contextual_input_embedding_dim = [8,12,24] #  [24,48] # [8,24] # [8,24,32,48]
 
 adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_contextual_input_embedding_dim,L_input_embedding_dim))
 # adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_input_embedding_dim))
@@ -192,6 +192,30 @@ if True:
 
 
 
+if True: 
+    contextual_kwargs ={}
+    for horizon in horizons:
+        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
+            dataset_names =  [target_data] + ['calendar']
+            name_i = f"{model_name}_{'_'.join(dataset_names)}"
+            name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
+            name_i = f"{name_i}_{name_i_end}"
+
+            config_i =  {'target_data': target_data,
+                        'dataset_names': dataset_names,
+                        'model_name': model_name,
+                        'dataset_for_coverage': [target_data,'subway_in_subway_out'],
+                        'freq': freq,
+                        'horizon_step': horizon,
+                        'step_ahead': horizon,
+                        'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                        'contextual_kwargs' : contextual_kwargs,
+                        'denoising_names':[],
+                        } 
+            config_i.update(config_backbone_model)
+            config_i.update(compilation_modification)
+
+            dic_configs[name_i] = config_i
 
 loop_train_save_log(loger,dic_configs,init_save_folder = init_save_folder) 
 
