@@ -784,7 +784,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                         )
  
 
-    return clusterer,full_predict1,full_predict2,train_input
+    return clusterer,full_predict1,full_predict2,train_input,Y_true
 
 
 if __name__ == '__main__':
