@@ -150,6 +150,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['train_prop'] = 0.6
     config['calib_prop'] = None #0.5 # None     # -->  Don't set 'calib_prop = 0' otherwise bug
     config['valid_prop'] = 0.2  
+    config['expanding_train'] = None # 0.1 # None  # If not None, float between ]0:1[. Set the proportion of last training data to keep for training.
     config['test_prop'] = 1 - (config['train_prop'] + config['valid_prop']) 
     assert config['train_prop']+ config['valid_prop'] < 1.0, f"train_prop + valid_prop = {config['train_prop']+ config['valid_prop']}. No Testing set"
     config['track_pi'] = False #True

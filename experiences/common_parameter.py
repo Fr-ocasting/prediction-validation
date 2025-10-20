@@ -116,13 +116,31 @@ model_configurations = {
 } 
 
 
+
+netmob_preprocessing_kwargs = {
+    'denoiser_kwargs': {'exponential': {'alpha': 0.8}},
+    'contextual_kwargs': {'netmob_POIs': {
+                                        'NetMob_selected_apps': ['Google_Maps', 'Web_Weather'],
+                                        'NetMob_transfer_mode': ['DL'],
+                                        'NetMob_selected_tags': ['iris'],
+                                        'NetMob_expanded': '',
+                                        'NetMob_only_epsilon': False,
+                                        'epsilon_clustering': 0.1,
+                                        'agg_iris_target_n': None,
+                                        }
+                        }
+    }
+
+
+
+
 subway_possible_contextual_kwargs = {
 
            'late_fusion': {'adp_query_cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
                            
                            'cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
-                                    
-                                    'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
+                            
+                            'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
 
                                         
                                     'simple_embedding':{ 'need_global_attn':True, 
@@ -333,6 +351,21 @@ percent_train_size = {
     '100p': {'calib_prop': None},
      }
 
+
+expanding_train_size = {
+    '5p': {'expanding_train' : 0.05},
+    '10p': {'expanding_train' : 0.10},
+    '15p': {'expanding_train' : 0.15},
+    '25p':  {'expanding_train' : 0.25},
+    # '35p':  {'calib_prop' : 0.65},
+    '50p':  {'expanding_train' : 0.5},
+    '75p':  {'expanding_train' : 0.75},
+    # '80p':  {'calib_prop' : 0.2},
+    # '85p':  {'calib_prop' : 0.15},
+    # '90p':  {'calib_prop' : 0.1},
+    # '95p':  {'calib_prop' : 0.05},
+    '100p': {'calib_prop': None},
+     }
 
 def modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage):
     if (

@@ -866,6 +866,8 @@ class backbone_model(nn.Module):
                 x_contextual = x_contextual.unsqueeze(-1)
             else:
                 x_contextual = x_contextual.transpose(1,3)
+            # print('   x_contextual.size() after unsqueeze/transpose: ',x_contextual.size())
+            # print('   contextual_proj: ',self.contextual_proj)
             x_contextual = self.contextual_proj(x_contextual)
             # print('   x_contextual.size() after contextual proj and transpose: ',x_contextual.size())
         else:

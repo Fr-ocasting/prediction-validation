@@ -141,7 +141,9 @@ def tackle_input_data(target_ds,invalid_dates,coverage_period,args,normalize):
                                         normalize=normalize,
                                         tensor_limits_keeper = target_ds.tensor_limits_keeper if hasattr(target_ds,'tensor_limits_keeper') else None,
                                         )
-        contextual_ds_i.C = module.C
+        if not hasattr(contextual_ds_i,'C'):
+            contextual_ds_i.C = module.C
+
         contextual_ds[dataset_name] = contextual_ds_i
 
         ### Update args with contextual dataset information:

@@ -1,9 +1,9 @@
 results = """
-STAEformer_bike_out_calendar__e200_h1_bis1:   All Steps RMSE = 11.838, MAE = 6.876, MASE = 0.470, MAPE = 39.363
-STAEformer_bike_out_calendar__e200_h1_bis2:   All Steps RMSE = 11.909, MAE = 6.856, MASE = 0.468, MAPE = 37.716
-STAEformer_bike_out_calendar__e200_h1_bis3:   All Steps RMSE = 11.942, MAE = 6.907, MASE = 0.472, MAPE = 39.650
-STAEformer_bike_out_calendar__e200_h1_bis4:   All Steps RMSE = 11.958, MAE = 6.903, MASE = 0.472, MAPE = 37.753
-STAEformer_bike_out_calendar__e200_h1_bis5:   All Steps RMSE = 11.789, MAE = 6.810, MASE = 0.465, MAPE = 37.899
+STAEformer_bike_out_calendar__e120_h1_bis1:   All Steps RMSE = 11.874, MAE = 6.835, MASE = 0.468, MAPE = 38.876
+STAEformer_bike_out_calendar__e120_h1_bis2:   All Steps RMSE = 11.998, MAE = 6.898, MASE = 0.473, MAPE = 37.681
+STAEformer_bike_out_calendar__e120_h1_bis3:   All Steps RMSE = 12.064, MAE = 6.907, MASE = 0.473, MAPE = 37.927
+STAEformer_bike_out_calendar__e120_h1_bis4:   All Steps RMSE = 11.891, MAE = 6.875, MASE = 0.471, MAPE = 37.492
+STAEformer_bike_out_calendar__e120_h1_bis5:   All Steps RMSE = 11.839, MAE = 6.778, MASE = 0.464, MAPE = 36.389
 
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp0_adpQ0__e80_h1_bis1:   All Steps RMSE = 11.868, MAE = 6.806, MASE = 0.466, MAPE = 37.954
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp0_adpQ0__e80_h1_bis2:   All Steps RMSE = 12.093, MAE = 6.931, MASE = 0.475, MAPE = 38.373
@@ -186,3 +186,9 @@ STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp32_adpQ24__e80_h1_bis4:   All Steps RMSE = 12.078, MAE = 6.970, MASE = 0.478, MAPE = 39.766
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp32_adpQ24__e80_h1_bis5:   All Steps RMSE = 11.990, MAE = 6.860, MASE = 0.470, MAPE = 38.402
 """
+
+# STAEformer_bike_out_calendar__e200_h1_bis1:   All Steps RMSE = 11.838, MAE = 6.876, MASE = 0.470, MAPE = 39.363
+# STAEformer_bike_out_calendar__e200_h1_bis2:   All Steps RMSE = 11.909, MAE = 6.856, MASE = 0.468, MAPE = 37.716
+# STAEformer_bike_out_calendar__e200_h1_bis3:   All Steps RMSE = 11.942, MAE = 6.907, MASE = 0.472, MAPE = 39.650
+# STAEformer_bike_out_calendar__e200_h1_bis4:   All Steps RMSE = 11.958, MAE = 6.903, MASE = 0.472, MAPE = 37.753
+# STAEformer_bike_out_calendar__e200_h1_bis5:   All Steps RMSE = 11.789, MAE = 6.810, MASE = 0.465, MAPE = 37.899

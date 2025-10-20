@@ -286,6 +286,7 @@ class DataSet(object):
                  target_data = None,
                  out_dim_factor = None,
                  train_pourcent = None,
+                 expanding_train = None,
 
                  ):
         
@@ -352,6 +353,7 @@ class DataSet(object):
         if train_pourcent is None :
             train_pourcent = 100
         self.train_pourcent = train_pourcent
+        self.expanding_train = expanding_train
 
         # Data Augmentation: 
         self.data_augmentation = data_augmentation
@@ -362,6 +364,7 @@ class DataSet(object):
         self.DA_prop = DA_prop
         self.DA_magnitude_max_scale = DA_magnitude_max_scale
         self.periods = periods
+
         
 
 
@@ -517,6 +520,13 @@ class DataSet(object):
         # Display usefull information: 
         self.display_info_on_inputs()
         # Data Loader: 
+        if self.expanding_train is not None: 
+            split = int(self.U_train.size(0)*self.expanding_train)
+            self.U_train = self.U_train[-split:]
+            self.Utarget_train = self.Utarget_train[-split:]
+            contextual_train = {name_i: contextual_i[-split:] for name_i,contextual_i in contextual_train.items()}
+            print(f'   Expanding Train activated: keeping only the last {self.expanding_train*100}% of the train set => New Train size: {self.U_train.size(0)}')
+
         train_tuple =  self.U_train,self.Utarget_train, contextual_train # *contextual_train
         valid_tuple =  (self.U_valid,self.Utarget_valid, contextual_valid)  if hasattr(self,'U_valid') else None # *contextual_valid
         test_tuple =  (self.U_test,self.Utarget_test, contextual_test) if hasattr(self,'U_test') else None# *contextual_test

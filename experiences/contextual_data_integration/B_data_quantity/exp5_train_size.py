@@ -17,7 +17,7 @@ if parent_dir not in sys.path:
 
 from pipeline.utils.loger import LOG
 from experiences.common_parameter import possible_target_kwargs, weather_possible_contextual_kwargs, model_configurations,feature_extractor_model_configurations,subway_possible_contextual_kwargs
-from experiences.common_parameter import REPEAT_TRIAL,percent_train_size,modif_percent_train_size
+from experiences.common_parameter import REPEAT_TRIAL,percent_train_size,modif_percent_train_size,expanding_train_size
 from experiences.compilation_parameter import compilation_modification
 from experiences.loop_train_save_log import loop_train_save_log
 from examples.benchmark import local_get_args
@@ -38,8 +38,8 @@ from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 dic_configs = {}
 
 
-init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp5'
-device = torch.device('cuda:0')
+init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp5_ExpandingTrain'
+device = torch.device('cuda:1')
 # REPEAT_TRIAL  = 1 
 freq = '15min' #'15min'  
 horizons = [4,1] # [4]  #[1,4]
@@ -103,15 +103,20 @@ for target_data in ['subway_out','bike_out']:
                 contextual_kwargs.pop('subway_in_subway_out',None)  
             # --- 
 
-            for percent,modif_percent in percent_train_size.items():
+            # With percent train size: 
+            # for percent,modif_percent in percent_train_size.items():
+            #     modif_percent = modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage)
+            
+            # With expanding train size: 
+            for percent,modif_percent in expanding_train_size.items():
                 modif_percent = modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage)
 
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
                     dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
                     if len(contextual_dataset_names)>0:
-                        name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}_{percent}"
+                        name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}_ExpandingTrain{percent}"
                     else:
-                        name_i = f"{model_name}_{target_data}_{percent}"
+                        name_i = f"{model_name}_{target_data}_ExpandingTrain{percent}"
                     name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
                     name_i = f"{name_i}_{name_i_end}"
 

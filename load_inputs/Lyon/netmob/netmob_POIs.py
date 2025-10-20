@@ -35,7 +35,7 @@ list_of_invalid_period.append([datetime(2019,5,23,0,0),datetime(2019,5,25,6,0)])
 
 
 
-## C = 1
+C = 1
 ## num_nodes = 
 def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize= True,tensor_limits_keeper = None,): # args,FOLDER_PATH,coverage_period = None
     '''
@@ -101,6 +101,9 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     NetMob_POI.list_correspondence = list_correspondence
     NetMob_POI.dictionnary_aggregated_iris = dictionnary_aggregated_iris
     NetMob_POI.dict_label2agg = dict_label2agg
+
+    # NetMob_POI.C = netmob_T.size(1)
+
 
     
     return(NetMob_POI)
