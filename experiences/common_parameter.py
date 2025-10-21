@@ -120,7 +120,7 @@ model_configurations = {
 netmob_preprocessing_kwargs = {
     'denoiser_kwargs': {'exponential': {'alpha': 0.8}},
     'contextual_kwargs': {'netmob_POIs': {
-                                        'NetMob_selected_apps': ['Google_Maps', 'Web_Weather'],
+                                        'NetMob_selected_apps': ['Google_Maps', 'Web_Weather'], # 'Deezer' # Instagram'
                                         'NetMob_transfer_mode': ['DL'],
                                         'NetMob_selected_tags': ['iris'],
                                         'NetMob_expanded': '',

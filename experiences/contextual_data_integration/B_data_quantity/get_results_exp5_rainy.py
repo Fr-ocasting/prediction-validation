@@ -99,17 +99,23 @@ for percentage in [5, 10, 15, 25, 50, 75, 100]:
                     feature_extractor1 = dic_feature_extractor[(target,tuple(contextual_data1))]
 
                     if contextual_data == []:
-                        trial_id1 = f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis"
+                        # trial_id1 = f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis"
+                        trial_id1 = f"{model_name}_{target}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
                     else:
-                        trial_id1 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis"
+                        # trial_id1 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis"
+                        trial_id1 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
 
-                    trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data1)}_{fusion_strategie1}_{feature_extractor1}_{percentage}p__e{epochs}_h{horizon}_bis"
+                    # trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data1)}_{fusion_strategie1}_{feature_extractor1}_{percentage}p__e{epochs}_h{horizon}_bis"
+                    trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data1)}_{fusion_strategie1}_{feature_extractor1}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
                     reversed_metric = True 
                 else:
-                    trial_id1 = f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis"
-                    trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis"
+                    # trial_id1 = f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis"
+                    # trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis"
+                    trial_id1 = f"{model_name}_{target}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
+                    trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
 
-                model_args,_,path_model_args,_ = get_model_args(target,model_name,save_folder_name = f'Exp5/{target}_{model_name}')
+                # model_args,_,path_model_args,_ = get_model_args(save_folder_name = f'Exp5/{target}_{model_name}')
+                model_args,_,path_model_args,_ = get_model_args(save_folder_name = f'Exp5_ExpandingTrain/{target}_{model_name}')
                 ds1,ds2,args_init1,args_init2 = None, None, None, None
 
                 for k in range_k:
@@ -142,8 +148,12 @@ for percentage in [5, 10, 15, 25, 50, 75, 100]:
                     MAE = dic_metric2['mae_all']
                     MASE = dic_metric2['mase_all']
                     MAPE = dic_metric2['mape_all']
+                    # if feature_extractor == '':
+                    #     log += f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis{k}:   All Steps RMSE = {RMSE:.3f}, MAE = {MAE:.3f}, MASE = {MASE:.3f}, MAPE = {MAPE:.3f}\n"
+                    # else:
+                    #     log += f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis{k}:   All Steps RMSE = {RMSE:.3f}, MAE = {MAE:.3f}, MASE = {MASE:.3f}, MAPE = {MAPE:.3f}\n"
                     if feature_extractor == '':
-                        log += f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis{k}:   All Steps RMSE = {RMSE:.3f}, MAE = {MAE:.3f}, MASE = {MASE:.3f}, MAPE = {MAPE:.3f}\n"
+                        log += f"{model_name}_{target}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis{k}:   All Steps RMSE = {RMSE:.3f}, MAE = {MAE:.3f}, MASE = {MASE:.3f}, MAPE = {MAPE:.3f}\n"
                     else:
-                        log += f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis{k}:   All Steps RMSE = {RMSE:.3f}, MAE = {MAE:.3f}, MASE = {MASE:.3f}, MAPE = {MAPE:.3f}\n"
+                        log += f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis{k}:   All Steps RMSE = {RMSE:.3f}, MAE = {MAE:.3f}, MASE = {MASE:.3f}, MAPE = {MAPE:.3f}\n"
                 print(log)

@@ -121,3 +121,93 @@ def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser:
     latex_parts.extend([r"        \bottomrule", r"    \end{tabular}", r"}",r"\end{table}"])
     
     return "\n".join(latex_parts)
+
+
+
+def load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,columns_metrics):
+    local_folder_path =  f"{folder_path}/{exp_i}/{dic_exp_to_names[exp_i]}/{trial_j}_bis{n_bis}"
+    Losses_file_path = f"{local_folder_path}/Losses_{trial_j}_bis{n_bis}.csv"
+    df_j = pd.read_csv(Losses_file_path,index_col = 0)
+    df_j.columns = [f'Train_{n_bis}',f'Valid_{n_bis}']
+    df_j_all = pd.concat([df_j_all,df_j],axis=1)
+
+    # Get metrics : 
+    metrics_ij = pd.read_csv(f"{local_folder_path}/METRICS_{trial_j}_bis{n_bis}.csv",index_col = 0)
+    if set(columns_metrics).issubset(metrics_ij.columns) :
+        metrics_ij = metrics_ij.loc['test',columns_metrics].copy()
+    else:
+        print(f'Metrics {columns_metrics} have not been found in csv  {local_folder_path}/METRICS_{trial_j}_bis{n_bis}.csv ')
+        metrics_ij = None
+
+    if metrics_ij is not None: 
+        metric_i.append(metrics_ij)
+
+    return df_j_all, metric_i
+
+def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,columns_metrics):
+    df_j_all = pd.DataFrame()
+    metric_i = []
+    for n_bis in range(1,6):
+
+        df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,columns_metrics)
+    
+    if len(metric_i) > 0: 
+        metric_i = pd.DataFrame(metric_i)
+        metric_i.index = [f"{trial_j}_bis{n_bis}" for n_bis in range(1,6)]
+        L_metrics.append(metric_i)
+
+    return L_metrics
+
+
+def build_legend_group_exp4(x):
+    if ('adpQ0' in x) and ('adp0' in x):
+        return 'adp0 & adpQ0'
+    if ('adpQ0' in x):
+        return 'adpQ0'
+    if ('adp0' in x):
+        return 'adp0'
+    if not('adp' in x):
+        return 'Baseline'
+    return 'STAEformer_CrossAttn'
+
+def update_df_metrics_exp4_15min(df_metrics_all):
+    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
+    df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df_metrics_all
+
+def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
+    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
+    df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df_metrics_all    
+
+def build_legend_group_exp1(x):
+    if not('subway_in' in x) :
+        return 'Baseline'
+    elif 'independant_embedding' in x:
+        return 'Independant Embedding'
+    elif 'shared_embedding' in x:
+        return 'Shared Embedding'
+    else:
+        return 'Other Methods'
+
+def update_df_metrics_exp1(df_metrics_all):
+    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
+    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if 'subway_in' in c else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df_metrics_all
+
+def update_df_metrics(df_metrics_all,exp_i):
+    if exp_i == 'Exp1':
+        return update_df_metrics_exp1(df_metrics_all)
+    elif exp_i == 'Exp4_15min':
+       return update_df_metrics_exp4_15min(df_metrics_all)
+
+    elif exp_i == 'Exp6_subway_netmob':
+       return update_df_metrics_Exp6_subway_netmob(df_metrics_all)
+
+    else:
+        raise NotImplementedError

@@ -684,6 +684,7 @@ def get_model_args(save_folder_name = 'optim/subway_in_STGCN', save_folder_name_
     return model_args,model_args_bis,path_model_args,path_model_args_bis
 
 
+
 def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                      model_args,model_args_bis,path_model_args,path_model_args_bis,
                                      range_k = range(1,6),
@@ -784,7 +785,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                         )
  
 
-    return clusterer,full_predict1,full_predict2,train_input,Y_true
+    return clusterer,full_predict1,full_predict2,train_input,Y_true,[globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k], ds1,ds2,args_init1,args_init2
 
 
 if __name__ == '__main__':

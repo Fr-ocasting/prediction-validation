@@ -68,73 +68,74 @@ for target_data in ['subway_out','bike_out']:
         for contextual_dataset_names in L_contextual_dataset_names:
 
             # ALREADY DONE
-            if (target_data == 'bike_out')  and contextual_dataset_names == [] and (horizon ==4):
+            if not((target_data == 'bike_out')  and contextual_dataset_names == [] and (horizon ==4)):
                 continue
-            # -------
+            else:
+                # -------
 
-            # --- Get Associated contextual kwargs (only one single here)
-            contextual_kwargs_i = subway_possible_contextual_kwargs['early_fusion']['shared_embedding']
-            if 'weather' in contextual_dataset_names:
-                if len(contextual_dataset_names)>1:
-                    fusion_type = 'early_fusion'
-                    feature_extractor_type = 'shared_embedding_repeat_t_proj'
-                else:
-                    fusion_type = 'early_fusion'
-                    feature_extractor_type = 'repeat_t_proj'
-            else: 
-                fusion_type = 'early_fusion'
-                feature_extractor_type = 'shared_embedding'
-            # contextual_kwargs_i = {'early_fusion': {'shared_embedding': subway_possible_contextual_kwargs['early_fusion']['shared_embedding']}}
-
-
-            # --- Update contextual_kwargs according to the selected contextual datasets
-            contextual_kwargs ={'subway_out':contextual_kwargs_i,
-                                'subway_in':contextual_kwargs_i,
-                                'subway_in_subway_out':contextual_kwargs_i,
-                                'weather':weather_contextual_kwargs}
-            
-            if 'weather' not in contextual_dataset_names:
-                contextual_kwargs.pop('weather',None)  
-            if 'subway_in' not in contextual_dataset_names:
-                contextual_kwargs.pop('subway_in',None)  
-            if 'subway_out' not in contextual_dataset_names:
-                contextual_kwargs.pop('subway_out',None)
-            if 'subway_in_subway_out' not in contextual_dataset_names:
-                contextual_kwargs.pop('subway_in_subway_out',None)  
-            # --- 
-
-            # With percent train size: 
-            # for percent,modif_percent in percent_train_size.items():
-            #     modif_percent = modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage)
-            
-            # With expanding train size: 
-            for percent,modif_percent in expanding_train_size.items():
-                modif_percent = modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage)
-
-                for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-                    dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-                    if len(contextual_dataset_names)>0:
-                        name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}_ExpandingTrain{percent}"
+                # --- Get Associated contextual kwargs (only one single here)
+                contextual_kwargs_i = subway_possible_contextual_kwargs['early_fusion']['shared_embedding']
+                if 'weather' in contextual_dataset_names:
+                    if len(contextual_dataset_names)>1:
+                        fusion_type = 'early_fusion'
+                        feature_extractor_type = 'shared_embedding_repeat_t_proj'
                     else:
-                        name_i = f"{model_name}_{target_data}_ExpandingTrain{percent}"
-                    name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-                    name_i = f"{name_i}_{name_i_end}"
+                        fusion_type = 'early_fusion'
+                        feature_extractor_type = 'repeat_t_proj'
+                else: 
+                    fusion_type = 'early_fusion'
+                    feature_extractor_type = 'shared_embedding'
+                # contextual_kwargs_i = {'early_fusion': {'shared_embedding': subway_possible_contextual_kwargs['early_fusion']['shared_embedding']}}
 
-                    config_i =  {'target_data': target_data,
-                                'dataset_names': dataset_names,
-                                'model_name': model_name,
-                                'dataset_for_coverage': [target_data],
-                                'freq': freq,
-                                'horizon_step': horizon,
-                                'step_ahead': horizon,
-                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : contextual_kwargs,
-                                'denoising_names':[],
-                                } 
-                    config_i.update(config_backbone_model)
-                    config_i.update(compilation_modification)
-                    config_i.update(modif_percent)
 
-                    dic_configs[name_i] = config_i
+                # --- Update contextual_kwargs according to the selected contextual datasets
+                contextual_kwargs ={'subway_out':contextual_kwargs_i,
+                                    'subway_in':contextual_kwargs_i,
+                                    'subway_in_subway_out':contextual_kwargs_i,
+                                    'weather':weather_contextual_kwargs}
+                
+                if 'weather' not in contextual_dataset_names:
+                    contextual_kwargs.pop('weather',None)  
+                if 'subway_in' not in contextual_dataset_names:
+                    contextual_kwargs.pop('subway_in',None)  
+                if 'subway_out' not in contextual_dataset_names:
+                    contextual_kwargs.pop('subway_out',None)
+                if 'subway_in_subway_out' not in contextual_dataset_names:
+                    contextual_kwargs.pop('subway_in_subway_out',None)  
+                # --- 
+
+                # With percent train size: 
+                # for percent,modif_percent in percent_train_size.items():
+                #     modif_percent = modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage)
+                
+                # With expanding train size: 
+                for percent,modif_percent in expanding_train_size.items():
+                    modif_percent = modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_coverage)
+
+                    for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
+                        dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
+                        if len(contextual_dataset_names)>0:
+                            name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}_ExpandingTrain{percent}"
+                        else:
+                            name_i = f"{model_name}_{target_data}_ExpandingTrain{percent}"
+                        name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
+                        name_i = f"{name_i}_{name_i_end}"
+
+                        config_i =  {'target_data': target_data,
+                                    'dataset_names': dataset_names,
+                                    'model_name': model_name,
+                                    'dataset_for_coverage': [target_data],
+                                    'freq': freq,
+                                    'horizon_step': horizon,
+                                    'step_ahead': horizon,
+                                    'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                                    'contextual_kwargs' : contextual_kwargs,
+                                    'denoising_names':[],
+                                    } 
+                        config_i.update(config_backbone_model)
+                        config_i.update(compilation_modification)
+                        config_i.update(modif_percent)
+
+                        dic_configs[name_i] = config_i
 
 loop_train_save_log(loger,dic_configs,init_save_folder = init_save_folder) 
