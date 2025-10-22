@@ -142,24 +142,34 @@ subway_possible_contextual_kwargs = {
                             
                             'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
 
+                            'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
                                         
-                                    'simple_embedding':{ 'need_global_attn':True, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                            'simple_embedding':{ 'need_global_attn':True, 
+                                                    'stacked_contextual': False,
+                                                    'vision_model_name' : None,
+                                                    'use_only_for_common_dates': False,
+                                                    'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
 
-                                                            'attn_kwargs': {
-                                                                'simple_embedding_dim': INPUT_EMBEDDING_DIM,
-                                                                'concatenation_late': True,
-                                                                },
+                                                    'attn_kwargs': {
+                                                        'simple_embedding_dim': INPUT_EMBEDDING_DIM,
+                                                        'concatenation_late': True,
                                                         },
-                            
-                                    'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
-                                        },
+                                                },
+                    
+
+                                },
 
 
              'early_fusion': { 
+                                'adp_query_cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
+
+                                'cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
+                                
+                                'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
+
+                                'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),      
+
+
                                 's_proj_t_proj': {'emb_dim' : INPUT_EMBEDDING_DIM,
                                                                 'need_global_attn':False, 
                                                                 'stacked_contextual': False,
@@ -181,8 +191,7 @@ subway_possible_contextual_kwargs = {
                                         'attn_kwargs': {},
                                         },
 
-                                # 'cross_attn_traffic_model_backbone' : copy.deepcopy(feature_extractor_model_configurations),
-                                        
+
                                 'shared_embedding':{  
                                                     'need_global_attn':False, 
                                                     'stacked_contextual': True,
@@ -192,29 +201,46 @@ subway_possible_contextual_kwargs = {
                                                     'attn_kwargs': {},
                                                     },
 
-                                'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),
                                         },
 
          
 
                     }
 
+
+
+# --- Late Fusions : 
 subway_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = True
+
 subway_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['backbone_model'] = True
 subway_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
 
 subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
-subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
 subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['backbone_model'] = True
+subway_possible_contextual_kwargs['late_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
 
 subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
-subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
 subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['backbone_model'] = True
 subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['init_adaptive_query_dim'] = INPUT_EMBEDDING_DIM
+subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
+# ---
 
-# subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
-# subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False
-# subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['backbone_model'] = True
+# --- Early Fusions : 
+subway_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = False
+
+subway_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['backbone_model'] = True
+subway_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False
+
+subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
+subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['backbone_model'] = True
+subway_possible_contextual_kwargs['early_fusion']['cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False
+
+subway_possible_contextual_kwargs['early_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['cross_attention'] = True
+subway_possible_contextual_kwargs['early_fusion']['adp_query_cross_attn_traffic_model_backbone']['backbone_model'] = True
+subway_possible_contextual_kwargs['early_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['init_adaptive_query_dim'] = INPUT_EMBEDDING_DIM
+subway_possible_contextual_kwargs['early_fusion']['adp_query_cross_attn_traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False
+# ---
+
 
 bike_possible_contextual_kwargs = {
                     'early_fusion': {'independant_embedding':{'emb_dim' : INPUT_EMBEDDING_DIM,

@@ -57,7 +57,7 @@ def load_spatial_attn_model(args,ds_name):
                 input_dim = args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1
                 self.linear = nn.Linear(input_dim,embedding_dim)
 
-            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = None) -> Tensor:
+            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dic_t_emb: Tensor = None,dim: int = None) -> Tensor:
                 # print('\nStart simple temporal embedding')
                 # print('   x_contextual size before embedding: ',x_contextual.size())
                 if x_contextual.dim()==3:
@@ -136,7 +136,7 @@ def load_spatial_attn_model(args,ds_name):
                         'Q_num_nodes': args.num_nodes,
                         'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit'],
                         'dropout': args.dropout,
-                        }
+                        }      
         args_ds_i = Namespace(**args_ds_i)
         for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
             setattr(args_ds_i,key,value)

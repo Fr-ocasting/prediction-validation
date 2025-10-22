@@ -69,6 +69,8 @@ import os
 import sys
 import torch 
 import importlib
+import itertools
+import copy 
 import torch._dynamo as dynamo; dynamo.graph_break()
 torch._dynamo.config.verbose=True
 
@@ -93,169 +95,126 @@ loger = LOG()
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
-init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp1'
-device = torch.device('cuda:0')
+init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp1_subway_in'
+device = torch.device('cuda:1')
 
 freq = '15min'  
-horizons = [4]  #[1,4]
-target_data = 'subway_out' 
-contextual_dataset_names = ['subway_in']
+horizons = [1,4]  #[1,4]
+target_data = 'subway_in'  # 'subway_out'
+L_contextual_dataset_names = [['subway_out'],[]]  # [[],['subway_in']]
+dic_integration_stategies = {'early_fusion':['s_proj_t_proj','shared_embedding','independant_embedding',
+                                             'adp_query_cross_attn_traffic_model_backbone',
+                                             'traffic_model_backbone'
+                                             ],
+                             'late_fusion':[
+                                             'adp_query_cross_attn_traffic_model_backbone',
+                                             'traffic_model_backbone','simple_embedding'
+                                             ],
+                             
+                             
+                             }
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
 
 
-dic_configs = {}
-# REPEAT_TRIAL  = 1 
 
+# ------ Possible configurations :
+L_input_embedding_dim = [24] # [24,48] # [8,24]
+L_adaptive_embedding_dim = [16] # [16,32] # [0,16,32] 
+L_init_adaptive_query_dim = [0,24] #  [0,24,48] #  [0,8,24]
+L_contextual_input_embedding_dim = [8,24] #  [24,48] # [8,24] # [8,24,32,48]
+adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_contextual_input_embedding_dim,L_input_embedding_dim))
+Inpt_Adp_emb = list(itertools.product( L_input_embedding_dim,L_adaptive_embedding_dim))
+
+dic_configs = {}
+REPEAT_TRIAL  = 5 # 1 # 5
+EPOCHS = 80
 # Exp i. Fusion Strategy on STAEformer 
 # --- Create configurations to evaluate ---
+
+
+def add_config(dic_configs,contextual_kwargs,contextual_dataset_names,model_name,fusion_type,feature_extractor_type,add_name=''):
+    dataset_names =  [target_data] +contextual_dataset_names+ ['calendar'] if contextual_kwargs is not None else  [target_data] + ['calendar']
+
+    name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}" if contextual_kwargs is not None else f"{model_name}_{'_'.join(dataset_names)}"
+    if add_name != '':
+        name_i = f"{name_i}_{add_name}"
+    name_i_end = f"_e{EPOCHS}_h{horizon}_bis{n_bis}"
+    name_i = f"{name_i}_{name_i_end}"
+
+    config_i =  {'target_data': target_data,
+                'dataset_names': dataset_names,
+                'model_name': model_name,
+                'dataset_for_coverage': [target_data],
+                'freq': freq,
+                'horizon_step': horizon,
+                'step_ahead': horizon,
+                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                'contextual_kwargs' : {data_i:contextual_kwargs for data_i in contextual_dataset_names} if contextual_kwargs is not None else {},
+                'denoising_names':[],
+                } 
+    config_i.update(config_backbone_model)
+    config_i.update(compilation_modification)
+
+
+    config_i['device'] = device
+    config_i['torch_compile'] = 'compile' # False 
+    config_i['epochs'] = EPOCHS
+
+    dic_configs[name_i] = config_i
+    return dic_configs
+
+
+
 if True: 
-    for fusion_type, config_contextual_kwargs in subway_possible_contextual_kwargs.items():
-        for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
-            if (fusion_type == 'early_fusion') and (feature_extractor_type == 's_proj_t_proj'):
-                continue
-            if (feature_extractor_type == 'cross_attn_traffic_model_backbone'):
-                continue
-            if (feature_extractor_type == 'adp_query_cross_attn_traffic_model_backbone'):
-                continue
+    for contextual_dataset_names in L_contextual_dataset_names: 
+        # No Contextual Datasets:
+        if contextual_dataset_names == []:
+            contextual_kwargs,fusion_type,feature_extractor_type = None,None,None
             for horizon in horizons:
                 for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-                    dataset_names =  [target_data] +contextual_dataset_names+ ['calendar']
-                    name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}"
-                    name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-                    name_i = f"{name_i}_{name_i_end}"
+                    dic_configs = add_config(dic_configs,contextual_kwargs,contextual_dataset_names,model_name,fusion_type,feature_extractor_type,)
 
-                    config_i =  {'target_data': target_data,
-                                'dataset_names': dataset_names,
-                                'model_name': model_name,
-                                'dataset_for_coverage': [target_data],
-                                'freq': freq,
-                                'horizon_step': horizon,
-                                'step_ahead': horizon,
-                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {data_i:contextual_kwargs for data_i in contextual_dataset_names},
-                                'denoising_names':[],
-                                } 
-                    config_i.update(config_backbone_model)
-                    config_i.update(compilation_modification)
+        # Contextual Datasets: 
+        else:
+            for fusion_type, L_feature_extractor_type in dic_integration_stategies.items():
+                for feature_extractor_type in L_feature_extractor_type:
 
+                    contextual_kwargs = subway_possible_contextual_kwargs[fusion_type][feature_extractor_type]
+                    for horizon in horizons:
+                        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
 
-                    config_i['device'] = device
-                    config_i['torch_compile'] = 'compile' # False 
-                    # config_i['epochs'] = 1
+                            # If Self Attention : 
+                            if feature_extractor_type == 'traffic_model_backbone':
+                                for Inpt_emb,adp_emb in Inpt_Adp_emb:
+                                    contextual_kwargs_i = copy.deepcopy(contextual_kwargs)
+                                    contextual_kwargs_i['attn_kwargs']['adaptive_embedding_dim'] = adp_emb
+                                    contextual_kwargs_i['attn_kwargs']['input_embedding_dim'] = Inpt_emb
+                                    add_name = f'InEmb{Inpt_emb}_adp{adp_emb}'
+                                    dic_configs = add_config(dic_configs,contextual_kwargs_i,contextual_dataset_names,model_name,fusion_type,feature_extractor_type,add_name)
+                            
 
-                    dic_configs[name_i] = config_i
+                            # If cross attention : 
+                            elif feature_extractor_type == 'adp_query_cross_attn_traffic_model_backbone':
+                                for adp_emb, Q_adp, Ctx_emb, Inpt_emb in adp_initquery_inputemb:
+                                    contextual_kwargs_i = copy.deepcopy(contextual_kwargs)
+                                    contextual_kwargs_i['attn_kwargs']['adaptive_embedding_dim'] = adp_emb
+                                    contextual_kwargs_i['attn_kwargs']['input_embedding_dim'] = Inpt_emb
+                                    contextual_kwargs_i['attn_kwargs']['init_adaptive_query_dim'] = Q_adp
+                                    contextual_kwargs_i['attn_kwargs']['context_input_embedding_dim'] = Ctx_emb
+                                    add_name = f'InEmb{Inpt_emb}_ctxInEmb{Ctx_emb}_adp{adp_emb}_adpQ{Q_adp}'
+                                    dic_configs = add_config(dic_configs,contextual_kwargs_i,contextual_dataset_names,model_name,fusion_type,feature_extractor_type,add_name)
+                            
+                            # If no Backbone model : 
+                            else:
+                                dic_configs = add_config(dic_configs,contextual_kwargs,contextual_dataset_names,model_name,fusion_type,feature_extractor_type,)
+                    
+print('\n------------------------------- CONFIGURATIONS ----------------------\n')
+for key in list(dic_configs.keys()):
+    print('   ',key)
+print('\n---------------------------------------------------------------------\n')
 
-
-    for horizon in horizons:
-        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-            dataset_names =  [target_data] + ['calendar']
-            name_i = f"{model_name}_{'_'.join(dataset_names)}"
-            name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-            name_i = f"{name_i}_{name_i_end}"
-
-            config_i =  {'target_data': target_data,
-                        'dataset_names': dataset_names,
-                        'model_name': model_name,
-                        'dataset_for_coverage': [target_data],
-                        'freq': freq,
-                        'horizon_step': horizon,
-                        'step_ahead': horizon,
-                        'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                        'contextual_kwargs' : {},
-                        'denoising_names':[],
-                        } 
-            config_i.update(config_backbone_model)
-            config_i.update(compilation_modification)
-
-
-            config_i['device'] = device
-            config_i['torch_compile'] = 'compile' # False
-            # config_i['epochs'] = 1
-
-            dic_configs[name_i] = config_i
-
-
-
-# Exp ii. Fusion Strategy on STGCN
-
-# Already implemented: only 'shared_embedding' with early fusion or 'simple_embedding' with late fusion.
-#   I don't wan't to use 'STAEformer or Attention module based on what I developped from STAEformer, cause 
-#   it would consider extract features with a powerfull Transformer-based model which won't produce a fair
-#   comparison with STGCN. 
-#   Also, it will need to adapt the code and dimensions within STGCN, which can be tricky, and consume a lot of time. 
-
-if False:
-    model_name = 'STGCN'
-    config_backbone_model = model_configurations[model_name]
-    for fusion_type, config_contextual_kwargs in subway_possible_contextual_kwargs.items():
-        for feature_extractor_type, contextual_kwargs in config_contextual_kwargs.items():
-            if (feature_extractor_type == 'feature_extractor'):
-                continue
-            if (feature_extractor_type == 'traffic_model_backbone'):
-                continue
-            if (feature_extractor_type == 'independant_embedding'):
-                continue
-            if (fusion_type == 'early_fusion') and (feature_extractor_type == 's_proj_t_proj'):
-                continue
-            if (feature_extractor_type == 'cross_attn_traffic_model_backbone'):
-                continue
-            for horizon in horizons:
-                for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-                    dataset_names =  [target_data] +contextual_dataset_names+ ['calendar_embedding']
-                    name_i = f"{model_name}_{'_'.join(dataset_names)}_{fusion_type}_{feature_extractor_type}"
-                    name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-                    name_i = f"{name_i}_{name_i_end}"
-
-                    config_i =  {'target_data': target_data,
-                                'dataset_names': dataset_names,
-                                'model_name': model_name,
-                                'dataset_for_coverage': [target_data],
-                                'freq': freq,
-                                'horizon_step': horizon,
-                                'step_ahead': horizon,
-                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                'contextual_kwargs' : {data_i:contextual_kwargs for data_i in contextual_dataset_names},
-                                'denoising_names':[],
-                                } 
-                    config_i.update(config_backbone_model)
-                    config_i.update(compilation_modification)
-
-
-                    config_i['device'] = device
-                    config_i['torch_compile'] = False 
-                    # config_i['epochs'] = 1
-
-                    dic_configs[name_i] = config_i
-
-    for horizon in horizons:
-        for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
-            dataset_names =  [target_data] + ['calendar_embedding']
-            name_i = f"{model_name}_{'_'.join(dataset_names)}"
-            name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
-            name_i = f"{name_i}_{name_i_end}"
-
-            config_i =  {'target_data': target_data,
-                        'dataset_names': dataset_names,
-                        'model_name': model_name,
-                        'dataset_for_coverage': [target_data],
-                        'freq': freq,
-                        'horizon_step': horizon,
-                        'step_ahead': horizon,
-                        'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                        'contextual_kwargs' : {},
-                        'denoising_names':[],
-                        } 
-            config_i.update(config_backbone_model)
-            config_i.update(compilation_modification)
-
-
-            config_i['device'] = device
-            config_i['torch_compile'] = False 
-            # config_i['epochs'] = 1
-
-            dic_configs[name_i] = config_i
 
 # --- Evaluate configurations ---
 loop_train_save_log(loger,dic_configs,init_save_folder = init_save_folder) 
