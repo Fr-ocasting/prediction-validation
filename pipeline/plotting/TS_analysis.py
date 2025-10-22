@@ -50,7 +50,7 @@ def plot_subway_patterns(df,Metro_A_stations,palette,width=1500, height=600,titl
 
 
 
-def plot_line_and_buffer(mean_df, median_df, std_df,title, columns = None ,colors = None, width=800, height=400, legend_str = None):
+def plot_line_and_buffer(mean_df, median_df, std_df,title, columns = None ,colors = None, width=800, height=400, legend_str = None,fill_alpha =0.3,title_font_size='16pt'):
     
     dummy_date = datetime.date(2025, 1, 1)
     mean_df_internal = mean_df.copy()
@@ -84,13 +84,13 @@ def plot_line_and_buffer(mean_df, median_df, std_df,title, columns = None ,color
         }
         source_interval = ColumnDataSource(pd.DataFrame(dict_source))
         band = Band(base="time", lower="lower", upper="upper", source=source_interval,
-                    fill_alpha=0.3, fill_color=color_i, line_width=0)
+                    fill_alpha=fill_alpha, fill_color=color_i, line_width=0)
         p.add_layout(band)
 
         callback = CustomJS(args={'band': band}, code="band.visible = this.visible;")
         line_renderer.js_on_change('visible', callback)
 
-        band_proxy_renderer = p.patch([], [], fill_color=color_i, fill_alpha=0.3, line_width=0)
+        band_proxy_renderer = p.patch([], [], fill_color=color_i, fill_alpha=fill_alpha, line_width=0)
         
         if legend_str is None:
               legend_label = str(column)
@@ -117,8 +117,11 @@ def plot_line_and_buffer(mean_df, median_df, std_df,title, columns = None ,color
     legend = Legend(items=legend_items) # , location="center"
     
     legend.click_policy = "hide"
-    p.add_layout(legend)
-#     p.add_layout(legend, 'right')
+#     p.add_layout(legend)
+    p.add_layout(legend, 'right')
+       # change title font size:
+
+    p.title.text_font_size = title_font_size
     
     output_notebook()
     show(p)
