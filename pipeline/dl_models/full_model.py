@@ -651,13 +651,22 @@ def get_added_dim(args):
                 else:
                     added_dim_output = added_dim_output + args.contextual_kwargs[name_i]['out_dim']
                 # print('added_dim_output: ',added_dim_output) 
+            # ----
+
             # - If concatenation early : 
             elif ('concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys()) and (not args.contextual_kwargs[name_i]['attn_kwargs']['concatenation_late']):
+                # Add dimension only if we don't use concatenation of embeddings on channel dim : 
                 if not('emb_dim' in args.contextual_kwargs[name_i].keys()):
+                    # # And only if no cross attention :
+                    # if not('cross_attention') in args.contextual_kwargs[name_i]['attn_kwargs'].keys() or not(args.contextual_kwargs[name_i]['attn_kwargs']['cross_attention']):
                     added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim'] 
+            # ----
+
+            # - If no concatenation specified : concatenation early by default
             else :  # If not('concatenation_late' in args.contextual_kwargs[name_i]['attn_kwargs'].keys())
                 if not('emb_dim' in args.contextual_kwargs[name_i].keys()):
                     added_dim_input = added_dim_input +  args.contextual_kwargs[name_i]['out_dim']
+            # ----
 
                 # print('added_dim_input: ',added_dim_input) 
         # ----  

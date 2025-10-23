@@ -695,7 +695,7 @@ class backbone_model(nn.Module):
         self.adaptive_embedding_dim = adaptive_embedding_dim
         self.init_adaptive_query_dim = init_adaptive_query_dim
         self.added_dim_output = added_dim_output
-        self.added_dim_input = added_dim_input
+        self.added_dim_input = 0 # added_dim_input
         self.Q_num_nodes = Q_num_nodes 
         self.KV_num_nodes = KV_num_nodes
         self.num_heads = num_heads
@@ -719,9 +719,17 @@ class backbone_model(nn.Module):
             + dow_embedding_dim
             + spatial_embedding_dim
             + adaptive_embedding_dim
-            + added_dim_input
+            + self.added_dim_input
             + self.sum_contextual_dim
         )
+        # print('Q_model_dim:',self.Q_model_dim)
+        # print('Q_input_dim:',Q_input_dim)
+        # print('tod_embedding_dim:',tod_embedding_dim)
+        # print('dow_embedding_dim:',dow_embedding_dim)
+        # print('spatial_embedding_dim:',spatial_embedding_dim)
+        # print('adaptive_embedding_dim:',adaptive_embedding_dim)
+        # print('added_dim_input:',self.added_dim_input)
+        # print('sum_contextual_dim:',self.sum_contextual_dim)
 
 
         self.KV_model_dim = (
@@ -730,7 +738,7 @@ class backbone_model(nn.Module):
             + dow_embedding_dim
             + spatial_embedding_dim
             + adaptive_embedding_dim
-            + added_dim_input
+            + self.added_dim_input
             + self.sum_contextual_dim
         )
 
@@ -852,6 +860,9 @@ class backbone_model(nn.Module):
         
         # --- Use X as query : 
         else:
+            # print('   self.input_proj:',self.input_proj)
+            if x.dim()==4:
+                x = x.permute(0,2,3,1) # [B,C,N,L] -> [B,N,L,C]
             if x.dim()==3:
                 x = x.unsqueeze(-1)
             x = self.input_proj(x)
@@ -910,16 +921,19 @@ class backbone_model(nn.Module):
         # ---------- Adaptive Embedding : 
         #       - If Self Attention 
         if self.adaptive_embedding is not None:
-            # print('\nadd common adpt embedding')
             adp_emb = self.adaptive_embedding.expand(size=(batch_size, self.in_steps, self.num_nodes, self.adaptive_embedding_dim))
+            # print('\nadd common adpt embedding')
+            # print('   adp_emb size: ',adp_emb.size())
             Q_features = torch.cat([Q_features, adp_emb], dim=-1)
             KV_features = torch.cat([KV_features, adp_emb], dim=-1)
 
         #       - If Cross Attention 
         if self.Q_adaptive_embedding is not None:
-            # print('\nadd Q_adp_emb and KV_adp_emb embedding')
             Q_adp_emb = self.Q_adaptive_embedding.expand(size=(batch_size, self.in_steps, self.Q_num_nodes, self.adaptive_embedding_dim))
             KV_adp_emb = self.KV_adaptive_embedding.expand(size=(batch_size, self.in_steps, self.KV_num_nodes, self.adaptive_embedding_dim))
+            # print('\nadd Q_adp_emb and KV_adp_emb embedding')
+            # print('   Q_adp_emb size: ',Q_adp_emb.size())
+            # print('   KV_adp_emb size: ',KV_adp_emb.size())
             Q_features = torch.cat([Q_features, Q_adp_emb], dim=-1)
             KV_features = torch.cat([KV_features, KV_adp_emb], dim=-1)
         # ----------
@@ -953,6 +967,7 @@ class backbone_model(nn.Module):
         # print('\nStart Feature Extraction with Attention layers')
         # print('   query_init.size() before attn-layers: ',query_init.size())
         # print('   x_contextual.size() before attn-layers: ',x_contextual.size())
+        # print('   cross_attention layer:', self.Q_attn_layers_t[0])
         # ----------  Temporal & Spatial Attention Layers  : 
 
         #if Cross Attention,  Need to first project into spatial dimension  ==> INVERSE ORDER OF ATTENTION LAYERS

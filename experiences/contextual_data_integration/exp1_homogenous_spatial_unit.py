@@ -102,9 +102,10 @@ freq = '15min'
 horizons = [1,4]  #[1,4]
 target_data = 'subway_in'  # 'subway_out'
 L_contextual_dataset_names = [['subway_out'],[]]  # [[],['subway_in']]
-dic_integration_stategies = {'early_fusion':['s_proj_t_proj','shared_embedding','independant_embedding',
+dic_integration_stategies = {'early_fusion':[ #'s_proj_t_proj','shared_embedding','independant_embedding',
+                                             'traffic_model_backbone',
                                              'adp_query_cross_attn_traffic_model_backbone',
-                                             'traffic_model_backbone'
+
                                              ],
                              'late_fusion':[
                                              'adp_query_cross_attn_traffic_model_backbone',
@@ -129,7 +130,8 @@ Inpt_Adp_emb = list(itertools.product( L_input_embedding_dim,L_adaptive_embeddin
 
 dic_configs = {}
 REPEAT_TRIAL  = 5 # 1 # 5
-EPOCHS = 80
+EPOCHS = 80  # 80  # 1
+TORCH_COMPILE =  'compile' # 'compile'  # False
 # Exp i. Fusion Strategy on STAEformer 
 # --- Create configurations to evaluate ---
 
@@ -159,8 +161,8 @@ def add_config(dic_configs,contextual_kwargs,contextual_dataset_names,model_name
 
 
     config_i['device'] = device
-    config_i['torch_compile'] = 'compile' # False 
     config_i['epochs'] = EPOCHS
+    config_i['torch_compile'] = TORCH_COMPILE
 
     dic_configs[name_i] = config_i
     return dic_configs
