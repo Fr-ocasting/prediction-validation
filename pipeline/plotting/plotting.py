@@ -20,6 +20,8 @@ from pipeline.PI.PI_object import PI_object
 from pipeline.utils.metrics import error_along_ts
 from pipeline.calendar_class import is_morning_peak,is_evening_peak,is_weekday,get_temporal_mask
 
+
+
 def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hpo = True):
     if not(type(Datasets) == list):
         Datasets = [Datasets]
@@ -57,6 +59,7 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hp
 
     # K-folds : 
     dates_xticks = []
+    fontsize = 12*figsize[1]/14
     K_fold = len(Datasets)
     for i,dset in enumerate(Datasets):
         limits = dset.tensor_limits_keeper
@@ -83,36 +86,34 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hp
 
         # Plot each horizontal bar (if exists):
         ax.barh(i-0.2, width_predict_train, left=lpt1, color='blue', height = 0.35, alpha = 0.7, label='Predicted Train' if i == 0 else None)
-        ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Time-slots within TrainSet' if i == 0 else None)
+        ax.barh(i+0.2, width_train_set, left=lt1, color='cornflowerblue', height = 0.35, alpha = 0.7, label='Time-slots within Train Set' if i == 0 else None)
 
-        if not np.isnan(width_predict_valid):
-            ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
-            ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Time-slots within ValidSet' if i == 0 else None)
-        if i != 0 or not hpo:
-            if not np.isnan(width_predict_test):
-                ax.barh(i-0.2, width_predict_test, left=lpte1, color='forestgreen', height = 0.35, alpha = 0.7, label='Predicted Test' if i == 0 else None)
-                ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label='Time-slots within TestSet' if i == 0 else None)
-
-
-        # .........
-        # For train bar
-        fontsize = 12*figsize[1]/14
         ax.text(lpt1 + width_predict_train / 2, i - 0.2, f'{mdates.num2date(lpt1).strftime("%m/%d")} - {mdates.num2date(lpt2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
         ax.text(lt1 + width_train_set / 2, i + 0.2, f'{mdates.num2date(lt1).strftime("%m/%d")} - {mdates.num2date(lt2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
 
-        # For valid bar
         if not np.isnan(width_predict_valid):
+            ax.barh(i-0.2, width_predict_valid, left=lpv1, color='orangered', height = 0.35, alpha = 0.7, label='Predicted Valid' if i == 0 else None)
+            ax.barh(i+0.2, width_valid_set, left=lv1, color='coral', height = 0.35, alpha = 0.7, label='Time-slots within Valid Set' if i == 0 else None)
+
             ax.text(lpv1 + width_predict_valid / 2, i - 0.2, f'{mdates.num2date(lpv1).strftime("%m/%d")} - {mdates.num2date(lpv2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
             ax.text(lv1 + width_valid_set / 2, i + 0.2, f'{mdates.num2date(lv1).strftime("%m/%d")} - {mdates.num2date(lv2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
 
-        # For test bar
         if i != 0 or not hpo:
             if not np.isnan(width_predict_test):
+                first_test_iter = (hpo and i == 1) or (not hpo and i == 0)
+                
+                label_test = 'Predicted Test' if first_test_iter else None
+                label_test_set = 'Time-slots within Test Set' if first_test_iter else None
+
+                # Plot the bars
+                ax.barh(i-0.2, width_predict_test, left=lpte1, color='forestgreen', height = 0.35, alpha = 0.7, label=label_test)
+                ax.barh(i+0.2, width_test_set, left=lte1, color='springgreen', height = 0.35, alpha = 0.7, label=label_test_set)
+                
+                # Plot the text
                 ax.text(lpte1 + width_predict_test / 2, i - 0.2, f'{mdates.num2date(lpte1).strftime("%m/%d")} - {mdates.num2date(lpte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
                 ax.text(lte1 + width_test_set / 2, i + 0.2, f'{mdates.num2date(lte1).strftime("%m/%d")} - {mdates.num2date(lte2).strftime("%m/%d")}', ha='center', va='center', fontsize=fontsize, color='black')
-            # ..........
 
-    # ...
+
             
     # Date formater
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%m-%d'))
@@ -128,9 +129,74 @@ def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hp
         ax.set_yticklabels([f'Fold {x}' for x in list(map(str,list(np.arange(K_fold))))])
     # Might be useless : 
     fig.autofmt_xdate()
+    ax.set_xlabel('Date',fontsize=fontsize)
 
     #ax.legend()
-    ax.legend(bbox_to_anchor=(0.5, -0.05), loc='upper center',fontsize=fontsize) #loc='upper left'
+    #ax.legend(bbox_to_anchor=(0.5, -0.05), loc='upper center',fontsize=fontsize) #loc='upper left'
+
+    # ----- BEGIN BLOCK LEGENDS -----
+    handles, labels = ax.get_legend_handles_labels()
+    
+    # Create a dictionary for easier access
+    legend_data = dict(zip(labels, handles))
+
+    # --- HELPER FUNCTION to find label regardless of space ---
+    def get_handle_and_label(key_with_space, key_no_space):
+        if key_with_space in legend_data:
+            return legend_data[key_with_space], key_with_space
+        if key_no_space in legend_data:
+            return legend_data[key_no_space], key_no_space
+        return None, None
+    # --------------------------------------------------------
+
+    # Define the labels for each block
+    h, l_invalid = get_handle_and_label("Invalid dates and Impacted Time-Slots\nwhich couldn't be predicted", "Invalid dates and Impacted Time-Slots\nwhich couldn't be predicted")
+    
+    h_pt, l_pt = get_handle_and_label("Predicted Train", "Predicted Train")
+    h_ts, l_ts = get_handle_and_label("Time-slots within Train Set", "Time-slots within Train Set")
+
+    h_pv, l_pv = get_handle_and_label("Predicted Valid", "Predicted Valid")
+    h_vS, l_vS = get_handle_and_label("Time-slots within Valid Set", "Time-slots within Valid Set")
+
+    h_pte, l_pte = get_handle_and_label("Predicted Test", "Predicted Test")
+    h_teS, l_teS = get_handle_and_label("Time-slots within Test Set", "Time-slots within Test Set")
+
+    # Create handles lists
+    block1_handles = [h]
+    block1_labels = [l_invalid]
+    
+    block2_handles = [h_pt, h_ts]
+    block2_labels = [l_pt, l_ts]
+
+    block3_handles = [h_pv, h_vS]
+    block3_labels = [l_pv, l_vS]
+
+    block4_handles = [h_pte, h_teS]
+    block4_labels = [l_pte, l_teS]
+
+    # Filter out any None values (if a label wasn't found)
+    block1_handles, block1_labels = zip(*[(h, l) for h, l in zip(block1_handles, block1_labels) if h])
+    block2_handles, block2_labels = zip(*[(h, l) for h, l in zip(block2_handles, block2_labels) if h])
+    block3_handles, block3_labels = zip(*[(h, l) for h, l in zip(block3_handles, block3_labels) if h])
+    block4_handles, block4_labels = zip(*[(h, l) for h, l in zip(block4_handles, block4_labels) if h])
+
+    # Create the four legends
+    if block1_handles:
+        leg1 = ax.legend(block1_handles, block1_labels, bbox_to_anchor=(0.2, 0.0), loc='upper center', fontsize=fontsize, frameon=False)
+        ax.add_artist(leg1)
+    
+    if block2_handles:
+        leg2 = ax.legend(block2_handles, block2_labels, bbox_to_anchor=(0.4, 0.0), loc='upper center', fontsize=fontsize, frameon=False)
+        ax.add_artist(leg2)
+    
+    if block3_handles:
+        leg3 = ax.legend(block3_handles, block3_labels, bbox_to_anchor=(0.6, 0.0), loc='upper center', fontsize=fontsize, frameon=False)
+        ax.add_artist(leg3)
+    
+    if block4_handles:
+        leg4 = ax.legend(block4_handles, block4_labels, bbox_to_anchor=(0.8, 0.0), loc='upper center', fontsize=fontsize, frameon=False)
+        ax.add_artist(leg4)
+    # ----- END BLOCK LEGENDS -----
 
     if save_path is not None:
         plt.savefig(save_path, format='pdf', bbox_inches='tight')
