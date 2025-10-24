@@ -102,6 +102,8 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
     p.xaxis.major_label_orientation = np.pi/7
     p.legend.title = legend_group
     p.legend.click_policy = "hide"
+
+    p.add_layout(p.legend[0], 'right')
     
     # Add a JavaScript callback to handle visibility
     callback = CustomJS(args=dict(renderers=renderers, x_range=p.x_range, original_factors=p.x_range.factors), code="""
@@ -135,7 +137,7 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
     # We need to assign the callback to each renderer within its legend group.
     # The Bokeh legend item is tied to the first renderer that has a legend_label.
     # In this case, it's the circle_renderer.
-    for i, item in enumerate(p.legend.items):
+    for i, item in enumerate(p.legend[0].items):
         # We know the first renderer for each group is the circle_renderer which has the label.
         # Attach the callback to it.
         item.renderers[0].js_on_change('visible', callback)

@@ -2,12 +2,12 @@ import pandas as pd
 import re
 import io
 
-def parse_index_exp1_2(index_name: str) -> dict:
+def parse_index_exp1_2(index_name: str,contextual= 'subway_in') -> dict:
     """
     Parses the index string for the first and second experiments.
     It identifies the baseline, contextual data presence, and integration strategy.
     """
-    if 'subway_in' in index_name or 'weather' in index_name:
+    if contextual in index_name or 'weather' in index_name:
         contextual_data = 'Yes'
         strategy_match = re.search(r'calendar_(.*?)__e', index_name)
         strategy = strategy_match.group(1).replace('_', ' ').replace(' t ', '-t-').replace(' s ', '-s-').title()
@@ -57,6 +57,7 @@ def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser:
     Returns:
         str: A string containing the full LaTeX code for the table.
     """
+    df.columns = df.columns.remove_unused_levels()
     # --- 1. Process Index and Augment DataFrame ---
     parsed_index_data = df.index.map(index_parser).to_list()
     df_parsed = pd.DataFrame(parsed_index_data, index=df.index)
@@ -124,7 +125,7 @@ def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser:
 
 
 
-def load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,columns_metrics):
+def load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics):
     local_folder_path =  f"{folder_path}/{exp_i}/{dic_exp_to_names[exp_i]}/{trial_j}_bis{n_bis}"
     Losses_file_path = f"{local_folder_path}/Losses_{trial_j}_bis{n_bis}.csv"
     df_j = pd.read_csv(Losses_file_path,index_col = 0)
@@ -133,23 +134,28 @@ def load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,
 
     # Get metrics : 
     metrics_ij = pd.read_csv(f"{local_folder_path}/METRICS_{trial_j}_bis{n_bis}.csv",index_col = 0)
+    re._pattern = re.compile(r'_h(\d+)$')
+    horizons = list(set([re._pattern.findall(c)[0] for c in metrics_ij.columns if len(re._pattern.findall(c)) > 0]))
+    if len(horizons) > 1:
+        raise ValueError(f"Multiple horizons found in columns_metrics : {horizons}")
+    else:
+        horizon = horizons[0]
+        columns_metrics = [f"{m}_h{horizon}" for m in metrics]
     if set(columns_metrics).issubset(metrics_ij.columns) :
         metrics_ij = metrics_ij.loc['test',columns_metrics].copy()
     else:
-        print(f'Metrics {columns_metrics} have not been found in csv  {local_folder_path}/METRICS_{trial_j}_bis{n_bis}.csv ')
         metrics_ij = None
 
     if metrics_ij is not None: 
         metric_i.append(metrics_ij)
-
     return df_j_all, metric_i
 
-def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,columns_metrics):
+def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics):
     df_j_all = pd.DataFrame()
     metric_i = []
     for n_bis in range(1,6):
 
-        df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,columns_metrics)
+        df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics)
     
     if len(metric_i) > 0: 
         metric_i = pd.DataFrame(metric_i)
@@ -185,7 +191,7 @@ def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
     return df_metrics_all    
 
 def build_legend_group_exp1(x):
-    if not('subway_in' in x) :
+    if not('subway_in_subway_out' in x) and not('subway_out_subway_in' in x):
         return 'Baseline'
     elif 'independant_embedding' in x:
         return 'Independant Embedding'
@@ -194,20 +200,26 @@ def build_legend_group_exp1(x):
     else:
         return 'Other Methods'
 
-def update_df_metrics_exp1(df_metrics_all):
+def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
-    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if 'subway_in' in c else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+
     return df_metrics_all
 
 def update_df_metrics(df_metrics_all,exp_i):
     if exp_i == 'Exp1':
-        return update_df_metrics_exp1(df_metrics_all)
+        df =  update_df_metrics_exp1(df_metrics_all)
+    elif exp_i == 'Exp1_subway_in':
+        df =  update_df_metrics_exp1(df_metrics_all,'subway_in')
+    elif exp_i == 'Exp1_subway_out':
+        df =  update_df_metrics_exp1(df_metrics_all,'subway_out')
     elif exp_i == 'Exp4_15min':
-       return update_df_metrics_exp4_15min(df_metrics_all)
-
+        df =  update_df_metrics_exp4_15min(df_metrics_all)
     elif exp_i == 'Exp6_subway_netmob':
-       return update_df_metrics_Exp6_subway_netmob(df_metrics_all)
-
+       df = update_df_metrics_Exp6_subway_netmob(df_metrics_all)
     else:
         raise NotImplementedError
+
+    df.id = df.id.apply(lambda x: x.replace('adp_query_cross_attn_traffic_model_backbone','CABB'))
+    return df 

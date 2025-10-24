@@ -95,14 +95,14 @@ loger = LOG()
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
-init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp1_subway_in'
+init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp1_subway_out'
 device = torch.device('cuda:1')
 
 freq = '15min'  
 horizons = [1,4]  #[1,4]
-target_data = 'subway_in'  # 'subway_out'
-L_contextual_dataset_names = [['subway_out'],[]]  # [[],['subway_in']]
-dic_integration_stategies = {'early_fusion':[ #'s_proj_t_proj','shared_embedding','independant_embedding',
+target_data = 'subway_out'  # 'subway_out'
+L_contextual_dataset_names = [[],['subway_in']] # [['subway_out'],[]]  # [[],['subway_in']]
+dic_integration_stategies = {'early_fusion':['s_proj_t_proj','shared_embedding','independant_embedding',
                                              'traffic_model_backbone',
                                              'adp_query_cross_attn_traffic_model_backbone',
 

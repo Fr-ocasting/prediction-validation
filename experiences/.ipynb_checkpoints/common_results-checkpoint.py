@@ -14,28 +14,20 @@ from experiences.contextual_data_integration.exp4_15min_results import results  
 from experiences.contextual_data_integration.exp4_results import results  as results_Exp4
 from experiences.contextual_data_integration.C_netmob.exp6_subway_netmob_results import results as results_Exp6
 from experiences.contextual_data_integration.exp1_subway_in_results import results  as results_Exp1_subway_in
-from experiences.contextual_data_integration.exp1_subway_out_results import results  as results_Exp1_subway_out
 folder_path = 'save/K_fold_validation/training_wo_HP_tuning'
 metrics = ['rmse','mae','mase']
 
 dic_exp_to_names = {
     'Exp1': 'subway_out_STAEformer',
-    'Exp1_subway_in':'subway_in_STAEformer',
-    'Exp1_subway_out':'subway_out_STAEformer',
-
     'Exp2': 'bike_out_STAEformer',
     'Exp3': 'bike_out_STAEformer',
-
     'Exp3_bike_15min_h4': 'bike_out_STAEformer',
-
     'Exp4': 'bike_out_STAEformer',
     'Exp4_15min': 'bike_out_STAEformer',
     'Exp4_15min_h1': 'bike_out_STAEformer',
-
     'Exp6_subway_netmob': 'subway_in_STAEformer',
+    'Exp1_subway_in':'subway_in_STAEformer',
 }
-
-# A supprimer : 
 dic_exp_to_h = {
     'Exp1': 4,
     'Exp2': 4,
@@ -45,16 +37,11 @@ dic_exp_to_h = {
     'Exp4_15min': 4,
     'Exp4_15min_h1': 1,
 }
-# -----
 
 
 def find_baseline(exp_i,h=None):
     if exp_i == 'Exp1':
         return 'STAEformer_subway_out_calendar__e200_h4'
-    elif exp_i == 'Exp1_subway_in':
-        return f'STAEformer_subway_in_calendar__e80_h{h}'
-    elif exp_i == 'Exp1_subway_out':
-        return f'STAEformer_subway_out_calendar__e80_h{h}'
     elif exp_i == 'Exp2':
         return 'STAEformer_bike_out_calendar__e200_h4'
     elif exp_i == 'Exp3_bike_15min_h4':
@@ -77,8 +64,6 @@ re._pattern = r'STAEformer.*?bis'
 
 
 dic_trials = {'Exp1_subway_in': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp1_subway_in)))],
-            
-            'Exp1_subway_out': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp1_subway_out)))],
     
     'Exp1':[
                     'STAEformer_subway_out_calendar__e200_h4',
@@ -121,5 +106,16 @@ dic_trials = {'Exp1_subway_in': [c[:-4] for c in list(set(re.findall(re._pattern
 
             'Exp6_subway_netmob': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp6)))],
 }
+
+# re._pattern = r'STAEformer.*?h1_bis'
+# dic_trials.update({
+#             'Exp6_subway_netmob_h1': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp6)))],
+#             })
+
+
+# re._pattern = r'STAEformer.*?h4_bis'
+# dic_trials.update({
+#             'Exp6_subway_netmob_h4': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp6)))],
+#             })
 
 
