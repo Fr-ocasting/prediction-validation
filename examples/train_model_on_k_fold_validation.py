@@ -18,11 +18,11 @@ from pipeline.dl_models.full_model import full_model
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 
-def load_configuration(trial_id,load_config,modification = None):
+def load_configuration(trial_id,load_config,modification = None,folder =  'save/HyperparameterTuning'):
     # If Load config: 
     if load_config:
         from examples.load_best_config import load_best_config
-        args = load_best_config(trial_id)
+        args = load_best_config(trial_id, folder = folder)
         #Update modif validation
         #args.train_prop = 0.6
         #args.valid_prop = 0.2
