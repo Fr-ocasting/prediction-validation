@@ -12,7 +12,8 @@ if parent_dir not in sys.path:
 from experiences.contextual_data_integration.exp4_15min_h1_results import results as results_Exp4_15min_h1
 from experiences.contextual_data_integration.exp4_15min_results import results  as results_Exp4_15min
 from experiences.contextual_data_integration.exp4_results import results  as results_Exp4
-from experiences.contextual_data_integration.C_netmob.exp6_subway_netmob_results import results as results_Exp6
+from experiences.contextual_data_integration.C_netmob.exp6_subway_netmob_results import results as results_Exp6_subway
+from experiences.contextual_data_integration.C_netmob.exp6_bike_netmob_results import results as results_Exp6_bike
 from experiences.contextual_data_integration.exp1_subway_in_results import results  as results_Exp1_subway_in
 from experiences.contextual_data_integration.exp1_subway_out_results import results  as results_Exp1_subway_out
 folder_path = 'save/K_fold_validation/training_wo_HP_tuning'
@@ -33,6 +34,7 @@ dic_exp_to_names = {
     'Exp4_15min_h1': 'bike_out_STAEformer',
 
     'Exp6_subway_netmob': 'subway_in_STAEformer',
+    'Exp6_bike_netmob': 'bike_out_STAEformer',
 }
 
 # A supprimer : 
@@ -119,7 +121,9 @@ dic_trials = {'Exp1_subway_in': [c[:-4] for c in list(set(re.findall(re._pattern
 
             'Exp4_15min_h1': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp4_15min_h1)))],
 
-            'Exp6_subway_netmob': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp6)))],
+            'Exp6_subway_netmob': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp6_subway)))],
+
+            'Exp6_bike_netmob':  [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp6_bike)))],
 }
 
 

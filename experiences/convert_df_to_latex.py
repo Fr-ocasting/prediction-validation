@@ -218,8 +218,16 @@ def update_df_metrics(df_metrics_all,exp_i):
         df =  update_df_metrics_exp4_15min(df_metrics_all)
     elif exp_i == 'Exp6_subway_netmob':
        df = update_df_metrics_Exp6_subway_netmob(df_metrics_all)
+    elif exp_i == 'Exp6_bike_netmob':
+       df = update_df_metrics_Exp6_subway_netmob(df_metrics_all)
     else:
         raise NotImplementedError
 
     df.id = df.id.apply(lambda x: x.replace('adp_query_cross_attn_traffic_model_backbone','CABB'))
+    df.id = df.id.apply(lambda x: x.replace('InEmb','In'))
+    df.id = df.id.apply(lambda x: x.replace('ctxInEmb','ctx'))
+    df.id = df.id.apply(lambda x: x.replace('aggIris','n'))
+    df.id = df.id.apply(lambda x: x.replace('Google_Maps','GM'))
+    df.id = df.id.apply(lambda x: x.replace('Web_Weather','W_Wea'))
+    df.id = df.id.apply(lambda x: x.replace('Instagram','Insta'))
     return df 

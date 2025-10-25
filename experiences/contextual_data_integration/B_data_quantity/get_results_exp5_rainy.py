@@ -57,7 +57,8 @@ def get_dict_metrics_on_rainy_events(full_predict1,full_predict2,Y_true,X,args_i
 
 
 dic_contextual_data = {'bike_out': [[],['weather','calendar']],
-                    'subway_out': [[],['subway_in','calendar'],['subway_in','weather','calendar']]
+                    # 'subway_out': [[],['subway_in','calendar'],['subway_in','weather','calendar']]
+                    'subway_out': [['subway_in','weather','calendar']]
                     }
 
 dic_fusion_strategie = {('bike_out',()): '',
@@ -86,7 +87,8 @@ modification = {'shuffle':False,
 log = ''
 for percentage in [5, 10, 15, 25, 50, 75, 100]:
     for horizon in [1,4]:
-        for target in ['bike_out','subway_out']:
+        # for target in ['bike_out','subway_out']:
+        for target in ['subway_out']:
             for contextual_data in dic_contextual_data[target]:
                 reversed_metric = False
                 fusion_strategie = dic_fusion_strategie[(target,tuple(contextual_data))]
@@ -111,7 +113,8 @@ for percentage in [5, 10, 15, 25, 50, 75, 100]:
                 else:
                     # trial_id1 = f"{model_name}_{target}_{percentage}p__e{epochs}_h{horizon}_bis"
                     # trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_{percentage}p__e{epochs}_h{horizon}_bis"
-                    trial_id1 = f"{model_name}_{target}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
+                    # trial_id1 = f"{model_name}_{target}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
+                    trial_id1 = f"{model_name}_{target}_subway_in_calendar_early_fusion_shared_embedding_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
                     trial_id2 = f"{model_name}_{target}_{'_'.join(contextual_data)}_{fusion_strategie}_{feature_extractor}_ExpandingTrain{percentage}p__e{epochs}_h{horizon}_bis"
 
                 # model_args,_,path_model_args,_ = get_model_args(save_folder_name = f'Exp5/{target}_{model_name}')

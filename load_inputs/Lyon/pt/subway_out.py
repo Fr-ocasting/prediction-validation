@@ -36,7 +36,7 @@ list_of_invalid_period.append([datetime(2019,2,18,11),datetime(2019,2,18,13)])
 list_of_invalid_period.append([datetime(2019,4,23,14),datetime(2019,4,28,14)])
 list_of_invalid_period.append([datetime(2019,6,26,11),datetime(2019,6,28,4)])
 list_of_invalid_period.append([datetime(2019,10,27),datetime(2019,10,28,20,15)])
-# list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
+list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16,45)])
 
 
 C = 1
