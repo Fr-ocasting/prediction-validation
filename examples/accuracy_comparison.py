@@ -644,20 +644,38 @@ def get_rainy_indices(args,ds,training_mode = 'test'):
 
   # Test time slots: 
   time_slots = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}").iloc[:,-1]
+  if (training_mode=='train') and hasattr(args,'expanding_train') and (args.expanding_train is not None) and (args.expanding_train != 100):
+    n = len(time_slots)
+    split = int(n * args.expanding_train)
+    time_slots = time_slots.iloc[-split:]
+  total_indices = len(time_slots)
 
-  # Rainy Mask : 
-  mask = (df_weather > 0)
-  mask = mask.loc[time_slots,:].any(axis=1)
-
-  # Extract Rainy Time Slots and rainy indices : 
   time_slots.name = 'timestamp'
   df_time_slots = pd.DataFrame(time_slots) 
   df_time_slots = df_time_slots.reset_index(drop=True)
   df_time_slots['indices'] = df_time_slots.index
   df_time_slots = df_time_slots.set_index('timestamp')
-  rainy_indices = df_time_slots[mask].indices
+
+  # Rainy Mask : 
+  rainy_mask = (df_weather > 0)
+  rainy_mask = rainy_mask.loc[time_slots,:].any(axis=1)
+
+  # Extract Rainy Time Slots and rainy indices : 
+  rainy_indices = df_time_slots[rainy_mask].indices
   rainy_indices = torch.Tensor(rainy_indices.values).long()
-  return mask,rainy_indices,df_weather
+
+  if training_mode == 'train':
+    print(f"Number of rainy time-slots in the train set:")
+    L_rainfall = [0,0.05,0.5,1,np.inf]
+    for pos in range(len(L_rainfall)-1):
+        mask_i = (df_weather > L_rainfall[pos]) & (df_weather <= L_rainfall[pos+1])
+        mask_i = mask_i.loc[time_slots,:].any(axis=1)
+        indices_i = df_time_slots[mask_i].indices
+        indices_i = torch.Tensor(indices_i.values).long()
+        print(f" Between {L_rainfall[pos]} and {L_rainfall[pos+1]} mm: {len(indices_i)}, i.e {len(indices_i)/total_indices*100:.2f} % of the train set and {len(indices_i)/len(rainy_indices)*100:.2f} % of the rainy time-slots")
+
+
+  return rainy_mask,rainy_indices,df_weather,total_indices
 
 
 def get_cluster(df,temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city='Lyon',

@@ -71,6 +71,8 @@ def find_baseline(exp_i,h=None):
         return 'STAEformer_bike_out_calendar__e80_h1'
     elif exp_i == 'Exp6_subway_netmob':
         return f'STAEformer_subway_in_calendar__e150_h{h}'
+    elif exp_i == 'Exp6_bike_netmob':
+        return f'STAEformer_bike_out_calendar__e150_h{h}'
     else:
         raise NotImplementedError
 
