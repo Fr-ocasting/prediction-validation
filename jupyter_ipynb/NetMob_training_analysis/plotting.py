@@ -12,7 +12,10 @@ from bokeh.io import reset_output,show, output_file, save,output_notebook
 from bokeh.transform import dodge
 
 def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='fold', width=1200, height=400, 
-                            save_path=None):
+                            save_path=None,
+                            palette= None,
+                            legend_groups = None
+                            ):
     # Data preparation
     sdf = df.groupby("id")[metric_i].mean().sort_values()
     sorted_ids = sdf.index.tolist()
@@ -44,9 +47,10 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
         title=f"{metric_i} distribution per {xaxis_label} and per {legend_group}"
     )
     box_width = 0.2
-    
-    palette = Category10[max(3,len(df[f"{legend_group}_str"].unique()))]
-    legend_groups = sorted(df[f"{legend_group}_str"].unique())
+
+    if palette is None:
+        palette = Category10[max(3,len(df[f"{legend_group}_str"].unique()))]
+        legend_groups = sorted(df[f"{legend_group}_str"].unique())
     
     renderers = []
     # Loop to create both box plot and circle renderers for each group
@@ -99,7 +103,7 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
     p.xaxis.major_label_text_font_size = "10pt"
     p.xaxis.axis_label = xaxis_label 
     p.yaxis.axis_label = metric_i
-    p.xaxis.major_label_orientation = np.pi/7
+    p.xaxis.major_label_orientation = np.pi/3 #np.pi/7
     p.legend.title = legend_group
     p.legend.click_policy = "hide"
 

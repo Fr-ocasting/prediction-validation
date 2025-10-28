@@ -2,6 +2,54 @@ import pandas as pd
 import re
 import io
 
+def results_to_dataframe(results):
+    """
+    Cette fonction transforme les résultats bruts en un DataFrame pandas.
+    """
+    data = []
+    for line in results.strip().split('\n'):
+        if not line.strip():
+            continue
+        
+        parts = line.split(':')
+        name = parts[0].strip()
+        metrics = parts[1].strip()
+        
+        target_match = re.search(r'(bike_out|subway_out)', name)
+        target = target_match.group(1) if target_match else 'unknown'
+        
+        contextual_data = target
+        if 'weather' in name and 'subway_in' in name:
+            contextual_data = f"{target} + subway-in + weather"
+        elif 'weather' in name:
+            contextual_data = f"{target}_weather"
+        elif 'subway_in' in name:
+            contextual_data = f"{target} + subway in"
+        
+        percentage_match = re.search(r'(\d+)p', name) 
+        percentage = int(percentage_match.group(1)) if percentage_match else -1
+        
+        horizon_match = re.search(r'_h(\d+)_', name)
+        horizon = int(horizon_match.group(1)) if horizon_match else -1
+
+        bis_match = re.search(r'bis(\d)', name)
+        bis = int(bis_match.group(1)) if bis_match else -1
+
+        rmse_match = re.search(r'RMSE = ([\d.]+)', metrics)
+        rmse = float(rmse_match.group(1)) if rmse_match else -1.0
+        
+        mae_match = re.search(r'MAE = ([\d.]+)', metrics)
+        mae = float(mae_match.group(1)) if mae_match else -1.0
+        
+        mase_match = re.search(r'MASE = ([\d.]+)', metrics)
+        mase = float(mase_match.group(1)) if mase_match else -1.0
+        
+        data.append([target, contextual_data, percentage, horizon, bis, rmse, mae, mase])
+        
+    df = pd.DataFrame(data, columns=['target', 'contextual_data', 'percentage','horizon', 'bis', 'RMSE', 'MAE', 'MASE'])
+    return df
+
+
 def parse_index_exp1_2(index_name: str,contextual= 'subway_in') -> dict:
     """
     Parses the index string for the first and second experiments.
@@ -188,8 +236,20 @@ def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
     df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
     df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
-    return df_metrics_all    
+    return df_metrics_all   
+ 
+def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
+    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
+    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df_metrics_all
 
+
+def update_df_metrics_exp2(df):
+    df['legend_group'] = df.reset_index()['index'].apply(build_legend_group_exp1).values
+    df['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df.index]
+    df = df.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df
 def build_legend_group_exp1(x):
     if not('subway_in_subway_out' in x) and not('subway_out_subway_in' in x):
         return 'Baseline'
@@ -200,12 +260,7 @@ def build_legend_group_exp1(x):
     else:
         return 'Other Methods'
 
-def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
-    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
-    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
 
-    return df_metrics_all
 
 def update_df_metrics(df_metrics_all,exp_i):
     if exp_i == 'Exp1':
@@ -214,6 +269,8 @@ def update_df_metrics(df_metrics_all,exp_i):
         df =  update_df_metrics_exp1(df_metrics_all,'subway_in')
     elif exp_i == 'Exp1_subway_out':
         df =  update_df_metrics_exp1(df_metrics_all,'subway_out')
+    elif (exp_i == 'Exp2') or (exp_i == 'Exp2_rainy'):
+        df =  update_df_metrics_exp2(df_metrics_all)
     elif exp_i == 'Exp4_15min':
         df =  update_df_metrics_exp4_15min(df_metrics_all)
     elif exp_i == 'Exp6_subway_netmob':

@@ -25,6 +25,7 @@ dic_exp_to_names = {
     'Exp1_subway_out':'subway_out_STAEformer',
 
     'Exp2': 'bike_out_STAEformer',
+    'Exp2_rainy': 'bike_out_STAEformer',
     'Exp3': 'bike_out_STAEformer',
 
     'Exp3_bike_15min_h4': 'bike_out_STAEformer',
@@ -85,21 +86,31 @@ dic_trials = {'Exp1_subway_in': [c[:-4] for c in list(set(re.findall(re._pattern
             'Exp1_subway_out': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp1_subway_out)))],
     
     'Exp1':[
-                    'STAEformer_subway_out_calendar__e200_h4',
-                    'STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4',
-                    'STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e100_h4',
-                    'STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4',
-                    'STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4',
-                    'STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4',
-                    'STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e100_h4'
+            'STAEformer_subway_out_calendar__e200_h4',
+            'STAEformer_subway_out_subway_in_calendar_early_fusion_feature_extractor__e200_h4',
+            'STAEformer_subway_out_subway_in_calendar_early_fusion_independant_embedding__e100_h4',
+            'STAEformer_subway_out_subway_in_calendar_early_fusion_shared_embedding__e200_h4',
+            'STAEformer_subway_out_subway_in_calendar_late_fusion_feature_extractor__e200_h4',
+            'STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e200_h4',
+            'STAEformer_subway_out_subway_in_calendar_late_fusion_traffic_model_backbone__e100_h4'
+                    ],
+        
+    'Exp2_rainy': ['STAEformer_bike_out_calendar__e200_h4',
+            'STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4',
+            'STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_late_fusion_repeat_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4'
                     ],
 
-            'Exp2':['STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4',
-                    'STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4',
-                    'STAEformer_bike_out_weather_calendar_late_fusion_repeat_t_proj__e200_h4',
-                    'STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4',
-                    'STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4',
-                    'STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4'
+    'Exp2':['STAEformer_bike_out_calendar__e200_h4',
+            'STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4',
+            'STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_late_fusion_repeat_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4',
+            'STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4'
                     ],
 
                     

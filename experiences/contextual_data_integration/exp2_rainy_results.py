@@ -1,9 +1,9 @@
 results = """
-STAEformer_bike_out__e200_h4_bis1:   All Steps RMSE = 5.217, MAE = 3.115, MASE = 0.655, MAPE = 62.138
-STAEformer_bike_out__e200_h4_bis2:   All Steps RMSE = 5.237, MAE = 3.152, MASE = 0.662, MAPE = 63.992
-STAEformer_bike_out__e200_h4_bis3:   All Steps RMSE = 5.104, MAE = 3.063, MASE = 0.644, MAPE = 61.535
-STAEformer_bike_out__e200_h4_bis4:   All Steps RMSE = 5.132, MAE = 3.087, MASE = 0.649, MAPE = 61.376
-STAEformer_bike_out__e200_h4_bis5:   All Steps RMSE = 5.101, MAE = 3.074, MASE = 0.646, MAPE = 60.179
+STAEformer_bike_out_calendar__e200_h4_bis1:   All Steps RMSE = 5.217, MAE = 3.115, MASE = 0.655, MAPE = 62.138
+STAEformer_bike_out_calendar__e200_h4_bis2:   All Steps RMSE = 5.237, MAE = 3.152, MASE = 0.662, MAPE = 63.992
+STAEformer_bike_out_calendar__e200_h4_bis3:   All Steps RMSE = 5.104, MAE = 3.063, MASE = 0.644, MAPE = 61.535
+STAEformer_bike_out_calendar__e200_h4_bis4:   All Steps RMSE = 5.132, MAE = 3.087, MASE = 0.649, MAPE = 61.376
+STAEformer_bike_out_calendar__e200_h4_bis5:   All Steps RMSE = 5.101, MAE = 3.074, MASE = 0.646, MAPE = 60.179
 STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4_bis1:   All Steps RMSE = 4.832, MAE = 2.949, MASE = 0.620, MAPE = 57.286
 STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4_bis2:   All Steps RMSE = 4.688, MAE = 2.883, MASE = 0.606, MAPE = 55.186
 STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4_bis3:   All Steps RMSE = 4.883, MAE = 2.980, MASE = 0.626, MAPE = 58.216
