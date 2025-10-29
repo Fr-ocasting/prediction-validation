@@ -88,6 +88,9 @@ def load_trainer(config, dataset, args):
     - batch-size
     '''
     args = HP_modification(config,args)
+
+    dataset.args = args
+    dataset.get_dataloader()
     model = full_model(dataset, args).to(args.device)
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
 
@@ -123,6 +126,9 @@ def HP_tuning(dataset,args,num_samples,working_dir = '/home/rrochas/prediction_v
              num_gpus=num_gpus,
              num_cpus=num_cpus
             )
+    
+
+    dataset.dataloader = None  # To avoid serealization issue with dataloader (which contain workers that can't be serealized)
     
     # Put large objects into the Ray object store
     dataset_ref = ray.put(dataset) # Put dataset (large object) in a 'Ray Object Store'. Which mean a worker won't serealize it but access to a shared memory where dataset_ref is located for everyone.

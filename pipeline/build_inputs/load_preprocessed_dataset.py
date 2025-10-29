@@ -3,6 +3,7 @@ import sys
 import os 
 import importlib
 import pandas as pd 
+import torch
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
@@ -208,13 +209,28 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
     return(target_ds,args)
 
 
-def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name,minmaxnorm,standardize,freq = None,step_ahead = None,horizon_step =None, tensor_limits_keeper=None):
+def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_period,name,minmaxnorm,standardize,
+                              freq = None,step_ahead = None,horizon_step =None,
+                                tensor_limits_keeper=None,
+                            ):
     df_dates = pd.DataFrame(coverage_period)
     df_dates.columns = ['date']
     args_DataSet = filter_args(DataSet, args,excluded_args = ['step_ahead','time_step_per_hour','horizon_step','minmaxnorm','standardize'])
 
-    preprocessed_ds = PersonnalInput(invalid_dates,args,name = name, tensor = data_T, dates = df_dates,
+    if hasattr(args,'graph_subset') and args.graph_subset is not None:
+        print('Initial Graph Subset processing...')
+        if data_T.dim() == 2:
+            dim_spatial = 1
+        if data_T.dim() == 3:
+            dim_spatial = 1
+        elif data_T.dim() > 3:
+            dim_spatial = 2
+        n_spatial = data_T.size(dim_spatial)
+        subset_idx = torch.randperm(n_spatial)[:int(n_spatial*args.graph_subset)]
+        data_T = torch.index_select(data_T,dim_spatial,subset_idx)
+        print(f"   Graph Subset applied : New spatial dimension is {data_T.size(dim_spatial)} instead of {n_spatial}")
 
+    preprocessed_ds = PersonnalInput(invalid_dates,args,name = name, tensor = data_T, dates = df_dates,
                            dims =dims,
                            step_ahead = step_ahead if step_ahead is not None else args.step_ahead,
                            time_step_per_hour = get_time_step_per_hour(freq) if freq is not None else get_time_step_per_hour(args.freq),
@@ -225,7 +241,6 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_
                            **args_DataSet)
     
     preprocessed_ds.preprocess(args.train_prop,args.valid_prop,args.test_prop,args.train_valid_test_split_method,normalize)
-
     return preprocessed_ds
 
 

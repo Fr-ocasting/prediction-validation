@@ -9,13 +9,17 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from experiences.contextual_data_integration.exp4_15min_h1_results import results as results_Exp4_15min_h1
-from experiences.contextual_data_integration.exp4_15min_results import results  as results_Exp4_15min
-from experiences.contextual_data_integration.exp4_results import results  as results_Exp4
+from experiences.contextual_data_integration.A_heterogenous.exp4_15min_h1_results import results as results_Exp4_15min_h1
+from experiences.contextual_data_integration.A_heterogenous.exp4_15min_results import results  as results_Exp4_15min
+from experiences.contextual_data_integration.A_heterogenous.exp4_results import results  as results_Exp4
+from experiences.contextual_data_integration.A_heterogenous.exp3_1H_results import results  as results_Exp3_60min_h1
+from experiences.contextual_data_integration.A_heterogenous.exp3_15min_results import results  as results_Exp3_15min_h4
+
+
 from experiences.contextual_data_integration.C_netmob.exp6_subway_netmob_results import results as results_Exp6_subway
 from experiences.contextual_data_integration.C_netmob.exp6_bike_netmob_results import results as results_Exp6_bike
-from experiences.contextual_data_integration.exp1_subway_in_results import results  as results_Exp1_subway_in
-from experiences.contextual_data_integration.exp1_subway_out_results import results  as results_Exp1_subway_out
+from experiences.contextual_data_integration.A_homogenous.exp1_subway_in_results import results  as results_Exp1_subway_in
+from experiences.contextual_data_integration.A_homogenous.exp1_subway_out_results import results  as results_Exp1_subway_out
 folder_path = 'save/K_fold_validation/training_wo_HP_tuning'
 metrics = ['rmse','mae','mase']
 
@@ -26,8 +30,7 @@ dic_exp_to_names = {
 
     'Exp2': 'bike_out_STAEformer',
     'Exp2_rainy': 'bike_out_STAEformer',
-    'Exp3': 'bike_out_STAEformer',
-
+    'Exp3': 'bike_out_STAEformer',   
     'Exp3_bike_15min_h4': 'bike_out_STAEformer',
 
     'Exp4': 'bike_out_STAEformer',
@@ -114,19 +117,21 @@ dic_trials = {'Exp1_subway_in': [c[:-4] for c in list(set(re.findall(re._pattern
                     ],
 
                     
-            'Exp3':[
-                    'STAEformer_bike_out_calendar__e200_h1',
-                    'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_cross_attn_traffic_model_backbone__e200_h1',
-                    'STAEformer_bike_out_subway_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h1',
-                    'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_adp_query_cross_attn_traffic_model_backbone__e200_h1',
-                    ],
-
-            'Exp3_bike_15min_h4':[
-                    'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_adp_query_cross_attn_traffic_model_backbone__e200_h4',
-                    'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_cross_attn_traffic_model_backbone__e200_h4',
-                    'STAEformer_bike_out_subway_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4',
-                    'STAEformer_bike_out_calendar__e200_h4',
-                    ],
+            'Exp3': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp3_60min_h1)))],
+            
+            # 'Exp3': [
+            #         'STAEformer_bike_out_calendar__e200_h1',
+            #         'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_cross_attn_traffic_model_backbone__e200_h1',
+            #         'STAEformer_bike_out_subway_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h1',
+            #         'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_adp_query_cross_attn_traffic_model_backbone__e200_h1',
+            #         ],
+            'Exp3_bike_15min_h4': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp3_15min_h4)))],
+            # 'Exp3_bike_15min_h4':[
+            #         'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_adp_query_cross_attn_traffic_model_backbone__e200_h4',
+            #         'STAEformer_bike_out_subway_out_weather_calendar_late_fusion_cross_attn_traffic_model_backbone__e200_h4',
+            #         'STAEformer_bike_out_subway_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4',
+            #         'STAEformer_bike_out_calendar__e200_h4',
+            #         ],
 
             'Exp4': [c[:-4] for c in list(set(re.findall(re._pattern, results_Exp4)))],
 

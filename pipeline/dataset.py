@@ -306,10 +306,10 @@ class DataSet(object):
             # >>>> [T,N,C] for a succession of T time-steps, N spatial units, and C channel  (speed,flow, density)
             self.length = tensor.size(0)
             self.num_nodes = tensor.size(1)
-            if tensor.dim()>2:
-                self.C = tensor.size(2)
-            else:
-                self.C = 1
+            # if tensor.dim()>2:
+            #     self.C = tensor.size(2)
+            # else:
+            #     self.C = 1
             self.raw_values = tensor.to(torch.float32)
             self.df_dates = pd.DataFrame(dates,index = np.arange(self.length),columns = ['date'])
             self.spatial_unit = spatial_unit

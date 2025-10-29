@@ -80,7 +80,7 @@ if torch.cuda.is_available():
 # Get Parent folder : 
 
 current_file_path = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
@@ -99,14 +99,14 @@ init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp4_15min'
 device = torch.device('cuda:1')
 
 freq = '15min' #'15min'  
-horizons = [1] # [4]  #[1,4]
+horizons = [1,4] # [4]  #[1,4]
 target_data = 'bike_out' 
 contextual_dataset_names = ['subway_in_subway_out']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
-config_backbone_model['epochs'] = 80 #80
-compilation_modification['torch_compile'] = 'compile' # 'compile'  # False 
+config_backbone_model['epochs'] = 80 #80 #50 #1
+compilation_modification['torch_compile'] = 'compile' #'compile' # 'compile'  # False 
 compilation_modification['device'] = device
 # REPEAT_TRIAL  = 1 
 
@@ -117,16 +117,17 @@ weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['
 
 
 # ------ Possible configurations :
-L_input_embedding_dim = [12,24] # [24,48] # [8,24]
+L_input_embedding_dim = [24] # [12,24] # [24,48] # [8,24]
 L_adaptive_embedding_dim = [16] # [16,32] # [0,16,32] 
-L_init_adaptive_query_dim = [0,24] #  [0,24,48] #  [0,8,24]
-L_contextual_input_embedding_dim = [8,12,24] #  [24,48] # [8,24] # [8,24,32,48]
+L_init_adaptive_query_dim = [0] #[0,24] #  [0,24,48] #  [0,8,24]
+L_contextual_input_embedding_dim = [8] # [8,12,24] #  [24,48] # [8,24] # [8,24,32,48]
 
 adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_contextual_input_embedding_dim,L_input_embedding_dim))
 # adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_input_embedding_dim))
 # ------
 
-subway_possible_contextual_kwargs = {'late_fusion':{}}
+subway_possible_contextual_kwargs = {'early_fusion':{},
+                                     'late_fusion':{}}
 for adp_emb, init_adp_q, context_input_emb,input_emb in adp_initquery_inputemb:
 # for adp_emb, init_adp_q,input_emb in adp_initquery_inputemb:
     contextual_kwargs_i = copy.deepcopy(feature_extractor_model_configurations)
@@ -134,14 +135,17 @@ for adp_emb, init_adp_q, context_input_emb,input_emb in adp_initquery_inputemb:
     contextual_kwargs_i['attn_kwargs']['init_adaptive_query_dim'] = init_adp_q
     contextual_kwargs_i['attn_kwargs']['contextual_input_embedding_dim'] = context_input_emb
     contextual_kwargs_i['attn_kwargs']['input_embedding_dim'] = input_emb
-    contextual_kwargs_i['attn_kwargs']['concatenation_late'] = True
     contextual_kwargs_i['attn_kwargs']['cross_attention'] = True
     contextual_kwargs_i['backbone_model'] = True
 
     name_i = f"CrossAttnBackBone_InEmb{input_emb}_ctxInEmb{context_input_emb}_adp{adp_emb}_adpQ{init_adp_q}"
     # name_i = f"CrossAttnBackBone_InEmb{input_emb}_adp{adp_emb}_adpQ{init_adp_q}"
 
-    subway_possible_contextual_kwargs['late_fusion'][name_i] =  contextual_kwargs_i
+    contextual_kwargs_i['attn_kwargs']['concatenation_late'] = True
+    subway_possible_contextual_kwargs['late_fusion'][name_i] =  copy.deepcopy(contextual_kwargs_i)
+
+    contextual_kwargs_i['attn_kwargs']['concatenation_late'] = False
+    subway_possible_contextual_kwargs['early_fusion'][name_i] =  copy.deepcopy(contextual_kwargs_i)
 
 
 print('\n------------------------------- CONFIGURATIONS ----------------------------------\n')

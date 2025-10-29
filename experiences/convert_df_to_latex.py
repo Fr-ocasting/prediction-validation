@@ -224,6 +224,55 @@ def build_legend_group_exp4(x):
         return 'Baseline'
     return 'STAEformer_CrossAttn'
 
+def build_legend_group_exp1(x):
+    if not('subway_in_subway_out' in x) and not('subway_out_subway_in' in x):
+        return 'Baseline'
+    elif 'independant_embedding' in x:
+        return 'Independant Embedding'
+    elif 'shared_embedding' in x:
+        return 'Shared Embedding'
+    else:
+        return 'Other Methods'
+    
+
+def build_legend_group_exp3(x):
+    if not('subway_out_weather' in x):
+        return 'Baseline'
+    if 'late_fusion_adp_query_cross_attn' in x:
+        return 'L_AdpQ_CABB'
+    if 'early_fusion_adp_query_cross_attn' in x:
+        return 'E_AdpQ_CABB'
+    if 'early_fusion_cross_attn' in x:
+        return 'E_CABB'
+    if 'late_fusion_cross_attn' in x:
+        return 'L_CABB'
+    if 'late_fusion_s_proj_t_proj' in x:
+        return 'L_Sproj_Tproj'
+    if 'early_fusion_s_proj_t_proj' in x:
+        return 'E_Sproj_Tproj'
+    else:
+        return 'Other Methods' 
+
+
+def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
+    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
+    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df_metrics_all
+
+
+def update_df_metrics_exp2(df):
+    df['legend_group'] = df.reset_index()['index'].apply(build_legend_group_exp1).values
+    df['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df.index]
+    df = df.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df
+
+def update_df_metrics_exp3(df_metrics_all):
+    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp3).values
+    df_metrics_all['id'] = [c.split('_fusion_')[1].split('__')[0] if '_fusion_' in c else 'Baseline' for c in df_metrics_all.index]
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    return df_metrics_all
+
 def update_df_metrics_exp4_15min(df_metrics_all):
     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
     df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
@@ -238,27 +287,8 @@ def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all   
  
-def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
-    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
-    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
-    return df_metrics_all
 
 
-def update_df_metrics_exp2(df):
-    df['legend_group'] = df.reset_index()['index'].apply(build_legend_group_exp1).values
-    df['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df.index]
-    df = df.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
-    return df
-def build_legend_group_exp1(x):
-    if not('subway_in_subway_out' in x) and not('subway_out_subway_in' in x):
-        return 'Baseline'
-    elif 'independant_embedding' in x:
-        return 'Independant Embedding'
-    elif 'shared_embedding' in x:
-        return 'Shared Embedding'
-    else:
-        return 'Other Methods'
 
 
 
@@ -271,6 +301,14 @@ def update_df_metrics(df_metrics_all,exp_i):
         df =  update_df_metrics_exp1(df_metrics_all,'subway_out')
     elif (exp_i == 'Exp2') or (exp_i == 'Exp2_rainy'):
         df =  update_df_metrics_exp2(df_metrics_all)
+    elif exp_i == 'Exp3':
+        df =  update_df_metrics_exp3(df_metrics_all)
+    elif exp_i == 'Exp3_bike_15min_h4':
+        df =  update_df_metrics_exp3(df_metrics_all)
+    elif exp_i == 'Exp4':
+        df =  update_df_metrics_exp4_15min(df_metrics_all)
+    elif exp_i == 'Exp4_15min_h1':
+        df =  update_df_metrics_exp4_15min(df_metrics_all)
     elif exp_i == 'Exp4_15min':
         df =  update_df_metrics_exp4_15min(df_metrics_all)
     elif exp_i == 'Exp6_subway_netmob':
