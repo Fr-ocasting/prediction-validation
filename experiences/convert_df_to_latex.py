@@ -2,11 +2,14 @@ import pandas as pd
 import re
 import io
 
-def results_to_dataframe(results):
+def results_to_dataframe(results,get_id = False):
     """
     Cette fonction transforme les résultats bruts en un DataFrame pandas.
     """
     data = []
+    columns=['target', 'contextual_data', 'percentage','horizon', 'bis', 'RMSE', 'MAE', 'MASE']
+    if get_id:
+        columns.insert(2,'id')
     for line in results.strip().split('\n'):
         if not line.strip():
             continue
@@ -46,7 +49,7 @@ def results_to_dataframe(results):
         
         data.append([target, contextual_data, percentage, horizon, bis, rmse, mae, mase])
         
-    df = pd.DataFrame(data, columns=['target', 'contextual_data', 'percentage','horizon', 'bis', 'RMSE', 'MAE', 'MASE'])
+    df = pd.DataFrame(data,columns = columns )
     return df
 
 

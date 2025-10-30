@@ -19,8 +19,10 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['dataset_for_coverage'] = dataset_for_coverage
 
     # Contextual Information: Calendar
-    config['calendar_types'] = ['dayofweek','timeofday']  # IF 'calendar' in 'dataset_names': Define the type of calendar information used in the model 
-    config['embedding_calendar_types'] = ['dayofweek', 'hour','minute']  # IF 'calendar_embedding' in ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
+    if 'calendar' in dataset_names:
+        config['calendar_types'] = ['dayofweek','timeofday']  # IF 'calendar' in 'dataset_names': Define the type of calendar information used in the model 
+    if 'calendar_embedding' in dataset_names:
+        config['embedding_calendar_types'] = ['dayofweek', 'hour','minute']  # IF 'calendar_embedding' in ['dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays']
 
     #importlib.reload(data_module)
     #config['num_nodes'] = data_module.num_nodes
@@ -28,7 +30,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     
     # === Common config for everyone: ===
     config['device'] =  torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    config['optimizer'] = 'adamw' #['sgd','adam','adamw']
+    config['optimizer'] = 'adamw' #['sgd','≈','adamw']
     config['single_station']= False
     config['loss_function_type'] = 'HuberLoss' # 'HuberLoss' # 'MSE' #'quantile' # 'masked_mae' 
     config['freq'] = '15min'

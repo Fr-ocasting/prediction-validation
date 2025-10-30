@@ -13,26 +13,11 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.HP_parameter_choice import hyperparameter_tuning
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
-from examples.benchmark import local_get_args
-
-def HP_and_valid_one_config(args,epochs_validation,num_samples):
-    # HP Tuning on the first fold
-    analysis,trial_id = hyperparameter_tuning(args,num_samples)
-
-    # K-fold validation with best config: 
-    modification = {'epochs':epochs_validation,
-                    'expanding_train': None,
-                    'graph_subset': None,
-                    }
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
-    return trial_id
 
 if __name__ == '__main__':
     model_name = 'STAEformer'
     target_data = 'PeMS08_flow'
-    epochs = 200 # 200
+    epochs = 50 # 200
     dataset_for_coverage = [target_data] 
     dataset_names = [target_data,'calendar']
     modification = {'target_data' :target_data,
@@ -44,7 +29,7 @@ if __name__ == '__main__':
                     'batch_size': 128, # 16
                         # ----
 
-                    'grace_period':20,
+                    'grace_period':10,
                     'HP_max_epochs':epochs, #1000, #300,
                     'epochs':epochs,
                     'K_fold': 2,
@@ -75,7 +60,7 @@ if __name__ == '__main__':
                     'use_mixed_proj': True,
 
 
-                    'optimizer': 'adamw',
+                    'optimizer': 'adam',
                     'lr': 0.001, # 0.001
                     'weight_decay': 0.0015,
                     'torch_scheduler_type': 'MultiStepLR',
@@ -101,7 +86,23 @@ if __name__ == '__main__':
                         }
 
 
-    if True:
+    if False:
+        from examples.HP_parameter_choice import hyperparameter_tuning
+        from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
+        from examples.benchmark import local_get_args
+
+        def HP_and_valid_one_config(args,epochs_validation,num_samples):
+            # HP Tuning on the first fold
+            analysis,trial_id = hyperparameter_tuning(args,num_samples)
+
+            # K-fold validation with best config: 
+            modification = {'epochs':epochs_validation,
+                            'expanding_train': None,
+                            'graph_subset': None,
+                            }
+            train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+            return trial_id
+
         args = local_get_args(model_name,
                         args_init = None,
                         dataset_names=dataset_names,
@@ -126,13 +127,16 @@ if __name__ == '__main__':
         if True:
             modification['expanding_train'] = None
             modification['graph_subset'] = None
-            modification['batch_size'] = 128
+            modification['batch_size'] = 128 # 16
+            modification['epochs'] = 45
             modification['model_name'] = model_name
             modification['target_data'] = target_data 
             modification['dataset_for_coverage'] = dataset_for_coverage
             modification['dataset_names'] = dataset_names
             modification['ray'] = False
             modification['K_fold'] = 2
+            modification['device'] = torch.device('cuda:1')
+            modification['optimizer'] = 'adam'
 
         dic_configs = {'PeMS08_STAEformer_paper_config': modification}
-        loop_train_save_log(loger,dic_configs,init_save_folder = 'K_fold_validation/training_wo_HP_tuning/benchmark_HPO')
+        loop_train_save_log(loger,dic_configs,init_save_folder = 'K_fold_validation/training_wo_HP_tuning/benchmark_HPO_bis')
