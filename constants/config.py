@@ -96,25 +96,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
                                         },
                                     }
 
-                                       
-
-    # Vision Model:
-    # config['vision_model_name'] =  None  # -> Define the type of model used to extract contextual information from NetMob
-    # config['vision_input_type'] =  None  # 'image_per_stations' # 'unique_image_through_lyon'  
-    #             #'''
-    #             #if 'vision_input_type' == 'image_per_stations': the model will extract feature by looking around a station
-    #             #if 'vision_input_type' == 'unique_image_through_lyon':  the model will extract feature by looking through the entiere map, and then return N outputs (one for each station)
-    #             #'''
-    # config['stacked_contextual'] = True # If True then stack contextual information to the channel dim. Does not consider anymore contextual tensors but an input tensor.
-    # config['need_global_attn'] = False # If 'True' then compute an attention layer for the full dataset (subway-out or NetMob POIs) without spatial assignment before 
-
-    # === NetMob Config ===
-    #config['NetMob_selected_apps'] =  [] #,'Deezer','WhatsApp','Twitter'] #['Google_Maps']# ['Instagram','Google_Maps','Twitter'] ['Google_Maps','Deezer','Instagram']
-    #config['NetMob_transfer_mode'] =  ['DL'] #,['UL'] # ['DL'] # ['UL'] #['DL','UL']
-    #config['NetMob_selected_tags'] = ['iris']#['iris','stadium','station','university']#['park','stadium','university','station','shop','nightclub','parkings','theatre','iris','transit','public_transport']
-    #config['NetMob_expanded'] = '' # '' # '_expanded'
-    #config['NetMob_only_epsilon'] = False # if True then look at NetMob data in InputsEpsilon instead of Input:  '/POIs/netmob_POI_Lyon{args.NetMob_expanded}/InputsEpsilon/{id_station}'  
-
+                                    
     # === Ray config ===
     config['ray'] = False # True
     config['ray_scheduler'] = 'ASHA' #None

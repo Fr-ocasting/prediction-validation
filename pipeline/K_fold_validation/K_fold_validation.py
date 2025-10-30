@@ -68,7 +68,11 @@ class KFoldSplitter(object):
         return(subway_ds_tmps)
     
     def load_init_ds(self,normalize = False):
-        target_ds,contextual_ds,args = load_complete_ds(self.args,normalize = normalize)  #,dic_class2rpz
+        if self.folds == [0]:
+            print('---- No K-fold')
+            target_ds,contextual_ds,args = load_complete_ds(self.args,normalize = normalize,k=0)
+        else:
+            target_ds,contextual_ds,args = load_complete_ds(self.args,normalize = normalize)  #,dic_class2rpz
         
         return(target_ds,contextual_ds,args) #,dic_class2rpz)
 
@@ -125,10 +129,12 @@ class KFoldSplitter(object):
         N_valid = len(target_ds_init.tensor_limits_keeper.df_verif_valid)
         N_test = len(target_ds_init.tensor_limits_keeper.df_verif_test)
 
+        
         for k in self.folds:
             print(f'\n----------------------------------------')
             print(f'Loading the dataset for fold n°{k}')
             if k == self.args.K_fold-1:
+                print('  add last fold : the initil one')
                 K_ds.append(target_ds_init)
             else:
                 args_copy = Namespace(**vars(args))
@@ -141,7 +147,7 @@ class KFoldSplitter(object):
                 args_copy.valid_prop = N_valid/new_nb_samples
                 args_copy.test_prop = N_test/new_nb_samples
 
-                target_ds_tmps,_,_= load_complete_ds(args_copy,coverage_period=coverage_period_tmps,normalize = True)  # Normalize
+                target_ds_tmps,_,_= load_complete_ds(args_copy,coverage_period=coverage_period_tmps,normalize = True,k=k)  # Normalize
                 target_ds_tmps.init_invalid_dates = target_ds_init.invalid_dates
 
                 K_ds.append(target_ds_tmps)

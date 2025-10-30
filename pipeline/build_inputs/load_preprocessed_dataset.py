@@ -197,7 +197,6 @@ def add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_
         
 
     target_ds.contextual_tensors = contextual_tensors
-    target_ds.get_dataloader()
     # Maybe useless to send it to the both 
     target_ds.contextual_positions = contextual_positions
     args.contextual_positions = contextual_positions
@@ -244,7 +243,7 @@ def load_input_and_preprocess(dims,normalize,invalid_dates,args,data_T,coverage_
     return preprocessed_ds
 
 
-def load_complete_ds(args,coverage_period = None,normalize = True):
+def load_complete_ds(args,coverage_period = None,normalize = True, k = None):
 
     union_invalid_dates,intersect_coverage_period =get_intersect_of_coverage_periods(args,coverage_period)
     target_ds= load_datasets_to_predict(args,
@@ -266,6 +265,10 @@ def load_complete_ds(args,coverage_period = None,normalize = True):
 
     # Add Contextual Tensors and their contextual_positions: 
     target_ds,args = add_contextual_data(args,target_ds,contextual_ds,dict_calendar_U_train,dict_calendar_U_valid,dict_calendar_U_test)
-    # Update/Set arguments: 
-    assert target_ds.U_train.dim() == 3, f'Feature Vector does not have the good dimension. Expected shape dimension [B,N,L], got {target_ds.U_train.dim()} dim: {target_ds.U_train.size()}'
+    if (k is not None) and (k==0) and (args.ray) :
+        print('\n---- HPO on first fold')
+        print('        Do not compute dataloader now as it is not serializable HPO')
+    else:
+        target_ds.get_dataloader()
+        assert target_ds.U_train.dim() == 3, f'Feature Vector does not have the good dimension. Expected shape dimension [B,N,L], got {target_ds.U_train.dim()} dim: {target_ds.U_train.size()}'
     return(target_ds,contextual_ds,args) #,args.dic_class2rpz)

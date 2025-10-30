@@ -17,7 +17,7 @@ if parent_dir not in sys.path:
 if __name__ == '__main__':
     model_name = 'STAEformer'
     target_data = 'PeMS08_flow'
-    epochs = 50 # 200
+    epochs = 100 # 200
     dataset_for_coverage = [target_data] 
     dataset_names = [target_data,'calendar']
     modification = {'target_data' :target_data,
@@ -26,13 +26,13 @@ if __name__ == '__main__':
                     # Expanding Train & Graph Subset: 
                     'expanding_train': 0.2,
                     'graph_subset': 0.2,
-                    'batch_size': 128, # 16
+                    'batch_size': 16, # 16
                         # ----
 
                     'grace_period':10,
                     'HP_max_epochs':epochs, #1000, #300,
                     'epochs':epochs,
-                    'K_fold': 2,
+                    'K_fold': 1,
 
                     'evaluate_complete_ds' : True,
                     'calendar_types':['dayofweek', 'timeofday'],
@@ -86,7 +86,7 @@ if __name__ == '__main__':
                         }
 
 
-    if False:
+    if True:
         from examples.HP_parameter_choice import hyperparameter_tuning
         from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
         from examples.benchmark import local_get_args
@@ -111,7 +111,7 @@ if __name__ == '__main__':
                     )
 
         epochs_validation = epochs #1000
-        num_samples = 300 # 200#200
+        num_samples = 200 # 200#200
         HP_and_valid_one_config(args,epochs_validation,num_samples)
 
 
@@ -127,16 +127,25 @@ if __name__ == '__main__':
         if True:
             modification['expanding_train'] = None
             modification['graph_subset'] = None
-            modification['batch_size'] = 128 # 16
+            modification['batch_size'] = 16 # 16
             modification['epochs'] = 45
             modification['model_name'] = model_name
             modification['target_data'] = target_data 
             modification['dataset_for_coverage'] = dataset_for_coverage
             modification['dataset_names'] = dataset_names
             modification['ray'] = False
-            modification['K_fold'] = 2
-            modification['device'] = torch.device('cuda:1')
+            modification['K_fold'] = 1
+            modification['device'] = torch.device('cuda:0')
             modification['optimizer'] = 'adam'
+            modification['torch_compile'] = False # 'compile'
 
         dic_configs = {'PeMS08_STAEformer_paper_config': modification}
         loop_train_save_log(loger,dic_configs,init_save_folder = 'K_fold_validation/training_wo_HP_tuning/benchmark_HPO_bis')
+
+        # Notes :
+        # Avec AdamW - B = 16  : MAE = 13.65 / 13.60 / 13.69
+
+        # Avec Adam  - B = 128 : MAE = 14.272 / 14.193 / 14.146
+
+        # Avec Adam  - B = 16  : MAE =  13.38 / 13.45
+
