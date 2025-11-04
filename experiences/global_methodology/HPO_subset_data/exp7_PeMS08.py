@@ -25,11 +25,11 @@ if __name__ == '__main__':
 
                     # Expanding Train & Graph Subset: 
                     'expanding_train': 0.2,
-                    'graph_subset': 0.2,
-                    'batch_size': 16, # 16
+                    'graph_subset': 0.3,
+                    'batch_size': 128, # 16
                         # ----
 
-                    'grace_period':10,
+                    'grace_period':5,
                     'HP_max_epochs':epochs, #1000, #300,
                     'epochs':epochs,
                     'K_fold': 1,
@@ -99,20 +99,32 @@ if __name__ == '__main__':
             modification = {'epochs':epochs_validation,
                             'expanding_train': None,
                             'graph_subset': None,
+                            'batch_size' : 16,
                             }
             train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
             return trial_id
 
-        args = local_get_args(model_name,
-                        args_init = None,
-                        dataset_names=dataset_names,
-                        dataset_for_coverage=dataset_for_coverage,
-                        modification = modification
-                    )
+        if True:
+            args = local_get_args(model_name,
+                            args_init = None,
+                            dataset_names=dataset_names,
+                            dataset_for_coverage=dataset_for_coverage,
+                            modification = modification
+                        )
 
-        epochs_validation = epochs #1000
-        num_samples = 200 # 200#200
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+            epochs_validation = epochs #1000
+            num_samples = 300 # 200#200
+            HP_and_valid_one_config(args,epochs_validation,num_samples)
+
+        # If HPO worked by need to compute again the 'train_valid_k_models':
+        else:
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_10_31_01_50_36105'
+            modification = {'epochs': epochs, #1,
+                            'expanding_train': None,
+                            'graph_subset': None,
+                            'batch_size' : 16,
+                            }
+            train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
 
     else: 

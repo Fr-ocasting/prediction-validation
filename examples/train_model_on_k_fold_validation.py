@@ -17,17 +17,16 @@ from pipeline.high_level_DL_method import load_optimizer_and_scheduler
 from pipeline.dl_models.full_model import full_model
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
-
+from pipeline.utils.loger import LOG
 def load_configuration(trial_id,load_config,modification = None,folder =  'save/HyperparameterTuning'):
     # If Load config: 
     if load_config:
         from examples.load_best_config import load_best_config
         args = load_best_config(trial_id, folder = folder)
-        #Update modif validation
-        #args.train_prop = 0.6
-        #args.valid_prop = 0.2
-        #args.test_prop = 0.2
-        args.hp_tuning_on_first_fold = True
+
+        # If not defined, by default consider HP tuning has been done on first fold but we keep it for evaluation:
+        if not(hasattr(args,'hp_tuning_on_first_fold')):
+            args.hp_tuning_on_first_fold = False
         folds = list(np.arange(args.K_fold))
 
     # If new config : 
@@ -160,6 +159,7 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
     # ...
 
     #___ Through each fold : 
+    loger = LOG()
     for fold_i,ds in enumerate(ds_validation):
         # ____ Specific case if we want to validate on the init entiere dataset:
 
@@ -171,6 +171,11 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
         trainer.train_and_valid(normalizer = ds.normalizer,mod = 1000,mod_plot = None) 
 
         df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_i,fold,condition1,condition2,training_mode_list,metric_list)
+
+        test_metrics = trainer.performance['test_metrics']
+
+        loger.add_log(test_metrics,['rmse','mae','mase','mape'],trial_id, args.step_ahead,args.horizon_step)
+        loger.display_log()
     
     return trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results
 
