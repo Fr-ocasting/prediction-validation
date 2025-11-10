@@ -18,7 +18,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 from examples.accuracy_comparison import load_trainer_ds_from_2_trials,get_predict_real_and_inputs,get_model_args
-from examples.accuracy_comparison import get_rainy_indices,plot_analysis_comparison_2_config,print_global_info,get_previous_and_prediction,get_gain_from_mod1
+from examples.accuracy_comparison import get_rainy_indices,plot_analysis_comparison_2_config,get_previous_and_prediction
 import torch 
 from pipeline.utils.metrics import evaluate_metrics
 

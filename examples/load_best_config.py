@@ -137,6 +137,7 @@ def load_trainer_ds_from_saved_trial(args,model_save_path,modification={},ds_ini
     prefix = "_orig_mod."
     model_param['state_dict'] = {k[len(prefix):] if k.startswith(prefix) else k: v    #Needed here to remove the prefix added by torch.compile
                 for k, v in model_param['state_dict'].items()}
+    
     model.load_state_dict(model_param['state_dict'],strict=True)
     model = model.to(args_updated.device)
     ## 

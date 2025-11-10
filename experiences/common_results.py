@@ -63,8 +63,11 @@ def find_baseline(exp_i,h=None):
         return f'STAEformer_subway_out_calendar__e80_h{h}'
     elif exp_i == 'Exp2':
         return 'STAEformer_bike_out_calendar__e200_h4'
+    elif exp_i == 'Exp2_rainy':
+        return 'STAEformer_bike_out_calendar__e200_h4'
     elif exp_i == 'Exp3_bike_15min_h4':
-        return 'STAEformer_bike_out_calendar__e80_h4'
+        return 'STAEformer_bike_out_calendar__e200_h4'
+        # return 'STAEformer_bike_out_calendar__e80_h4'
     elif exp_i == 'Exp3':
         return 'STAEformer_bike_out_calendar__e200_h1'
     elif exp_i == 'Exp4_15min':

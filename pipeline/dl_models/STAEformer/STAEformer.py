@@ -573,7 +573,7 @@ class MultiLayerCrossAttention(nn.Module):
         # ----
 
 
-    def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dim: int = -2) -> Tensor:
+    def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dic_t_emb: Tensor = None,dim: int = -2) -> Tensor:
 
         batch_size = x.size(0)
 

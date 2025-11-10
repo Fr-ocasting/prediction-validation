@@ -193,6 +193,9 @@ def plot_profile_comparison_between_2_prediction(args_init1,full_predict1,full_p
     p.add_layout(Legend(), 'right')
     df_verif = ds1.tensor_limits_keeper.df_verif_test.copy()
 
+    full_predict1 = full_predict1.mean(-1)
+    full_predict2 = full_predict2.mean(-1)
+
     # Predicted Values
     for k,step_ahead in enumerate(range(args_init1.horizon_step, args_init1.step_ahead+1,args_init1.horizon_step)):
         p.line(df_verif.iloc[:,-(args_init1.step_ahead//args_init1.horizon_step-k)], full_predict1[:,station_i,k].cpu().numpy(), 
@@ -253,8 +256,8 @@ def get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode):
     return(full_predict1,full_predict2,Y_true,X)
 
 def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx):
-    predict1 = full_predict1[:,:,h_idx-1]
-    predict2 = full_predict2[:,:,h_idx-1]
+    predict1 = full_predict1[...,h_idx-1,:]
+    predict2 = full_predict2[...,h_idx-1,:]
     real = Y_true[:,:,h_idx-1]
     if h_idx-2 >= 0:
         previous = Y_true[...,h_idx-2]
@@ -294,11 +297,23 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
     # Get previous and predictions
     previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
 
-    # Plotting
-    dic_gain,dic_error = get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
 
+    # Get mean of Error Metrics (MAE, MSE, RMSE, MASE, ...): 
+    L_dic_error = []
+    for k in range(predict1.size(-1)):
+        _,dic_error = get_gain_from_mod1(real,predict1[...,k],predict2[...,k],previous,min_flow=20,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
+        L_dic_error.append(dic_error)
+
+    agg_dic_error = {}
+    for metric in  L_dic_error[0].keys():
+        agg_dic_error[metric] = {}
+        for k in L_dic_error[0][metric].keys():
+            agg_dic_error[metric][k] = torch.stack([dic_error[metric][k] for dic_error in L_dic_error],dim=0).mean(0)
+    # --- 
+
+    # Plotting
     comparisonplotter = ComparisonPlotter(figsize_x=10,clustered_stations=clustered_stations)
-    dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,
+    dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,agg_dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,
                                                                                                 folder_path=folder_path,save_name=save_name,bool_plot = bool_plot,dates=dates)
     dic_error_agg_h[step_ahead] = dic_error_agg
 
@@ -316,19 +331,23 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
         If dates is not None: Only if full_predict1, full_predict2, Y_true and X does not correspond to the full set of the training mode.
         Example of use:  When full_predict is a subset of the full prediction on test-set, associated to rainy dates.
     """
-    
+    print('Model1 correspond to : ',trial_id1)
+    print('Model2 correspond to : ',trial_id2)
+
     step_ahead_max = args_init1.step_ahead
-    print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1,X)
     dic_error_agg_h = {}
 
     # -- Comparison plotting for each horizon : 
     for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
         h_idx = step_ahead// args_init1.horizon_step
-        dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,min_flow,stations,training_mode,
-                                                   metric_list,clustered_stations,
+        dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,
+                                                   full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,
+                                                   h_idx,min_flow,stations,training_mode,metric_list,clustered_stations,
                                                    folder_path = folder_path,
                                                    save_name = f"{save_name}_h{step_ahead}",
-                                                   bool_plot = bool_plot,dates = dates)
+                                                   bool_plot = bool_plot,
+                                                   dates = dates)
+
     # --
 
     # -- Plot Temporal profil if needed : 
@@ -406,7 +425,10 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
     
     model_save_path = f"{path}/{trial_id2}.pkl"
     print('model_save_path for trial id2: ',model_save_path)
-    trainer2, ds2, args_init2 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init = ds2_init,args_init=args_init2)
+    try: 
+        trainer2, ds2, args_init2 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init = ds2_init,args_init=args_init2)
+    except:
+        trainer2, ds2, args_init2 = None, None, None
     return trainer1,trainer2,ds1,ds2,args_init1,args_init2 
 
 
@@ -416,63 +438,6 @@ def load_trainer_ds_from_1_args(args_init,modification = {},save_folder = None,t
     trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modification,trial_id)  
     return trainer,ds 
 
-
-def print_global_info(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,ds1,X):
-    print('Model1 correspond to : ',trial_id1)
-    print('Model2 correspond to : ',trial_id2)
-    horizon_list = f"{'/'.join(list(map(str,np.arange(ds1.horizon_step,ds1.step_ahead+1,ds1.horizon_step))))}"
-
-    # Get Previous : 
-    previous = torch.zeros_like(Y_true)
-    for h_idx in range(Y_true.size(-1)):
-        previous_h,_,_,_ = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
-        previous[...,h_idx] = previous_h
-    # ---
-
-
-
-    for metric in ['mae','mse','rmse','mase']:
-        for horizon_group in ['per','all']:
-            if horizon_group == 'all': axis = None
-            if horizon_group == 'per': axis = [0,1]
-
-            if metric == 'mae':
-                err1 = (Y_true - full_predict1).abs().mean(axis =axis)
-                err2 = (Y_true - full_predict2).abs().mean(axis = axis)
-            elif metric == 'mse':
-                err1 = ((Y_true - full_predict1)**2).mean(axis = axis)
-                err2 = ((Y_true - full_predict2)**2).mean(axis = axis)
-            elif metric == 'rmse':
-                err1 = ((Y_true - full_predict1)**2).mean(axis = axis).sqrt()
-                err2 =  ((Y_true - full_predict2)**2).mean(axis = axis).sqrt()
-            elif metric == 'mase':
-                MAE_naiv = torch.mean(torch.abs(Y_true-previous),axis=axis)
-                err1 = torch.mean(torch.abs(Y_true-full_predict1),axis=axis)/MAE_naiv
-                err2 = torch.mean(torch.abs(Y_true-full_predict2),axis=axis)/MAE_naiv
-
-            if horizon_group == 'per':
-                gain_per_horizon = ((err2/err1 - 1)*100).numpy()
-                gain_per_horizon = [f'{val:.2f}' for val in gain_per_horizon]
-                gain_per_horizon = ' / '.join(gain_per_horizon)   
-
-                err_per1 = err1.numpy()
-                err_per1 = [f'{val:.2f}' for val in err_per1]
-                err_per2 = err2.numpy()
-                err_per2 = [f'{val:.2f}' for val in err_per2]
-
-            if horizon_group == 'all':
-                gain_all_horizon = ((err2.mean()/err1.mean() - 1)*100).numpy().item()
-                gain_all_horizon = f'{gain_all_horizon:.2f}'
-
-                err_all1 = err1.mean().numpy().item()
-                err_all1 = f'{err_all1:.2f}'
-                err_all2 = err2.mean().numpy().item()
-                err_all2 = f'{err_all2:.2f}'
-
-
-        print(f'\nGlobal {metric.upper()} gain (%) from Model2 compared to Model1 at horizon {horizon_list}: {gain_per_horizon} // All horizon : {gain_all_horizon}')
-        print(f'Global {metric.upper()} error from Model1  at horizon {horizon_list}: {err_per1} // All horizon : {err_all1}')
-        print(f'Global {metric.upper()} error from Model2  at horizon {horizon_list}: {err_per2} // All horizon : {err_all2}')
 
 
 
@@ -706,17 +671,14 @@ def get_model_args(save_folder_name = 'optim/subway_in_STGCN', save_folder_name_
 def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                      model_args,model_args_bis,path_model_args,path_model_args_bis,
                                      range_k = range(1,6),
-                                    model_name = 'STGCN',
-                                    target_data = 'subway_in',
                                     trial_id1_in_bis=False,
                                     trial_id2_in_bis=False,
-                                    vmax_coeff = 4,
-                                    station = 'CHA',
-                                    temporal_agg_for_matshow_attn_weight = ['all_day'],
-                                    temporal_agg_for_folium_map = ['morning_peak','evening_peak'], # ['morning_peak','evening_peak','all_day','off_peak','business_day','bank_holiday']
+                                    station = None,
                                     colmumn_name = 'Station',
                                     comparison_on_rainy_events = False,
                                     station_clustering = True,
+                                    folder_path = None,
+                                    save_name = None,
                                     ):
 
 
@@ -741,19 +703,23 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                                                                         model_args_bis = model_args_bis,
                                                                                         trial_id1_in_bis = trial_id1_in_bis, trial_id2_in_bis = trial_id2_in_bis
                                                                                         )
-                                                                                        
+        
+        if trainer2 is not None:                                             
+            full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
+            globals()[f"trainer1_bis{k}"] = trainer1
+            globals()[f"trainer2_bis{k}"] = trainer2
+            globals()[f"ds1_bis{k}"] = ds1
+            globals()[f"ds2_bis{k}"] = ds2
+            globals()[f"full_predict1_bis{k}"] = full_predict1
+            globals()[f"full_predict2_bis{k}"] = full_predict2
+        else:
+            break
+    if trainer2 is None:
+        return None,None,None,None,None,None,None,None,None,None,None
 
-        full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
-        globals()[f"trainer1_bis{k}"] = trainer1
-        globals()[f"trainer2_bis{k}"] = trainer2
-        globals()[f"ds1_bis{k}"] = ds1
-        globals()[f"ds2_bis{k}"] = ds2
-        globals()[f"full_predict1_bis{k}"] = full_predict1
-        globals()[f"full_predict2_bis{k}"] = full_predict2
 
-
-    full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k]).mean(0)
-    full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k]).mean(0)
+    full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k],-1)
+    full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k],-1)
     metric_list   = ['mae'] # ['mae','mase','rmse']
     temporal_aggs = ['working_day_hour']
     stations      = list(ds1.spatial_unit) 
@@ -779,8 +745,11 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
 
     # ---- Plot Accuracy Comparison ---- 
     plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                        stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
-                                        clustered_stations = clusterer.clusters)   
+                                        stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = station,
+                                        clustered_stations = clusterer.clusters,
+                                        folder_path = folder_path,
+                                        save_name = save_name,
+                                        )   
     
 
     if comparison_on_rainy_events:
@@ -799,7 +768,9 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                         ds1,args_init1,stations,temporal_aggs,
                                         training_mode,metric_list,min_flow = 20,station = None,
                                         clustered_stations = clusterer.clusters,
-                                        dates = mask[mask].index
+                                        dates = mask[mask].index,
+                                        folder_path = folder_path,
+                                        save_name = save_name,
                                         )
  
 

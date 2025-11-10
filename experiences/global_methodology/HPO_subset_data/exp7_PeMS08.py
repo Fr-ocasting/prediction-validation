@@ -13,6 +13,7 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
 
 if __name__ == '__main__':
     model_name = 'STAEformer'
@@ -24,8 +25,8 @@ if __name__ == '__main__':
                     'ray':True,
 
                     # Expanding Train & Graph Subset: 
-                    'expanding_train': 0.2,
-                    'graph_subset': 0.3,
+                    'expanding_train': 0.8,
+                    'graph_subset': None,
                     'batch_size': 128, # 16
                         # ----
 
@@ -86,25 +87,26 @@ if __name__ == '__main__':
                         }
 
 
+
     if True:
-        from examples.HP_parameter_choice import hyperparameter_tuning
-        from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
-        from examples.benchmark import local_get_args
+        if False:
+            from examples.HP_parameter_choice import hyperparameter_tuning
+            from examples.benchmark import local_get_args
 
-        def HP_and_valid_one_config(args,epochs_validation,num_samples):
-            # HP Tuning on the first fold
-            analysis,trial_id = hyperparameter_tuning(args,num_samples)
+            def HP_and_valid_one_config(args,epochs_validation,num_samples):
+                # HP Tuning on the first fold
+                analysis,trial_id = hyperparameter_tuning(args,num_samples)
 
-            # K-fold validation with best config: 
-            modification = {'epochs':epochs_validation,
-                            'expanding_train': None,
-                            'graph_subset': None,
-                            'batch_size' : 16,
-                            }
-            train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
-            return trial_id
+                # K-fold validation with best config: 
+                modification = {'epochs':epochs_validation,
+                                'expanding_train': None,
+                                'graph_subset': None,
+                                'batch_size' : 16,
+                                }
+                train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+                return trial_id
 
-        if True:
+            
             args = local_get_args(model_name,
                             args_init = None,
                             dataset_names=dataset_names,
@@ -117,16 +119,120 @@ if __name__ == '__main__':
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
         # If HPO worked by need to compute again the 'train_valid_k_models':
+        # Or if we need to compute with B = 128 
         else:
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_10_31_01_50_36105'
-            modification = {'epochs': epochs, #1,
-                            'expanding_train': None,
-                            'graph_subset': None,
-                            'batch_size' : 16,
-                            }
-            train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_07_23_56_52940'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_08_06_36_95634'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908'
+                             ]:
+                modification = {'epochs': epochs, #1,
+                                'expanding_train': None,
+                                'graph_subset': None,
+                                'batch_size' : 128,
+                                'device' : torch.device('cuda:1'),
+                                'torch_compile' :'compile'
+                                }
+                train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+
+    # Results HPO : 
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': 0.3,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: ~2h
+
+        # Testing : 
+        #   'batch_size': 16
+
+        #    All Steps RMSE = 24.002, MAE = 13.855, MASE = 0.872, MAPE = 9.526
 
 
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': 0.4,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: 2h28
+
+        # Testing : 
+        #   'batch_size': 16
+
+        #   All Steps RMSE = 23.675, MAE = 13.755, MASE = 0.866, MAPE = 9.036
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': 0.8,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: 8h
+
+        # Testing : 
+        #   'batch_size': 16
+
+        #   All Steps RMSE = PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_07_23_56_52940:   All Steps RMSE = 23.536, MAE = 14.140, MASE = 0.890, MAPE = 9.641
+        #  batch-size = 128: PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_07_23_56_52940:   All Steps RMSE = 23.200, MAE = 13.779, MASE = 0.867, MAPE = 9.244
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': None,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: 6h21
+
+        # Testing : 
+        #   'batch_size': 16
+
+        #   All Steps RMSE = PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_08_06_36_95634:   All Steps RMSE = 23.250, MAE = 13.689, MASE = 0.861, MAPE = 9.516
+        #   All Steps RMSE = PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_08_06_36_95634:   All Steps RMSE = 23.237, MAE = 13.756, MASE = 0.866, MAPE = 9.245 
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.4,
+        # 'graph_subset': None,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: 8h35
+
+        # Testing : 
+        #   'batch_size': 16
+        
+        #  PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_09_07_40_59836:   All Steps RMSE = 23.347, MAE = 14.092, MASE = 0.887, MAPE = 9.499        # 
+        # 
+        # 
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.8,
+        # 'graph_subset': None,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: 8h35
+
+        # Testing : 
+        #   'batch_size': 16
+        
+        #  PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908:   All Steps RMSE = 23.730, MAE = 13.980, MASE = 0.880, MAPE = 9.826
     else: 
         from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
         from pipeline.high_level_DL_method import load_optimizer_and_scheduler
