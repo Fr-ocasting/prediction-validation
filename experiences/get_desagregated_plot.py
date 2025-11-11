@@ -14,7 +14,7 @@ issue_while_loading_saved_weights = ''
 trial_id1_in_bis = False
 trial_id2_in_bis = False
 range_k = range(1,6) # range(1,6)
-comparison_on_rainy_events = False 
+comparison_on_rainy_events = True 
 station_clustering = True 
 
 init_folder_path = f"/home/rrochas/prediction-validation/save/plot"
@@ -29,20 +29,8 @@ for exp_i in dic_exp_to_names.keys():
 for exp_i,target_model_name in dic_exp_to_names.items():
     target_data = '_'.join(target_model_name.split('_')[:-1])
     model_name = target_model_name.split('_')[-1]
-    if exp_i == 'Exp1':   # Supposed to be done 
+    if not (exp_i == 'Exp2'):
         continue
-    if exp_i == 'Exp1_subway_in':   # Supposed to be done 
-        continue
-    if exp_i == 'Exp1_subway_out':   # Supposed to be done 
-        continue
-    if exp_i == 'Exp2':   # Supposed to be done 
-        continue
-    if exp_i == 'Exp3':   # PROBLEM -> coverage period avec subway-out a besoin d'être refaite  
-        continue
-
-    if exp_i == 'Exp2_rainy':   # Just does not exist
-        continue
-
 
     print(exp_i)
     configs = dic_trials[exp_i]
@@ -72,8 +60,11 @@ for exp_i,target_model_name in dic_exp_to_names.items():
                 print(trial_id)
 
             for trial_id1,trial_id2 in zip(trial_ids1,trial_ids2):
-                folder_path = f"{init_folder_path}/{exp_i}"
-                save_name = f"desag_{trial_id1}_vs_{trial_id2}"
+                if comparison_on_rainy_events:
+                    folder_path = f"{init_folder_path}/{exp_i}_rainy"
+                else:
+                    folder_path = f"{init_folder_path}/{exp_i}"
+                save_name = f"desag_{trial_id2}"
                 outputs = get_desagregated_comparison_plot(trial_id1,trial_id2,
                                                             model_args = model_args,
                                                             model_args_bis = model_args_bis,

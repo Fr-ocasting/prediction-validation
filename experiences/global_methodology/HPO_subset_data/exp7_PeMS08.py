@@ -25,7 +25,7 @@ if __name__ == '__main__':
                     'ray':True,
 
                     # Expanding Train & Graph Subset: 
-                    'expanding_train': 0.8,
+                    'expanding_train': None,
                     'graph_subset': None,
                     'batch_size': 128, # 16
                         # ----
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
 
     if True:
-        if False:
+        if True:
             from examples.HP_parameter_choice import hyperparameter_tuning
             from examples.benchmark import local_get_args
 
@@ -233,6 +233,7 @@ if __name__ == '__main__':
         #   'batch_size': 16
         
         #  PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908:   All Steps RMSE = 23.730, MAE = 13.980, MASE = 0.880, MAPE = 9.826
+        #  B = 128 : PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908:   All Steps RMSE = 23.972, MAE = 14.013, MASE = 0.882, MAPE = 9.342
     else: 
         from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
         from pipeline.high_level_DL_method import load_optimizer_and_scheduler

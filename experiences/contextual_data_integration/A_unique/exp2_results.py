@@ -26,6 +26,18 @@ STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4_bis2:  
 STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4_bis3:   All Steps RMSE = 4.877, MAE = 3.068, MASE = 0.797, MAPE = 50.336
 STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4_bis4:   All Steps RMSE = 4.908, MAE = 3.077, MASE = 0.799, MAPE = 49.998
 STAEformer_bike_out_weather_calendar_early_fusion_s_proj_t_proj__e200_h4_bis5:   All Steps RMSE = 4.965, MAE = 3.109, MASE = 0.807, MAPE = 51.179
+
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 4.894, MAE = 3.084, MASE = 0.801, MAPE = 51.798
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis2:   All Steps RMSE = 4.906, MAE = 3.075, MASE = 0.798, MAPE = 49.890
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis3:   All Steps RMSE = 4.828, MAE = 3.053, MASE = 0.793, MAPE = 50.479
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis4:   All Steps RMSE = 4.857, MAE = 3.077, MASE = 0.799, MAPE = 51.508
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis5:   All Steps RMSE = 4.843, MAE = 3.046, MASE = 0.791, MAPE = 49.826
+
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 4.854, MAE = 3.086, MASE = 0.801, MAPE = 52.197
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis2:   All Steps RMSE = 4.918, MAE = 3.106, MASE = 0.806, MAPE = 53.138
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis3:   All Steps RMSE = 4.810, MAE = 3.043, MASE = 0.790, MAPE = 50.510
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis4:   All Steps RMSE = 4.818, MAE = 3.042, MASE = 0.790, MAPE = 50.483
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis5:   All Steps RMSE = 4.824, MAE = 3.051, MASE = 0.792, MAPE = 51.120
 """
 
 # STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 4.894, MAE = 3.084, MASE = 0.801, MAPE = 51.798

@@ -679,6 +679,9 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     station_clustering = True,
                                     folder_path = None,
                                     save_name = None,
+                                    heatmap = False,
+                                    daily_profile = False,
+                                    dendrogram = False
                                     ):
 
 
@@ -735,7 +738,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
         # Get Clustering of stations from these inputs:
         clusterer = get_cluster(train_input,temporal_agg='business_day', normalisation_type ='minmax',index= colmumn_name,city=ds2.city,
                         n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
-                        heatmap= False, daily_profile=False, dendrogram=False)
+                        heatmap= heatmap, daily_profile=daily_profile, dendrogram=dendrogram)
     else:
         clusterer = lambda : None
         clusterer.clusters = None
@@ -754,10 +757,10 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
 
     if comparison_on_rainy_events:
         print("\nComparison on between models across all time-slots followed by comparison on Rainy Events Only")
-        _,train_rainy_indices,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'train')
+        _,train_rainy_indices,_,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'train')
         print(f"Number of rainy time-slots in the train set: {len(train_rainy_indices)}, i.e {len(train_rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_train)*100:.2f} % of the train set")
         # ---- Plot Accuracy comparison on rainy moments only ----
-        mask,rainy_indices,df_weather = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'test')
+        mask,rainy_indices,df_weather,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'test')
         print(f"Number of rainy time-slots in the test set: {len(rainy_indices)}, i.e {len(rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_test)*100:.2f} % of the test set\n")
         # Analysis on these specific rainy time-slots: 
         plot_analysis_comparison_2_config(trial_id1,trial_id2,

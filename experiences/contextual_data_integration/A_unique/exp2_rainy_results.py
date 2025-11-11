@@ -4,6 +4,8 @@ STAEformer_bike_out_calendar__e200_h4_bis2:   All Steps RMSE = 5.237, MAE = 3.15
 STAEformer_bike_out_calendar__e200_h4_bis3:   All Steps RMSE = 5.104, MAE = 3.063, MASE = 0.644, MAPE = 61.535
 STAEformer_bike_out_calendar__e200_h4_bis4:   All Steps RMSE = 5.132, MAE = 3.087, MASE = 0.649, MAPE = 61.376
 STAEformer_bike_out_calendar__e200_h4_bis5:   All Steps RMSE = 5.101, MAE = 3.074, MASE = 0.646, MAPE = 60.179
+
+
 STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4_bis1:   All Steps RMSE = 4.832, MAE = 2.949, MASE = 0.620, MAPE = 57.286
 STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4_bis2:   All Steps RMSE = 4.688, MAE = 2.883, MASE = 0.606, MAPE = 55.186
 STAEformer_bike_out_weather_calendar_early_fusion_repeat_t_proj__e200_h4_bis3:   All Steps RMSE = 4.883, MAE = 2.980, MASE = 0.626, MAPE = 58.216
@@ -24,4 +26,17 @@ STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4_bis2:   
 STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4_bis3:   All Steps RMSE = 4.900, MAE = 2.997, MASE = 0.630, MAPE = 58.694
 STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4_bis4:   All Steps RMSE = 4.956, MAE = 3.012, MASE = 0.633, MAPE = 58.670
 STAEformer_bike_out_weather_calendar_late_fusion_s_proj_t_proj__e200_h4_bis5:   All Steps RMSE = 5.045, MAE = 3.058, MASE = 0.643, MAPE = 61.822
+
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 4.899, MAE = 2.993, MASE = 0.629, MAPE = 59.140
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis2:   All Steps RMSE = 4.899, MAE = 2.968, MASE = 0.624, MAPE = 55.596
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis3:   All Steps RMSE = 4.842, MAE = 2.964, MASE = 0.623, MAPE = 57.319
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis4:   All Steps RMSE = 4.746, MAE = 2.943, MASE = 0.619, MAPE = 58.253
+STAEformer_bike_out_weather_calendar_early_fusion_feature_extractor__e200_h4_bis5:   All Steps RMSE = 4.754, MAE = 2.905, MASE = 0.611, MAPE = 55.911
+
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis1:   All Steps RMSE = 4.979, MAE = 3.058, MASE = 0.643, MAPE = 61.370
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis2:   All Steps RMSE = 5.107, MAE = 3.068, MASE = 0.645, MAPE = 61.892
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis3:   All Steps RMSE = 4.896, MAE = 2.992, MASE = 0.629, MAPE = 59.543
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis4:   All Steps RMSE = 4.922, MAE = 2.986, MASE = 0.627, MAPE = 59.643
+STAEformer_bike_out_weather_calendar_late_fusion_feature_extractor__e200_h4_bis5:   All Steps RMSE = 4.876, MAE = 2.979, MASE = 0.626, MAPE = 60.044
+
 """
