@@ -64,7 +64,7 @@ if __name__ == '__main__':
                     'optimizer': 'adam',
                     'lr': 0.001, # 0.001
                     'weight_decay': 0.0015,
-                    'torch_scheduler_type': 'MultiStepLR',
+                    'torch_scheduler_type': 'warmup', #'MultiStepLR', 'warmup'
                     'loss_function_type':'HuberLoss',
                     'torch_scheduler_milestone': [25, 45, 65],
                     'torch_scheduler_gamma':0.1,
@@ -136,7 +136,7 @@ if __name__ == '__main__':
                                 }
                 train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
-    # Results HPO : 
+    # Results HPO : (PAS BON: SCHEDULER MULTISTEP LR AVEC SEARCH SPACE DE WARMUP)
 
         # ------------------------------------------------------------------
         # 'expanding_train': 0.2,
@@ -234,6 +234,21 @@ if __name__ == '__main__':
         
         #  PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908:   All Steps RMSE = 23.730, MAE = 13.980, MASE = 0.880, MAPE = 9.826
         #  B = 128 : PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908:   All Steps RMSE = 23.972, MAE = 14.013, MASE = 0.882, MAPE = 9.342
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.8,
+        # 'graph_subset': None,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+
+        # Time: 8h35
+
+        # Testing : 
+        #   'batch_size': 16
+        
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_12_08_00_81026:   All Steps RMSE = 23.872, MAE = 13.879, MASE = 0.873, MAPE = 9.278
     else: 
         from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
         from pipeline.high_level_DL_method import load_optimizer_and_scheduler
