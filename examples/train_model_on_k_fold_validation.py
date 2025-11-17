@@ -18,6 +18,7 @@ from pipeline.dl_models.full_model import full_model
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 from pipeline.utils.loger import LOG
+from pipeline.utils.SanityCheck import SanityCheck
 def load_configuration(trial_id,load_config,modification = None,folder =  'save/HyperparameterTuning'):
     # If Load config: 
     if load_config:
@@ -164,7 +165,6 @@ def train_valid_K_models(args,trial_id,save_folder,modification={}):
         # ____ Specific case if we want to validate on the init entiere dataset:
 
         condition1,condition2,fold = get_conditions(args,fold_i,ds_validation)
-
         model = full_model(ds, args).to(args.device)
         optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
         trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=fold,save_folder = save_folder)

@@ -8,7 +8,6 @@ current_file_path = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
-
 from experiences.contextual_data_integration.A_heterogenous.exp4_15min_h1_results import results as results_Exp4_15min_h1
 from experiences.contextual_data_integration.A_heterogenous.exp4_15min_results import results  as results_Exp4_15min
 from experiences.contextual_data_integration.A_heterogenous.exp4_results import results  as results_Exp4
@@ -20,7 +19,8 @@ from experiences.contextual_data_integration.C_netmob.exp6_subway_netmob_results
 from experiences.contextual_data_integration.C_netmob.exp6_bike_netmob_results import results as results_Exp6_bike
 from experiences.contextual_data_integration.A_homogenous.exp1_subway_in_results import results  as results_Exp1_subway_in
 from experiences.contextual_data_integration.A_homogenous.exp1_subway_out_results import results  as results_Exp1_subway_out
-folder_path = 'save/K_fold_validation/training_wo_HP_tuning'
+from constants.paths import ROOT
+folder_path = f"{ROOT}/save/K_fold_validation/training_wo_HP_tuning"
 metrics = ['rmse','mae','mase']
 
 dic_exp_to_names = {

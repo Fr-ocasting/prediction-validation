@@ -18,6 +18,8 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['dataset_names'] = dataset_names
     config['dataset_for_coverage'] = dataset_for_coverage
 
+    config['bool_sanity_checker'] = False
+
     # Contextual Information: Calendar
     if 'calendar' in dataset_names:
         config['calendar_types'] = ['dayofweek','timeofday']  # IF 'calendar' in 'dataset_names': Define the type of calendar information used in the model 

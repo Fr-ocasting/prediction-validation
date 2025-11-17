@@ -29,7 +29,7 @@ class AttentionLayer(nn.Module):
 
     """
 
-    def __init__(self, model_dim, num_heads=8, mask=False,KV_model_dim = None):
+    def __init__(self, model_dim, num_heads=8, mask=False,KV_model_dim = None,sanity_checker = None, module_name= 'AttentionLayer'):
         super().__init__()
 
         self.model_dim = model_dim
@@ -45,6 +45,8 @@ class AttentionLayer(nn.Module):
         self.FC_V = nn.Linear(self.KV_model_dim, model_dim)
 
         self.out_proj = nn.Linear(model_dim, model_dim)
+        self.sanity_checker = sanity_checker
+        self.module_name = module_name
 
     def forward(self, query: Tensor, key: Tensor, value: Tensor) -> Tensor:
         # Q    (batch_size, ..., tgt_length, model_dim)
@@ -69,10 +71,24 @@ class AttentionLayer(nn.Module):
             -1, -2
         )  # (num_heads * batch_size, ..., head_dim, src_length)
 
-        attn_score = (
-            query @ key
-        ) / self.head_dim**0.5  # (num_heads * batch_size, ..., tgt_length, src_length)
+        # Normalisation by sqrt(head_dim) if src_length == tgt_length (self-attention)
+        if src_length == tgt_length:
+            attn_score = (
+                query @ key
+            ) / self.head_dim**0.5  # (num_heads * batch_size, ..., tgt_length, src_length)
 
+        # Normalisation by a temperature scaling  if src_length >> tgt_length (cross-attention)
+        else:
+            attn_score = (
+                query @ key
+            )   # (num_heads * batch_size, ..., tgt_length, src_length)
+
+        if hasattr(self, 'sanity_checker') and self.sanity_checker is not None:
+            self.sanity_checker.checking(attn_score, 
+                                        name="Logits (Pre-Softmax)", 
+                                        module_name = self.module_name,
+                                        dim_to_check=-1) # Vérifie la variance sur la dim 'src_length'
+        
         if self.mask:
             mask = torch.ones(
                 tgt_length, src_length, dtype=torch.bool, device=query.device
@@ -81,6 +97,12 @@ class AttentionLayer(nn.Module):
 
         attn_score = torch.softmax(attn_score, dim=-1)
         self.attn_score = attn_score
+
+        if hasattr(self, 'sanity_checker') and self.sanity_checker is not None:
+           self.sanity_checker.checking(self.attn_score, 
+                                        name="Scores (Post-Softmax)", 
+                                        module_name = self.module_name,
+                                        dim_to_check=-1)
 
         # print('attn_score size:', attn_score.size())
         # print('value size:', value.size())
@@ -96,11 +118,11 @@ class AttentionLayer(nn.Module):
 
 class SelfAttentionLayer(nn.Module):
     def __init__(
-        self, model_dim, feed_forward_dim=2048, num_heads=8, dropout=0, mask=False,KV_model_dim = None
+        self, model_dim, feed_forward_dim=2048, num_heads=8, dropout=0, mask=False,KV_model_dim = None,sanity_checker = None,module_name='SelfAttentionLayer'
     ):
         super().__init__()
-
-        self.attn = AttentionLayer(model_dim, num_heads, mask,KV_model_dim)
+        self.module_name = module_name
+        self.attn = AttentionLayer(model_dim, num_heads, mask,KV_model_dim,sanity_checker=sanity_checker,module_name=module_name)
         self.feed_forward = nn.Sequential(
             nn.Linear(model_dim, feed_forward_dim),
             nn.ReLU(inplace=True),
@@ -110,6 +132,7 @@ class SelfAttentionLayer(nn.Module):
         self.ln2 = nn.LayerNorm(model_dim)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
+
 
     def forward(self, x: Tensor, dim: int = -2,x_contextual: Tensor = None) -> Tensor:
         x = x.transpose(dim, -2)
@@ -266,6 +289,7 @@ class STAEformer(nn.Module):
         contextual_kwargs = {},
         Early_fusion_names = [],
         Late_fusion_names = [],
+        sanity_checker = None,
     ):
         super().__init__()
         #  ---  self attributes: ---
@@ -368,17 +392,44 @@ class STAEformer(nn.Module):
 
         self.attn_layers_t = nn.ModuleList(
             [
-                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
-                for _ in range(num_layers)
+                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout,sanity_checker=sanity_checker,module_name =f'STAEformer - TemporalAttentionLayer-{i}')
+                for i in range(num_layers)
             ]
         )
 
         self.attn_layers_s = nn.ModuleList(
             [
-                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
-                for _ in range(num_layers)
+                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout,sanity_checker=sanity_checker,module_name =f'STAEformer - SpatialAttentionLayer-{i}')
+                for i in range(num_layers)
             ]
         )
+
+        tracked_grads_info = []
+        for k, layer in enumerate(self.attn_layers_t):
+            tracked_grads_info.extend([
+                (f'{layer.module_name}/Attn.FC_Q.weight', layer.attn.FC_Q.weight),
+                (f'{layer.module_name}/Attn.FC_K.weight', layer.attn.FC_K.weight),
+                (f'{layer.module_name}/Attn.FC_V.weight', layer.attn.FC_V.weight),
+                (f'{layer.module_name}/Attn.out_proj.weight', layer.attn.out_proj.weight),
+                (f'{layer.module_name}/LN1.weight', layer.ln1.weight),
+                (f'{layer.module_name}/LN2.weight', layer.ln2.weight),
+                (f'{layer.module_name}/FF.fc1.weight', layer.feed_forward[0].weight),
+                (f'{layer.module_name}/FF.fc2.weight', layer.feed_forward[2].weight)
+            ])
+
+        for k, layer in enumerate(self.attn_layers_s):
+            tracked_grads_info.extend([
+                (f'{layer.module_name}/Attn.FC_Q.weight', layer.attn.FC_Q.weight),
+                (f'{layer.module_name}/Attn.FC_K.weight', layer.attn.FC_K.weight),
+                (f'{layer.module_name}/Attn.FC_V.weight', layer.attn.FC_V.weight),
+                (f'{layer.module_name}/Attn.out_proj.weight', layer.attn.out_proj.weight),
+                (f'{layer.module_name}/LN1.weight', layer.ln1.weight),
+                (f'{layer.module_name}/LN2.weight', layer.ln2.weight),
+                (f'{layer.module_name}/FF.fc1.weight', layer.feed_forward[0].weight),
+                (f'{layer.module_name}/FF.fc2.weight', layer.feed_forward[2].weight)
+            ])
+                
+        self._tracked_grads_info = tracked_grads_info
 
         
     def forward(self,  x: Tensor,
@@ -519,14 +570,15 @@ class MultiLayerCrossAttention(nn.Module):
         KV_num_nodes = 13,
         init_adaptive_query_dim = 0 ,
         adaptive_embedding_dim = 0, 
+        sanity_checker = None,
     ):
         super().__init__()
         self.contextual_proj = nn.Linear(1, input_embedding_dim)
         self.model_dim = input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
         self.attn_layers = nn.ModuleList(
             [
-                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout)
-                for _ in range(num_layers)
+                SelfAttentionLayer(self.model_dim, feed_forward_dim, num_heads, dropout,sanity_checker=sanity_checker,module_name =f'Spatial-Cross-Attention - SpatialAttentionLayer-{i}')
+                for i in range(num_layers)
             ]
         )
         self.tod_embedding_dim = tod_embedding_dim
@@ -677,10 +729,12 @@ class backbone_model(nn.Module):
         Early_fusion_names = [],
         Late_fusion_names = [],
         cross_attention = False,
+        sanity_checker = None,
     ):
         super().__init__()
         #  ---  self attributes: ---
         # self.concatenation_late = added_dim_output > 0
+        self.sanity_checker = sanity_checker
         self.num_nodes: int = num_nodes
         self.in_steps = L
         self.out_steps = step_ahead
@@ -788,22 +842,22 @@ class backbone_model(nn.Module):
         if self.cross_attention :
             self.Q_attn_layers_t = nn.ModuleList(
                 [
-                    SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout)
-                    for _ in range(num_layers)
+                    SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout,sanity_checker=sanity_checker,module_name =f'BackBone - CrossAttn: Query - TemporalAttentionLayer-{i}')
+                    for i in range(num_layers)
                 ]
             )
             self.KV_attn_layers_t = nn.ModuleList(
                 [
-                    SelfAttentionLayer(self.KV_model_dim, feed_forward_dim, num_heads, dropout)
-                    for _ in range(num_layers)
+                    SelfAttentionLayer(self.KV_model_dim, feed_forward_dim, num_heads, dropout,sanity_checker=sanity_checker,module_name =f'BackBone - CrossAttn:  Key/Value - TemporalAttentionLayer-{i}')
+                    for i in range(num_layers)
                 ]
             )
             self.attn_layers_t = None
         else:
             self.attn_layers_t = nn.ModuleList(
                 [
-                    SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout)
-                    for _ in range(num_layers)
+                    SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout,sanity_checker=sanity_checker,module_name =f'BackBone - TemporalAttentionLayer-{i}')
+                    for i in range(num_layers)
                 ]
             )
             self.Q_attn_layers_t = None
@@ -813,8 +867,8 @@ class backbone_model(nn.Module):
         # --- Spatial  Attention Layers :
         self.attn_layers_s = nn.ModuleList(
             [
-                SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout,KV_model_dim = self.KV_model_dim)
-                for _ in range(num_layers)
+                SelfAttentionLayer(self.Q_model_dim, feed_forward_dim, num_heads, dropout,KV_model_dim = self.KV_model_dim,sanity_checker=sanity_checker,module_name =f'BackBone - SpatialAttentionLayer-{i}')
+                for i in range(num_layers)
             ]
         )
         # ---
@@ -839,6 +893,60 @@ class backbone_model(nn.Module):
             self.KV_adaptive_embedding = None
             self.adaptive_embedding = None
         # ----
+
+        tracked_grads_info = []
+        if self.Q_attn_layers_t is not None:
+            for k, layer in enumerate(self.Q_attn_layers_t):
+                tracked_grads_info.extend([
+                    (f'{layer.module_name}/Attn.FC_Q.weight', layer.attn.FC_Q.weight),
+                    (f'{layer.module_name}/Attn.FC_K.weight', layer.attn.FC_K.weight),
+                    (f'{layer.module_name}/Attn.FC_V.weight', layer.attn.FC_V.weight),
+                    (f'{layer.module_name}/Attn.out_proj.weight', layer.attn.out_proj.weight),
+                    (f'{layer.module_name}/LN1.weight', layer.ln1.weight),
+                    (f'{layer.module_name}/LN2.weight', layer.ln2.weight),
+                    (f'{layer.module_name}/FF.fc1.weight', layer.feed_forward[0].weight),
+                    (f'{layer.module_name}/FF.fc2.weight', layer.feed_forward[2].weight)
+                ])
+
+        if self.KV_attn_layers_t is not None:
+            for k, layer in enumerate(self.KV_attn_layers_t):
+                tracked_grads_info.extend([
+                    (f'{layer.module_name}/Attn.FC_Q.weight', layer.attn.FC_Q.weight),
+                    (f'{layer.module_name}/Attn.FC_K.weight', layer.attn.FC_K.weight),
+                    (f'{layer.module_name}/Attn.FC_V.weight', layer.attn.FC_V.weight),
+                    (f'{layer.module_name}/Attn.out_proj.weight', layer.attn.out_proj.weight),
+                    (f'{layer.module_name}/LN1.weight', layer.ln1.weight),
+                    (f'{layer.module_name}/LN2.weight', layer.ln2.weight),
+                    (f'{layer.module_name}/FF.fc1.weight', layer.feed_forward[0].weight),
+                    (f'{layer.module_name}/FF.fc2.weight', layer.feed_forward[2].weight)
+                ])
+        
+        if self.attn_layers_t is not None:
+            for k, layer in enumerate(self.attn_layers_t):
+                tracked_grads_info.extend([
+                    (f'{layer.module_name}/Attn.FC_Q.weight', layer.attn.FC_Q.weight),
+                    (f'{layer.module_name}/Attn.FC_K.weight', layer.attn.FC_K.weight),
+                    (f'{layer.module_name}/Attn.FC_V.weight', layer.attn.FC_V.weight),
+                    (f'{layer.module_name}/Attn.out_proj.weight', layer.attn.out_proj.weight),
+                    (f'{layer.module_name}/LN1.weight', layer.ln1.weight),
+                    (f'{layer.module_name}/LN2.weight', layer.ln2.weight),
+                    (f'{layer.module_name}/FF.fc1.weight', layer.feed_forward[0].weight),
+                    (f'{layer.module_name}/FF.fc2.weight', layer.feed_forward[2].weight)
+                ])
+
+        for k, layer in enumerate(self.attn_layers_s):
+            tracked_grads_info.extend([
+                (f'{layer.module_name}/Attn.FC_Q.weight', layer.attn.FC_Q.weight),
+                (f'{layer.module_name}/Attn.FC_K.weight', layer.attn.FC_K.weight),
+                (f'{layer.module_name}/Attn.FC_V.weight', layer.attn.FC_V.weight),
+                (f'{layer.module_name}/Attn.out_proj.weight', layer.attn.out_proj.weight),
+                (f'{layer.module_name}/LN1.weight', layer.ln1.weight),
+                (f'{layer.module_name}/LN2.weight', layer.ln2.weight),
+                (f'{layer.module_name}/FF.fc1.weight', layer.feed_forward[0].weight),
+                (f'{layer.module_name}/FF.fc2.weight', layer.feed_forward[2].weight)
+            ])
+                
+        self._tracked_grads_info = tracked_grads_info
         
     def forward(self,  x: Tensor,
                 x_contextual: Tensor = None,
@@ -973,6 +1081,17 @@ class backbone_model(nn.Module):
         #if Cross Attention,  Need to first project into spatial dimension  ==> INVERSE ORDER OF ATTENTION LAYERS
         if self.cross_attention:
             # print('   Use Cross Attention layers')
+            if hasattr(self, 'sanity_checker') and self.sanity_checker is not None:
+                self.sanity_checker.checking(query_init, 
+                                    name="Query (Pre-Temporal-Attn)", 
+                                    dim_to_check=2,
+                                    module_name = "BackBone Model - Query INIT Before Temporal Attn"
+                                    ) 
+                self.sanity_checker.checking(x_contextual, 
+                                    name="Key/Valye (Pre-Temporal-Attn)", 
+                                    dim_to_check=2,
+                                    module_name = "BackBone Model - Key/Values INIT Before Temporal Attn"
+                                    ) 
             for attn in self.Q_attn_layers_t:
                 # print(    'query_init size before attn:', query_init.size())
                 # print(    'attn_layer:', attn)
@@ -981,6 +1100,21 @@ class backbone_model(nn.Module):
                 # print(    '\nx_contextual size before attn:', x_contextual.size())
                 # print(    'attn_layer:', attn)
                 x_contextual = attn(x_contextual, dim=1) 
+
+            if hasattr(self, 'sanity_checker') and self.sanity_checker is not None:
+                    # Vérifie si les 'queries' (26 Bike si target var et agg100 ) sont distincts
+                    self.sanity_checker.checking(query_init, 
+                                                    name="Query (Pre-Spatial-Attn)", 
+                                                    dim_to_check=2,
+                                                    module_name = "BackBone Model - Query Embedding Before Spatial Attn"
+                                                    ) 
+                    
+                    # Vérifie si les 'keys' (40 Subway si on prédit Bike avec Subway) sont distincts
+                    self.sanity_checker.checking(x_contextual, 
+                                                    name="Key/Value (Pre-Spatial-Attn)", 
+                                                    dim_to_check=2,
+                                                    module_name = "BackBone Model - Key/Values Embedding Before Spatial Attn"
+                                                    )
 
             for attn in self.attn_layers_s:
                 # print(    '\nquery_init size before attn:', query_init.size())

@@ -25,8 +25,8 @@ if __name__ == '__main__':
                     'ray':True,
 
                     # Expanding Train & Graph Subset: 
-                    'expanding_train': None,
-                    'graph_subset': None,
+                    'expanding_train': 0.2,
+                    'graph_subset': 0.5,
                     'batch_size': 128, # 16
                         # ----
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
                     'optimizer': 'adam',
                     'lr': 0.001, # 0.001
                     'weight_decay': 0.0015,
-                    'torch_scheduler_type': 'warmup', #'MultiStepLR', 'warmup'
+                    'torch_scheduler_type': 'MultiStepLR', #'MultiStepLR', 'warmup'
                     'loss_function_type':'HuberLoss',
                     'torch_scheduler_milestone': [25, 45, 65],
                     'torch_scheduler_gamma':0.1,
@@ -125,7 +125,11 @@ if __name__ == '__main__':
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_07_23_56_52940'
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_08_06_36_95634'
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908'
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_13_11_11_61374'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_14_22_20_94406'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_16_03_07_14720'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -135,6 +139,69 @@ if __name__ == '__main__':
                                 'torch_compile' :'compile'
                                 }
                 train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+
+    # Results HPO avec MULTISTEP LR : 
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+        # Testing : 
+        #   'batch_size': 16
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': 0.5,
+        #  Time: ~5h
+
+        #
+
+
+
+    # Results HPO avec WARMUP : 
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+        # Testing : 
+        #   'batch_size': 16
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': 0.5,
+        #  Time: ~5h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_13_20_36_39246:   All Steps RMSE = 23.349, MAE = 13.776, MASE = 0.867, MAPE = 9.153
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.5,
+        # 'graph_subset': 0.5,
+        # Time: ~8h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_14_22_20_94406:   All Steps RMSE = 23.695, MAE = 13.888, MASE = 0.874, MAPE = 9.237
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_14_22_20_94406:   All Steps RMSE = 23.573, MAE = 13.884, MASE = 0.874, MAPE = 9.289   # (B = 128)
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.5,
+        # 'graph_subset': None,
+        # Time: ~ 11h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_16_03_07_14720:   All Steps RMSE = 23.769, MAE = 13.758, MASE = 0.866, MAPE = 8.986
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_16_03_07_14720:   All Steps RMSE = 23.324, MAE = 13.624, MASE = 0.857, MAPE = 9.051  (B = 128)
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': None,
+        # 'graph_subset': None,
+        # Time: ~ 25 h 
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297:   All Steps RMSE = 23.853, MAE = 14.399, MASE = 0.906, MAPE = 10.075  ( OVERFITTING )
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297:   All Steps RMSE = 23.783, MAE = 13.992, MASE = 0.880, MAPE = 9.415  (B = 128)
+
+
+
+
 
     # Results HPO : (PAS BON: SCHEDULER MULTISTEP LR AVEC SEARCH SPACE DE WARMUP)
 
@@ -236,19 +303,35 @@ if __name__ == '__main__':
         #  B = 128 : PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908:   All Steps RMSE = 23.972, MAE = 14.013, MASE = 0.882, MAPE = 9.342
 
         # ------------------------------------------------------------------
-        # 'expanding_train': 0.8,
+        # 'expanding_train': None,
         # 'graph_subset': None,
         # 'batch_size': 128, 
         # 'epochs' : 100,
         # 'grace_period': 5,
         # 'num_samples': 300,
 
-        # Time: 8h35
+        # Time: 20h
 
-        # Testing : 
+        # Testing :   
         #   'batch_size': 16
         
-        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_12_08_00_81026:   All Steps RMSE = 23.872, MAE = 13.879, MASE = 0.873, MAPE = 9.278
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_13_11_11_61374:   All Steps RMSE = 81.581, MAE = 62.806, MASE = 3.952, MAPE = 104.501
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,  WARMUP 
+        # 'graph_subset': 0.5,
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 300,
+        # 
+
+        # Time: 
+
+        # Testing :   
+        #   'batch_size': 16
+        
+        #
     else: 
         from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
         from pipeline.high_level_DL_method import load_optimizer_and_scheduler

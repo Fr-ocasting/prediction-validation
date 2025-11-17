@@ -257,6 +257,76 @@ def build_legend_group_exp3(x):
         return 'Other Methods' 
 
 
+def _extract_model_info(x):
+    """
+    Extrait l'ID et le legend_group à partir d'une chaîne d'index de modèle.
+    """
+    
+    # --- 1. Extraction des applications ---
+    apps = []
+    # Vérifie si c'est une 'baseline' (ne contient pas le backbone CrossAttn)
+    is_baseline = '_CrossAttnBackBone_' not in x
+    
+    if not is_baseline:
+        # Recherche les applications spécifiées
+        if 'Google_Maps' in x: 
+            apps.append('GM')
+        if 'Web_Weather' in x:
+            apps.append('WW')
+        if 'Instagram' in x:
+            apps.append('I')
+        if 'Deezer' in x:
+            apps.append('D')
+        
+        # Applique le défaut (GM_WW) si aucune application n'est trouvée
+        if not apps:
+            apps.append('GM_WW')
+    
+    # Crée la chaîne d'applications (ex: "GM_WW_I")
+    apps_str = '_'.join(apps)
+
+    # --- 2. Détermination de l'ID ---
+    id_val = 'Baseline' 
+    if is_baseline:
+        trial_match = re.search(r'_trial(\d+)__', x)
+        if trial_match:
+            id_val = f'Baseline_{trial_match.group(1)}'
+
+    else :
+        try:
+            base_id = x.split('_CrossAttnBackBone_')[1].split('__')[0]
+            id_val = f"{base_id}_{apps_str}"
+        except IndexError:
+            id_val = f"CrossAttn_{apps_str}"
+
+    # --- 3. Détermination du groupe de légende (Legend Group) ---
+    legend_val = None
+    
+    # Priorité 1: Logique 'adp'
+    if ('adpQ0' in x) and ('adp0' in x):
+        legend_val = 'adp0 & adpQ0'
+    elif ('adpQ0' in x):
+        legend_val = 'adpQ0'
+    elif ('adp0' in x):
+        legend_val = 'adp0'
+    
+    # Priorité 2: Logique 'baseline' (si la priorité 1 n'est pas remplie)
+    elif is_baseline:
+        trial_match = re.search(r'_trial(\d+)__', x)
+        if trial_match:
+            # ex: STAEformer_subway_in_calendar_trial2... -> 'baseline_2'
+            legend_val = f'Baseline_{trial_match.group(1)}'
+        else:
+            # ex: STAEformer_subway_in_calendar__... -> 'Baseline'
+            legend_val = 'Baseline'
+            
+    # Priorité 3: Reste (CrossAttn avec applications)
+    else:
+        legend_val = f"CrossAttn_{apps_str}"
+        
+    return id_val, legend_val
+
+
 def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
     df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
@@ -283,14 +353,24 @@ def update_df_metrics_exp4_15min(df_metrics_all):
     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all
 
-def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
-    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
-    df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
-    df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
-    return df_metrics_all   
+# def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
+#     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
+#     df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
+#     df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
+#     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+#     return df_metrics_all   
  
 
+def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
+    df_index = df_metrics_all.reset_index()['index']
+    extracted_info = df_index.apply(_extract_model_info)
+    df_metrics_all['id'] = [info[0] for info in extracted_info]
+    df_metrics_all['legend_group'] = [info[1] for info in extracted_info]
+    
+    df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
+    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
+    
+    return df_metrics_all
 
 
 

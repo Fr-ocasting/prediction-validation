@@ -34,6 +34,8 @@ from pipeline.utils.utilities import load_inputs_from_dataloader
 from pipeline.PI.PI_object import PI_object
 from pipeline.PI.PI_calibration import Calibrator
 from constants.paths import SAVE_DIRECTORY
+from pipeline.utils.SanityCheck import SanityCheck
+
 
 from torchinfo import summary
 from pipeline.profiler.profiler import model_memory_cost
@@ -127,10 +129,26 @@ class Trainer(object):
         if (not self.args.ray) and hasattr(args,'track_grad_norm') and (args.track_grad_norm):
             self.tracked_params_map = self._discover_tracked_params(self.model)
             self.dict_gradient_norm = {}
+            # self.dict_gradient_norm = {name: 0.0 for name in self.tracked_params_map.keys()}
+            # self.dict_gradient_norm = {name: [] for name in self.tracked_params_map.keys()}
+            self._inject_grad_dict(self.model, self.dict_gradient_norm)
         else:
             self.tracked_params_map = None
             self.dict_gradient_norm = None
-            
+
+    def _inject_grad_dict(self, module, grad_dict):
+        """
+        Parcourt récursivement le modèle et injecte le dict de gradients
+        dans chaque instance de SanityCheck trouvée.
+        """
+        # 1. Vérifie si le module actuel a un sanity_checker
+        if hasattr(module, 'sanity_checker') and isinstance(module.sanity_checker, SanityCheck):
+            if module.sanity_checker.grad_dict is None:
+                module.sanity_checker.grad_dict = grad_dict
+                
+        # 2. Continue la récursion pour les enfants
+        for child in module.children():
+            self._inject_grad_dict(child, grad_dict)
 
 
     def save_best_model(self,checkpoint,epoch,performance,update_checkpoint = True):
@@ -414,17 +432,18 @@ class Trainer(object):
 
 
             if self.tracked_params_map is not None:
-                for name, param in self.tracked_params_map.items():
-                    if param is not None and param.grad is not None:
-                        try: 
-                            self.dict_gradient_norm[name].append(param.grad.norm().item())
-                        except:
-                            self.dict_gradient_norm[name] = [param.grad.norm().item()]
-                    else:
-                        try: 
-                            self.dict_gradient_norm[name].append(-1.0)
-                        except:
-                            self.dict_gradient_norm[name] = [-1.0]
+                with torch.no_grad():  # ???
+                    for name, param in self.tracked_params_map.items():
+                        if param is not None and param.grad is not None:
+                            try: 
+                                self.dict_gradient_norm[name].append(param.grad.norm().item())
+                            except:
+                                self.dict_gradient_norm[name] = [param.grad.norm().item()]
+                        else:
+                            try: 
+                                self.dict_gradient_norm[name].append(-1.0)
+                            except:
+                                self.dict_gradient_norm[name] = [-1.0]
 
             # print('pred: ', pred.dtype, pred.size())
             # print('y_b: ', y_b.dtype, y_b.size())
@@ -636,6 +655,7 @@ class Trainer(object):
                     full_name = f"{module_path}/{param_name}"
                     tracked_params[full_name] = param_obj
         return tracked_params
+    
     
     def transfer_weights_from(self, source_trainer, modules_to_transfer=None, freeze_transferred=True, List_not_freezing = []):
         """

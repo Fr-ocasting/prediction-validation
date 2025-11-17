@@ -20,6 +20,7 @@ from pipeline.trainer import Trainer
 from pipeline.ML_trainer import ML_trainer
 from pipeline.utils.loger import LOG
 from pipeline.utils.rng import set_seed
+
 loger = LOG()
 # Init:
 #['subway_indiv','tramway_indiv','bus_indiv','velov','criter']

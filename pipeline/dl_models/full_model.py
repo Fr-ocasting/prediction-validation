@@ -37,6 +37,7 @@ from pipeline.dl_models.SARIMAX.SARIMAX import SARIMAX
 from pipeline.dl_models.XGBoost.XGBoost import XGBoost
 from pipeline.utils.utilities import filter_args
 from pipeline.build_inputs.load_adj import load_adj
+from pipeline.utils.SanityCheck import SanityCheck
 import importlib
 
 # def load_feature_extractor_model(args_vision):
@@ -48,7 +49,7 @@ import importlib
 #     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,ds_name):
+def load_spatial_attn_model(args,ds_name,sanity_checker):
     # ---- If feature extractor is a simple temporal projection (Linear layer) :
     if ('attn_kwargs' in args.contextual_kwargs[ds_name].keys())  and ('simple_embedding_dim' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()) and (args.contextual_kwargs[ds_name]['attn_kwargs']['simple_embedding_dim']>0):
         class simple_t_embedding(nn.Module):
@@ -98,6 +99,7 @@ def load_spatial_attn_model(args,ds_name):
         args_ds_i = Namespace(**args_ds_i)
         for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
                 setattr(args_ds_i,key,value)
+        setattr(args_ds_i,'sanity_checker',sanity_checker)
 
 
         importlib.reload(script)
@@ -179,6 +181,11 @@ class full_model(nn.Module):
 
         # Init for jit script 
         # self.nb_add_channel = torch.jit.Attribute(0, int)
+        if hasattr(args,'bool_sanity_checker') and args.bool_sanity_checker:
+            sanity_checker = SanityCheck(active=True)
+        else:
+            sanity_checker = None
+        self.sanity_checker = sanity_checker
         args.time_step_per_hour = int(dataset.time_step_per_hour)
 
         # ------- Init for the model
@@ -292,7 +299,7 @@ class full_model(nn.Module):
                  raise ValueError('Calendar inputs but not taken into account. Need to set concatenation_early = True or concatenation_late = True')
         
         # === Trafic Model ===
-        core_model, args = load_model(dataset, args)
+        core_model, args = load_model(dataset, args,sanity_checker=self.sanity_checker)
         self.core_model = core_model
         self.L = args.L
         self.num_nodes = args.num_nodes
@@ -335,7 +342,7 @@ class full_model(nn.Module):
             if ('netmob' in ds_name) or ('subway_out' in ds_name):
                 init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))] # range(len(self.contextual_positions[ds_name]))
                 self.spatial_attn_per_station[ds_name] = nn.ModuleList([
-                    load_spatial_attn_model(args,ds_name)
+                    load_spatial_attn_model(args,ds_name,self.sanity_checker)
                     for init_spatial_dim in init_spatial_dims
                 ])
             else:
@@ -347,7 +354,7 @@ class full_model(nn.Module):
             # else:
             #     L_out = None
             # condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
-            self.global_s_attn[ds_name] = load_spatial_attn_model(args,ds_name, 
+            self.global_s_attn[ds_name] = load_spatial_attn_model(args,ds_name, self.sanity_checker
                                                                     #  query_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L, 
                                                                     #  key_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L,
                                                                     #  output_temporal_dim = L_out,
@@ -692,7 +699,7 @@ def get_added_dim(args):
     return added_dim_input, added_dim_output, TE_concatenation_late, TE_embedding_dim
 
 
-def load_model(dataset, args):
+def load_model(dataset, args,sanity_checker = None):
     # --- Init added_dim_output and added_dim_input
     vision_concatenation_late = False
     vision_out_dim = None
@@ -705,6 +712,7 @@ def load_model(dataset, args):
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}
+        filtered_args['sanity_checker'] = sanity_checker
         print( '\ncontextual_kwargs: ', filtered_args['contextual_kwargs'])
         model = STAEformer(**filtered_args).to(args.device)
 

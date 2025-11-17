@@ -79,14 +79,61 @@ STAEformer_subway_in_netmob_POIs_calendar_late_fusion_CrossAttnBackBone_InEmb24_
 STAEformer_subway_in_netmob_POIs_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb48_adp16_adpQ24_aggIris100__e150_h4_bis3:   All Steps RMSE = 46.731, MAE = 25.811, MASE = 0.826, MAPE = 33.242
 STAEformer_subway_in_netmob_POIs_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb48_adp16_adpQ24_aggIris100__e150_h4_bis4:   All Steps RMSE = 46.673, MAE = 26.377, MASE = 0.844, MAPE = 31.871
 STAEformer_subway_in_netmob_POIs_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb48_adp16_adpQ24_aggIris100__e150_h4_bis5:   All Steps RMSE = 46.048, MAE = 25.958, MASE = 0.831, MAPE = 34.231
-STAEformer_subway_in_calendar__e150_h1_bis1:   All Steps RMSE = 36.184, MAE = 21.343, MASE = 0.682, MAPE = 26.360
-STAEformer_subway_in_calendar__e150_h1_bis2:   All Steps RMSE = 36.117, MAE = 21.487, MASE = 0.687, MAPE = 25.280
-STAEformer_subway_in_calendar__e150_h1_bis3:   All Steps RMSE = 36.539, MAE = 21.383, MASE = 0.683, MAPE = 27.353
-STAEformer_subway_in_calendar__e150_h1_bis4:   All Steps RMSE = 35.948, MAE = 21.441, MASE = 0.685, MAPE = 27.963
-STAEformer_subway_in_calendar__e150_h1_bis5:   All Steps RMSE = 36.993, MAE = 21.962, MASE = 0.702, MAPE = 28.495
+
 STAEformer_subway_in_calendar__e150_h4_bis1:   All Steps RMSE = 40.861, MAE = 23.983, MASE = 0.767, MAPE = 28.780
 STAEformer_subway_in_calendar__e150_h4_bis2:   All Steps RMSE = 43.714, MAE = 24.990, MASE = 0.800, MAPE = 31.253
 STAEformer_subway_in_calendar__e150_h4_bis3:   All Steps RMSE = 45.131, MAE = 26.854, MASE = 0.859, MAPE = 31.529
 STAEformer_subway_in_calendar__e150_h4_bis4:   All Steps RMSE = 42.409, MAE = 24.710, MASE = 0.791, MAPE = 30.232
 STAEformer_subway_in_calendar__e150_h4_bis5:   All Steps RMSE = 46.536, MAE = 26.115, MASE = 0.836, MAPE = 33.652
+
+
+STAEformer_subway_in_calendar__e150_h1_bis1:   All Steps RMSE = 36.184, MAE = 21.343, MASE = 0.682, MAPE = 26.360
+STAEformer_subway_in_calendar__e150_h1_bis2:   All Steps RMSE = 36.117, MAE = 21.487, MASE = 0.687, MAPE = 25.280
+STAEformer_subway_in_calendar__e150_h1_bis3:   All Steps RMSE = 36.539, MAE = 21.383, MASE = 0.683, MAPE = 27.353
+STAEformer_subway_in_calendar__e150_h1_bis4:   All Steps RMSE = 35.948, MAE = 21.441, MASE = 0.685, MAPE = 27.963
+STAEformer_subway_in_calendar__e150_h1_bis5:   All Steps RMSE = 36.993, MAE = 21.962, MASE = 0.702, MAPE = 28.495
+
+STAEformer_subway_in_calendar_trial2__e150_h1_bis1:   All Steps RMSE = 36.235, MAE = 21.472, MASE = 0.686, MAPE = 27.224
+STAEformer_subway_in_calendar_trial2__e150_h1_bis2:   All Steps RMSE = 35.446, MAE = 20.933, MASE = 0.669, MAPE = 25.362
+STAEformer_subway_in_calendar_trial2__e150_h1_bis3:   All Steps RMSE = 36.080, MAE = 21.205, MASE = 0.678, MAPE = 27.066
+STAEformer_subway_in_calendar_trial2__e150_h1_bis4:   All Steps RMSE = 36.686, MAE = 21.862, MASE = 0.699, MAPE = 29.581
+STAEformer_subway_in_calendar_trial2__e150_h1_bis5:   All Steps RMSE = 36.075, MAE = 21.522, MASE = 0.688, MAPE = 25.939
+
+
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 36.462, MAE = 21.447, MASE = 0.686, MAPE = 27.216
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 34.758, MAE = 20.565, MASE = 0.657, MAPE = 25.584
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 37.119, MAE = 21.882, MASE = 0.699, MAPE = 30.498
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 36.916, MAE = 22.053, MASE = 0.705, MAPE = 28.160
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 35.268, MAE = 20.906, MASE = 0.668, MAPE = 26.091
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 35.935, MAE = 21.296, MASE = 0.681, MAPE = 26.190
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 35.617, MAE = 21.210, MASE = 0.678, MAPE = 27.402
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 36.289, MAE = 21.430, MASE = 0.685, MAPE = 27.415
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 36.239, MAE = 21.563, MASE = 0.689, MAPE = 26.378
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 35.079, MAE = 20.801, MASE = 0.665, MAPE = 27.066
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 35.846, MAE = 21.135, MASE = 0.676, MAPE = 25.788
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 36.167, MAE = 21.427, MASE = 0.685, MAPE = 26.750
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 35.595, MAE = 21.100, MASE = 0.674, MAPE = 27.249
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 36.595, MAE = 21.508, MASE = 0.687, MAPE = 26.137
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 35.578, MAE = 20.948, MASE = 0.670, MAPE = 25.671
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 36.636, MAE = 21.569, MASE = 0.689, MAPE = 27.059
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 36.396, MAE = 21.521, MASE = 0.688, MAPE = 26.597
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 36.042, MAE = 21.285, MASE = 0.680, MAPE = 27.787
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 36.937, MAE = 21.877, MASE = 0.699, MAPE = 27.353
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 36.739, MAE = 21.668, MASE = 0.693, MAPE = 26.860
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 35.985, MAE = 21.352, MASE = 0.682, MAPE = 28.853
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 35.728, MAE = 21.218, MASE = 0.678, MAPE = 26.814
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 37.278, MAE = 21.870, MASE = 0.699, MAPE = 29.432
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 35.940, MAE = 21.313, MASE = 0.681, MAPE = 26.110
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 36.168, MAE = 21.206, MASE = 0.678, MAPE = 26.014
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 38.065, MAE = 22.394, MASE = 0.716, MAPE = 29.359
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 35.977, MAE = 21.198, MASE = 0.678, MAPE = 28.614
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 36.267, MAE = 21.543, MASE = 0.689, MAPE = 26.968
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 36.138, MAE = 21.320, MASE = 0.681, MAPE = 25.498
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 36.128, MAE = 21.342, MASE = 0.682, MAPE = 26.670
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis1:   All Steps RMSE = 36.143, MAE = 21.461, MASE = 0.686, MAPE = 26.098
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis2:   All Steps RMSE = 36.079, MAE = 21.316, MASE = 0.681, MAPE = 25.288
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis3:   All Steps RMSE = 37.153, MAE = 21.757, MASE = 0.695, MAPE = 27.896
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis4:   All Steps RMSE = 36.306, MAE = 21.428, MASE = 0.685, MAPE = 27.256
+STAEformer_subway_in_netmob_POIs_calendar_late_fusion_Instagram_Google_Maps_Deezer_Web_Weather_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24_aggIris100_trial2__e150_h1_bis5:   All Steps RMSE = 36.071, MAE = 21.369, MASE = 0.683, MAPE = 26.944
+
 """

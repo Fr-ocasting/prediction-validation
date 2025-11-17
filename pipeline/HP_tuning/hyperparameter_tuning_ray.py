@@ -35,10 +35,12 @@ def HP_modification(config,args):
                 if 'scheduler' in config['scheduler'].keys():
                     if config['scheduler']['scheduler']:
                         for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
-                            setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+                            if args_scheduler in config['scheduler'].keys():
+                                setattr(args, args_scheduler, config['scheduler'][args_scheduler])
                 else:
                     for args_scheduler in ['torch_scheduler_milestone','torch_scheduler_gamma','torch_scheduler_lr_start_factor']:
-                            setattr(args, args_scheduler, config['scheduler'][args_scheduler])
+                            if args_scheduler in config['scheduler'].keys():
+                                setattr(args, args_scheduler, config['scheduler'][args_scheduler])
 
             ## Tackle Vision HP tuning
             elif 'vision_' in key:

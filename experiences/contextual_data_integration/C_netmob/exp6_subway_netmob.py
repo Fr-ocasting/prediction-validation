@@ -81,22 +81,23 @@ from experiences.compilation_parameter import compilation_modification
 from experiences.loop_train_save_log import loop_train_save_log
 
 loger = LOG()
-
+SANITY_CHECKER = True # True
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
 init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp6_subway_netmob'
-device = torch.device('cuda:0')
+device = torch.device('cuda:1')
 
 freq = '15min' #'15min'  
-horizons = [1,4] # [4]  #[1,4]
+horizons = [1] # [4]  #[1,4]
 target_data = 'subway_in' 
 contextual_dataset_names = ['netmob_POIs']
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
 config_backbone_model['epochs'] = 150 # 150 #80
-compilation_modification['torch_compile'] = 'compile' # 'compile' # 'compile'  # False 
+config_backbone_model['batch_size'] = 256 # 150 #80
+compilation_modification['torch_compile'] = False #'compile' # 'compile' # 'compile'  # False 
 compilation_modification['device'] = device
 # REPEAT_TRIAL  = 1 
 
@@ -110,8 +111,8 @@ weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['
 L_input_embedding_dim = [24] # [12,24] # [24,48] # [8,24]
 L_adaptive_embedding_dim = [16] # [16,32] # [0,16,32] 
 L_init_adaptive_query_dim = [24] # [0,24] #  [0,24,48] #  [0,8,24]
-L_contextual_input_embedding_dim = [8,12,24,48] # [8,12,24] #  [24,48] # [8,24] # [8,24,32,48]
-L_agg_iris_target_n = [None, 100]
+L_contextual_input_embedding_dim = [24] #[8,12,24,48] # [8,12,24] #  [24,48] # [8,24] # [8,24,32,48]
+L_agg_iris_target_n = [100] # [None, 100]
 adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_contextual_input_embedding_dim,L_input_embedding_dim,L_agg_iris_target_n))
 # adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_input_embedding_dim))
 # ------
@@ -139,9 +140,21 @@ for adp_emb, init_adp_q, context_input_emb,input_emb,agg_iris_target_n in adp_in
         name_i = f"CrossAttnBackBone_InEmb{input_emb}_ctxInEmb{context_input_emb}_adp{adp_emb}_adpQ{init_adp_q}_aggIris{agg_iris_target_n}"
     else:
         name_i = f"CrossAttnBackBone_InEmb{input_emb}_ctxInEmb{context_input_emb}_adp{adp_emb}_adpQ{init_adp_q}"
-    # name_i = f"CrossAttnBackBone_InEmb{input_emb}_adp{adp_emb}_adpQ{init_adp_q}"
 
-    subway_possible_contextual_kwargs['late_fusion'][name_i] =  contextual_kwargs_i
+    for apps in [['Google_Maps', 'Web_Weather'],
+                    # ['Google_Maps', 'Deezer'],
+                    # ['Instagram', 'Deezer'],
+                    # ['Instagram'],
+                    # ['Deezer'],
+                    # ['Instagram','Google_Maps','Deezer'],
+                    # ['Instagram','Google_Maps','Deezer','Web_Weather']
+                    ]:
+        contextual_kwargs_i['NetMob_selected_apps'] = apps
+        name_begin = '_'.join(apps)
+            
+        name_save = f"{name_begin}_{name_i}_trial2"
+
+        subway_possible_contextual_kwargs['late_fusion'][name_save] =  contextual_kwargs_i
 
 
 print('\n------------------------------- CONFIGURATIONS ----------------------------------\n')
@@ -194,6 +207,7 @@ if True:
                                 'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
                                 'contextual_kwargs' : contextual_kwargs,
                                 'denoising_names':[],
+                                'bool_sanity_checker' : SANITY_CHECKER 
                                 } 
                     
                     if 'denoiser_kwargs' in netmob_preprocessing_kwargs.keys():
@@ -214,7 +228,7 @@ if True:
     for horizon in horizons:
         for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
             dataset_names =  [target_data] + ['calendar']
-            name_i = f"{model_name}_{'_'.join(dataset_names)}"
+            name_i = f"{model_name}_{'_'.join(dataset_names)}_trial2"
             name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
             name_i = f"{name_i}_{name_i_end}"
 
