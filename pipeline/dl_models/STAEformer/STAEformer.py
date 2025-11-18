@@ -573,6 +573,7 @@ class MultiLayerCrossAttention(nn.Module):
         sanity_checker = None,
     ):
         super().__init__()
+        self.sanity_checker = sanity_checker
         self.contextual_proj = nn.Linear(1, input_embedding_dim)
         self.model_dim = input_embedding_dim+tod_embedding_dim+dow_embedding_dim+adaptive_embedding_dim
         self.attn_layers = nn.ModuleList(

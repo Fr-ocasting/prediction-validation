@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
                     # Expanding Train & Graph Subset: 
                     'expanding_train': 0.2,
-                    'graph_subset': 0.5,
+                    'graph_subset': None, #0.5,
                     'batch_size': 128, # 16
                         # ----
 
@@ -129,7 +129,8 @@ if __name__ == '__main__':
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_14_22_20_94406'
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_16_03_07_14720'
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297'
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_23_12_56159'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_23_12_56159'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -154,7 +155,17 @@ if __name__ == '__main__':
         # 'graph_subset': 0.5,
         #  Time: ~5h
 
-        #
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_23_12_56159:   All Steps RMSE = 23.203, MAE = 13.813, MASE = 0.869, MAPE = 9.285
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_23_12_56159:   All Steps RMSE = 23.296, MAE = 13.706, MASE = 0.863, MAPE = 9.078   (B = 128)
+
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': None,
+        #  Time: ~5h
+
+
 
 
 

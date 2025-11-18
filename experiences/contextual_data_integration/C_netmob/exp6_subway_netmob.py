@@ -81,7 +81,7 @@ from experiences.compilation_parameter import compilation_modification
 from experiences.loop_train_save_log import loop_train_save_log
 
 loger = LOG()
-SANITY_CHECKER = True # True
+SANITY_CHECKER = False # True
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
@@ -92,13 +92,15 @@ freq = '15min' #'15min'
 horizons = [1] # [4]  #[1,4]
 target_data = 'subway_in' 
 contextual_dataset_names = ['netmob_POIs']
+add_name_save = '_clipping'  # ''  # '_trial2'
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
-config_backbone_model['epochs'] = 150 # 150 #80
-config_backbone_model['batch_size'] = 256 # 150 #80
+config_backbone_model['epochs'] = 20 # 150 # 150 #80
+# config_backbone_model['batch_size'] = 128 # 150 #80
 compilation_modification['torch_compile'] = False #'compile' # 'compile' # 'compile'  # False 
 compilation_modification['device'] = device
+compilation_modification['grad_clipping_norm'] = 1.0
 # REPEAT_TRIAL  = 1 
 
 dic_configs = {}
@@ -152,7 +154,7 @@ for adp_emb, init_adp_q, context_input_emb,input_emb,agg_iris_target_n in adp_in
         contextual_kwargs_i['NetMob_selected_apps'] = apps
         name_begin = '_'.join(apps)
             
-        name_save = f"{name_begin}_{name_i}_trial2"
+        name_save = f"{name_begin}_{name_i}{add_name_save}"
 
         subway_possible_contextual_kwargs['late_fusion'][name_save] =  contextual_kwargs_i
 
@@ -228,7 +230,7 @@ if True:
     for horizon in horizons:
         for n_bis in range(1,REPEAT_TRIAL+1): # range(1,6):
             dataset_names =  [target_data] + ['calendar']
-            name_i = f"{model_name}_{'_'.join(dataset_names)}_trial2"
+            name_i = f"{model_name}_{'_'.join(dataset_names)}{add_name_save}"
             name_i_end = f"_e{config_backbone_model['epochs']}_h{horizon}_bis{n_bis}"
             name_i = f"{name_i}_{name_i_end}"
 

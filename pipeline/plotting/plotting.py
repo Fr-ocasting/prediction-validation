@@ -299,11 +299,11 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False,
                           ,v_min=None,v_max=None,
                           display_values = False,
                           bool_plot = None,cbar_magic_args = False,
-                          figsize = None
+                          figsize = None,
+                          title = None,
                           ):
     # Def function to plot a df with matshow
     # Use : plot the coverage through week and days 
-
     if log : 
         data = np.log(data + 1)
     
@@ -351,6 +351,8 @@ def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False,
         cbar = plt.colorbar(cax, aspect=10)
     cbar.set_label(cbar_label)  # You can customize the label as needed
 
+    if title is not None:
+        plt.title(title)
     ## Plot values if needed: 
     if display_values:
         for (i, j), val in np.ndenumerate(data.values):

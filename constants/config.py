@@ -19,6 +19,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['dataset_for_coverage'] = dataset_for_coverage
 
     config['bool_sanity_checker'] = False
+    config['grad_clipping_norm'] = None  # 1.0 by default if grad clipping. 
 
     # Contextual Information: Calendar
     if 'calendar' in dataset_names:
@@ -72,6 +73,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['torch_compile'] = False # 'compile', 'jit_scirpt',  None, False 
     config['backend'] ='inductor' #'inductor' #'cudagraphs'
     config['prefetch_all'] = False
+
     # ...
 
     # === Denoising ===

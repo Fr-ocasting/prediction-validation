@@ -563,10 +563,15 @@ class Trainer(object):
         if True:
             if self.args.mixed_precision:
                 self.scaler.scale(loss).backward()
+                if hasattr(self.args, 'grad_clipping_norm') and (self.args.grad_clipping_norm is not None):
+                    self.scaler.unscale_(self.optimizer)
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.args.grad_clipping_norm)
                 self.scaler.step(self.optimizer)
                 self.scaler.update()
             else:
                 loss.backward()
+                if hasattr(self.args, 'grad_clipping_norm') and (self.args.grad_clipping_norm is not None):
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=self.args.grad_clipping_norm)
                 self.optimizer.step()
         else:
             loss.backward()
