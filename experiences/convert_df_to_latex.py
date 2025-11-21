@@ -237,6 +237,24 @@ def build_legend_group_exp1(x):
     else:
         return 'Other Methods'
     
+def build_legend_group_exp2(x):
+    if not('weather' in x) :
+        return 'Baseline'
+    elif 'early_fusion_repeat' in x:
+        return 'Early Fusion Repeat T-Proj'
+    elif 'early_fusion_s_proj_t_proj' in x:
+        return 'Early Fusion S-Proj T-Proj'
+    elif 'late_fusion_repeat' in x:
+        return 'Late Fusion Repeat T-Proj'
+    elif 'late_fusion_s_proj_t_proj' in x:
+        return 'Late Fusion S-Proj T-Proj'
+    elif 'early_fusion_feature_extractor' in x:
+        return 'Early Fusion Feature Extractor'
+    elif 'late_fusion_feature_extractor' in x:
+        return 'Late Fusion Feature Extractor'
+    else:
+        return 'Other Methods'
+    
 
 def build_legend_group_exp3(x):
     if not('subway_out_weather' in x):
@@ -328,14 +346,19 @@ def _extract_model_info(x):
 
 
 def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
-    df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
-    df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
+    if target_data == 'subway_in' or target_data == 'subway_out':
+        df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp1).values
+        df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if (('subway_in_subway_out' in c) or ('subway_out_subway_in' in c)) else 'Baseline' for c in df_metrics_all.index]
+    if target_data == 'bike_out':
+        df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp2).values
+        df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df_metrics_all.index]
+
     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all
 
 
 def update_df_metrics_exp2(df):
-    df['legend_group'] = df.reset_index()['index'].apply(build_legend_group_exp1).values
+    df['legend_group'] = df.reset_index()['index'].apply(build_legend_group_exp2).values
     df['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df.index]
     df = df.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df

@@ -14,8 +14,12 @@ from bokeh.transform import dodge
 def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='fold', width=1200, height=400, 
                             save_path=None,
                             palette= None,
-                            legend_groups = None
+                            legend_groups = None,
+                            title = None
                             ):
+    
+    if title is None:
+        title = f"{metric_i} distribution per {xaxis_label} and per {legend_group}"
     # Data preparation
     sdf = df.groupby("id")[metric_i].mean().sort_values()
     sorted_ids = sdf.index.tolist()
@@ -44,7 +48,7 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
         x_range=FactorRange(factors=sorted_ids),
         width=width,
         height=height,
-        title=f"{metric_i} distribution per {xaxis_label} and per {legend_group}"
+        title=title
     )
     box_width = 0.2
 

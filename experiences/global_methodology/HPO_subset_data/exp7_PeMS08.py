@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
                     # Expanding Train & Graph Subset: 
                     'expanding_train': 0.5,
-                    'graph_subset': None, #0.5,
+                    'graph_subset': 0.5, #0.5,
                     'batch_size': 128, # 16
                         # ----
 
@@ -115,28 +115,39 @@ if __name__ == '__main__':
                         )
 
             epochs_validation = epochs #1000
-            num_samples = 300 # 200#200
+            num_samples = 200 # 300 # 200
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
         # If HPO worked by need to compute again the 'train_valid_k_models':
         # Or if we need to compute with B = 128 
         else:
-            # HPO - pas bon 
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_10_31_01_50_36105'
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_07_23_56_52940'
+            #  -------- -------- -------- -------- -------- -------- -------- --------
+            # HPO - pas bon  --------    Bcp d'hyperparamètre, pas assez de samples --------
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_10_31_01_50_36105' 
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_07_23_56_52940'  
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_08_06_36_95634'
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_10_06_35_64908'
 
             # HPO - Warmup
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_13_11_11_61374'
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_14_22_20_94406'
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_16_03_07_14720'
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_13_11_11_61374' # expanding_train = 0.2, graph_subset = 0.5
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_14_22_20_94406' # expanding_train = 0.5, graph_subset = 0.5
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_16_03_07_14720' # expanding_train = 0.5, graph_subset = None
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_13_33_92297' # expanding_train = None, graph_subset = None
 
             # HPO - Multi-Step LR 
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_23_12_56159'
-            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_18_23_01_21887'
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_18_23_01_21887'
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_17_23_12_56159'   # expanding_train = 0.2, graph_subset = 0.5
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_18_23_01_21887'   # expanding_train = 0.2, graph_subset = None
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_19_20_19_87308'    # expanding_train = 0.5, graph_subset = None
+            # HPO - pas bon  --------            # HPO - pas bon 
+            #  -------- -------- -------- -------- -------- -------- -------- --------
+
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_20_15_37_86605'   # expanding_train = 0.2, graph_subset = 0.5
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861'   # expanding_train = 0.2, graph_subset = None
+            
+
+
+
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -148,6 +159,47 @@ if __name__ == '__main__':
                 train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
     # Results HPO avec MULTISTEP LR : 
+        # 'batch_size': 128, 
+        # 'epochs' : 100,
+        # 'grace_period': 5,
+        # 'num_samples': 200,
+        # Testing : 
+        #   'batch_size': 16
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': 0.5,
+        #  Time: ~4h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_20_15_37_86605:   All Steps RMSE = 23.874, MAE = 13.839, MASE = 0.871, MAPE = 8.949
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_20_15_37_86605:   All Steps RMSE = 23.625, MAE = 13.754, MASE = 0.866, MAPE = 9.173 ( B = 128)
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.2,
+        # 'graph_subset': None,
+        #  Time: ~6h45
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861:   All Steps RMSE = 23.309, MAE = 13.744, MASE = 0.865, MAPE = 9.374
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861:   All Steps RMSE = 23.038, MAE = 13.701, MASE = 0.862, MAPE = 9.225
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.5,
+        # 'graph_subset': 0.5,
+        #  Time: ~
+
+        # P
+
+
+
+
+
+
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
+    # Results PAS BON ----- HPO avec MULTISTEP LR : 
         # 'batch_size': 128, 
         # 'epochs' : 100,
         # 'grace_period': 5,
@@ -177,11 +229,18 @@ if __name__ == '__main__':
         # ------------------------------------------------------------------
         # 'expanding_train': 0.5,
         # 'graph_subset': None,
-        #  Time: ~ 
+        #  Time: ~ 20h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_19_20_19_87308:   All Steps RMSE = 23.958, MAE = 13.769, MASE = 0.866, MAPE = 9.035
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_19_20_19_87308:   All Steps RMSE = 23.363, MAE = 13.745, MASE = 0.865, MAPE = 9.203
 
 
 
 
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------------------------------
     # Results HPO avec WARMUP : 
         # 'batch_size': 128, 
         # 'epochs' : 100,
