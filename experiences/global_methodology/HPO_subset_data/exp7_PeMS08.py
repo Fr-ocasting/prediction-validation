@@ -26,7 +26,7 @@ if __name__ == '__main__':
 
                     # Expanding Train & Graph Subset: 
                     'expanding_train': 0.5,
-                    'graph_subset': 0.5, #0.5,
+                    'graph_subset': None, #0.5,
                     'batch_size': 128, # 16
                         # ----
 
@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
 
     if True:
-        if True:
+        if False:
             from examples.HP_parameter_choice import hyperparameter_tuning
             from examples.benchmark import local_get_args
 
@@ -143,11 +143,13 @@ if __name__ == '__main__':
 
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_20_15_37_86605'   # expanding_train = 0.2, graph_subset = 0.5
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861'   # expanding_train = 0.2, graph_subset = None
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_20_02_66614'   # expanding_train = 0.5, graph_subset = 0.5
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090'   # expanding_train = 0.5, graph_subset = None
             
 
 
 
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -186,9 +188,20 @@ if __name__ == '__main__':
         # ------------------------------------------------------------------
         # 'expanding_train': 0.5,
         # 'graph_subset': 0.5,
-        #  Time: ~
+        #  Time: ~ 10h
 
-        # P
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_20_02_66614:   All Steps RMSE = 23.322, MAE = 13.700, MASE = 0.862, MAPE = 9.120
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_20_02_66614:   All Steps RMSE = 23.270, MAE = 13.692, MASE = 0.862, MAPE = 9.193
+
+
+        # ------------------------------------------------------------------
+        # 'expanding_train': 0.5,
+        # 'graph_subset': None,
+        #  Time: ~ 13h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090:   All Steps RMSE = 23.751, MAE = 13.701, MASE = 0.862, MAPE = 8.984
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090:   All Steps RMSE = 23.264, MAE = 13.698, MASE = 0.862, MAPE = 9.130
+
 
 
 

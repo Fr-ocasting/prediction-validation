@@ -432,7 +432,7 @@ class TimeSeriesClusterer:
     def _plot_daily_profile(self):
         n_clusters = len(self.clusters)
         # --- Plot 1: Individual Profiles per Cluster (Original Plot) ---
-        fig, axes = plt.subplots((n_clusters+1), 1, figsize=(14, 4 * (n_clusters+1))) #, sharex=True, squeeze=False)
+        fig, axes = plt.subplots((n_clusters+1), 1, figsize=(6, 4 * (n_clusters+1))) #, sharex=True, squeeze=False)
         axes = axes.flatten()
 
         # Dictionary to store the mean profile of each cluster for the next plot
@@ -446,6 +446,10 @@ class TimeSeriesClusterer:
             ax.set_title(f'Cluster {label} ({self.method}-based Profiles)')
             ax.set_ylabel('Average Value')
             ax.legend()
+
+            ax.set_xticks(range(0, len(profiles_to_plot), 4))
+            ax.set_xticklabels(profiles_to_plot.index.astype(str)[::4])
+
             ax.tick_params(axis='x', rotation=45)
             ax.grid(True, linestyle='--', alpha=0.3)
 
@@ -460,6 +464,8 @@ class TimeSeriesClusterer:
         ax.set_title('Comparison of Mean Profiles for Each Cluster')
         ax.set_xlabel('Time of Day')
         ax.set_ylabel('Average Value')
+        ax.set_xticks(range(0, len(mean_profile), 4))
+        ax.set_xticklabels(mean_profile.index.astype(str)[::4])
         ax.tick_params(axis='x', rotation=45)
         ax.legend()
         ax.grid(True, linestyle='--', alpha=0.3)
