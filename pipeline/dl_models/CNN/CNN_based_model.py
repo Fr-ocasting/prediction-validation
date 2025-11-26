@@ -50,7 +50,7 @@ class CNN(nn.Module):
         ## ======= Tackle Output Module if concatenation with contextual data: 
         L_outs_in = [l_out*args.H_dims[-1]]+args.C_outs
         self.vision_concatenation_late = vision_concatenation_late
-        self.TE_concatenation_late = TE_concatenation_late
+        self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
         if self.vision_concatenation_late:
             L_outs_in[0] = L_outs_in[0]+ vision_out_dim
         if self.TE_concatenation_late:

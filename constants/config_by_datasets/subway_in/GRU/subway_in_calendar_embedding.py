@@ -5,7 +5,7 @@ SEED = 1
 
 config =  {'target_data': 'subway_in',
             'dataset_names': ['subway_in','calendar_embedding'],
-            'dataset_for_coverage': ['subway_in', 'netmob_POIs'],
+            'dataset_for_coverage': ['subway_in'],
             'embedding_calendar_types': ['dayofweek', 'hour'],
             'use_target_as_context': False,
             'unormalize_loss' : True,

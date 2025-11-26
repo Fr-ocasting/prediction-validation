@@ -189,7 +189,8 @@ class STGCN(nn.Module):
 
 
     def forward(self,x: Tensor,
-                x_vision: Optional[Tensor] = None, 
+                x_vision_early: Optional[Tensor] = None,
+                x_vision_late: Optional[Tensor] = None,
                 x_calendar: Optional[Tensor] = None,
                 contextual: Optional[list[Tensor]]= None) -> Tensor:
             
@@ -206,6 +207,8 @@ class STGCN(nn.Module):
             1st step: reshape permute input for first st_blocks : [B,C,L,N] 
             
             '''
+            if x_vision_early is not None:
+                raise NotImplementedError('x_vision has not been implemented')
             # print('\nx.size: ',x.size())
             # Tackle case where we only want to use the output module (and not the core-model STGCN
             if not (x.numel() == 0):
@@ -227,17 +230,17 @@ class STGCN(nn.Module):
 
             if self.Ko >= 1:
                 # Causal_TempConv2D - FC(128,128) -- FC(128,1) -- LN - ReLU --> [B,1,1,N]
-                x = self.output(x,x_vision,x_calendar,contextual)
+                x = self.output(x,x_vision_late,x_calendar,contextual)
             elif self.Ko == 0:
                 # [B,C_out,L',N] = [B,1,L',N] actually 
-                if x_vision is not None:
+                if x_vision_late is not None:
                     # [B,C_out,N,L'] -> [B,C_out,L',N] 
-                    x_vision = x_vision.permute(0,1,3,2)
+                    x_vision_late = x_vision_late.permute(0,1,3,2)
                     # Concat [B,C,L-4*nb_blocks, N] + [B,C_out,L',N]
                     if not (x.numel() == 0):
-                        x = torch.cat([x,x_vision],dim=2)
+                        x = torch.cat([x,x_vision_late],dim=2)
                     else:
-                        x = x_vision
+                        x = x_vision_late
                 if self.TE_concatenation_late and x_calendar is not None:
                     # [B,C,N,L_calendar]  -> [B,C,L_calendar,N] 
                     x_calendar = x_calendar.permute(0,1,3,2)

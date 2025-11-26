@@ -327,10 +327,10 @@ def update_modif(args):
 
 def modification_contextual_args(args,modification):
     for key,value in modification.items():
-        if 'TE_' in key:
+        if key.startswith('TE_'):
             key = key.replace('TE_','')
             setattr(args.args_embedding,key,value)
-        elif 'vision_' in key:
+        elif key.startswith('vision_') and not key == 'vision_model_name':
             key = key.replace('vision_','')
             setattr(args.args_vision,key,value)
             if key == 'grn_out_dim':

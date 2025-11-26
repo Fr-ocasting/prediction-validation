@@ -4,7 +4,7 @@ SEED = 1
 
 
 config =  {'target_data': 'subway_in',
-            'dataset_names': ['subway_in','calendar_embedding'],
+            'dataset_names': ['subway_in'],
             'dataset_for_coverage': ['subway_in'],
             'embedding_calendar_types': ['dayofweek', 'hour'],
             'use_target_as_context': False,
@@ -26,8 +26,8 @@ config =  {'target_data': 'subway_in',
             'C_outs' : [16,16],
             'num_layers' : 2,
             'bias' : True,
-            'lstm' : True,
-            'gru' : False,
+            'lstm' : False,
+            'gru' : True,
             'bidirectional': True,
 
             'TE_embedding_dim': 64,

@@ -116,7 +116,7 @@ class MTGNN(nn.Module):
         ## ======= Tackle Output Module if concatenation with contextual data: 
         in_channels_end_conv_1 = skip_channels
         self.vision_concatenation_late = vision_concatenation_late
-        self.TE_concatenation_late = TE_concatenation_late
+        self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
         if self.vision_concatenation_late:
             in_channels_end_conv_1 = in_channels_end_conv_1+ vision_out_dim
         if self.TE_concatenation_late:

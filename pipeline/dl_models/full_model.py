@@ -796,11 +796,12 @@ def load_model(dataset, args,sanity_checker = None):
         model = STGCN(args,gso=gso, blocks = args.blocks,Ko = Ko).to(args.device)
         
     if args.model_name == 'CNN': 
-        model = CNN(args,L_add = added_dim_output,vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None)
+        filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(CNN.__init__).parameters.keys()}
+        model = CNN(**filtered_args).to(args.device)
 
     if args.model_name in ['LSTM','GRU','RNN']:
-        filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(RNN.__init__).parameters.keys()}
-        model = RNN(**filtered_args).to(args.device)
+        # filtered_args = {k: v for k, v in vars(args).items() if k in inspect.signature(RNN.__init__).parameters.keys()}
+        model = RNN(args).to(args.device)
 
     if args.model_name == 'MLP':
         from pipeline.dl_models.MLP.MLP import MLP_output 

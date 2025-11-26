@@ -22,12 +22,13 @@ def get_search_space_ray(args):
 
             # if 'torch_scheduler_type' == 'MultiStepLR',
                 # 'torch_scheduler_milestone': [25, 45, 65],
-                  "scheduler" : {"torch_scheduler_milestone": tune.choice([
-                                                              [5, 20, 35],
-                                                              [10, 30, 50],
-                                                              [25, 45, 65],
-                                                              [40, 60, 80],
-                                                                ]),
+                  "scheduler" : {
+                    #   "torch_scheduler_milestone": tune.choice([
+                    #                                           [5, 20, 35],
+                    #                                           [10, 30, 50],
+                    #                                           [25, 45, 65],
+                    #                                           [40, 60, 80],
+                    #                                             ]),
                                     "torch_scheduler_gamma": tune.uniform(0.01, 0.5),
                                    }
 

@@ -7,7 +7,7 @@ SEED = 1
 
 config =  {'target_data': 'subway_in',
             'dataset_names': ['subway_in'],
-            'dataset_for_coverage': ['subway_in', 'netmob_POIs'],
+            'dataset_for_coverage': ['subway_in'],
             'use_target_as_context': False,
             'freq': '15min',
             'H':6,

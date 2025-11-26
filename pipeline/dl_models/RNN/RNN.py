@@ -1,49 +1,62 @@
 from torch import nn
 import torch
 import ast
+from typing import Optional
+from torch import Tensor
 
 class RNN(nn.Module):
-    def __init__(self,input_dim,h_dim,C_outs,L, num_layers,out_dim, bias = True,
-                 dropout = 0.0, nonlinearity = 'tanh',batch_first = True,
-                 bidirectional = False,lstm = False, gru = False, device = None,
-                 vision_concatenation_late = False,TE_concatenation_late = False,vision_out_dim = None,TE_embedding_dim = None):
+    def __init__(self,args):
         super().__init__()
 
-        # Parameters
-        if type(C_outs) == str:
-            C_outs = list(ast.literal_eval(C_outs))
-        self.C_outs = list(C_outs) + [out_dim]
-        self.num_layers = num_layers
-        self.batch_first = batch_first
-        self.lstm = lstm
-        self.h_dim = h_dim
-        self.device = device
+        self.input_dim = args.input_dim
+        self.h_dim = args.h_dim
+        self.C_outs = args.C_outs
+        self.L = args.L
+        self.num_layers = args.num_layers
+        self.out_dim = args.out_dim
+        self.bias = args.bias
+        self.dropout = float(args.dropout)
+        self.lstm = args.lstm if  hasattr(args,'lstm') else False
+        self.gru = args.gru if  hasattr(args,'gru') else False
+        self.nonlinearity = args.nonlinearity if  hasattr(args,'nonlinearity') else 'tanh'
+        self.batch_first = True
+        self.device = args.device
+        self.out_dim = args.out_dim
+        self.vision_concatenation_late = args.vision_concatenation_late if hasattr(args,'vision_concatenation_late') else False
+        self.vision_out_dim = args.vision_out_dim if hasattr(args,'vision_out_dim') else None
 
-        bidirectional = bool(bidirectional)
-        dropout = float(dropout)
+
+        # Parameters
+        if type(self.C_outs) == str:
+            self.C_outs = list(ast.literal_eval(self.C_outs))
+        self.C_outs = list(self.C_outs) + [self.out_dim]
+
+
+        self.bidirectional = bool(args.bidirectional)
         # Architecture
-        if lstm: 
-            self.rnn = nn.LSTM(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
-        elif gru:
-            self.rnn = nn.GRU(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,bias=bias,batch_first=batch_first,dropout=dropout,bidirectional=bidirectional)
+        if self.lstm: 
+            self.rnn = nn.LSTM(input_size = self.input_dim, hidden_size = self.h_dim, num_layers=self.num_layers,bias=self.bias,batch_first=self.batch_first,dropout=self.dropout,bidirectional=self.bidirectional)
+        elif self.gru:
+            self.rnn = nn.GRU(input_size = self.input_dim, hidden_size = self.h_dim, num_layers=self.num_layers,bias=self.bias,batch_first=self.batch_first,dropout=self.dropout,bidirectional=self.bidirectional)
         else : 
-            self.rnn = nn.RNN(input_size = input_dim, hidden_size = h_dim, num_layers=num_layers,
-            nonlinearity=nonlinearity,bias=bias,batch_first=batch_first,
-            dropout=dropout,bidirectional=bidirectional)  # tanh or ReLU as non linear activation
+            self.rnn = nn.RNN(input_size = self.input_dim, hidden_size = self.h_dim, num_layers=self.num_layers,
+            nonlinearity=self.nonlinearity,bias=self.bias,batch_first=self.batch_first,
+            dropout=self.dropout,bidirectional=self.bidirectional)  # tanh or ReLU as non linear activation
 
             # self.rnn.flatten_parameters()
           
-        self.D =  2 if bidirectional else 1
+        self.D =  2 if self.bidirectional else 1
 
         ## ======= Tackle Output Module if concatenation with contextual data: 
 
-        L_outs_in = [self.D*h_dim*L]+self.C_outs[:-1]
-        self.vision_concatenation_late = vision_concatenation_late
-        self.TE_concatenation_late = TE_concatenation_late
+        L_outs_in = [self.D*self.h_dim*self.L]+self.C_outs[:-1]
+        self.vision_concatenation_late = self.vision_concatenation_late
+        self.TE_concatenation_late = args.args_embedding.concatenation_late if 'calendar_embedding' in args.dataset_names else False 
         if self.vision_concatenation_late:
-            L_outs_in[0] = L_outs_in[0]+ vision_out_dim
+            L_outs_in[0] = L_outs_in[0]+ args.vision_out_dim
         if self.TE_concatenation_late:
-            L_outs_in[0] = L_outs_in[0]+ TE_embedding_dim
+            self.TE_embedding_dim = args.TE_embedding_dim
+            L_outs_in[0] = L_outs_in[0]+ self.TE_embedding_dim
         ## =======
         self.Dense_outs = nn.ModuleList([nn.Linear(c_in,c_out) for c_in,c_out in zip(L_outs_in, self.C_outs)])
         self.relu = nn.ReLU()
@@ -60,8 +73,18 @@ class RNN(nn.Module):
             return(h0)
     
 
-    def forward(self,x,x_vision=None,x_calendar = None):
+    def forward(self,x,
+                x_vision_early: Optional[Tensor] = None,
+                x_vision_late: Optional[Tensor] = None,
+                x_calendar: Optional[Tensor] = None,
+                contextual: Optional[list[Tensor]]= None,
+                ):
 
+        if x_vision_late is not None:
+            raise NotImplementedError('x_vision has not been implemented')
+        if x_vision_early is not None:
+            raise NotImplementedError('x_vision has not been implemented')
+        
         # print('x.size: ',x.size())
         # if x_vision is not None:
         #     print('x_vision.size: ',x_vision.size())

@@ -89,7 +89,7 @@ if __name__ == '__main__':
 
 
     if True:
-        if False:
+        if True:
             from examples.HP_parameter_choice import hyperparameter_tuning
             from examples.benchmark import local_get_args
 
@@ -115,7 +115,7 @@ if __name__ == '__main__':
                         )
 
             epochs_validation = epochs #1000
-            num_samples = 200 # 300 # 200
+            num_samples = 100 # 300 # 200
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
         # If HPO worked by need to compute again the 'train_valid_k_models':
@@ -201,6 +201,8 @@ if __name__ == '__main__':
 
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090:   All Steps RMSE = 23.751, MAE = 13.701, MASE = 0.862, MAPE = 8.984
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090:   All Steps RMSE = 23.264, MAE = 13.698, MASE = 0.862, MAPE = 9.130
+
+
 
 
 

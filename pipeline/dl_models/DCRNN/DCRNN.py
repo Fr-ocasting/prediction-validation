@@ -1,7 +1,8 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+from typing import Optional
+from torch import Tensor
 # Relative path:
 import sys 
 import os 
@@ -76,22 +77,20 @@ class DecoderModel(nn.Module, Seq2SeqAttrs):
         Seq2SeqAttrs.__init__(self, adj_mx, **model_kwargs)
         self.device = model_kwargs.get('device')
         # self.output_dim = int(model_kwargs.get('out_dim'))
-        self.horizon = int(model_kwargs.get('step_ahead'))  # for the decoder
+
+        self.horizon = int(model_kwargs.get('step_ahead'))// model_kwargs.get('horizon_step')
 
         self.dcgru_layers = nn.ModuleList(
             [DCGRUCell(self.rnn_units, adj_mx, self.max_diffusion_step, self.num_nodes,
                        filter_type=self.filter_type,device = self.device) for _ in range(self.num_rnn_layers)])
-        
 
-        self.out_dim_factor = int(model_kwargs.get('out_dim_factor'))
-        self.step_ahead = int(model_kwargs.get('step_ahead'))
+        self.out_dim = int(model_kwargs.get('step_ahead')*model_kwargs.get('out_dim'))// model_kwargs.get('horizon_step')
 
         # Tackle Calendar Embedding: 
-        if ('calendar_embedding' in model_kwargs.get('dataset_names')):
-            self.TE_concatenation_late = model_kwargs.get('args_embedding').concatenation_late 
-        else :
-            self.TE_concatenation_late = False
-        
+
+        self.TE_concatenation_late = model_kwargs['args_embedding'].concatenation_late if 'calendar_embedding' in model_kwargs['dataset_names'] else False 
+
+
         if self.TE_concatenation_late:
             self.TE_embedding_dim = model_kwargs.get('args_embedding').embedding_dim 
             self.in_channel_fc1 = self.rnn_units + self.TE_embedding_dim
@@ -99,7 +98,7 @@ class DecoderModel(nn.Module, Seq2SeqAttrs):
             self.in_channel_fc1 = self.rnn_units
         # ...
 
-        self.projection_layer = nn.Linear(self.in_channel_fc1, self.out_dim_factor)
+        self.projection_layer = nn.Linear(self.in_channel_fc1, self.out_dim)
 
 
     def forward(self, inputs, hidden_state=None,x_calendar=None):
@@ -132,7 +131,7 @@ class DecoderModel(nn.Module, Seq2SeqAttrs):
         # print('reshaped_output: ',reshaped_output.size())
         projected = self.projection_layer(reshaped_output) #[B*N,rnn_unit] ->  [B*N,out_dim_factor]
         # print('projecteded output: ',projected.size())
-        output = projected.view(-1, self.num_nodes * self.out_dim_factor)#  [B*N,out_dim_factor] ->  [B,N*out_dim_factor]
+        output = projected.view(-1, self.num_nodes * self.out_dim)#  [B*N,out_dim_factor] ->  [B,N*out_dim_factor]
         # print('reshaped output: ',output.size())
 
         return output, torch.stack(hidden_states)
@@ -149,8 +148,8 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         self.decoder_model = DecoderModel(adj_mx, **model_kwargs)
         self.cl_decay_steps = int(model_kwargs.get('cl_decay_steps', 1000))
         self.use_curriculum_learning = bool(model_kwargs.get('use_curriculum_learning', False)) 
-        self.out_dim_factor =  int(model_kwargs.get('out_dim_factor')) 
-        self.step_ahead = int(model_kwargs.get('step_ahead')) 
+        # self.out_dim_factor =  int(model_kwargs.get('out_dim_factor')) 
+        # self.step_ahead = int(model_kwargs.get('step_ahead')) 
         self.dropout = model_kwargs.get('dropout')
         #self._logger = logger
 
@@ -180,7 +179,7 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         :return: output: (self.horizon, batch_size, self.num_nodes * self.output_dim)
         """
         batch_size = encoder_hidden_state.size(1)
-        go_symbol = torch.zeros((batch_size, self.num_nodes * self.decoder_model.out_dim_factor),
+        go_symbol = torch.zeros((batch_size, self.num_nodes * self.decoder_model.out_dim),
                                 device=self.device)
         decoder_hidden_state = encoder_hidden_state
         decoder_input = go_symbol
@@ -200,7 +199,14 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         outputs = torch.stack(outputs)
         return outputs
 
-    def forward(self, inputs, labels=None, batches_seen=None,x_calendar = None,x_vision = None):
+    def forward(self, inputs, 
+                x_vision_early: Optional[Tensor] = None,
+                x_vision_late: Optional[Tensor] = None,
+                x_calendar: Optional[Tensor] = None,
+                contextual: Optional[list[Tensor]]= None,
+
+                labels=None, 
+                batches_seen=None):
         """
         seq2seq forward pass
         :param inputs: shape (seq_len, batch_size, num_sensor * input_dim)   #i.e [L,B,C*N]
@@ -208,9 +214,13 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         :param batches_seen: batches seen till now
         :return: output: (self.horizon, batch_size, self.num_nodes * self.output_dim)
         """ 
-        if x_vision is not None:
+        if x_vision_late is not None:
             raise NotImplementedError('x_vision has not been implemented')
+        if x_vision_early is not None:
+            raise NotImplementedError('x_vision has not been implemented')
+        
         # Ajout pour matcher mon framework avec le dcrnn :
+        # print('inputs.size: ',inputs.size())
         if len(inputs.size())<4:
             inputs = inputs.unsqueeze(1)
         B,C,N,L = inputs.size()  
@@ -219,19 +229,13 @@ class DCRNN(nn.Module, Seq2SeqAttrs):
         # ...
         encoder_hidden_state = self.encoder(inputs)
         #self._logger.debug("Encoder complete, starting decoder")
-        outputs = self.decoder(encoder_hidden_state, labels, batches_seen=batches_seen,x_calendar=x_calendar)  # outputs -> [B*N, out_dim] 
-        #self._logger.debug("Decoder complete")
-        #if batches_seen == 0:
-        #    self._logger.info(
-        #        "Total trainable parameters {}".format(count_parameters(self))
-        #    )
+        outputs = self.decoder(encoder_hidden_state, labels, batches_seen=batches_seen,x_calendar=x_calendar)  # outputs -> [out_dim,B,N]
+      
 
-        # Ajout pour matcher mon framework avec le dcrnn 
-        # Outputs: [out_dim,B,N*out_dim_factor]
+        # --- Ajout pour matcher mon framework avec le dcrnn 
+
         # print('outputs.size: ',outputs.size())
-        outputs = outputs.permute(1,0,2)  # [out_dim,B,N*out_dim_factor] -> [B,out_dim,N*out_dim_factor]
-        outputs = outputs.reshape(B,self.step_ahead,N,self.out_dim_factor) # [B,out_dim,N*out_dim_factor] -> [B,out_dim,N,out_dim_factor]
-        outputs = outputs.permute(0,3,2,1) # [B,out_dim,N,out_dim_factor] -> [B,out_dim_factor,N,out_dim,N]
+        outputs = outputs.permute(1,2,0)  # [out_dim,B,N*out_dim_factor] -> [B,out_dim,N*out_dim_factor]
         # print('outputs.size: ',outputs.size())
         # ...
         return outputs

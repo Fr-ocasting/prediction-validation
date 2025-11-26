@@ -4,7 +4,7 @@ SEED = 1
 
 config = {'model_name': 'RNN',
         'target_data': 'subway_in',
-        'dataset_names': ['subway_in', 'calendar_embedding'],
+        'dataset_names': ['subway_in'],
         'dataset_for_coverage': ['subway_in'],
         'embedding_calendar_types': ['dayofweek', 'hour'],
         'optimizer': 'adamw',
