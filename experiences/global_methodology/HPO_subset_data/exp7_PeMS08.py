@@ -25,7 +25,7 @@ if __name__ == '__main__':
                     'ray':True,
 
                     # Expanding Train & Graph Subset: 
-                    'expanding_train': 0.5,
+                    'expanding_train': None,
                     'graph_subset': None, #0.5,
                     'batch_size': 128, # 16
                         # ----
@@ -145,11 +145,14 @@ if __name__ == '__main__':
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_01_01_63861'   # expanding_train = 0.2, graph_subset = None
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_21_20_02_66614'   # expanding_train = 0.5, graph_subset = 0.5
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090'   # expanding_train = 0.5, graph_subset = None
+
+
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_26_17_45_76159'     # expanding_train = 0.5, graph_subset = None,  samples =100 
             
 
 
 
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_26_17_45_76159'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -201,6 +204,15 @@ if __name__ == '__main__':
 
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090:   All Steps RMSE = 23.751, MAE = 13.701, MASE = 0.862, MAPE = 8.984
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_22_11_40_11090:   All Steps RMSE = 23.264, MAE = 13.698, MASE = 0.862, MAPE = 9.130
+
+        # ------------------------------------------------------------------
+        # MOEDIFIED : NO MILESTONE HPO
+        # 'expanding_train': 0.5,
+        # 'graph_subset': None,
+        #  Time: ~ 7 h
+
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_26_17_45_76159:   All Steps RMSE = 23.313, MAE = 13.504, MASE = 0.850, MAPE = 9.067
+        # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_26_17_45_76159:   All Steps RMSE = 23.143, MAE = 13.776, MASE = 0.867, MAPE = 9.266 (B = 128)
 
 
 

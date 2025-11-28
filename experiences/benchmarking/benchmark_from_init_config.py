@@ -34,8 +34,8 @@ device = torch.device('cuda:1')
 freq = '15min'  
 horizons = [4,1]  #[1,4]
 target_data = 'subway_in' 
-
-
+BATCH_SIZE = 128
+EPOCHS = 100
 
 dataset_for_coverage = target_data
 # REPEAT_TRIAL = 1 
@@ -86,6 +86,8 @@ for dataset_names in [[target_data] + ['calendar'],[target_data]]:
                 config_i['device'] = device
 
                 config_i['torch_compile'] = False 
+                config_i['batch_size'] = BATCH_SIZE
+                config_i['epochs'] = EPOCHS
                 # config_i['epochs'] = 1
 
                 dic_configs[name_i] = config_i
