@@ -8,7 +8,7 @@ import inspect
 import math 
 from torch.optim import SGD,Adam,AdamW
 try:
-    from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR,MultiStepLR
+    from torch.optim.lr_scheduler import LinearLR,ExponentialLR,SequentialLR,MultiStepLR,StepLR
 except:
     print(f'Pytorch version {torch.__version__} does not allow you to use lr-scheduler')
 
@@ -117,9 +117,13 @@ def choose_optimizer(model,args):
 
     if args.optimizer in ['adam','Adam']:
         if specific_lr is not None: 
-            return Adam(specific_lr,lr=args.lr,weight_decay= args.weight_decay)
+            return Adam(specific_lr,lr=args.lr,
+            weight_decay= args.weight_decay if hasattr(args,'weight_decay') else 0
+            )
         else:
-            return Adam(model_parameters,lr=args.lr,weight_decay= args.weight_decay)
+            return Adam(model_parameters,lr=args.lr,
+                        weight_decay= args.weight_decay if hasattr(args,'weight_decay') else 0
+                        )
     elif args.optimizer == 'sgd':
         if specific_lr is not None: 
             return SGD(specific_lr,lr=args.lr,weight_decay=args.weight_decay, momentum = args.momentum)
@@ -134,18 +138,29 @@ def choose_optimizer(model,args):
         raise NotImplementedError(f'ERROR: The optimizer is not set in args or is not implemented.')
 
 def load_scheduler(optimizer,args):
-    if (args.scheduler is None) or (math.isnan(args.scheduler)) or (args.scheduler == False):
-        scheduler = None
-    else:
-        
-        if args.torch_scheduler_type == 'MultiStepLR':
-            scheduler = MultiStepLR(optimizer, milestones=args.torch_scheduler_milestone, gamma=args.torch_scheduler_gamma)
-        elif args.torch_scheduler_type == 'warmup':
-            scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)
-            scheduler2 = ExponentialLR(optimizer, gamma=args.torch_scheduler_gamma)
-            scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[args.torch_scheduler_milestone])
+    if hasattr(args,'scheduler'):
+        if (args.scheduler is None) or (math.isnan(args.scheduler)) or (args.scheduler == False):
+            scheduler = None
         else:
-            raise NotImplementedError(f'ERROR: The scheduler is not set in args or is not implemented. Please check the args.torch_scheduler_type. Set to MultiStepLR or warmup.')
+            
+            if args.torch_scheduler_type == 'MultiStepLR':
+                scheduler = MultiStepLR(optimizer, 
+                                        milestones=args.torch_scheduler_milestone, 
+                                        gamma=args.torch_scheduler_gamma)
+
+            elif args.torch_scheduler_type == 'warmup':
+                scheduler1 = LinearLR(optimizer,total_iters = args.torch_scheduler_milestone, start_factor = args.torch_scheduler_lr_start_factor)
+                scheduler2 = ExponentialLR(optimizer, gamma=args.torch_scheduler_gamma)
+                scheduler = SequentialLR(optimizer, schedulers=[scheduler1, scheduler2], milestones=[args.torch_scheduler_milestone])
+
+            elif args.torch_scheduler_type == 'StepLR':
+                scheduler = StepLR(optimizer,
+                                        step_size=args.torch_scheduler_decay_epoch,
+                                        gamma=args.torch_scheduler_gamma)
+            else:
+                raise NotImplementedError(f'ERROR: The scheduler is not set in args or is not implemented. Please check the args.torch_scheduler_type. Set to MultiStepLR or warmup.')
+    else: 
+        scheduler = None
     return(scheduler)
 
 

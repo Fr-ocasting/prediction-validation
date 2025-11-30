@@ -14,23 +14,25 @@ def get_search_space_ray(args):
     config = {"lr": tune.loguniform(5e-5, 5e-3), # tune.qloguniform(1e-5, 1e-2, 1e-5), # tune.qloguniform(5e-5, 5e-3, 5e-5)
               "weight_decay" : tune.loguniform(5e-4, 1e-2), #tune.uniform(0.03, 0.095),# tune.uniform(0.0005, 0.1)
               #"momentum" : tune.uniform(0.80, 0.99),
-              "dropout" : tune.uniform(0.0,0.7), # tune.choice([0,0.05,0.1,0.15,0.2,0.7]),
+            #   "dropout" : tune.uniform(0.0,0.7), # tune.choice([0,0.05,0.1,0.15,0.2,0.7]),
 
 
-            # if torch_scheduler_type == 'warmup',
-                # "scheduler" :  {"torch_scheduler_milestone": tune.choice([1,5,10,20]), "torch_scheduler_gamma": tune.uniform(0.98, 0.995), "torch_scheduler_lr_start_factor": tune.uniform(0.3, 0.9)}
+            # # if torch_scheduler_type == 'warmup',
+            #     "scheduler" :  { #"torch_scheduler_milestone": tune.choice([1,5,15]), 
+            #     "torch_scheduler_gamma": tune.uniform(0.98, 0.995), 
+            #     # "torch_scheduler_lr_start_factor": tune.choice([0.1, 0.5,0.9])
+            #     }
 
             # if 'torch_scheduler_type' == 'MultiStepLR',
-                # 'torch_scheduler_milestone': [25, 45, 65],
-                  "scheduler" : {
-                    #   "torch_scheduler_milestone": tune.choice([
-                    #                                           [5, 20, 35],
-                    #                                           [10, 30, 50],
-                    #                                           [25, 45, 65],
-                    #                                           [40, 60, 80],
-                    #                                             ]),
-                                    "torch_scheduler_gamma": tune.uniform(0.01, 0.5),
-                                   }
+            "scheduler" : {
+                "torch_scheduler_milestone": tune.choice([
+                                                        [5, 20, 35],
+                                                        [10, 30, 50],
+                                                        [25, 45, 65],
+                                                        [40, 60, 80],
+                                                        ]),
+                            "torch_scheduler_gamma": tune.uniform(0.01, 0.5),
+                            }
 
 
             # "scheduler" :  {"torch_scheduler_milestone": tune.choice([1,5,10,20]), "torch_scheduler_gamma": tune.uniform(0.98, 0.999), "torch_scheduler_lr_start_factor": tune.uniform(0.2, 0.8)}

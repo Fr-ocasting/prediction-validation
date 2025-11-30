@@ -4,19 +4,11 @@ parser = argparse.ArgumentParser(description='GMAN')
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--L', type=int, default=1, help='number of STAtt Blocks')
+parser.add_argument('--nb_STAttblocks', type=int, default=1, help='number of STAtt Blocks')
 parser.add_argument('--K', type=int, default=8, help='number of attention heads')
 parser.add_argument('--d', type=int, default=8, help='dims of each head attention outputs')
-
-parser.add_argument('--decay_epoch', type=int, default=10,help='decay epoch')  ???
-parser.add_argument('--SE_file', default='./data/SE(PeMS).txt', help='spatial embedding file')
-parser.add_argument('--adj_type', default='adj', help="Type of adjacency matrix")
-# parser.add_argument('--cl_decay_steps', type=int, default=1000, help="Curriculum learning decay steps. Not used if use_curriculum_learning=False")
-# parser.add_argument('--use_curriculum_learning', type=bool, default=False, help="Learning method. Not needed here")
-parser.add_argument('--filter_type', default='random_walk', choices = ['laplacian', 'random_walk', 'dual_random_walk'], help="Filter type") ???
-parser.add_argument('--threshold', type=float, default=0.1,  # between 0.0 and 1.
-                    help="threshold to mask the Weighted Adjacency Matrix based on Gaussian Kernel Distance. < threshold become 0")
-
+parser.add_argument('--bn_decay', type=float, default=0.1, help='batch normalization decay rate')
+parser.add_argument('--adj_type', default='dist', help="Type of adjacency matrix")
 
 
 # parser.add_argument('--time_slot', type=int, default=5, help='a time step is 5 mins')
@@ -34,10 +26,16 @@ parser.add_argument('--threshold', type=float, default=0.1,  # between 0.0 and 1
 args = parser.parse_args(args=[])
 
 parser_HP = argparse.ArgumentParser(description='HP')
-# parser_HP.add_argument('--HP_max_epochs', type=int, default=50, help="Number maximum of epochs per trial with ASHA Scheduler on Ray Tune")
-# parser_HP.add_argument('--weight_decay', type=float, default=0.0005, help="weight decay for AdamW")
+
+
+parser_HP.add_argument('--optimizer', type=str, default='adam', choices = ['adam','Adam','sgd','AdamW'], help="Optimizer to use")
+parser_HP.add_argument('--loss_function_type', type=str, default='MSE', help="Loss function to use")
 parser_HP.add_argument('--batch_size', type=int, default=32, help="Batch size")
 parser_HP.add_argument('--lr', type=float, default=0.001, help="Lr")
+parser_HP.add_argument('--torch_scheduler_decay_epoch', type=int, default=10,help='decay epoch') 
+parser_HP.add_argument('--torch_scheduler_gamma', type=float, default=0.9, help='StepLR gamma')
+parser_HP.add_argument('--torch_scheduler_type', type=str, default='StepLR', help='Type of torch scheduler to use')
+
 # parser_HP.add_argument('--dropout', type=float, default=0.2, help="Dropout")
 # parser_HP.add_argument('--epochs', type=int, default=100, help="Epochs")
 # parser_HP.add_argument('--scheduler', type=bool, default=None, choices = [True, None], help="If True then acitvate a Lr scheduler with a warmup before reducing following an exponential function")

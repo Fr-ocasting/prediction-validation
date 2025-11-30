@@ -35,6 +35,9 @@ from pipeline.dl_models.STAEformer.STAEformer import STAEformer
 from pipeline.dl_models.DSTRformer.DSTRformer import DSTRformer
 from pipeline.dl_models.SARIMAX.SARIMAX import SARIMAX
 from pipeline.dl_models.XGBoost.XGBoost import XGBoost
+from pipeline.dl_models.GMAN.GMAN import GMAN
+from pipeline.dl_models.GMAN.generate_SE import load_SE_GMAN
+
 from pipeline.utils.utilities import filter_args
 from pipeline.build_inputs.load_adj import load_adj
 from pipeline.utils.SanityCheck import SanityCheck
@@ -704,17 +707,21 @@ def load_model(dataset, args,sanity_checker = None):
     vision_concatenation_late = False
     vision_out_dim = None
     added_dim_input, added_dim_output, TE_concatenation_late, TE_embedding_dim = get_added_dim(args)
-
+    args.added_dim_output = added_dim_output
+    args.added_dim_input = added_dim_input
 
     if args.model_name == 'STAEformer':
-        args.added_dim_output = added_dim_output
-        args.added_dim_input = added_dim_input
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STAEformer.__init__).parameters.keys())}
         filtered_args['sanity_checker'] = sanity_checker
-        print( '\ncontextual_kwargs: ', filtered_args['contextual_kwargs'])
         model = STAEformer(**filtered_args).to(args.device)
+    
+    if args.model_name == 'GMAN':
+        if TE_concatenation_late or vision_concatenation_late:
+            raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
+        SE = load_SE_GMAN(dataset,args)
+        model = GMAN(args, SE = SE).to(args.device)
 
     if args.model_name == 'DSTRformer':
         if TE_concatenation_late or vision_concatenation_late:

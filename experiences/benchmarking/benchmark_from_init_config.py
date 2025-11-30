@@ -44,9 +44,11 @@ dataset_for_coverage = target_data
 dic_configs = {}
 for dataset_names in [[target_data] + ['calendar'],[target_data]]:
     for horizon in horizons:
-        for model_name in ['DCRNN','RNN','LSTM','GRU','STGCN','STAEformer']: # ,'MTGNN', 'ASTGCN','CNN'
+        for model_name in ['GMAN']: # ,
+        # Fonctionnels :  'DCRNN','RNN','LSTM','GRU','STGCN','STAEformer'
+        # A faire: 'MTGNN', 'ASTGCN','CNN'
             
-            if 'calendar' == dataset_names[-1] and model_name != 'STAEformer':
+            if 'calendar' == dataset_names[-1] and not(model_name in ['STAEformer','GMAN']):
                 updated_dataset_names = dataset_names.copy()
                 updated_dataset_names[-1] = 'calendar_embedding'
             else:
@@ -79,8 +81,9 @@ for dataset_names in [[target_data] + ['calendar'],[target_data]]:
                             'contextual_kwargs' : {},
                             'denoising_names':[],
                             } 
-                config_i.update(config_backbone_model)
                 config_i.update(compilation_modification)
+                config_i.update(config_backbone_model)
+                
 
 
                 config_i['device'] = device

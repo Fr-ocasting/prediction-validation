@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 import importlib
 
 def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
-    ''' Load args for training, but also allow to '''
+    ''' Load args for tramodificationining, but also allow to '''
     # Load base args
     args = get_args(model_name,dataset_names,dataset_for_coverage)
     args.ray = False
@@ -38,8 +38,12 @@ def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modif
         setattr(args,key,value)
 
         if key == 'HP_max_epochs':
-            if args.epochs < value:
+            if hasattr(args,'epochs'):
+                if args.epochs < value:
+                    args.epochs = value
+            else:
                 args.epochs = value
+            
    
         if 'TE_' in key :
             key = key.replace('TE_','')

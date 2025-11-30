@@ -167,7 +167,6 @@ class ContextualInputEmbedding(nn.Module):
         self,
         num_nodes,
         contextual_kwargs = {},
-        sum_contextual_dim = 0,
         contextual_positions = {},
         Early_fusion_names = [],
         Late_fusion_names = [],
@@ -175,7 +174,6 @@ class ContextualInputEmbedding(nn.Module):
 
         super().__init__()
         self.num_nodes: int = num_nodes
-        self.sum_contextual_dim = sum_contextual_dim
         self.contextual_kwargs = contextual_kwargs
         self.contextual_positions = contextual_positions
         self.contextual_emb = nn.ModuleDict()
@@ -379,9 +377,13 @@ class STAEformer(nn.Module):
         self.contextual_positions = contextual_positions
         self.pos_tod = contextual_positions.get("calendar_timeofday", None)
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
-        self.contextual_input_embedding =  ContextualInputEmbedding(self.num_nodes,self.contextual_kwargs,
-                                                                    self.sum_contextual_dim,self.contextual_positions,
-                                                                    self.Early_fusion_names,self.Late_fusion_names)
+        self.contextual_input_embedding =  ContextualInputEmbedding(
+                                                    self.num_nodes,
+                                                    self.contextual_kwargs,
+                                                    self.contextual_positions,
+                                                    self.Early_fusion_names,
+                                                    self.Late_fusion_names
+                                                    )
 
         if use_mixed_proj:
             self.output_proj = nn.Linear(self.in_steps * self.output_model_dim, self.out_steps * self.output_dim// self.horizon_step)
@@ -836,7 +838,7 @@ class backbone_model(nn.Module):
         self.pos_dow = contextual_positions.get("calendar_dayofweek", None)
 
         self.contextual_input_embedding =  ContextualInputEmbedding(self.num_nodes,self.contextual_kwargs,
-                                                                    self.sum_contextual_dim,self.contextual_positions,
+                                                                    self.contextual_positions,
                                                                     self.Early_fusion_names,self.Late_fusion_names)
         
         # --- Temporal Attention Layers :

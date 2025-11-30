@@ -131,6 +131,81 @@ if __name__ == '__main__':
     from examples.benchmark import local_get_args
 
     if True:
+        model_name = 'GMAN' #'CNN'
+        target_data = 'subway_in'
+        dataset_for_coverage = [target_data] 
+        dataset_names = [target_data,'calendar']
+        args = local_get_args(model_name,
+                            args_init = None,
+                            dataset_names=dataset_names,
+                            dataset_for_coverage=dataset_for_coverage,
+                            modification = {'target_data' :target_data,
+                                            'ray':True,
+                                            'grace_period':20,
+                                            'HP_max_epochs':200, #1000, #300,
+                                            'K_fold': 2,
+                                            'evaluate_complete_ds' : True,
+                                            'expanding_train': 0.2,
+
+                                            'standardize': False,
+                                            'minmaxnorm': True,
+                                            'calendar_types':['dayofweek', 'timeofday'],
+
+                                            # Architecture 
+                                            'nb_STAttblocks': 3,
+                                            'K': 8,
+                                            'd': 8,
+                                            'bn_decay': 0.1,
+                                            'adj_type': 'dist',
+
+                                            # Optimization
+                                            'loss_function_type':'HuberLoss',
+                                            'optimizer': 'adamw',
+                                            'torch_scheduler_type': 'MultiStepLR',
+                                            'torch_scheduler_milestone': [25, 45, 65],
+                                            'torch_scheduler_gamma':0.1,
+
+                                            'batch_size': 128,
+                                            'freq': '15min',
+                                            'weight_decay': 0.0014517707449388,
+                                            'lr': 0.00071,
+                                            'dropout': 0.145169206052754,
+                                            'H':6,
+                                            'D':1,
+                                            'W':0,
+                                            'step_ahead': 1,
+                                            'horizon_step' : 1,
+                                            'unormalize_loss' : True,
+                                            'torch_scheduler': None,
+
+
+                                            'temporal_graph_transformer_encoder': False, # False # True
+                                            'need_global_attn' : False, # False # True
+                                            'data_augmentation': False, #True,  #False
+                                            'use_target_as_context': False,
+
+
+                 
+
+                                            'contextual_kwargs' : {},
+                               
+                                            'num_workers' : 0, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
+                                            'persistent_workers' : False ,# True 
+                                            'pin_memory' : False ,# True 
+                                            'prefetch_factor' : None, # 4, # None, 2,3,4,5 ... 
+                                            'drop_last' : False,  # True
+                                            'mixed_precision' : False, # True # False
+                                            'torch_compile' : False,# 'compile', # 'compile' # 'jit_script' #'trace'
+
+                                             })
+
+
+        epochs_validation = 200 #1000
+        num_samples = 200#200
+        HP_and_valid_one_config(args,epochs_validation,num_samples)
+
+        
+    if False:
         model_name = 'STGCN' #'CNN'
         target_data = 'subway_in'
         dataset_for_coverage = [target_data,'netmob_POIs'] 

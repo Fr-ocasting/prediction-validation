@@ -35,5 +35,5 @@ config = {'target_data': 'subway_in',
         'torch_scheduler_lr_start_factor': 0.3,
         'standardize': True,
         'minmaxnorm': False,
-        'calendar_types':['dayofweek', 'timeofday']
+        'calendar_types':['dayofweek', 'timeofday'],
                             }
