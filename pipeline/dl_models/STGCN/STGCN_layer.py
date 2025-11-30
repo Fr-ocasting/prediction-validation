@@ -25,6 +25,9 @@ class Align(nn.Module):
 
     def forward(self, x):   
         if self.c_in > self.c_out:
+            # print('Align Conv: from {} to {}'.format(self.c_in,self.c_out))
+            # print('self.align_conv.weight.size(): ',self.align_conv.weight.size())
+            # print('self.align_conv: ',self.align_conv)
             x = self.align_conv(x)
         elif self.c_in < self.c_out:
             batch_size, _, timestep, num_nodes = x.shape
@@ -125,8 +128,8 @@ class TemporalConvLayer(nn.Module):
         # =========
         # MODIFICATION EFFECTUEE ICI AVEC LE SELF.ENABLE_PADDING QUI N EXISTAIT PAS 
         # =========
-        #print('Entry TemporalConvLayer')
-        #print('x: ',x.size())
+        # print('-----\n   Entry TemporalConvLayer')
+        # print('x: ',x.size())
 
         # Align Residual : 
         x_in = self.align(x)
@@ -134,9 +137,9 @@ class TemporalConvLayer(nn.Module):
         if not(self.enable_padding):
             x_in = x_in[:, :, self.Kt - 1:, :]  
 
-        #print('x after align: ',x_in.size()) 
+        # print('x after align: ',x_in.size()) 
         x_causal_conv = self.causal_conv(x)
-        #print('x after causal conv: ',x_causal_conv.size())
+        # print('x after causal conv: ',x_causal_conv.size())
 
         if self.act_func == 'glu' or self.act_func == 'gtu':
             x_p = x_causal_conv[:, : self.c_out, :, :]
@@ -391,15 +394,24 @@ class OutputBlock(nn.Module):
 
         # Design Input Dimension according to contextual data integration or not: 
         in_channel_fc1 = channels[0]  #blocks[-2][0]
-
+        # print('   -------\n   Designing FC1 Input Dimension:')
+        # print('   in_channel_fc1: ',in_channel_fc1)
+        # print('   extracted_feature_dim: ',extracted_feature_dim)
+        # print('   embedding_dim: ',embedding_dim)
+        # print('   attn_late_dim: ',attn_late_dim)
         # Tackle Extracted Feature Concatenation Late:
         if concatenation_late:
             in_channel_fc1 = in_channel_fc1 + extracted_feature_dim
+            # print('   in_channel_fc1 after concatenation_late: ',in_channel_fc1)
         # Tackle Time Embedding  Late:
         if TE_concatenation_late:
             in_channel_fc1 = in_channel_fc1 +embedding_dim
+            # print('   in_channel_fc1 after TE_concatenation_late: ',in_channel_fc1)
         # Tackle Spatial Attention Late:
         in_channel_fc1 = in_channel_fc1 + attn_late_dim
+        # print('   in_channel_fc1 after Spatial Attention Late: ',in_channel_fc1)
+        # print('   -------\n')
+
         self.concatenation_late = concatenation_late
         self.TE_concatenation_late = TE_concatenation_late
         # ...
@@ -432,12 +444,13 @@ class OutputBlock(nn.Module):
             outputs MHA:[B,L,N,C]
             after temporal agg: [B,1,N,C]
         '''
-        #print('x before temporal MHA: ',x.size())
+        # print('x before temporal agg module: ',x.size())
         if not(x.numel() == 0):
             if self.temporal_graph_transformer_encoder:
                 ''' Temporal Graph Encoder where we project axis L into latent space: '''
                 # [B,C,L,N] --permute--> [B,C,N,L] 
                 x = x.permute(0,1,3,2)
+                
                 # [B,C,N,L] --Temporal PointWise Convolution--> [B,C,N,L'] --ScaledDotProduct--> [B,C,N,L']
                 x = self.temporal_agg(x) 
                 #print('x after temporal MHA: ',x.size())
@@ -458,7 +471,7 @@ class OutputBlock(nn.Module):
 
 
             # [B,C,L,N]  -> [B,C,1,N]
-            #print('x before temporal conv: ',x.size())
+            # print('x before temporal conv: ',x.size())
             x = self.temporal_conv_out(x)
             #print('x after temporal conv: ',x.size())
 
@@ -473,13 +486,12 @@ class OutputBlock(nn.Module):
                 x_vision: Optional[Tensor] = None, 
                 x_calendar: Optional[Tensor] = None,
                 contextual : Optional[list[Tensor]] = None) -> Tensor:
-        # print("\nEntry Output Block:")
+        # print("------------------------\nEntry Output Block:")
         # print('x.size(): ',x.size())   #->  [B,C,N,1]
         x = self.forward_temporal_agg(x)
-        # print('x.size after temporal conv + permute: ',x.size())
+        # print('\n   x.size after temporal conv + permute: ',x.size())
 
         # ---- Tackle Spatial Attention Late ----
-        # print('------------------------\nStart Concatenation Late')
         context_list = []
         for ds_name in self.ModuleContextualAttnLate_keys:
             spatial_attn = self.ModuleContextualAttnLate[ds_name]
@@ -497,34 +509,34 @@ class OutputBlock(nn.Module):
                 raise NotImplementedError('ERROR: Spatial Attention Late while keeping temporal dimension has not been implemented yet.\n Need to implement a temporal convolution to reduce L to 1 for each contextual data source with spatial attention and their specific embedding dim ')
 
             context_list.append(context)
-        #     print('context.size: ',context.size())
+            # print('context.size: ',context.size())
         # ----
 
         ## Concatenate Late if exists:
         cat_list: List[Tensor] = []
+
         if self.concatenation_late and x_vision is not None:
+            # print('------------------------\nStart Concatenation Late')
             # print('   Concatenation Late with x_vision of size: ',x_vision.size())
             #assert x_vision is not None
             # Concat [B,1,N,Z] + [B,1,N,L'] -> [B,1,N,Z+L']
-            # print('x_vision.size(): ',x_vision.size())
             if x_vision.dim() == 3: 
                 x_vision = x_vision.unsqueeze(1)  # [B,N,Z] -> [B,1,N,Z] 
 
             # IF Spatial Attention while keeping temporal dim
             if x_vision.dim() == 4 and x_vision.size(1) != 1:
+                # print('   If temporal conv is needed for x_vision of size: ',x_vision.size())
                 x_vision = x_vision.permute(0,3,1,2) # [B,L,N,C] -> [B,C,L,N]
                 x_vision = self.out_temporal_conv_vision(x_vision) # [B,C,L,N] -> [B,Z,1,N]
                 x_vision = x_vision.permute(0,2,3,1) #  [B,Z,1,N] -> [B,1,N,Z]
-            # print('x_vision reduced',x_vision.size())
+            # print('   final x_vision: ',x_vision.size())
 
 
             cat_list.append(x_vision) 
 
-        # print('x_calendar.size(): ',x_calendar.size() if x_calendar is not None else None)
         if self.TE_concatenation_late and x_calendar is not None:
-            # print('   Time Embedding Concatenation Late with x_calendar of size: ',x_calendar.size())
+            # print('------------------------\nTime Embedding Concatenation Late with x_calendar of size: ',x_calendar.size())
             # Reduce channel dim of calendar to 1 (cause correspond to repeated channel and x channel has been reduce to 1)
-            # print('x_calendar.size(): ',x_calendar.size())
             x_calendar = x_calendar[:,0:1,:,:]  # [B,C,N,L_calendar] -> [B,1,N,L_calendar]
             # print('keep only one dimension (all identical): x_calendar.size(): ',x_calendar.size())
             # Concat [B,1,N,Z] + [B,1,N,L_calendar]-> [B,1,N,Z+L_calendar]

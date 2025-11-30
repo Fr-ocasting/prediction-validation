@@ -37,7 +37,7 @@ from pipeline.dl_models.SARIMAX.SARIMAX import SARIMAX
 from pipeline.dl_models.XGBoost.XGBoost import XGBoost
 from pipeline.dl_models.GMAN.GMAN import GMAN
 from pipeline.dl_models.GMAN.generate_SE import load_SE_GMAN
-
+from pipeline.dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
 from pipeline.utils.utilities import filter_args
 from pipeline.build_inputs.load_adj import load_adj
 from pipeline.utils.SanityCheck import SanityCheck
@@ -52,7 +52,7 @@ import importlib
 #     return func(**filered_args) 
 
 
-def load_spatial_attn_model(args,ds_name,sanity_checker):
+def load_spatial_attn_model(dataset,args,ds_name,sanity_checker):
     # ---- If feature extractor is a simple temporal projection (Linear layer) :
     if ('attn_kwargs' in args.contextual_kwargs[ds_name].keys())  and ('simple_embedding_dim' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys()) and (args.contextual_kwargs[ds_name]['attn_kwargs']['simple_embedding_dim']>0):
         class simple_t_embedding(nn.Module):
@@ -78,56 +78,108 @@ def load_spatial_attn_model(args,ds_name,sanity_checker):
 
     # --- If feature extractor if Backbone model STAEformer : 
     elif ('backbone_model' in args.contextual_kwargs[ds_name].keys()) and (args.contextual_kwargs[ds_name]['backbone_model']):
-        script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
+        script = importlib.import_module(f"pipeline.dl_models.{args.model_name}.{args.model_name}")
         added_dim_input, _, _, _ = get_added_dim(args)
-        args_ds_i = {
-            'num_nodes' : args.num_nodes,
-            'L' : args.L,
-            'time_step_per_hour': args.time_step_per_hour,
-            'time_step_per_hour': args.time_step_per_hour,
-            'C': args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1,
-            'out_dim_factor': args.out_dim_factor,
-            'dropout': args.dropout,
-            'use_mixed_proj': True,
-            'contextual_positions': args.contextual_positions,
-            'horizon_step': args.horizon_step,
-            'added_dim_input': added_dim_input,
-            'contextual_kwargs': args.contextual_kwargs,
-            'Q_num_nodes': args.num_nodes,
-            'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit'],
-            'cross_attention': args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False,
-            'Early_fusion_names': args.Early_fusion_names,
-            'Late_fusion_names': args.Late_fusion_names,
-                    }
-        args_ds_i = Namespace(**args_ds_i)
-        for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
-                setattr(args_ds_i,key,value)
-        setattr(args_ds_i,'sanity_checker',sanity_checker)
+
+        if args.model_name == 'STAEformer':
+            args_ds_i = {
+                'num_nodes' : args.num_nodes,
+                'L' : args.L,
+                'time_step_per_hour': args.time_step_per_hour,
+                'time_step_per_hour': args.time_step_per_hour,
+                'C': args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1,
+                'out_dim_factor': args.out_dim_factor,
+                'dropout': args.dropout,
+                'use_mixed_proj': True,
+                'contextual_positions': args.contextual_positions,
+                'horizon_step': args.horizon_step,
+                'added_dim_input': added_dim_input,
+                'contextual_kwargs': args.contextual_kwargs,
+                'Q_num_nodes': args.num_nodes,
+                'KV_num_nodes': args.contextual_kwargs[ds_name]['n_spatial_unit'],
+                'cross_attention': args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False,
+                'Early_fusion_names': args.Early_fusion_names,
+                'Late_fusion_names': args.Late_fusion_names,
+                        }
+            args_ds_i = Namespace(**args_ds_i)
+            for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
+                    setattr(args_ds_i,key,value)
+            setattr(args_ds_i,'sanity_checker',sanity_checker)
 
 
-        importlib.reload(script)
-        func = script.backbone_model
-        filered_args = filter_args(func, args_ds_i)
-        backbone_model = func(**filered_args)
+            importlib.reload(script)
+            func = script.backbone_model
+            filered_args = filter_args(func, args_ds_i)
+            backbone_model = func(**filered_args)
 
-        class wrapper_backbone_model(nn.Module):
-            def __init__(self,model):
-                super(wrapper_backbone_model,self).__init__()
-                self.model = model
-                self.cross_attention = args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False
+            class wrapper_backbone_model(nn.Module):
+                def __init__(self,model):
+                    super(wrapper_backbone_model,self).__init__()
+                    self.model = model
+                    self.cross_attention = args.contextual_kwargs[ds_name]['attn_kwargs']['cross_attention'] if 'cross_attention' in args.contextual_kwargs[ds_name]['attn_kwargs'].keys() else False
 
-            def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dic_t_emb: Tensor = None, dim: int = None) -> Tensor:
-                # print('\nStart backbone model')
-                # print('   x_contextual size before backbone model: ',x_contextual.size())
-                if x_contextual.dim()==3:
-                    x_contextual = x_contextual.unsqueeze(1)
-                if self.cross_attention:
-                    x_contextual = self.model(x = x,x_contextual= x_contextual,x_calendar = x_calendar,dic_t_emb=dic_t_emb)
-                else:
-                    x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar,dic_t_emb=dic_t_emb)
-                # print('   x_contextual size after backbone model and transpose: ',x_contextual.size())
-                return x_contextual
-        return wrapper_backbone_model(backbone_model)
+                def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dic_t_emb: Tensor = None, dim: int = None) -> Tensor:
+                    # print('\nStart backbone model')
+                    # print('   x_contextual size before backbone model: ',x_contextual.size())
+                    if x_contextual.dim()==3:
+                        x_contextual = x_contextual.unsqueeze(1)
+                    if self.cross_attention:
+                        x_contextual = self.model(x = x, x_contextual= x_contextual,x_calendar = x_calendar,dic_t_emb=dic_t_emb)
+                    else:
+                        x_contextual = self.model(x = x_contextual,x_contextual= x_contextual,x_calendar = x_calendar,dic_t_emb=dic_t_emb)
+                    # print('   x_contextual size after backbone model and transpose: ',x_contextual.size())
+                    return x_contextual
+            return wrapper_backbone_model(backbone_model)
+
+        elif args.model_name == 'STGCN': 
+            args_ds_i = Namespace(**vars(args))
+            args_ds_i.num_nodes = args.contextual_kwargs[ds_name]['n_spatial_unit']
+            args_ds_i.C = args.contextual_kwargs[ds_name]['C'] if 'C' in args.contextual_kwargs[ds_name].keys() else 1
+            args_ds_i.dataset_names = [ds_name]
+            args_ds_i.contextual_kwargs = {}
+            args_ds_i.args_embedding = Namespace()
+            # if 'calendar_embedding' in args.dataset_names:
+            #     args_ds_i.dataset_names.append('calendar_embedding')
+
+            # ---- A factoriser avec celui plus haut ...
+            for key,value in args.contextual_kwargs[ds_name]['attn_kwargs'].items():
+                    setattr(args_ds_i,key,value)
+            # setattr(args_ds_i,'sanity_checker',sanity_checker)
+
+
+
+
+            # Specific to STGCN : 
+            Ko = get_output_kernel_size(args_ds_i)
+            args_ds_i = get_block_dims(args_ds_i,Ko,exception=True)
+            gso,_ = get_gso_from_adj(dataset, args_ds_i)
+            # ---
+
+
+            importlib.reload(script)
+            func = script.STGCN
+            backbone_model = func(args = args_ds_i,blocks = args_ds_i.blocks, gso=gso,Ko = args_ds_i.L, backbone = True)
+            # ----
+
+            class wrapper_backbone_model(nn.Module):
+                def __init__(self,model):
+                    super(wrapper_backbone_model,self).__init__()
+                    self.model = model
+
+                def forward(self, x: Tensor, x_contextual: Tensor = None,x_calendar : Tensor = None,dic_t_emb: Tensor = None, dim: int = None) -> Tensor:
+                    # print('\n------------------------------\n # Start backbone model')
+                    # print('   x_contextual size before backbone model: ',x_contextual.size())
+                    if x_contextual.dim()==3:
+                        x_contextual = x_contextual.unsqueeze(1)
+                    
+                    x_contextual = self.model(x = x_contextual,x_calendar = x_calendar,contextual= None,x_vision_early = None,x_vision_late = None)
+                    # print('   x_contextual size after backbone model pass: ',x_contextual.size())
+                    # print('\n------------------------------\n # END FORWARD backbone model')
+                    return x_contextual
+            return wrapper_backbone_model(backbone_model)    
+
+        else:
+            raise NotImplementedError(f"Backbone model {args.model_name} has not been implemented for spatial selection / spatial attention")
     #  ------------------------------------------------
 
     # ---- If feature extractor is our own spatial-attn module : 
@@ -288,7 +340,7 @@ class full_model(nn.Module):
         self.tackle_node_attributes(args)
 
         # === Tackle module for spatial selection of contextual data: 
-        self.build_spatial_attn_modules(args)
+        self.build_spatial_attn_modules(dataset,args)
 
         # === TE ===
         self.te = TE_module(args).to(args.device) if 'calendar_embedding' in args.dataset_names else None
@@ -340,12 +392,12 @@ class full_model(nn.Module):
         #     (not args.contextual_kwargs['netmob_POIs']['need_global_attn']):
         #     self.nb_add_channel = len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_apps'])*len(args.contextual_kwargs['netmob_POIs']['NetMob_transfer_mode'])*len(args.contextual_kwargs['netmob_POIs']['NetMob_selected_tags']) 
 
-    def build_spatial_attn_modules(self,args):
+    def build_spatial_attn_modules(self,dataset,args):
         for ds_name in self.ds_which_need_spatial_attn_per_station:
             if ('netmob' in ds_name) or ('subway_out' in ds_name):
                 init_spatial_dims = [getattr(args, f"n_units_{ds_name}_{k}") for k in range(len(getattr(args, f"pos_{ds_name}")))] # range(len(self.contextual_positions[ds_name]))
                 self.spatial_attn_per_station[ds_name] = nn.ModuleList([
-                    load_spatial_attn_model(args,ds_name,self.sanity_checker)
+                    load_spatial_attn_model(dataset,args,ds_name,self.sanity_checker)
                     for init_spatial_dim in init_spatial_dims
                 ])
             else:
@@ -357,7 +409,7 @@ class full_model(nn.Module):
             # else:
             #     L_out = None
             # condition_i = ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and ('stack_consistent_datasets' in args.contextual_kwargs[ds_name].keys())
-            self.global_s_attn[ds_name] = load_spatial_attn_model(args,ds_name, self.sanity_checker
+            self.global_s_attn[ds_name] = load_spatial_attn_model(dataset,args,ds_name, self.sanity_checker
                                                                     #  query_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L, 
                                                                     #  key_dim=1 if hasattr(args.contextual_kwargs[ds_name],'keep_temporal_dim') and args.contextual_kwargs[ds_name]['keep_temporal_dim'] else args.L,
                                                                     #  output_temporal_dim = L_out,
@@ -414,8 +466,9 @@ class full_model(nn.Module):
         #print('ds_which_need_spatial_attn_per_station: ',self.ds_which_need_spatial_attn_per_station)
         # print('self.spatial_attn_per_station.keys(): ',self.spatial_attn_per_station.keys())
         # print('self.dic_stacked_contextual:', self.dic_stacked_contextual)
+
         for ds_name, attn_list in self.spatial_attn_per_station.items():
-            # print('Dataset: ',ds_name)
+            print('Dataset: ',ds_name)
             pos_list = self.contextual_positions[ds_name] 
 
             extracted_feature_for_spatial_unit_i: List[torch.Tensor] = []
@@ -437,7 +490,6 @@ class full_model(nn.Module):
                     L_early_extracted_feature.append(extracted_feature_for_spatial_unit_i)
                 if ds_name in self.Late_fusion_names:
                     L_late_extracted_feature.append(extracted_feature_for_spatial_unit_i)
-
 
         if len(L_early_extracted_feature) > 0:
             early_extracted_features = torch.cat(L_early_extracted_feature,dim= -1)
@@ -482,16 +534,15 @@ class full_model(nn.Module):
         # for ds_name_i,attention_module_i in self.global_s_attn.items():
         for ds_name_i in self.KEY_global_s_attn:
             attention_module_i = self.global_s_attn[ds_name_i]
-            #print('Attention Module: ',attention_module_i)
+            # print('Attention Module: ',attention_module_i)
             
             pos_i = self.dict_ds_which_need_attn2pos[ds_name_i] 
             node_attr = contextual[pos_i] 
             # Spatial Attention: 
             # print('node_attr size before attn: ',node_attr.size())
-            # print('projected_x size: ',projected_x.size())
-            # print('node_attr size: ',node_attr.size())
 
             if self.dic_stacked_contextual[ds_name_i]:
+                # print('\nStacked ds_name_i: ',ds_name_i)
                 projected_x,node_attr = attention_module_i(x,x_contextual = node_attr)   # [B,N,Z*L]
                 if self.dic_stacked_consistant_contextual[ds_name_i]:
                     if node_attr.dim() == 3:
@@ -509,8 +560,13 @@ class full_model(nn.Module):
                 # print('\nds_name_i: ',ds_name_i)
                 # print('init node_attr size: ',node_attr.size())
                 dic_t_emb = contextual
+                # print('pass x and node attr through attention module ')
                 node_attr = attention_module_i(x,x_contextual = node_attr, x_calendar = x_calendar,dic_t_emb=dic_t_emb, dim = 2 )  
+                # print('inputs passed through attention module ')
+
                 # Tackle case where Extracted feature need to be Fusion at the Early stage of the backbone model :
+                # print('Early fusion names: ',self.Early_fusion_names)
+                # print('ds_name_i in Early fusion names: ',ds_name_i in self.Early_fusion_names)
                 if ds_name_i in self.Early_fusion_names:
                     # print('Early fusion for dataset: ',ds_name_i)
                     if Early_extracted_features is not None:
@@ -518,6 +574,8 @@ class full_model(nn.Module):
                     else:
                         Early_extracted_features = node_attr
                 # Tackle case where Extracted feature need to be Fusion at the Late stage of the backbone model :
+                # print('Late fusion names: ',self.Late_fusion_names)
+                # print('ds_name_i in Late fusion names: ',ds_name_i in self.Late_fusion_names)
                 if ds_name_i in self.Late_fusion_names:
                     # print('Late fusion for dataset: ',ds_name_i)
                     if Late_extracted_features is not None:
@@ -531,6 +589,8 @@ class full_model(nn.Module):
                 #     # print('extracted_features size after cat: ',extracted_features.size())
                 # else:
                 #     extracted_features = node_attr
+
+        # print('Late extracted features: ',Late_extracted_features.size() if Late_extracted_features is not None else None)
 
         return L_node_attributes,L_projected_x,Early_extracted_features,Late_extracted_features
     

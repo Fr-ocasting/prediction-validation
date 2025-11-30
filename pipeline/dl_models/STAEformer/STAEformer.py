@@ -170,6 +170,7 @@ class ContextualInputEmbedding(nn.Module):
         contextual_positions = {},
         Early_fusion_names = [],
         Late_fusion_names = [],
+        t_proj = 'linear'
     ):
 
         super().__init__()

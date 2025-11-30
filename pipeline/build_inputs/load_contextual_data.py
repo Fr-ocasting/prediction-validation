@@ -251,6 +251,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                     #    Case 2.i:   in case we compute node attributes with attention or in case 'per_station' is in the name of the contextual dataset:
                     weather_in_backbone = ('weather' in args.contextual_kwargs.keys()) and ('emb_dim' in args.contextual_kwargs['weather'].keys()) and ('backbone_model' in kwargs_i.keys()) and kwargs_i['backbone_model']
                     if (kwargs_i['need_global_attn']) or ('per_station' in name_i): 
+                        print('  name_i:',name_i)
                         if 'latent_dim' in kwargs_i['attn_kwargs'].keys() :
                             latent_dim = kwargs_i['attn_kwargs']['latent_dim'] 
                             
@@ -281,6 +282,7 @@ def tackle_contextual(target_ds,invalid_dates,coverage_period,args,normalize = T
                     ##  Case 1: We don't stack contextual Data
                     if not kwargs_i['stacked_contextual']:
                         args.contextual_kwargs[name_i]['out_dim'] = add_dim
+                        # print(f"   Contextual dataset '{name_i}' out_dim: {args.contextual_kwargs[name_i]['out_dim']}")
                     
                     ##  Case 2: We stack contextual Data
                     else:

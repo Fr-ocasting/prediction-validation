@@ -13,8 +13,9 @@ from pipeline.build_inputs.load_adj import load_adj
 from pipeline.dl_models.STGCN.STGCN_utilities import calc_chebynet_gso,calc_gso
 
 def is_condition(args):
-    condition1 = not(hasattr(args,'args_vision') and len(vars(args.args_vision)) > 0)  and not(getattr(args.args_embedding,'concatenation_early'))
-    condition2 = not(len(vars(args.args_embedding))>0) and not(getattr(args.args_vision,'concatenation_early'))
+    condition1 = not(hasattr(args,'args_vision') and len(vars(args.args_vision)) > 0)  and (not(hasattr(args.args_embedding,'concatenation_early')) or not(getattr(args.args_embedding,'concatenation_early')))
+    # condition2 = not(len(vars(args.args_embedding))>0) and not(getattr(args.args_vision,'concatenation_early'))
+    condition2 = not(len(vars(args.args_embedding))>0) and (hasattr(args,'args_vision') and len(vars(args.args_vision)) > 0) and (not(getattr(args.args_vision,'concatenation_early')))
     condition3 = (len(vars(args.args_embedding))>0) and (hasattr(args,'args_vision') and len(vars(args.args_vision)) > 0) and (not(getattr(args.args_embedding,'concatenation_early')) and not(getattr(args.args_vision,'concatenation_early')))
     return(condition1 or condition2 or condition3)
 
@@ -61,13 +62,14 @@ def load_blocks(c_in,stblock_num,temporal_h_dim,spatial_h_dim,output_h_dim):
     return(blocks)
 
 
-def get_block_dims(args,Ko):
+def get_block_dims(args,Ko,exception = False):
     blocks = load_blocks(args.C, args.stblock_num,args.temporal_h_dim, args.spatial_h_dim,args.output_h_dim)
     #blocks = args.blocks.copy()
     if Ko > 0:
         blocks[-1] = blocks[-1]*2
-        if  not(args.target_data in args.dataset_names) and is_condition(args):
-            blocks[-1][0] = 0
+        if not exception:
+            if  not(args.target_data in args.dataset_names) and is_condition(args):
+                blocks[-1][0] = 0
     blocks.append([args.out_dim])
 
     args.blocks = blocks
