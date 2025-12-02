@@ -68,6 +68,8 @@ class KFoldSplitter(object):
         return(subway_ds_tmps)
     
     def load_init_ds(self,normalize = False):
+        if type(self.folds) == np.ndarray:
+            self.folds = list(self.folds)
         if self.folds == [0]:
             print('---- No K-fold')
             target_ds,contextual_ds,args = load_complete_ds(self.args,normalize = normalize,k=0)

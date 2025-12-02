@@ -29,7 +29,6 @@ def HP_and_valid_one_config(args,epochs_validation,num_samples):
     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
     return trial_id
 
-
 def set_one_hp_tuning_and_evaluate_DA(args=None,epochs_validation=None,num_samples=None):
 
     # HP tuning and return the trial-id : 
@@ -202,7 +201,13 @@ if __name__ == '__main__':
 
         epochs_validation = 200 #1000
         num_samples = 200#200
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+
+        if False: 
+            HP_and_valid_one_config(args,epochs_validation,num_samples)
+        if True:
+            trial_id = 'subway_in_calendar_GMAN_HuberLossLoss_2025_11_30_18_01_76652'
+            modification = {'epochs':epochs_validation}
+            train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
         
     if False:
