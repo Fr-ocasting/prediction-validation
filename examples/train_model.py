@@ -165,8 +165,10 @@ if model_name == 'STGCN':
 
 def load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modification,trial_id):
     ds,args,_,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
+    print('Loaded dataset with args:')
     for key,value in vars(args).items():
         print(f"{key}: {value}")
+
     if args.model_name in ['SARIMAX','XGBoost']:
         trainer,model = ML_trainer(ds,args)
     else:

@@ -292,8 +292,17 @@ def display_information_related_to_comparison(dic_error_agg_h,args_init1,metric_
 
 
 def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,h_idx,
-                        min_flow,stations,training_mode,metric_list,clustered_stations,folder_path =None,
-                        save_name = None,bool_plot = True,dates = None):
+                        stations,training_mode,metric_list,clustered_stations,
+                        folder_path =None,
+                        save_name = None,
+                        bool_plot = True,
+                        dates = None,
+                        width_ratios  = [1,10,2],
+                        fig_size_x = 10,
+                        fig_size_y = 6,
+                        size_colorbar = "4%",
+                        min_flow = 20, 
+                        ):
     # Get previous and predictions
     previous,predict1,predict2,real = get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx)
 
@@ -301,7 +310,11 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
     # Get mean of Error Metrics (MAE, MSE, RMSE, MASE, ...): 
     L_dic_error = []
     for k in range(predict1.size(-1)):
-        _,dic_error = get_gain_from_mod1(real,predict1[...,k],predict2[...,k],previous,min_flow=20,metrics = ['mse','mae','mape'],acceptable_error= 0,mape_acceptable_error=0)
+        _,dic_error = get_gain_from_mod1(real,predict1[...,k],predict2[...,k],previous,
+                                         min_flow= min_flow,
+                                         metrics = ['mse','mae','mape'],
+                                         acceptable_error= 0,
+                                         mape_acceptable_error=0)
         L_dic_error.append(dic_error)
 
     agg_dic_error = {}
@@ -312,10 +325,22 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
     # --- 
 
     # Plotting
-    comparisonplotter = ComparisonPlotter(figsize_x=10,clustered_stations=clustered_stations)
-    dic_gain_agg,dic_error_agg = comparisonplotter.plot_gain_between_models_with_temporal_agg(ds1,agg_dic_error,stations,temporal_aggs,training_mode,metric_list,step_ahead,
-                                                                                                folder_path=folder_path,save_name=save_name,bool_plot = bool_plot,dates=dates)
-    dic_error_agg_h[step_ahead] = dic_error_agg
+    comparisonplotter = ComparisonPlotter(clustered_stations=clustered_stations,
+                                            width_ratios= width_ratios, 
+                                            fig_size_x = fig_size_x,
+                                            fig_size_y = fig_size_y,
+                                            size_colorbar = size_colorbar,
+                                          )
+    comparisonplotter.plot_gain_between_models_with_temporal_agg(
+                                        ds1,dic_error,
+                                        training_mode,stations, 
+                                        dates,temporal_aggs,
+                                        metric_list,
+                                        bool_plot=bool_plot,
+                                        folder_path = folder_path,
+                                        save_name = save_name
+                                         )
+    dic_error_agg_h[step_ahead] = comparisonplotter.dic_error_agg
 
     return dic_error_agg_h,real
 
@@ -340,13 +365,15 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
     # -- Comparison plotting for each horizon : 
     for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
         h_idx = step_ahead// args_init1.horizon_step
+
         dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,
                                                    full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,
-                                                   h_idx,min_flow,stations,training_mode,metric_list,clustered_stations,
+                                                   h_idx,stations,training_mode,metric_list,clustered_stations,
                                                    folder_path = folder_path,
                                                    save_name = f"{save_name}_h{step_ahead}",
                                                    bool_plot = bool_plot,
-                                                   dates = dates)
+                                                   dates = dates,
+                                                   min_flow = min_flow,)
 
     # --
 
@@ -444,159 +471,148 @@ def load_trainer_ds_from_1_args(args_init,modification = {},save_folder = None,t
 class ComparisonPlotter:
     """
     Class to plot the gain between two models with different temporal aggregations.
+    Updated to force heatmaps to fill space and use a thin, dedicated colorbar axis.
     """
-    def __init__(self, figsize_x=10, clustered_stations=None):
-        self.figsize_x = figsize_x
-        self.dic_gain_agg = {}
-        self.dic_error_agg = {}
-        self.dic_gain_agg_per_cluster = {}
-        self.clustered_stations = clustered_stations  # dict of list of clustered stations if any, else None
+    def __init__(self,
+    clustered_stations=None,
+    width_ratios= None, 
+    fig_size_x = None,
+    fig_size_y = None,
+    cbar_magic_args = False,
+    size_colorbar = "4%",
+    ):
+        self.clustered_stations = clustered_stations 
+        self.width_ratios = width_ratios
+        self.size_colorbar = size_colorbar
+        self.fig_size_x = fig_size_x
+        self.fig_size_y = fig_size_y
+        self.cbar_magic_args = cbar_magic_args
 
+    def _aggregated_plot(self, dic_gain21, ax,yaxis):
+        ax = plot_coverage_matshow(
+            pd.DataFrame(pd.DataFrame(dic_gain21).mean(axis=1)),
+            cmap='RdYlBu', save=None, 
+            bool_reversed=True, v_min=-10, v_max=10, display_values=True, 
+            cbar_magic_args = self.cbar_magic_args,
+            ax = ax,
+            size_colorbar = self.size_colorbar,
+            xaxis = "All units",
+            yaxis = yaxis,  
+        )
+        ax.set_title(f"Aggregated\nthrough\nstations")
+        return ax
 
-    def _init_fig_axes_sizes(self,temporal_aggs):
-        if self.clustered_stations is None: 
-            nb_y_axes = 2
-        else:
-            nb_y_axes = 3
-
-        width_ratios = [1,5] if self.clustered_stations is None else [1,10,4]
-        if len(temporal_aggs) == 1:
-                fig, axes = plt.subplots(1, nb_y_axes, figsize=(self.figsize_x,6))
-        else:
-            # Create a default height of 1 for all rows
-            height_ratios = [1] * len(temporal_aggs)
-            coef_y_size = 1
-
-            if temporal_aggs == ['hour','date','weekday']:
-                gridspec_kw={'width_ratios': width_ratios,'height_ratios': [4,3,2]}
-
-            elif 'working_day_hour' in temporal_aggs or 'weekday_hour_minute' in temporal_aggs:
-                if 'working_day_hour' in temporal_aggs:
-                    special_index = temporal_aggs.index('working_day_hour')
-                    height_ratios[special_index] = 3
-                    coef_y_size = coef_y_size+2
-                if  'weekday_hour_minute' in temporal_aggs:
-                    special_index = temporal_aggs.index('weekday_hour_minute')
-                    height_ratios[special_index] = 8
-                    coef_y_size = coef_y_size+3
-
-                gridspec_kw = {'width_ratios': width_ratios, 'height_ratios': height_ratios}
-                
-            else:
-                gridspec_kw={'width_ratios': width_ratios,'height_ratios': [1 for _ in range(len(temporal_aggs)-1)]+[2]}
-            if self.clustered_stations is None: 
-                fig, axes = plt.subplots(len(temporal_aggs), nb_y_axes, figsize=(self.figsize_x,6*len(temporal_aggs)*coef_y_size),gridspec_kw=gridspec_kw)
-
-        self.fig = fig
-        self.axes = axes
-
-    def _aggregated_plot(self,dic_gain21,metric,temporal_aggs,i):
-        if len(temporal_aggs) == 1:
-            plt.sca(self.axes[0])
-        else:
-            plt.sca(self.axes[i,0])
-
-        plot_coverage_matshow(pd.DataFrame(pd.DataFrame(dic_gain21).mean(axis=1)),cmap = 'RdYlBu', save=None, 
-                            cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-10,v_max=10,display_values = True,bool_plot = self.bool_plot)
-        
-        if len(temporal_aggs) == 1:
-            self.axes[0].set_title(f"Aggregated through stations")
-        else:
-            self.axes[i,0].set_title(f"Aggregated through stations")
-
-
-    def _plot_per_station(self,dic_gain21,metric,temporal_agg,temporal_aggs,i,error_pred1_agg,error_pred2_agg):
-        if len(temporal_aggs) == 1:
-            plt.sca(self.axes[1])
-        else:
-            plt.sca(self.axes[i,1])
-
+    def _plot_per_station(self, dic_gain21, ax, metric):
         if self.clustered_stations is None: 
             df_matshow = pd.DataFrame(dic_gain21)
         else:
             df_matshow = pd.DataFrame(dic_gain21)[list(itertools.chain.from_iterable([v for k,v in sorted(self.clustered_stations.items())]))]
-        plot_coverage_matshow(df_matshow,cmap = 'RdYlBu', save=None, 
-                            cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-20,v_max=20,display_values = False,bool_plot = self.bool_plot)
-        if len(temporal_aggs) == 1:
-            self.axes[1].set_title(f"No Spatial Aggregation")
-        else:
-            self.axes[i,1].set_title(f"No Spatial Aggregation") 
-        self.dic_gain_agg[metric][temporal_agg] = dic_gain21
-        self.dic_error_agg[metric][temporal_agg] = {'error_pred1_agg': error_pred1_agg, 'error_pred2_agg': error_pred2_agg}
+            
+        ax = plot_coverage_matshow(
+            df_matshow,
+            cmap='RdYlBu', save=None, 
+            cbar_label=f'{metric.upper()} Gain (%)',
+            bool_reversed=True, v_min=-20, v_max=20, display_values=False, 
+            cbar_magic_args = self.cbar_magic_args,
+            ax = ax,
+            size_colorbar = self.size_colorbar,
+            xaxis = "Spatial Units",
+            yaxis = None
+        )
+        ax.set_title(f"No\nSpatial\nAggregation") 
+        return ax
 
-    def _plot_per_cluster(self,dic_gain21,metric,temporal_agg,temporal_aggs,i):
+    def _plot_per_cluster(self, dic_gain21, ax):
         if self.clustered_stations is not None: 
-            if len(temporal_aggs) == 1:
-                plt.sca(self.axes[2])
-            else:
-                plt.sca(self.axes[i,2])
-
             df_gain21 = pd.DataFrame(dic_gain21)
             df_gain_aggregated_per_cluster = pd.DataFrame(index=df_gain21.index)
             for cluster_id, station_list in sorted(self.clustered_stations.items()):
                 df_gain_aggregated_per_cluster[cluster_id] = df_gain21[station_list].mean(axis=1)
 
-            plot_coverage_matshow(df_gain_aggregated_per_cluster,cmap = 'RdYlBu', save=None, 
-                cbar_label=f'{metric.upper()} Gain (%)',bool_reversed=True,v_min=-10,v_max=10,display_values = True,bool_plot = self.bool_plot)
+            ax = plot_coverage_matshow(
+                df_gain_aggregated_per_cluster,
+                cmap='RdYlBu', save=None, 
+                # cbar_label=f'{metric.upper()} Gain (%)',
+                bool_reversed=True, v_min=-10, v_max=10, display_values=True, 
+                cbar_magic_args = self.cbar_magic_args,
+                ax = ax,
+                size_colorbar = self.size_colorbar,
+                xaxis = "Clusters",
+                yaxis = None
+            )
+            ax.set_title(f"Aggregated\nthrough\ncluster")
+            return ax,df_gain_aggregated_per_cluster
+        else:
+            return None
+        
 
-            if len(temporal_aggs) == 1:
-                self.axes[2].set_title(f"Aggregated through cluster of stations")
-            else:
-                self.axes[i,2].set_title(f"Aggregated through cluster of station") 
 
-            self.dic_gain_agg_per_cluster[metric][temporal_agg] = df_gain_aggregated_per_cluster
-
-
-    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error,stations,temporal_aggs,training_mode,metrics,
-                                                   step_ahead,folder_path=None,save_name=None,bool_plot=True,dates = None):
-        """
-        Plot the gain between two models for different temporal aggregations.
-        Args:
-            ds (Dataset): Dataset containing the data.
-            dic_error (dict): Dictionary containing error metrics.
-            stations (list): List of stations to consider.
-            temporal_aggs (list): List of temporal aggregations to consider :
-                >>>> choices = ['hour', 'date', 'weekday', 'weekday_hour', 'weekday_hour_minute', 'daily_period', 'working_day_hour']
-            training_mode (str): Mode for training, e.g., 'train', 'val', 'test'.
-            metrics (list): List of metrics to compute gains for.
-            step_ahead (int): Step ahead for predictions.
-        Returns:
-            dic_gain_agg (dict): Dictionary containing gain values for each metric and temporal aggregation.
-            heatmap plot for each metric and temporal aggregation.
-        """
-        # -- Init
-        self.figsize_x = max(8,0.7*len(stations))
-        self.dic_gain_agg = {metric : {} for metric in metrics}
-        self.dic_error_agg  = {metric : {} for metric in metrics}
-        self.dic_gain_agg_per_cluster = {metric : {} for metric in metrics}
+    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error, training_mode,stations, dates,temporal_aggs,
+                                                   metric_list,
+                                                   bool_plot=True,
+                                                   save_name = None,
+                                                   folder_path = None,
+                                                   ):
         self.bool_plot = bool_plot
+        self.dic_gain_agg = {metric: {} for metric in metric_list}
+        self.dic_error_agg = {metric: {} for metric in metric_list}
+        self.dic_gain_agg_per_cluster = {metric: {} for metric in metric_list}
 
-        for metric in metrics:
-            self._init_fig_axes_sizes(temporal_aggs)
+        # self._init_fig_axes_sizes(temporal_aggs, len(stations))
+        for metric in metric_list:
+            for i, temporal_agg in enumerate(temporal_aggs):
+                if temporal_agg == 'working_day_hour':
+                    str_temporal_agg = 'Hour on Business Day'
+                else: 
+                    str_temporal_agg  = temporal_agg
+                
+                if temporal_agg == 'working_day_hour':
+                    yaxis = 'Hour'
+                else:
+                    yaxis = str_temporal_agg
 
-            for i,temporal_agg in enumerate(temporal_aggs):
-                title = f"Average {metric.upper()} Gain(%) per {temporal_agg} of \nModel2 compared to Model1 at horizon {step_ahead}"
+
+                title = f"Average {metric.upper()} Gain(%) per {str_temporal_agg}" #  at (H{step_ahead})"
+
                 if metric == 'mase':
                     dic_gain21,error_pred1_agg,error_pred2_agg = get_df_mase_and_gains(ds,dic_error,training_mode,temporal_agg,stations,dates=dates)
                 else:
                     dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg,stations,dates=dates)
 
-                self._aggregated_plot(dic_gain21,metric,temporal_aggs,i)
-                self._plot_per_station(dic_gain21,metric,temporal_agg,temporal_aggs,i,error_pred1_agg,error_pred2_agg)
-                self._plot_per_cluster(dic_gain21,metric,temporal_agg,temporal_aggs,i)
-                ## ...
-            self.fig.suptitle(title)
+                self.dic_gain_agg[metric][temporal_agg] = dic_gain21
+                self.dic_error_agg[metric][temporal_agg] = {'error_pred1_agg': error_pred1_agg, 'error_pred2_agg': error_pred2_agg}
 
-            if (folder_path is not None) and (save_name is not None):
-                assert os.path.exists(folder_path), f"Folder path {folder_path} does not exist."
-                if not os.path.exists(f"{folder_path}/{metric}"):
-                    os.makedirs(f"{folder_path}/{metric}")
-                self.fig.savefig(f"{folder_path}/{metric}/{save_name}_gain.pdf", bbox_inches='tight')
+                cols = 3 if self.clustered_stations is not None else 2
+                ratios = self.width_ratios if cols == 3 else self.width_ratios[:2]
+                _, axes = plt.subplots(1, cols, 
+                            figsize=(self.fig_size_x, self.fig_size_y),
+                            gridspec_kw={'width_ratios': ratios}
+                            )
 
-        return self.dic_gain_agg,self.dic_error_agg
+                ax1 = self._aggregated_plot(dic_gain21, axes[0],yaxis )
+                ax2 = self._plot_per_station(dic_gain21, axes[1],metric)
+                if cols == 3:
+                    ax3,df_gain_aggregated_per_cluster = self._plot_per_cluster(dic_gain21, axes[2])
+                    self.dic_gain_agg_per_cluster[metric][temporal_agg] = df_gain_aggregated_per_cluster
+                else:
+                    ax3 = None  
 
 
+                layouts = [ax1,ax2] if ax3 is None else [ax1,ax2,ax3]
 
+                if save_name is not None:
+                    save_path = f"{folder_path}/{metric}/{save_name}_gain"
+                self.deal_with_subplots(layouts,title,save_path)
+
+    def deal_with_subplots(self,layouts,title,save_path):
+        """ Align subplots horizontally"""
+        if len(layouts) > 0 and layouts[0] is not None:
+            fig = layouts[0].figure
+            fig.suptitle(title, fontsize=14, y=1.02)
+            plt.tight_layout()
+            plt.show()
+            if save_path is not None:
+                fig.savefig(f"{save_path}.pdf", bbox_inches='tight')
 
 
 
@@ -673,7 +689,6 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                      range_k = range(1,6),
                                     trial_id1_in_bis=False,
                                     trial_id2_in_bis=False,
-                                    station = None,
                                     colmumn_name = 'Station',
                                     comparison_on_rainy_events = False,
                                     station_clustering = True,
@@ -747,8 +762,13 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
 
 
     # ---- Plot Accuracy Comparison ---- 
-    plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                        stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = station,
+    plot_analysis_comparison_2_config(trial_id1,trial_id2,
+                                      full_predict1,
+                                      full_predict2,
+                                      Y_true,
+                                      X,
+                                      ds1,args_init1,stations,temporal_aggs,
+                                      training_mode,metric_list,min_flow = 20,station = None,
                                         clustered_stations = clusterer.clusters,
                                         folder_path = folder_path,
                                         save_name = save_name,

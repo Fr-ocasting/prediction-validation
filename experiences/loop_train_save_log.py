@@ -54,7 +54,7 @@ def train_one_config(loger,config_i,init_save_folder,trial_id):
     trainer,ds,model,args = main(fold_to_evaluate,
                                     save_folder = weights_save_folder,
                                     args_init = args_init,
-                                    modification =config_i,
+                                    modification ={},
                                     trial_id = trial_id)
 
 

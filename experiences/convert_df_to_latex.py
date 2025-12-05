@@ -46,8 +46,12 @@ def results_to_dataframe(results,get_id = False):
         
         mase_match = re.search(r'MASE = ([\d.]+)', metrics)
         mase = float(mase_match.group(1)) if mase_match else -1.0
-        
-        data.append([target, contextual_data, percentage, horizon, bis, rmse, mae, mase])
+
+        id_trial = '_'.join(name.split('__')[0].split('_')[1:])
+        if get_id:
+            data.append([target, contextual_data, id_trial, percentage, horizon, bis, rmse, mae, mase])
+        else:
+            data.append([target, contextual_data, percentage, horizon, bis, rmse, mae, mase])
         
     df = pd.DataFrame(data,columns = columns )
     return df

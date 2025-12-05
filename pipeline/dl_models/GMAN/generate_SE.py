@@ -4,6 +4,7 @@ import networkx as nx
 import os
 import sys
 import torch 
+import pickle
 current_file_path = os.path.abspath(os.path.dirname(__file__))
 ROOT = os.path.abspath(os.path.join(current_file_path,'..'))
 if ROOT not in sys.path:
@@ -15,7 +16,6 @@ p = 2
 q = 1
 num_walks = 100
 walk_length = 80
-dimensions = 64
 window_size = 10
 iter_word2vec = 1000
 
@@ -36,7 +36,7 @@ def read_graph(edgelist):
 # Added function to load or generate SE using node2vec
 def load_SE_GMAN(dataset,args):
     save_folder_path = f'{FOLDER_PATH}/{dataset.target_data}/adj'
-    SE_file = f'{save_folder_path}/SE_GMAN_{args.adj_type}.txt'
+    SE_file = f'{save_folder_path}/SE_GMAN_nHead{args.num_heads}_dimHead{args.head_dim}_{args.adj_type}.txt'
     args.SE_file = SE_file
 
     if not os.path.exists(SE_file):
@@ -82,6 +82,7 @@ def load_SE_GMAN(dataset,args):
         G = node2vec.Graph(nx_G, is_directed, p, q)
         G.preprocess_transition_probs()
         walks = G.simulate_walks(num_walks, walk_length)
+        dimensions = args.num_heads * args.head_dim
         print('walks generated',len(walks))
         print('dimensions',dimensions)
         print('SE_file',SE_file)

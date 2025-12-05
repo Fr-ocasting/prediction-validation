@@ -102,7 +102,9 @@ class STEmbedding(nn.Module):
             timeofday[j] = F.one_hot(TE[..., 1][j].to(torch.int64) % self.steps_per_day, self.steps_per_day) 
         TE = torch.cat((dayofweek, timeofday), dim=-1)
         TE = TE.unsqueeze(dim=2)
+        # print('OHE TE[0]: ',TE[0])
         TE = self.FC_te(TE)
+        # print('TE[0]: ',TE[0])
         del dayofweek, timeofday
         return SE + TE
 
@@ -345,8 +347,8 @@ class GMAN(nn.Module):
         self.steps_per_day = 24*args.time_step_per_hour
         
         nb_STAttblocks = args.nb_STAttblocks 
-        K = args.num_heads if hasattr(args, 'num_heads') else 8
-        d = args.head_dim if hasattr(args, 'head_dim') else 8
+        K = args.num_heads 
+        d = args.head_dim 
         D = K * d
         
         self.num_his = self.L
@@ -425,20 +427,21 @@ class GMAN(nn.Module):
         # Ideally, x_calendar should cover L + T. If not, we pad or slice.
         if x_calendar is None:
             # x_calendar size: [B,L,2]
-            raise notImplementedError("GMAN requires calendar data (TE). Please provide x_calendar input.")
+            raise NotImplementedError("GMAN requires calendar data (TE). Please provide x_calendar input.")
         if x_calendar.size(-1) != 2:
             raise ValueError(f"Expected x_calendar.size(-1) == 2, but got {x_calendar.size(-1)}. Set args.calendar_types to ['dayofweek', 'timeofday'] and add 'calendar' to dataset_names.")
 
         # For GMAN to work properly, future time info is ALSO needed.
         current_len = x_calendar.size(1)
         required_len = self.num_his + self.step_ahead//self.horizon_step
+        # print('init x_calendar.size(), ', x_calendar.size())  
         if current_len < required_len:
             # The last know time-step is available at the last dimension x_calendar[:,-1,:].
             # Let's infer future time-steps based on the last one, the number of time-steps per day, the step ahead, and the horizon steps:
             last_tod = x_calendar[:, -1, self.pos_tod]  # last time-of-day
             # tod is in pourcentage. 
             def get_marginal_tod_from_increment(last_tod,increment):
-                return (last_tod*self.steps_per_day + (increment * self.horizon_step)) % self.steps_per_day
+                return ((last_tod*self.steps_per_day + (increment * self.horizon_step)) % self.steps_per_day) / self.steps_per_day
             future_tods = [get_marginal_tod_from_increment(last_tod,i) for i in range(1, required_len - current_len + 1)]
             future_tods = torch.stack(future_tods, dim=1)  # [B, required_len - current_len]
 
@@ -449,12 +452,19 @@ class GMAN(nn.Module):
             future_dows = [ (last_dow + ((future_tods[:,i] < last_tod).float())) % 7 for i in range(future_tods.size(1))]
             future_dows = torch.stack(future_dows, dim=1)  # [B, required_len - current_len]
             padding = torch.stack([future_dows, future_tods], dim=-1)  # [B, required_len - current_len, 2]
-
             x_calendar = torch.cat([x_calendar, padding], dim=1)
+            x_calendar[:,:,self.pos_tod] *= self.steps_per_day  # No necessary but just in case, go baxk to integer representation
+
+            # print('x_calendar.size(), ', x_calendar.size())  
+            # print('x_calendar[0]', x_calendar[0])
+            # print('x_calendar stats: ', torch.min(x_calendar), torch.max(x_calendar), torch.mean(x_calendar))
+
         elif current_len > required_len:
             x_calendar = x_calendar[:, :required_len, :]
 
         # STE Generation
+
+        # print('x_calendar.size(), ', x_calendar.size())  
         STE = self.STEmbedding(self.SE, x_calendar)
         STE_his = STE[:, :self.num_his]
         STE_pred = STE[:, self.num_his:]

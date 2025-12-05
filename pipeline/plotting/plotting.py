@@ -4,7 +4,7 @@ import numpy as np
 import torch 
 import matplotlib.dates as mdates
 from datetime import timedelta
-
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Relative path:
 import sys 
@@ -292,75 +292,129 @@ def visualize_prediction_and_embedding_space(trainer,dataset,Q,args,args_embeddi
         plt.show()
 
 
-
-
-def plot_coverage_matshow(data, x_labels = None, y_labels = None, log = False, 
-                          cmap ="afmhot", save = None, cbar_label =  "Number of Data",bool_reversed=False
-                          ,v_min=None,v_max=None,
-                          display_values = False,
-                          bool_plot = None,cbar_magic_args = False,
-                          figsize = None,
-                          title = None,
-                          ):
-    # Def function to plot a df with matshow
-    # Use : plot the coverage through week and days 
+def preprocess_data(data,log):
     if log : 
         data = np.log(data + 1)
-    
     data[data == 0] = np.nan
-    if figsize is not None:
-        matfig = plt.figure(figsize=figsize)
-        cax = plt.matshow(data.values, cmap=cmap,aspect='auto',fignum=matfig.number)  #
-    else:
-        cax = plt.matshow(data.values, cmap=cmap,fignum=False)  #
+    return data
 
-    #cmap_perso = plt.get_cmap(cmap)
+def set_x_label_and_y_label(ax,data, x_labels, y_labels):
+    # X labels
+    ax.set_xticks(range(len(x_labels)))
+    ax.set_xticklabels(x_labels, rotation=85, fontsize=8)
+    ax.xaxis.set_ticks_position('bottom')
+    # Y labels
+    if y_labels is None: 
+        y_labels = data.index.values
+    ax.set_yticks(range(len(y_labels)))
+    ax.set_yticklabels(y_labels, fontsize=8)
+
+def tackle_colormap(cax, cmap, bool_reversed, v_min, v_max):
     if bool_reversed: 
         cmap_perso =  plt.get_cmap(cmap).reversed()
     else: 
         cmap_perso =  plt.get_cmap(cmap)
-    cmap_perso.set_bad('gray', 1.0)  # Configurez la couleur grise pour les valeurs nulles
+    cmap_perso.set_bad('gray', 1.0)  
 
-    # Configurez la colormap pour gérer les valeurs NaN comme le gris
     cax.set_cmap(cmap_perso)
     if v_min is None:
         v_min=0.001
     if v_max is None:
         v_max=data.max().max()
-    cax.set_clim(vmin=v_min, vmax=v_max)  # Ajustez les limites pour exclure les NaN
+    cax.set_clim(vmin=v_min, vmax=v_max)  
+
+    return cax
 
 
-    #x labels
-    if x_labels is None:
-        x_labels = data.columns.values
-    plt.gca().set_xticks(range(len(x_labels)))
-    plt.gca().set_xticklabels(x_labels, rotation=85, fontsize=8)
-    plt.gca().xaxis.set_ticks_position('bottom')
-
-    #y labels
-    if y_labels is None: 
-        y_labels = data.index.values
-    plt.gca().set_yticks(range(len(y_labels)))
-    plt.gca().set_yticklabels(y_labels, fontsize=8)
-
-    # Add a colorbar to the right of the figure
-
+def display_colorbar(ax,cax, cbar_magic_args, cax_cb, cbar_label,size_colorbar):
+    # Display colorbar
     if cbar_magic_args :
         cbar = plt.colorbar(cax,fraction=0.046, pad=0.04)
     else:
-        cbar = plt.colorbar(cax, aspect=10)
-    cbar.set_label(cbar_label)  # You can customize the label as needed
+        if cax_cb is None:
+            divider = make_axes_locatable(ax)
+            cax_cb = divider.append_axes("bottom", 
+                                        size=size_colorbar, 
+                                        pad=0.7,  
+                                        )
+            cbar = plt.colorbar(cax, cax=cax_cb,orientation="horizontal")
+        else:
+            cbar = plt.colorbar(cax, cax=cax_cb)
+    if cbar_label is not None:
+        cbar.set_label(cbar_label) 
+    return cbar
 
-    if title is not None:
-        plt.title(title)
-    ## Plot values if needed: 
+def apply_display_values(ax, data, display_values):
     if display_values:
         for (i, j), val in np.ndenumerate(data.values):
             if not np.isnan(val):
-                plt.text(j, i, f'{val:.2f}', ha='center', va='center', color='black', fontsize=6)
+                ax.text(j, i, f'{val:.2f}', ha='center', va='center', color='black', fontsize=6)
+    
+
+def plot_coverage_matshow(data, x_labels = None,
+                          y_labels = None,
+                          log = False, 
+                          cmap ="afmhot", 
+                          save = None, 
+                          cbar_label =  None,
+                          bool_reversed=False,
+                          v_min=None,
+                          v_max=None,
+                          display_values = False,
+                          cbar_magic_args = False,
+                          figsize = None,
+                          title = None,
+                          cax_cb = None,
+                          ax = None,
+                          size_colorbar = "4%",
+                          xaxis = None,
+                          yaxis = None,
+                          ):
+    # Def function to plot a df with matshow
+    data = preprocess_data(data,log)
+    if x_labels is None:
+        x_labels = data.columns.values
+
+    # Load ax and imshow 
+    if ax is None: 
+        if figsize is not None:
+            plt.figure(figsize=figsize)
+        else:
+            plt.figure()
+        ax = plt.gca()
+    else:
+        plt.sca(ax) 
+
+    cax = ax.imshow(data.values,
+    cmap=cmap,
+    aspect='auto', 
+    interpolation='nearest'
+      )
+
+    # X and Y labels
+    set_x_label_and_y_label(ax,data, x_labels, y_labels)
+
+    # Tackle colormap
+    cax = tackle_colormap(cax, cmap, bool_reversed, v_min, v_max)
+
+    # Display colorbar
+    cbar = display_colorbar(ax,cax, cbar_magic_args, cax_cb, cbar_label,size_colorbar)
+
+    # Display values if needed :
+    apply_display_values(ax, data, display_values)
+
+    if title is not None:
+        ax.set_title(title)
+    if xaxis is not None:
+        ax.set_xlabel(xaxis)
+    if yaxis is not None:
+        ax.set_ylabel(yaxis)
 
     if save is not None: 
             plt.savefig(save, format="pdf")
+    return ax
+
+
 
 def coverage_day_month(df_metro,freq= '24h',index = 'month_year',columns = 'day_date',save = 'subway_id',folder_save = 'save/',key_columns = ['datetime','in','out']):
     

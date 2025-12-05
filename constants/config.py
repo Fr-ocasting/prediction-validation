@@ -321,8 +321,11 @@ def update_modif(args):
         if hasattr(args,'quantile_method'): del args.quantile_method
         if hasattr(args,'calibration_calendar_class'): del args.calibration_calendar_class
         if hasattr(args,'type_calib'): del args.type_calib
-
-
+    if hasattr(args,'torch_scheduler') and not args.torch_scheduler :
+        if hasattr(args,'torch_scheduler_milestone'): del args.torch_scheduler_milestone
+        if hasattr(args,'torch_scheduler_gamma'): del args.torch_scheduler_gamma    
+        if hasattr(args,'torch_scheduler_type'): del args.torch_scheduler_type
+        if hasattr(args,'torch_scheduler_lr_start_factor'): del args.torch_scheduler_lr_start_factor
     return(args)
 
 def modification_contextual_args(args,modification):

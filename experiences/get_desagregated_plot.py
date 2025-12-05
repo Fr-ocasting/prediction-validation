@@ -14,7 +14,7 @@ issue_while_loading_saved_weights = ''
 trial_id1_in_bis = False
 trial_id2_in_bis = False
 range_k = range(1,6) # range(1,6)
-comparison_on_rainy_events = True 
+comparison_on_rainy_events = False 
 station_clustering = True 
 
 init_folder_path = f"/home/rrochas/prediction-validation/save/plot"
@@ -29,7 +29,11 @@ for exp_i in dic_exp_to_names.keys():
 for exp_i,target_model_name in dic_exp_to_names.items():
     target_data = '_'.join(target_model_name.split('_')[:-1])
     model_name = target_model_name.split('_')[-1]
-    if not (exp_i == 'Exp2'):
+
+    # if not (exp_i == 'Exp2'):
+    #     continue
+
+    if (exp_i == 'Exp2'):
         continue
 
     print(exp_i)
@@ -73,7 +77,6 @@ for exp_i,target_model_name in dic_exp_to_names.items():
                                                             range_k = range_k,
                                                             trial_id1_in_bis=False,
                                                             trial_id2_in_bis=False,
-                                                            station = None,
                                                             comparison_on_rainy_events = comparison_on_rainy_events ,
                                                             station_clustering = station_clustering,
                                                             folder_path = folder_path,
