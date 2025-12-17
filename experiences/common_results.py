@@ -148,3 +148,12 @@ dic_trials = {'Exp1_subway_in': [c[:-4] for c in list(set(re.findall(re._pattern
 }
 
 
+
+# --- Captions Dictionary ---
+captions = {
+    "Exp1": r"Prediction of Subway-Out with STAEformer using contextual data 'Subway-In' according to different Integration Strategies. Metrics are averaged over 5 runs.",
+    "Exp1_subway_in": r"Prediction of Subway-In with STAEformer using contextual data 'Subway-Out' according to different Integration Strategies. Metrics are averaged over 5 runs.",
+    'Exp1_subway_out': r"Prediction of Subway-Out with STAEformer using contextual data 'Subway-In' according to different Integration Strategies. Metrics are averaged over 5 runs.",
+}
+
+

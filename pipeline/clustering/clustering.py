@@ -495,7 +495,7 @@ if __name__ == "__main__":
 
     # -- Clustering based business days and Agglomerative clustering:
     clusterer = TimeSeriesClusterer(train_df)
-    clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city='Lyon') # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+    clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city='Lyon') # 'morning','evening','morning_peak','evening_peak','off_peak','non_business_day','business_day'
 
     # -- Run agglomerative clustering with 4 clusters:
     clusterer.run_agglomerative(n_clusters=3, linkage_method='complete', metric='precomputed',min_samples=2)

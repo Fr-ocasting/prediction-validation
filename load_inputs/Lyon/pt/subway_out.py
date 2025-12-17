@@ -42,7 +42,7 @@ list_of_invalid_period.append([datetime(2019,12,21,15,45),datetime(2019,12,21,16
 C = 1
 #num_nodes = 40
 
-def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize,tensor_limits_keeper = None):
+def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standardize,normalize,tensor_limits_keeper = None,filename= None):
     
     preprocesed_ds = load_data_from_subway_in_py(FOLDER_PATH,
                                             invalid_dates = invalid_dates,
@@ -51,7 +51,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
                                             minmaxnorm = minmaxnorm,
                                             standardize = standardize,
                                             normalize= normalize,
-                                            filename = FILE_NAME,
+                                            filename = FILE_NAME if filename is None else filename,
                                             name=NAME,
                                             tensor_limits_keeper = tensor_limits_keeper)
 

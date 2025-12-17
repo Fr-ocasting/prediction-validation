@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 from pipeline.PI.PI_object import PI_object
 from pipeline.utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape,RMSELoss
 
-def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = {},previous=None, horizon_step = None,Q = None):
+def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_metric = None,previous=None, horizon_step = None,Q = None):
     '''
     Args:
     ------
@@ -38,6 +38,8 @@ def evaluate_metrics(Preds,Y_true,metrics, alpha = None, type_calib = None,dic_m
     -------
     Return a dictionnary (dic_metric) of couple (Key, error), where the key are the metrics, and the values the associated error from the prediction.
     '''
+    if dic_metric is None:
+        dic_metric = {}
     if ('PICP' in metrics) or ('MPIW' in metrics): 
         dic_metric,metrics  = evaluate_PI(dic_metric,Preds,Y_true,alpha,type_calib,metrics,Q = Q)
 

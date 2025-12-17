@@ -26,16 +26,16 @@
 # STAEformer_subway_out_calendar__e80_h4_bis5:   All Steps RMSE = 41.485, MAE = 22.868, MASE = 0.432, MAPE = 23.215
 
 results = """
-STAEformer_subway_out__e80_h1_bis1:   All Steps RMSE = 36.07029, MAE = 20.30451, MASE = 0.63932, MAPE = 20.70396
-STAEformer_subway_out__e80_h1_bis2:   All Steps RMSE = 36.17786, MAE = 20.34388, MASE = 0.64056, MAPE = 21.02477
-STAEformer_subway_out__e80_h1_bis3:   All Steps RMSE = 36.17020, MAE = 20.15643, MASE = 0.63466, MAPE = 20.76969
-STAEformer_subway_out__e80_h1_bis4:   All Steps RMSE = 35.95132, MAE = 20.21528, MASE = 0.63651, MAPE = 20.67287
-STAEformer_subway_out__e80_h1_bis5:   All Steps RMSE = 35.87841, MAE = 20.19281, MASE = 0.63581, MAPE = 21.46874
-STAEformer_subway_out__e80_h4_bis1:   All Steps RMSE = 41.18551, MAE = 22.55721, MASE = 0.42574, MAPE = 23.44323
-STAEformer_subway_out__e80_h4_bis2:   All Steps RMSE = 41.44149, MAE = 22.76985, MASE = 0.42975, MAPE = 23.93078
-STAEformer_subway_out__e80_h4_bis3:   All Steps RMSE = 42.17551, MAE = 23.11461, MASE = 0.43626, MAPE = 24.63389
-STAEformer_subway_out__e80_h4_bis4:   All Steps RMSE = 41.57258, MAE = 22.72799, MASE = 0.42896, MAPE = 23.62263
-STAEformer_subway_out__e80_h4_bis5:   All Steps RMSE = 41.48469, MAE = 22.86774, MASE = 0.43160, MAPE = 23.21467
+STAEformer_subway_out_calendar__e80_h1_bis1:   All Steps RMSE = 36.07029, MAE = 20.30451, MASE = 0.63932, MAPE = 20.70396
+STAEformer_subway_out_calendar__e80_h1_bis2:   All Steps RMSE = 36.17786, MAE = 20.34388, MASE = 0.64056, MAPE = 21.02477
+STAEformer_subway_out_calendar__e80_h1_bis3:   All Steps RMSE = 36.17020, MAE = 20.15643, MASE = 0.63466, MAPE = 20.76969
+STAEformer_subway_out_calendar__e80_h1_bis4:   All Steps RMSE = 35.95132, MAE = 20.21528, MASE = 0.63651, MAPE = 20.67287
+STAEformer_subway_out_calendar__e80_h1_bis5:   All Steps RMSE = 35.87841, MAE = 20.19281, MASE = 0.63581, MAPE = 21.46874
+STAEformer_subway_out_calendar__e80_h4_bis1:   All Steps RMSE = 41.18551, MAE = 22.55721, MASE = 0.42574, MAPE = 23.44323
+STAEformer_subway_out_calendar__e80_h4_bis2:   All Steps RMSE = 41.44149, MAE = 22.76985, MASE = 0.42975, MAPE = 23.93078
+STAEformer_subway_out_calendar__e80_h4_bis3:   All Steps RMSE = 42.17551, MAE = 23.11461, MASE = 0.43626, MAPE = 24.63389
+STAEformer_subway_out_calendar__e80_h4_bis4:   All Steps RMSE = 41.57258, MAE = 22.72799, MASE = 0.42896, MAPE = 23.62263
+STAEformer_subway_out_calendar__e80_h4_bis5:   All Steps RMSE = 41.48469, MAE = 22.86774, MASE = 0.43160, MAPE = 23.21467
 
 STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e80_h1_bis1:   All Steps RMSE = 35.66105, MAE = 20.01214, MASE = 0.63012, MAPE = 20.54183
 STAEformer_subway_out_subway_in_calendar_late_fusion_simple_embedding__e80_h1_bis2:   All Steps RMSE = 35.73246, MAE = 20.07990, MASE = 0.63225, MAPE = 21.04145

@@ -1,7 +1,16 @@
 import pandas as pd
 import re
-import io
 
+import os
+import sys 
+
+current_file_path = os.path.abspath(os.path.dirname(__file__))
+parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0,parent_dir)
+
+from experiences.common_results import captions
+from pipeline.plotting.TS_analysis import plot_TS
 def results_to_dataframe(results,get_id = False):
     """
     Cette fonction transforme les résultats bruts en un DataFrame pandas.
@@ -99,7 +108,7 @@ def parse_index_exp4(index_name: str) -> dict:
             "adpQ": find_param('adpQ', index_name),
         }
 
-def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser: callable) -> str:
+def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser: callable,horizon: str = None) -> str:
     """
     Converts a pandas DataFrame with a multi-level column into a formatted LaTeX table.
 
@@ -124,7 +133,8 @@ def dataframe_to_latex(df: pd.DataFrame, caption: str, label: str, index_parser:
 
     # --- 2. Prepare Headers ---
     metrics = df.columns.levels[0].to_list()
-    horizon = re.search(r'h(\d+)', metrics[0]).group(1)
+    if horizon is None: 
+        horizon = re.search(r'h(\d+)', metrics[0]).group(1)
     metric_names = [re.sub(r'_\s*h\d+\s*', '', m).replace('_', ' ').upper() for m in metrics]
     
     custom_cols = df_parsed.columns.to_list()
@@ -209,7 +219,6 @@ def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics)
     df_j_all = pd.DataFrame()
     metric_i = []
     for n_bis in range(1,6):
-
         df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics)
     
     if len(metric_i) > 0: 
@@ -218,6 +227,26 @@ def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics)
         L_metrics.append(metric_i)
 
     return L_metrics
+
+def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics,agg = False, plot_losses=False):
+    df_j_all = pd.DataFrame()
+    metric_i = []
+    for n_bis in range(1,6):
+        df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics)
+
+    if agg: 
+        metric_i = pd.DataFrame(pd.DataFrame(metric_i).agg(['mean','std']).unstack()).T
+        metric_i.index = [f"{trial_j}"]
+    else: 
+        metric_i = pd.DataFrame(metric_i)
+        metric_i.index = [f"{trial_j}_bis{n_bis}" for n_bis in range(1,6)]
+    L_metrics.append(metric_i)
+
+    if plot_losses:
+        plot_TS(df_j_all,width=1500,height=400,bool_show=True,title=f"{exp_i}, {trial_j}",x_datetime = False)
+    return L_metrics
+
+
 
 
 def build_legend_group_exp4(x):
@@ -436,3 +465,21 @@ def update_df_metrics(df_metrics_all,exp_i):
     df.id = df.id.apply(lambda x: x.replace('Web_Weather','W_Wea'))
     df.id = df.id.apply(lambda x: x.replace('Instagram','Insta'))
     return df 
+
+
+
+
+def get_caption_label_callable(exp_i):
+    if exp_i in captions.keys():
+        caption = captions[exp_i]
+        callable = lambda x: parse_index_exp1_2(x,contextual = 'subway_out' if exp_i == 'Exp1_subway_in' else 'subway_in') 
+        return caption,callable
+    else:
+        raise NotImplementedError("Caption and label callable not implemented for this experiment.")
+
+
+def display_latex_table(df,exp_i,horizon):
+    print('\n' + '-'*48 + f"\n%%% LaTeX code for Experiment {exp_i} Horizon +{15*int(horizon)}min Table %%%\n")
+    caption,callable = get_caption_label_callable(exp_i)
+    latex_table = dataframe_to_latex(df, caption, exp_i, callable,horizon)
+    print(latex_table)

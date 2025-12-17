@@ -255,14 +255,20 @@ def get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode):
     X = ds1.normalizer.unormalize_tensor(inputs = X,feature_vect = True) # unormalize input cause prediction is unormalized 
     return(full_predict1,full_predict2,Y_true,X)
 
-def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx):
-    predict1 = full_predict1[...,h_idx-1,:]
-    predict2 = full_predict2[...,h_idx-1,:]
-    real = Y_true[:,:,h_idx-1]
+
+def get_previous(X,Y_true,h_idx):
     if h_idx-2 >= 0:
         previous = Y_true[...,h_idx-2]
     else:
         previous = X[...,-1]
+    return previous
+
+def get_previous_and_prediction(full_predict1,full_predict2,Y_true,X,h_idx):
+    predict1 = full_predict1[...,h_idx-1,:]
+    predict2 = full_predict2[...,h_idx-1,:]
+    real = Y_true[:,:,h_idx-1]
+    previous = get_previous(X,Y_true,h_idx)
+  
     return previous,predict1,predict2,real
 
 
@@ -349,7 +355,7 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
 def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
                                       stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
                                       clustered_stations = None,folder_path = None, save_name = None,
-                                      bool_plot = True, dates = None):
+                                      bool_plot = True, dates = None,comparison_on_rainy_events = False):
     """
     args : 
     ------
@@ -365,12 +371,16 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
     # -- Comparison plotting for each horizon : 
     for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
         h_idx = step_ahead// args_init1.horizon_step
-
+        if save_name is not None:
+            save_name_i = f"{save_name}_h{step_ahead}"
+            if comparison_on_rainy_events:
+                save_name_i += "_rainy"
+            
         dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,
                                                    full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,
                                                    h_idx,stations,training_mode,metric_list,clustered_stations,
                                                    folder_path = folder_path,
-                                                   save_name = f"{save_name}_h{step_ahead}",
+                                                   save_name = save_name,
                                                    bool_plot = bool_plot,
                                                    dates = dates,
                                                    min_flow = min_flow,)
@@ -602,9 +612,11 @@ class ComparisonPlotter:
 
                 if save_name is not None:
                     save_path = f"{folder_path}/{metric}/{save_name}_gain"
-                self.deal_with_subplots(layouts,title,save_path)
+                else:
+                    save_path = None
+                self.deal_with_subplots(layouts,title,save_path,save_name)
 
-    def deal_with_subplots(self,layouts,title,save_path):
+    def deal_with_subplots(self,layouts,title,save_path,save_name):
         """ Align subplots horizontally"""
         if len(layouts) > 0 and layouts[0] is not None:
             fig = layouts[0].figure
@@ -612,7 +624,12 @@ class ComparisonPlotter:
             plt.tight_layout()
             plt.show()
             if save_path is not None:
-                fig.savefig(f"{save_path}.pdf", bbox_inches='tight')
+                try: 
+                    print(f"Figure saved in {save_path}.pdf")
+                    fig.savefig(f"{save_path}.pdf", bbox_inches='tight')
+                except:
+                    print(f"Figure saved in {save_name}.pdf")
+                    fig.savefig(f"{save_name}.pdf", bbox_inches='tight')
 
 
 
@@ -664,7 +681,7 @@ def get_cluster(df,temporal_agg='business_day', normalisation_type ='minmax',ind
                 heatmap= True, daily_profile=True, dendrogram=True):
     # Get Clustering of stations from these inputs: 
     clusterer = TimeSeriesClusterer(df)
-    clusterer.preprocess(temporal_agg=temporal_agg, normalisation_type =normalisation_type,index= index,city=city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+    clusterer.preprocess(temporal_agg=temporal_agg, normalisation_type =normalisation_type,index= index,city=city) # 'morning','evening','morning_peak','evening_peak','off_peak','non_business_day','business_day'
     clusterer.run_agglomerative(n_clusters=n_clusters, linkage_method=linkage_method, metric=metric,min_samples=min_samples)
     # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=4,distance_threshold = 0.35)
     clusterer.plot_clusters(heatmap= heatmap, daily_profile=daily_profile, dendrogram=dendrogram)
@@ -769,9 +786,10 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                       X,
                                       ds1,args_init1,stations,temporal_aggs,
                                       training_mode,metric_list,min_flow = 20,station = None,
-                                        clustered_stations = clusterer.clusters,
-                                        folder_path = folder_path,
-                                        save_name = save_name,
+                                      clustered_stations = clusterer.clusters,
+                                      folder_path = folder_path,
+                                      save_name = save_name,
+                                      comparison_on_rainy_events = comparison_on_rainy_events
                                         )   
     
 
@@ -794,10 +812,14 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                         dates = mask[mask].index,
                                         folder_path = folder_path,
                                         save_name = save_name,
+                                        comparison_on_rainy_events = comparison_on_rainy_events
                                         )
+    else:
+        rainy_indices = None
+        mask = None
  
 
-    return clusterer,full_predict1,full_predict2,train_input,Y_true,[globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k], ds1,ds2,args_init1,args_init2
+    return clusterer,full_predict1,full_predict2,train_input,X,Y_true,[globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k], ds1,ds2,args_init1,args_init2,rainy_indices,mask
 
 
 if __name__ == '__main__':
@@ -934,7 +956,7 @@ if __name__ == '__main__':
 
                     # Get Clustering of stations from these inputs: 
                     clusterer = TimeSeriesClusterer(train_df)
-                    clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','bank_holiday','business_day'
+                    clusterer.preprocess(temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city=ds2.city) # 'morning','evening','morning_peak','evening_peak','off_peak','non_business_day','business_day'
                     clusterer.run_agglomerative(n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2)
                     # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=2,distance_threshold = 0.1)
 

@@ -69,7 +69,7 @@ def get_temporal_mask(s_dates: pd.Series,
         filter_mask = get_mask_working_day(s_dates,is_evening_peak(s_dates,start_evening_peak,end_evening_peak),city)
     elif temporal_agg == 'off_peak':
         filter_mask = get_mask_working_day(s_dates,~is_morning_peak(s_dates,start_morning_peak,end_morning_peak) & ~is_evening_peak(s_dates,start_evening_peak,end_evening_peak),city)
-    elif temporal_agg == 'bank_holiday':
+    elif temporal_agg == 'non_business_day':
         weekday_mask = is_weekday(s_dates)
         dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
         usefull_hours =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
