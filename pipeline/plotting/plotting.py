@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import torch 
 import matplotlib.dates as mdates
-from datetime import timedelta
+from datetime import timedelta,datetime
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # Relative path:
@@ -18,8 +18,7 @@ if parent_dir not in sys.path:
 # Personnal imports:
 from pipeline.PI.PI_object import PI_object
 from pipeline.utils.metrics import error_along_ts
-from pipeline.calendar_class import is_morning_peak,is_evening_peak,is_weekday,get_temporal_mask
-
+from pipeline.calendar_class import is_morning_peak,is_evening_peak,is_weekday,get_temporal_mask,is_bank_holidays,is_school_holidays
 
 
 def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hpo = True):
@@ -309,7 +308,7 @@ def set_x_label_and_y_label(ax,data, x_labels, y_labels):
     ax.set_yticks(range(len(y_labels)))
     ax.set_yticklabels(y_labels, fontsize=8)
 
-def tackle_colormap(cax, cmap, bool_reversed, v_min, v_max):
+def tackle_colormap(data,cax, cmap, bool_reversed, v_min, v_max):
     if bool_reversed: 
         cmap_perso =  plt.get_cmap(cmap).reversed()
     else: 
@@ -395,7 +394,7 @@ def plot_coverage_matshow(data, x_labels = None,
     set_x_label_and_y_label(ax,data, x_labels, y_labels)
 
     # Tackle colormap
-    cax = tackle_colormap(cax, cmap, bool_reversed, v_min, v_max)
+    cax = tackle_colormap(data,cax, cmap, bool_reversed, v_min, v_max)
 
     # Display colorbar
     cbar = display_colorbar(ax,cax, cbar_magic_args, cax_cb, cbar_label,size_colorbar)
@@ -439,7 +438,7 @@ def coverage_day_month(df_metro,freq= '24h',index = 'month_year',columns = 'day_
     return(df_agg_in,df_agg_out)
 
 
-def add_calendar_columns(df_agg,freq=None,key_columns=None,agg_func = 'sum'):
+def add_calendar_columns(df_agg,freq=None,key_columns=None,agg_func = 'sum', business_day = False,city = None):
     if freq is not None:
         df_agg = df_agg.groupby([pd.Grouper(key = 'datetime',freq = freq)]).agg(agg_func).reset_index()
     if key_columns is not None:
@@ -449,8 +448,24 @@ def add_calendar_columns(df_agg,freq=None,key_columns=None,agg_func = 'sum'):
     df_agg['month_year']= df_agg.datetime.dt.month.transform(lambda x : str(x)) + ' ' + df_agg.datetime.dt.year.transform(lambda x : str(x))
     df_agg['month_year']= pd.to_datetime(df_agg['month_year'],format = '%m %Y')
     #df_agg['hour']= df_agg.datetime.dt.hour.transform(lambda x : str(x)) + ':' + df_agg.datetime.dt.minute.transform(lambda x : str(x))
-    df_agg['hour']= df_agg.datetime.dt.hour + df_agg.datetime.dt.minute*0.01
+    df_agg['hour_min']= df_agg.datetime.dt.hour + df_agg.datetime.dt.minute*0.01
+    df_agg['hour']= df_agg.datetime.dt.hour
+    df_agg['minute']= df_agg.datetime.dt.minute
     df_agg['weekday']= df_agg.datetime.dt.weekday
+    df_agg['day_of_week']= df_agg.datetime.dt.dayofweek
+    df_agg['year']= df_agg.datetime.dt.year
+    df_agg['woy']= df_agg.datetime.dt.isocalendar().week 
+    df_agg['monday_date'] = df_agg['datetime'] - pd.to_timedelta(df_agg['day_of_week'], unit='D')
+    df_agg['monday_date'] = df_agg['monday_date'].dt.strftime('%Y-%m-%d')
+
+    if business_day:
+        df_agg['bank_holidays'] = df_agg.datetime.apply(lambda x: is_bank_holidays(x,city= city))
+        df_agg['business_day'] = df_agg['weekday'] & (~df_agg['bank_holidays'])
+        school_holidays,remaining_holidays  = zip(*df_agg['datetime'].apply(lambda x : is_school_holidays(x,city=city)))
+        df_agg['school_holidays'] = school_holidays
+    
+
+
     return df_agg
 
 

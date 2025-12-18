@@ -128,6 +128,8 @@ def load_data(FOLDER_PATH, coverage_period, invalid_dates, args, minmaxnorm,stan
         kept_zones = list(mask[mask].index)
         df_filtered = agg_df.T[mask].T
         print(f"   Dimension after spatial agg: {df_filtered.shape}")
+    else:
+        kept_zones = df_filtered.columns.tolist()
 
 
     # Convert into tensor:
