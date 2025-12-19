@@ -29,8 +29,11 @@ from pipeline.plotting.plotting import plot_coverage_matshow,add_calendar_column
 
 IN_bdc = 'midnightblue'  # Inflow - Business Day Color
 OUT_bdc = 'indianred' # Outflow - Business Day Color
-IN_nbdc = 'cadetblue' # Inflow - Non Business Day Color
-OUT_nbdc = 'peru' # Outflow - Non Business Day Color
+IN_nbdc = '#708090'  # slategray (bleu grisé)
+OUT_nbdc = '#bc8f8f' # rosybrown (rouge/brun grisé)
+
+# IN_nbdc = 'cadetblue' # Inflow - Non Business Day Color
+# OUT_nbdc = 'peru' # Outflow - Non Business Day Color
 
 # --------------------------------------------------
 #  Utils  
@@ -73,6 +76,45 @@ def filter_per_day_type(df,period,city):
     
     return ts_bd, ts_nbd
 
+
+
+def get_inflow_outflow(df_raw_in_no_agg,df_raw_out_no_agg,filter_q,city,period='all_day',day_type = None,index_name= 'idstation'):
+    if filter_q is not None:
+        # Apply quantile filter
+        df_raw_in_f = df_raw_in_no_agg[df_raw_in_no_agg < df_raw_in_no_agg.quantile(filter_q)]
+        df_raw_out_f = df_raw_out_no_agg[df_raw_out_no_agg < df_raw_out_no_agg.quantile(filter_q)]
+    else:
+        df_raw_in_f = df_raw_in_no_agg
+        df_raw_out_f = df_raw_out_no_agg
+
+    df_bd_in, df_nbd_in = filter_per_day_type(df_raw_in_f,period,city)
+    df_bd_out, df_nbd_out = filter_per_day_type(df_raw_out_f,period,city)
+
+    if day_type is not None:
+        if day_type == 'business_day':
+            df_raw_in_f = df_bd_in
+            df_raw_out_f = df_bd_out
+        elif day_type == 'non_business_day':
+            df_raw_in_f = df_nbd_in
+            df_raw_out_f = df_nbd_out
+        else:
+            raise ValueError(f"day_type must be 'business_day' or 'non_business_day', got {day_type}")
+    else:
+        df_raw_in_f = pd.concat([df_bd_in,df_nbd_in],axis=0)
+        df_raw_out_f = pd.concat([df_bd_out,df_nbd_out],axis=0)
+            
+
+
+    # Inflow 
+    inflow = df_raw_in_f.sum(axis = 0)
+    inflow.name = 'Inflow'
+    inflow.index.name = index_name
+
+    # Outflow 
+    outflow = df_raw_out_f.sum(axis = 0)
+    outflow.name = 'Outflow'
+    outflow.index.name = index_name
+    return inflow, outflow
 
 
 def normalize(df_raw,norm,normtype,normalized_based_on= None,city= None):
@@ -120,7 +162,7 @@ def normalize(df_raw,norm,normtype,normalized_based_on= None,city= None):
 # --------------------------------------------------
 #  Distribution des volumes et valeurs manquantes 
 
-def get_histogram_per_day_type(df,city,period,stats,palette):
+def get_histogram_per_day_type(df,city,period,stats,palette,n_bins = 30):
     """ Retourne l'histogramme des volumes 
     en business day et en non business day.
     Les deux histogrammes sont superposée en transparence.
@@ -147,8 +189,11 @@ def get_histogram_per_day_type(df,city,period,stats,palette):
     
     # histogram plot avec sns : 
     plt.figure(figsize=(10,6))
-    sns.histplot(ts_bd, color=palette[0], label='Business Days', kde=False, stat=stats, alpha=0.6)
-    sns.histplot(ts_nbd, color=palette[1], label='Non-Business Days', kde=False, stat=stats, alpha=0.6)
+    # set histogram with same bins width :
+    mini,maxi = min(ts_bd.min(),ts_nbd.min()), max(ts_bd.max(),ts_nbd.max())
+    bins = np.linspace(mini, maxi, n_bins)
+    sns.histplot(ts_bd, color=palette[0], label='Business Days', kde=False, stat=stats, alpha=0.6, bins=bins)
+    sns.histplot(ts_nbd, color=palette[1], label='Non-Business Days', kde=False, stat=stats, alpha=0.6, bins=bins)
     plt.xlabel('Volume')
     plt.ylabel('Density')
     plt.title('Histogram of Volumes by day type across all Spatial Units and {} period'.format(convert_to_str(period)))

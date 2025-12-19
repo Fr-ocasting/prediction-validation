@@ -86,6 +86,8 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
         initial_size = netmob_T.size(-1)
         netmob_T,dict_label2agg = reduce_dim_by_clustering(netmob_T,epsilon = args.contextual_kwargs['netmob_POIs']['epsilon_clustering'])
         print(f"    Netmob_T.size(): {netmob_T.size()}. Dimensionality reduced by {'{:.1%}'.format(1-netmob_T.size(-1)/initial_size)}")
+    else:
+        dict_label2agg = {k:k for k in range(netmob_T.size(-1))}
     # REMOVE THE DIMENSION REDUCTION CAUSE CORRELATION BASED ON THE ENTIRE DATASET. SHOULD BE BASED ONLY ON TRAIN  
     
     # dimension on which we want to normalize: 
