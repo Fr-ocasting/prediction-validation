@@ -62,6 +62,11 @@ def get_temporal_mask(s_dates: pd.Series,
     -----
         pd.Series: Boolean mask indicating whether each date falls within the specified time range.
     """
+    def get_usefull_hours(s_dates, start, end):
+        if start < end:
+            return (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+        else: 
+            return (s_dates.dt.time >= start) | (s_dates.dt.time <= end)
 
     if temporal_agg == 'morning_peak':
         filter_mask = get_mask_working_day(s_dates,is_morning_peak(s_dates,start_morning_peak,end_morning_peak),city)
@@ -72,19 +77,20 @@ def get_temporal_mask(s_dates: pd.Series,
     elif temporal_agg == 'non_business_day':
         weekday_mask = is_weekday(s_dates)
         dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
-        usefull_hours =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+        usefull_hours =  get_usefull_hours(s_dates, start, end)
         filter_mask = usefull_hours & (~weekday_mask | dates_is_bank_holidays)
     elif temporal_agg == 'business_day':
         weekday_mask = is_weekday(s_dates)
         dates_is_bank_holidays = s_dates.apply(lambda x: is_bank_holidays(x,city= city))
-        usefull_hours =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+        usefull_hours =  get_usefull_hours(s_dates, start, end)
         filter_mask = usefull_hours & weekday_mask & ~dates_is_bank_holidays
     elif temporal_agg == 'morning':
         filter_mask = get_mask_working_day(s_dates,is_morning(s_dates),city)
     elif temporal_agg == 'evening':
         filter_mask = get_mask_working_day(s_dates,is_evening(s_dates),city)
     elif temporal_agg is None:
-        filter_mask =  (s_dates.dt.time >= start) & (s_dates.dt.time <= end)
+        usefull_hours =  get_usefull_hours(s_dates, start, end)
+        filter_mask = usefull_hours
     else: 
         raise ValueError(f"Unknown temporal aggregation: {temporal_agg}")
 

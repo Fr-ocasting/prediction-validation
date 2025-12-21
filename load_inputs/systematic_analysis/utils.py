@@ -60,8 +60,10 @@ def convert_to_str(period):
 
 
 
-def filter_per_day_type(df,period,city):
-    start, end = get_time_bounds(period)
+def filter_per_day_type(df,period,city,start = None,end=None):
+    if (start is None) and (end is None):
+        start, end = get_time_bounds(period)
+
     ts_bd = filter_by_temporal_agg(df = df,
                                     temporal_agg = 'business_day',
                                     city = city,
@@ -205,7 +207,12 @@ def get_histogram_per_day_type(df,city,period,stats,palette,n_bins = 30):
 
 
 
-def preprocess_df(df,ascending=None,period= None,city= None,norm = False,filter_q = None,normtype='zscore',normalized_based_on= None):
+def preprocess_df(df,ascending=None,period= None,city= None,
+                  norm = False,filter_q = None,
+                  normtype='zscore',
+                  normalized_based_on= None,
+                  start = None,
+                  end = None):
     """
     Preprocess the dataframe by organizing columns, filtering by day type, applying quantile filtering, and normalization.
     Args:
@@ -232,7 +239,7 @@ def preprocess_df(df,ascending=None,period= None,city= None,norm = False,filter_
     if period is not None:
         if city is None:
             raise ValueError("city must be provided when period is specified")
-        df_bd, df_nbd = filter_per_day_type(df,period,city)
+        df_bd, df_nbd = filter_per_day_type(df,period,city,start = start,end = end)
 
         if filter_q is not None:
             df_bd = df_bd[df_bd <= df_bd.quantile(filter_q)]
@@ -244,6 +251,12 @@ def preprocess_df(df,ascending=None,period= None,city= None,norm = False,filter_
         return df_bd, df_nbd
     
     else:
+        if start is not None or end is not None:
+            df = filter_by_temporal_agg(df = df,
+                                    temporal_agg = None,
+                                    city = city,
+                                    start = start,
+                                    end=end)
         if filter_q is not None:
             df = df[df <= df.quantile(filter_q)]
         df = normalize(df,norm,normtype,normalized_based_on,city=city)
