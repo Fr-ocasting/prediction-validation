@@ -34,7 +34,7 @@ def load_data(FOLDER_PATH,invalid_dates,coverage_period,args,minmaxnorm,standard
     '''
     interpolated_weather = load_preprocessed_weather_df(args,coverage_period,folder_path = FOLDER_PATH)
 
-    if 'use_future_values' in args.contextual_kwargs['weather'].keys() and args.contextual_kwargs['weather']['use_future_values']:
+    if 'weather' in args.contextual_kwargs.keys() and 'use_future_values' in args.contextual_kwargs['weather'].keys() and args.contextual_kwargs['weather']['use_future_values']:
         data_T = torch.roll(torch.Tensor(interpolated_weather.values), shifts=-args.contextual_kwargs['weather']['use_future_values'], dims=0)
     data_T = torch.tensor(interpolated_weather.values).float()  # Tensor of shape [T,N]
     
@@ -81,7 +81,7 @@ def load_preprocessed_weather_df(args,coverage_period,folder_path):
     else:
         raise ValueError(f"Frequency {args.freq} not supported for weather data.")
 
-    if ('unique_serie' in args.contextual_kwargs['weather'].keys()) and (args.contextual_kwargs['weather']['unique_serie']):
+    if 'weather'in args.contextual_kwargs.keys() and ('unique_serie' in args.contextual_kwargs['weather'].keys()) and (args.contextual_kwargs['weather']['unique_serie']):
         interpolated_weather = pd.DataFrame(interpolated_weather.mean(axis=1))
 
     return interpolated_weather

@@ -42,12 +42,17 @@ def get_time_bounds(period):
     if period == 'all_day':
         start = datetime.time(0, 00)
         end=datetime.time(23, 59)
-    if period == 'morning_peak':
+    elif period == 'morning_peak':
         start = datetime.time(7, 00)
         end=datetime.time(10, 00)
-    if period == 'evening_peak':
+    elif period == 'evening_peak':
         start = datetime.time(16, 30)
         end=datetime.time(19, 00)
+    elif period == 'off_peak':
+        start = datetime.time(0, 00)
+        end=datetime.time(23, 59)
+    else:
+        raise ValueError("period must be 'all_day', 'morning_peak', or 'evening_peak'")
     return start, end
 
 def convert_to_str(period):
@@ -57,6 +62,8 @@ def convert_to_str(period):
         return 'Morning Peak (7am-10am)'
     if period == 'evening_peak':
         return 'Evening Peak (4:30pm-7pm)'
+    if period == 'off_peak':
+        return 'Off Peak Hours'
 
 
 
@@ -64,17 +71,58 @@ def filter_per_day_type(df,period,city,start = None,end=None):
     if (start is None) and (end is None):
         start, end = get_time_bounds(period)
 
-    ts_bd = filter_by_temporal_agg(df = df,
-                                    temporal_agg = 'business_day',
-                                    city = city,
-                                    start = start,
-                                    end=end)
 
-    ts_nbd = filter_by_temporal_agg(df = df,
+    if period == 'off_peak':
+        ts_bd1 = filter_by_temporal_agg(df       = df,
+                                    temporal_agg = 'business_day',
+                                    city         = city,
+                                    start        = datetime.time(0, 0),
+                                    end          =datetime.time(6, 59)
+                                    )
+        ts_bd2 = filter_by_temporal_agg(df       = df,
+                                    temporal_agg = 'business_day',
+                                    city         = city,
+                                    start        = datetime.time(10, 15),
+                                    end          =datetime.time(16, 29)
+                                        )
+        ts_bd3 = filter_by_temporal_agg(df       = df,
+                                    temporal_agg = 'business_day',
+                                    city         = city,
+                                    start        = datetime.time(19, 1),
+                                    end          =datetime.time(23, 59)
+                                        )
+        ts_bd = pd.concat([ts_bd1,ts_bd2,ts_bd3],axis=0)
+        ts_nbd1 = filter_by_temporal_agg(df       = df,
                                     temporal_agg = 'non_business_day',
-                                    city = city,
-                                    start = start,
-                                    end=end)
+                                    city         = city,
+                                    start        = datetime.time(0, 0),
+                                    end          =datetime.time(6, 59)
+                                    )
+        ts_nbd2 = filter_by_temporal_agg(df       = df,
+                                    temporal_agg = 'non_business_day',
+                                    city         = city,
+                                    start        = datetime.time(10, 15),
+                                    end          =datetime.time(16, 29)
+                                        )
+        ts_nbd3 = filter_by_temporal_agg(df       = df,
+                                    temporal_agg = 'non_business_day',
+                                    city         = city,
+                                    start        = datetime.time(19, 1),
+                                    end          =datetime.time(23, 59)
+                                        )
+        ts_nbd = pd.concat([ts_nbd1,ts_nbd2,ts_nbd3],axis=0)
+    else:
+        ts_bd = filter_by_temporal_agg(df = df,
+                                        temporal_agg = 'business_day',
+                                        city = city,
+                                        start = start,
+                                        end=end)
+
+        ts_nbd = filter_by_temporal_agg(df = df,
+                                        temporal_agg = 'non_business_day',
+                                        city = city,
+                                        start = start,
+                                        end=end)
     
     return ts_bd, ts_nbd
 
@@ -83,8 +131,10 @@ def filter_per_day_type(df,period,city,start = None,end=None):
 def get_inflow_outflow(df_raw_in_no_agg,df_raw_out_no_agg,filter_q,city,period='all_day',day_type = None,index_name= 'idstation'):
     if filter_q is not None:
         # Apply quantile filter
-        df_raw_in_f = df_raw_in_no_agg[df_raw_in_no_agg < df_raw_in_no_agg.quantile(filter_q)]
-        df_raw_out_f = df_raw_out_no_agg[df_raw_out_no_agg < df_raw_out_no_agg.quantile(filter_q)]
+        df_raw_in_f = df_raw_in_no_agg.clip(upper=df_raw_in_no_agg.quantile(filter_q), axis=1)
+        df_raw_out_f = df_raw_out_no_agg.clip(upper=df_raw_out_no_agg.quantile(filter_q), axis=1)
+        # df_raw_in_f = df_raw_in_no_agg[df_raw_in_no_agg < df_raw_in_no_agg.quantile(filter_q)]
+        # df_raw_out_f = df_raw_out_no_agg[df_raw_out_no_agg < df_raw_out_no_agg.quantile(filter_q)]
     else:
         df_raw_in_f = df_raw_in_no_agg
         df_raw_out_f = df_raw_out_no_agg
@@ -164,7 +214,7 @@ def normalize(df_raw,norm,normtype,normalized_based_on= None,city= None):
 # --------------------------------------------------
 #  Distribution des volumes et valeurs manquantes 
 
-def get_histogram_per_day_type(df,city,period,stats,palette,n_bins = 30):
+def get_histogram_per_day_type(df,city,period,stats,palette,n_bins = 30,save_path = None):
     """ Retourne l'histogramme des volumes 
     en business day et en non business day.
     Les deux histogrammes sont superposée en transparence.
@@ -197,9 +247,11 @@ def get_histogram_per_day_type(df,city,period,stats,palette,n_bins = 30):
     sns.histplot(ts_bd, color=palette[0], label='Business Days', kde=False, stat=stats, alpha=0.6, bins=bins)
     sns.histplot(ts_nbd, color=palette[1], label='Non-Business Days', kde=False, stat=stats, alpha=0.6, bins=bins)
     plt.xlabel('Volume')
-    plt.ylabel('Density')
+    plt.ylabel(stats)
     plt.title('Histogram of Volumes by day type across all Spatial Units and {} period'.format(convert_to_str(period)))
     plt.legend()
+    if save_path is not None:
+        plt.savefig(save_path)
     plt.show()
     return ts_bd, ts_nbd
 
@@ -212,7 +264,9 @@ def preprocess_df(df,ascending=None,period= None,city= None,
                   normtype='zscore',
                   normalized_based_on= None,
                   start = None,
-                  end = None):
+                  end = None,
+                  temporal_agg = None,
+                  df_all = None):
     """
     Preprocess the dataframe by organizing columns, filtering by day type, applying quantile filtering, and normalization.
     Args:
@@ -227,13 +281,20 @@ def preprocess_df(df,ascending=None,period= None,city= None,
         df_bd (pd.DataFrame): processed dataframe for business days.
         df_nbd (pd.DataFrame): processed dataframe for non-business days.
     """
-    if ascending is not None: 
+    if ascending is not None:
+        if df_all is not None:
+            df_for_stats = df_all
+        else:
+            df_for_stats = df
         # Organise columns in an ascending order of the median values:
         if ascending:
-            median_values = df.median().sort_values()   
+            median_values = df_for_stats.median().sort_values()   
         else:
-            median_values = df.median().sort_values(ascending=False)   
-        df = df[median_values.index]
+            median_values = df_for_stats.median().sort_values(ascending=False)   
+        order = median_values.index
+        df = df[order]
+    else:
+        order = None
 
     # filter by day type
     if period is not None:
@@ -242,24 +303,32 @@ def preprocess_df(df,ascending=None,period= None,city= None,
         df_bd, df_nbd = filter_per_day_type(df,period,city,start = start,end = end)
 
         if filter_q is not None:
-            df_bd = df_bd[df_bd <= df_bd.quantile(filter_q)]
-            df_nbd = df_nbd[df_nbd <= df_nbd.quantile(filter_q)]
+            df_bd = df_bd.clip(upper=df_bd.quantile(filter_q), axis=1)
+            df_nbd = df_nbd.clip(upper=df_nbd.quantile(filter_q), axis=1)
+            # df_bd = df_bd[df_bd <= df_bd.quantile(filter_q)]
+            # df_nbd = df_nbd[df_nbd <= df_nbd.quantile(filter_q)]
             
         # Normalize if needed 
         df_bd = normalize(df_bd,norm,normtype,normalized_based_on,city=city)
         df_nbd = normalize(df_nbd,norm,normtype,normalized_based_on,city=city)
+        if order is not None:
+            df_bd = df_bd[order]
+            df_nbd = df_nbd[order]
         return df_bd, df_nbd
     
     else:
         if start is not None or end is not None:
             df = filter_by_temporal_agg(df = df,
-                                    temporal_agg = None,
+                                    temporal_agg = temporal_agg,
                                     city = city,
                                     start = start,
                                     end=end)
         if filter_q is not None:
-            df = df[df <= df.quantile(filter_q)]
+            df = df.clip(upper=df.quantile(filter_q), axis=1)
+            # df = df[df <= df.quantile(filter_q)]
         df = normalize(df,norm,normtype,normalized_based_on,city=city)
+        if order is not None:
+            df = df[order]
         return df
     
 def get_add_title(norm,filter_q):
@@ -268,7 +337,10 @@ def get_add_title(norm,filter_q):
     return add_title1,add_title2
 
 def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = False,filter_q = None,normtype='zscore',
-                                              figsize=(12, 6)):
+                                              figsize=(12, 6),
+                                              save_path = None,
+                                              df_all = None,
+                                              ):
     """
     Retourne les boxplot des volumes par stations en business days et en non business days. Les deux boxplots sont superposés en transparence.
     
@@ -285,7 +357,8 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
         normtype (str): type de normalisation à appliquer si norm est True. Choix entre 'zscore' et 'minmax'.
     """
     # Organise columns in an ascending order of the median values:
-    df_bd,df_nbd = preprocess_df(df,ascending=True,period= period,city= city,norm = norm,filter_q = filter_q,normtype=normtype)
+    df_bd,df_nbd = preprocess_df(df,ascending=True,period= period,city= city,norm = norm,filter_q = filter_q,normtype=normtype,df_all = df_all)
+    spatial_order = df_bd.columns.astype(str).tolist()
 
     ts_bd = df_bd.stack()
     ts_bd.name = 'Volume'
@@ -296,19 +369,30 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
     ts_nbd.name = 'Volume'
     ts_nbd = ts_nbd.reset_index()
     ts_nbd['day_type'] = 'Non-Business Day'
+
+
+
     df_combined = pd.concat([ts_bd, ts_nbd], axis=0)
 
-    # 1. CALCUL DES INDICATEURS SUPPLEMENTAIRES A AFFICHER
+    hue_order = ['Business Day', 'Non-Business Day']
+    df_combined['day_type'] = pd.Categorical(df_combined['day_type'], categories=hue_order, ordered=True)
+    df_combined['Spatial Unit ID'] = pd.Categorical(df_combined['Spatial Unit ID'].astype(str), categories=spatial_order, ordered=True)
+
+
+    # 1. Calcul Quanitle ou autres indicateurs 
     df_q = df_combined.groupby(['Spatial Unit ID', 'day_type'])['Volume'].agg(
                                         # q90=lambda x: x.quantile(0.75),
                                         # q95=lambda x: x.quantile(0.95),
                                         q99=lambda x: x.quantile(0.99),
                                     ).reset_index()
+
     # Transformation en format long pour l'affichage (une ligne par valeur)
     df_q = df_q.melt(id_vars=['Spatial Unit ID', 'day_type'], value_name='Volume').drop(columns='variable')
 
     # B. Calcul des Max pour les afficher comme cercles vides
     df_max = df_combined.groupby(['Spatial Unit ID', 'day_type'])['Volume'].max().reset_index()
+    df_max['day_type'] = pd.Categorical(df_max['day_type'], categories=hue_order, ordered=True)
+
 
     # boxplot plot avec sns :
     # 2. AFFICHAGE DU GRAPHIQUE
@@ -321,8 +405,11 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
         x='Spatial Unit ID',
         y='Volume',
         hue="day_type",
+        hue_order=hue_order,
+        order = spatial_order,
         palette={'Business Day': palette[0], 'Non-Business Day': palette[1]},
         showfliers=False,    # False   # On cache les outliers classiques
+        whis=[5, 95],        # Moustaches aux percentiles 5% et 95%
         showcaps=True,
         showmeans=True,
         meanline=True,
@@ -338,6 +425,8 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
         x='Spatial Unit ID',
         y='Volume',
         hue="day_type",
+        hue_order=hue_order,
+        order = spatial_order,
         dodge=True,             # Indispensable pour s'aligner sur les boîtes décalées
         jitter=False,
         marker='_',             # Le secret pour avoir une barre horizontale
@@ -349,9 +438,13 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
         ax=ax,
         zorder=10               # S'assure que c'est dessiné au-dessus
     )
-    
+
     df_max['Spatial Unit ID'] = df_max['Spatial Unit ID'].astype(str)
-    sns.scatterplot(data=df_max, x='Spatial Unit ID', y='Volume', hue="day_type", marker="$\circ$", ec="face", s=30,palette = { 'Business Day': palette[0], 'Non-Business Day': palette[1]}, ax=ax, legend=False, zorder=11)
+    sns.scatterplot(data=df_max, x='Spatial Unit ID', y='Volume', hue="day_type",
+        hue_order=hue_order, 
+        # order = spatial_order,
+        marker="$\circ$", ec="face", s=30,palette = { 'Business Day': palette[0], 'Non-Business Day': palette[1]}, ax=ax, legend=False, zorder=11)
+
 
 
     add_title1,add_title2 = get_add_title(norm,filter_q)
@@ -384,6 +477,8 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
     
     ax.legend(handles=handles, bbox_to_anchor=(1.05, 1), loc='upper left')
     # Affiche la legende hors du cadre du plot, à droite: 
+    if save_path is not None:
+        plt.savefig(save_path,bbox_inches='tight')
 
     plt.show()
     return df_bd, df_nbd
@@ -396,12 +491,18 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
 
 def heatmap(df,city,norm=False,filter_q = None,normtype= 'zscore',cmap = 'RdYlBu',bool_reversed = False,
             index = 'month_year',columns = 'day_date',
-            normalized_based_on = None, vmin = None, vmax = None,figsize = None):
+            normalized_based_on = None, vmin = None, vmax = None,figsize = None,
+            title =None,
+            save_path = None):
     """ Retourne une heatmap des volumes normalisés par unité spatiale et par day type """
 
     # Sum through spatial units: 
     if filter_q is not None:
-        df = df[df <= df.quantile(filter_q)]
+        # clipping extreme values:
+        df = df.clip(upper=df.quantile(filter_q), axis=1)
+        # df = df[df <= df.quantile(filter_q)]
+
+
 
     ts = df.sum(axis=1)
     ts.name = 'Volume'
@@ -447,8 +548,12 @@ def heatmap(df,city,norm=False,filter_q = None,normtype= 'zscore',cmap = 'RdYlBu
                         figsize = figsize
         )
     add_title1,add_title2 = get_add_title(norm,filter_q)
+    if title is None:
+        title = f"HeatMap of Daily {add_title1}Volumes {add_title2}"
+    ax.set_title(title)
 
-    ax.set_title(f"HeatMap of Daily {add_title1}Volumes {add_title2}")
+    if save_path is not None:
+        plt.savefig(save_path,bbox_inches='tight')
     return df_agg
 
 
