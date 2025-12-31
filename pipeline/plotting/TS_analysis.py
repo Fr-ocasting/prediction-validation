@@ -317,7 +317,12 @@ def plot_loss_from_trainer(trainer,width=400,height=1500,bool_show=False):
        return layout
 
 
-def plot_TS(list_df_ts,width=1500,height=400,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False,x_datetime = True):
+def plot_TS(list_df_ts,width=1500,height=400,bool_show=False,title=f"Time Serie Intensity of NetMob apps consumption",scatter = False,x_datetime = True, 
+            only_hours = False,
+            std_band = None,
+              x_axis_label = None,
+              y_axis_label = None,
+            ):
        if x_datetime:
              p = figure(x_axis_type="datetime",title=title,
                             width=width,height=height)
@@ -330,6 +335,7 @@ def plot_TS(list_df_ts,width=1500,height=400,bool_show=False,title=f"Time Serie 
 
        if not(type(list_df_ts)==list):
               list_df_ts= [list_df_ts]
+              list_std_band = [std_band]
        
        nb_cols = [df_i.shape[1] for df_i in list_df_ts]
        total_nb_ts = int(np.sum(np.array(nb_cols)))
@@ -354,20 +360,57 @@ def plot_TS(list_df_ts,width=1500,height=400,bool_show=False,title=f"Time Serie 
                      displayed_legend = str(column)
                      legend_it.append((displayed_legend, [c]))
 
+                     if std_band is not None:
+                            std_i = list_std_band[i][column]
+                            dict_source = {
+                                 'time': df_i.index,
+                                 'lower': df_i[column].values - std_i.values,
+                                 'upper': df_i[column].values + std_i.values
+                             }
+                            source_interval = ColumnDataSource(pd.DataFrame(dict_source))
+                            band = Band(base="time", lower="lower", upper="upper", source=source_interval,
+                                         fill_alpha=0.3, fill_color=color_i, line_width=0)
+                            p.add_layout(band)
+              
+
        p.xaxis.major_label_orientation = 1.2  # Pour faire pivoter les labels des x
        legend = Legend(items=legend_it)
        legend.click_policy="hide"
        p.add_layout(legend, 'right')
        if x_datetime:
-              p.xaxis.formatter=DatetimeTickFormatter(
-              months="%b",
-              days="%a %d %b",
-              hours="%a %d %b %H:%M",
-              minutes="%a %d  %H:%M"
-                     )
+              if only_hours:
+                     p.xaxis.formatter=DatetimeTickFormatter(
+                          hours="%H:%M",
+                          days="%H:%M",
+                          months="%H:%M",
+                          years="%H:%M"
+                                 )
+              else:
+                     p.xaxis.formatter=DatetimeTickFormatter(
+                     months="%b",
+                     days="%a %d %b",
+                     hours="%a %d %b %H:%M",
+                     minutes="%a %d  %H:%M"
+                            )
+       # set x axis label
+       if x_axis_label is not None:
+              p.xaxis.axis_label = x_axis_label
+       else:    
+              if x_datetime:
+                     p.xaxis.axis_label = "Time"
+              else:
+                     p.xaxis.axis_label = "Index"
+       # set y axis label
+       if y_axis_label is not None: 
+              p.yaxis.axis_label = y_axis_label
+       else:
+             p.yaxis.axis_label = "Intensity"
 
        if bool_show:
               output_notebook()
               show(p)
+
+
+
 
        return p

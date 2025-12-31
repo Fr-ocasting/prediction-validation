@@ -488,7 +488,6 @@ def get_boxplot_per_spatial_unit_per_day_type(df,period,city,palette,norm = Fals
 # --------------------------------------------------
 # Identification des particularités:
 
-
 def heatmap(df,city,norm=False,filter_q = None,normtype= 'zscore',cmap = 'RdYlBu',bool_reversed = False,
             index = 'month_year',columns = 'day_date',
             normalized_based_on = None, vmin = None, vmax = None,figsize = None,
