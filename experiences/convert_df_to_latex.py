@@ -215,26 +215,21 @@ def load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,
         metric_i.append(metrics_ij)
     return df_j_all, metric_i
 
-def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics):
-    df_j_all = pd.DataFrame()
-    metric_i = []
-    for n_bis in range(1,6):
-        df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics)
-    
-    if len(metric_i) > 0: 
-        metric_i = pd.DataFrame(metric_i)
-        metric_i.index = [f"{trial_j}_bis{n_bis}" for n_bis in range(1,6)]
-        L_metrics.append(metric_i)
-
-    return L_metrics
-
-def tackle_trial_j(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics,agg = False, plot_losses=False):
+def tackle_trial_j(folder_path,
+                   dic_exp_to_names,
+                   L_metrics,
+                   exp_i,
+                   trial_j,
+                   metrics, 
+                   agg_bool = False, 
+                   plot_losses=False
+                   ):
     df_j_all = pd.DataFrame()
     metric_i = []
     for n_bis in range(1,6):
         df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics)
 
-    if agg: 
+    if agg_bool: 
         metric_i = pd.DataFrame(pd.DataFrame(metric_i).agg(['mean','std']).unstack()).T
         metric_i.index = [f"{trial_j}"]
     else: 
@@ -253,12 +248,12 @@ def build_legend_group_exp4(x):
     if ('adpQ0' in x) and ('adp0' in x):
         return 'adp0 & adpQ0'
     if ('adpQ0' in x):
-        return 'adpQ0'
+        return 'CrossAttn adpQ = 0'
     if ('adp0' in x):
         return 'adp0'
     if not('adp' in x):
         return 'Baseline'
-    return 'STAEformer_CrossAttn'
+    return 'CrossAttn adpQ > 0'
 
 def build_legend_group_exp1(x):
     if not('subway_in_subway_out' in x) and not('subway_out_subway_in' in x):

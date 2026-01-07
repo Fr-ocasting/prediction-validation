@@ -89,5 +89,3 @@ STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_
 STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb24_ctxInEmb24_adp16_adpQ24__e80_h1_bis5:   All Steps RMSE = 4.289, MAE = 2.768, MASE = 0.719, MAPE = 45.540
 """
 
-# STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp32_adpQ24__e80_h4_bis1:   All Steps RMSE = 4.887, MAE = 3.064, MASE = 0.796, MAPE = 50.330
-# STAEformer_bike_out_subway_in_subway_out_calendar_late_fusion_CrossAttnBackBone_InEmb8_ctxInEmb8_adp32_adpQ24__e80_h4_bis2:   All Steps RMSE = 4.853, MAE = 3.055, MASE = 0.793, MAPE = 50.386
