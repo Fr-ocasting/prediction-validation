@@ -304,9 +304,6 @@ def build_legend_group_exp3(x):
 
 
 def _extract_model_info(x):
-    """
-    Extrait l'ID et le legend_group à partir d'une chaîne d'index de modèle.
-    """
     
     # --- 1. Extraction des applications ---
     apps = []
@@ -333,17 +330,24 @@ def _extract_model_info(x):
 
     # --- 2. Détermination de l'ID ---
     id_val = 'Baseline' 
+    trial_match = re.search(r'_trial(\d+)__', x)
     if is_baseline:
-        trial_match = re.search(r'_trial(\d+)__', x)
         if trial_match:
             id_val = f'Baseline_{trial_match.group(1)}'
-
     else :
         try:
-            base_id = x.split('_CrossAttnBackBone_')[1].split('__')[0]
-            id_val = f"{base_id}_{apps_str}"
+            n_Iris = re.search(r'aggIris(\d+)', x)
+            if n_Iris is not None: 
+                base_id = x.split('_CrossAttnBackBone_')[1].split('_aggIris')[0]
+                id_val = f"{base_id}_agg{n_Iris.group(1)}_{apps_str}"
+            else:
+                base_id = x.split('_CrossAttnBackBone_')[1].split('__')[0]
+                id_val = f"{base_id}_{apps_str}"
         except IndexError:
             id_val = f"CrossAttn_{apps_str}"
+
+        if trial_match:
+            id_val = f'{id_val}_{trial_match.group(1)}'
 
     # --- 3. Détermination du groupe de légende (Legend Group) ---
     legend_val = None
@@ -404,13 +408,7 @@ def update_df_metrics_exp4_15min(df_metrics_all):
     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all
 
-# def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
-#     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
-#     df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
-#     df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
-#     df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
-#     return df_metrics_all   
- 
+
 
 def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
     df_index = df_metrics_all.reset_index()['index']

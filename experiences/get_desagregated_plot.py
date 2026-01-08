@@ -20,8 +20,10 @@ def get_desagregated_gains(dic_exp_to_names,dic_trials,horizons,comparison_on_ra
         print(exp_i)
         configs = dic_trials[exp_i]
         for h in horizons:
+            print('   Horizon: ',h)
             baseline = find_baseline(exp_i,h=h)
             if (baseline in configs) and baseline.endswith(f"_h{h}"):
+                print('   Baseline: ',baseline)
                 trial_ids2 = [f"{config}_bis" for config in configs if (config.endswith(f"_h{h}")) and not(baseline == config)]
                 trial_ids1 = [f"{baseline}_bis"]*len(trial_ids2)
 
@@ -103,8 +105,10 @@ def get_desagregated_gains(dic_exp_to_names,dic_trials,horizons,comparison_on_ra
                         log += f"{trial_id1[:-3]}:   All Steps RMSE = {RMSE1:.5f}, MAE = {MAE1:.5f}, MASE = {MASE1:.5f}, MAPE = {MAPE1:.5f}\n"
                     log += f"{trial_id2[:-3]}:   All Steps RMSE = {RMSE2:.5f}, MAE = {MAE2:.5f}, MASE = {MASE2:.5f}, MAPE = {MAPE2:.5f}\n"
                     print(log)
-                else:
-                    issue_while_loading_saved_weights +=  f"\nBaseline {baseline} not found in configs\n{configs}\nfor horizon {h} in {exp_i}"
+            else:
+                issue_while_loading_saved_weights +=  f"\nBaseline {baseline} not found in configs\n{configs}\nfor horizon {h} in {exp_i}\n or does not end with _h{h}"
+                print(issue_while_loading_saved_weights)
+            
 
 
 if __name__ == "__main__":
