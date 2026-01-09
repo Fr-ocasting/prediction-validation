@@ -44,9 +44,11 @@ dataset_for_coverage = target_data
 dic_configs = {}
 for dataset_names in [[target_data] + ['calendar'],[target_data]]:
     for horizon in horizons:
-        for model_name in ['GMAN']: # ,
-        # Fonctionnels :  'DCRNN','RNN','LSTM','GRU','STGCN','STAEformer'
-        # A faire: 'MTGNN', 'ASTGCN','CNN'
+        for model_name in ['DCRNN','STGCN','STAEformer']: 
+        # Fonctionnels                      : 'DCRNN','RNN','LSTM','GRU','STGCN','STAEformer'
+        # Surprenants parmi fonctionnel     : 'DCRNN'
+
+        # A faire                            : 'GMAN', 'MTGNN', 'ASTGCN','CNN'
             
             if 'calendar' == dataset_names[-1] and not(model_name in ['STAEformer','GMAN']):
                 updated_dataset_names = dataset_names.copy()
@@ -55,7 +57,7 @@ for dataset_names in [[target_data] + ['calendar'],[target_data]]:
                 updated_dataset_names = dataset_names.copy()
 
             # Load Config: 
-            path = os.path.join(parent_dir, f"constants/config_by_datasets/{target_data}/{model_name}/{'_'.join(updated_dataset_names)}.py")
+            path = os.path.join(parent_dir, f"constants/init_config_by_datasets/{target_data}/{model_name}/{'_'.join(updated_dataset_names)}.py")
             abs_path = path.replace('/', os.sep)
             spec = importlib.util.spec_from_file_location("config_module", path)
             config_module = importlib.util.module_from_spec(spec)

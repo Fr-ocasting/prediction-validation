@@ -84,36 +84,67 @@ STGCN_subway_in__e500_h4_bis2:   All Steps RMSE = 48.766, MAE = 25.895, MASE = 0
 STGCN_subway_in__e500_h4_bis3:   All Steps RMSE = 48.295, MAE = 25.697, MASE = 0.769, MAPE = 24.945
 STGCN_subway_in__e500_h4_bis4:   All Steps RMSE = 48.969, MAE = 26.092, MASE = 0.781, MAPE = 26.045
 STGCN_subway_in__e500_h4_bis5:   All Steps RMSE = 47.521, MAE = 25.457, MASE = 0.762, MAPE = 24.401
+GMAN_subway_in_calendar__e100_h4_bis1:   All Steps RMSE = 47.743, MAE = 26.198, MASE = 0.784, MAPE = 29.863  
+GMAN_subway_in_calendar__e100_h4_bis2:   All Steps RMSE = 48.272, MAE = 26.435, MASE = 0.791, MAPE = 33.647
+GMAN_subway_in_calendar__e100_h4_bis3:   All Steps RMSE = 46.902, MAE = 26.235, MASE = 0.785, MAPE = 40.761
+GMAN_subway_in_calendar__e100_h4_bis4:   All Steps RMSE = 48.574, MAE = 26.672, MASE = 0.799, MAPE = 34.917
+GMAN_subway_in_calendar__e100_h4_bis5:   All Steps RMSE = 47.441, MAE = 26.253, MASE = 0.786, MAPE = 31.448
+
+GMAN(actualised)_subway_in_calendar__e100_h4_bis1:   All Steps RMSE = 47.567, MAE = 24.577, MASE = 0.736, MAPE = 37.698
+GMAN(actualised)_subway_in_calendar__e100_h4_bis2:   All Steps RMSE = 49.792, MAE = 25.278, MASE = 0.757, MAPE = 31.262
+GMAN(actualised)_subway_in_calendar__e100_h4_bis3:   All Steps RMSE = 49.005, MAE = 25.027, MASE = 0.749, MAPE = 34.472
+GMAN(actualised)_subway_in_calendar__e100_h4_bis4:   All Steps RMSE = 50.418, MAE = 25.146, MASE = 0.753, MAPE = 26.479
+GMAN(actualised)_subway_in_calendar__e100_h4_bis5:   All Steps RMSE = 47.948, MAE = 25.057, MASE = 0.750, MAPE = 30.462
+
 STAEformer_subway_in__e500_h4_bis1:   All Steps RMSE = 46.734, MAE = 25.218, MASE = 0.755, MAPE = 26.167
 STAEformer_subway_in__e500_h4_bis2:   All Steps RMSE = 46.644, MAE = 25.152, MASE = 0.753, MAPE = 25.726
 STAEformer_subway_in__e500_h4_bis3:   All Steps RMSE = 46.750, MAE = 25.230, MASE = 0.755, MAPE = 26.161
 STAEformer_subway_in__e500_h4_bis4:   All Steps RMSE = 46.473, MAE = 25.056, MASE = 0.750, MAPE = 26.261
 STAEformer_subway_in__e500_h4_bis5:   All Steps RMSE = 46.430, MAE = 25.021, MASE = 0.749, MAPE = 26.746
+
+
 DCRNN_subway_in__e500_h1_bis1:   All Steps RMSE = 44.244, MAE = 25.880, MASE = 0.775, MAPE = 29.692
 DCRNN_subway_in__e500_h1_bis2:   All Steps RMSE = 43.848, MAE = 25.579, MASE = 0.766, MAPE = 28.713
 DCRNN_subway_in__e500_h1_bis3:   All Steps RMSE = 44.258, MAE = 25.803, MASE = 0.773, MAPE = 28.896
 DCRNN_subway_in__e500_h1_bis4:   All Steps RMSE = 44.170, MAE = 26.030, MASE = 0.779, MAPE = 30.015
 DCRNN_subway_in__e500_h1_bis5:   All Steps RMSE = 44.032, MAE = 25.869, MASE = 0.775, MAPE = 28.947
+
 RNN_subway_in__e1000_h1_bis1:   All Steps RMSE = 56.091, MAE = 32.521, MASE = 0.979, MAPE = 34.039
 RNN_subway_in__e1000_h1_bis2:   All Steps RMSE = 56.700, MAE = 32.639, MASE = 0.983, MAPE = 33.091
 RNN_subway_in__e1000_h1_bis3:   All Steps RMSE = 56.184, MAE = 32.520, MASE = 0.979, MAPE = 34.811
 RNN_subway_in__e1000_h1_bis4:   All Steps RMSE = 56.606, MAE = 32.584, MASE = 0.981, MAPE = 33.055
 RNN_subway_in__e1000_h1_bis5:   All Steps RMSE = 56.713, MAE = 32.626, MASE = 0.983, MAPE = 32.838
+
 LSTM_subway_in__e500_h1_bis1:   All Steps RMSE = 46.199, MAE = 26.970, MASE = 0.808, MAPE = 30.298
 LSTM_subway_in__e500_h1_bis2:   All Steps RMSE = 45.359, MAE = 26.538, MASE = 0.795, MAPE = 29.401
 LSTM_subway_in__e500_h1_bis3:   All Steps RMSE = 46.050, MAE = 26.885, MASE = 0.805, MAPE = 29.695
 LSTM_subway_in__e500_h1_bis4:   All Steps RMSE = 46.682, MAE = 27.144, MASE = 0.813, MAPE = 29.561
 LSTM_subway_in__e500_h1_bis5:   All Steps RMSE = 45.476, MAE = 26.665, MASE = 0.798, MAPE = 30.537
+
 GRU_subway_in__e500_h1_bis1:   All Steps RMSE = 45.347, MAE = 26.589, MASE = 0.796, MAPE = 30.012
 GRU_subway_in__e500_h1_bis2:   All Steps RMSE = 45.487, MAE = 26.643, MASE = 0.798, MAPE = 29.952
 GRU_subway_in__e500_h1_bis3:   All Steps RMSE = 45.597, MAE = 26.580, MASE = 0.796, MAPE = 28.930
 GRU_subway_in__e500_h1_bis4:   All Steps RMSE = 45.690, MAE = 26.701, MASE = 0.799, MAPE = 29.572
 GRU_subway_in__e500_h1_bis5:   All Steps RMSE = 45.300, MAE = 26.534, MASE = 0.794, MAPE = 30.207
+
+GMAN_subway_in_calendar__e100_h1_bis1:   All Steps RMSE = 39.279, MAE = 22.916, MASE = 0.686, MAPE = 27.553
+GMAN_subway_in_calendar__e100_h1_bis2:   All Steps RMSE = 39.734, MAE = 23.203, MASE = 0.695, MAPE = 27.732
+GMAN_subway_in_calendar__e100_h1_bis3:   All Steps RMSE = 38.815, MAE = 22.871, MASE = 0.685, MAPE = 28.935
+GMAN_subway_in_calendar__e100_h1_bis4:   All Steps RMSE = 39.162, MAE = 23.323, MASE = 0.698, MAPE = 36.178
+GMAN_subway_in_calendar__e100_h1_bis5:   All Steps RMSE = 39.172, MAE = 23.501, MASE = 0.704, MAPE = 33.552
+
+GMAN(actualised)_subway_in_calendar__e100_h1_bis1:   All Steps RMSE = 41.374, MAE = 21.825, MASE = 0.653, MAPE = 23.616
+GMAN(actualised)_subway_in_calendar__e100_h1_bis2:   All Steps RMSE = 42.331, MAE = 22.011, MASE = 0.659, MAPE = 38.936
+GMAN(actualised)_subway_in_calendar__e100_h1_bis3:   All Steps RMSE = 40.941, MAE = 21.839, MASE = 0.654, MAPE = 30.756
+GMAN(actualised)_subway_in_calendar__e100_h1_bis4:   All Steps RMSE = 40.889, MAE = 21.742, MASE = 0.651, MAPE = 31.907
+GMAN(actualised)_subway_in_calendar__e100_h1_bis5:   All Steps RMSE = 39.658, MAE = 21.865, MASE = 0.655, MAPE = 23.875
+
 STGCN_subway_in__e500_h1_bis1:   All Steps RMSE = 36.639, MAE = 21.147, MASE = 0.633, MAPE = 21.508
 STGCN_subway_in__e500_h1_bis2:   All Steps RMSE = 37.149, MAE = 21.302, MASE = 0.638, MAPE = 21.329
 STGCN_subway_in__e500_h1_bis3:   All Steps RMSE = 37.567, MAE = 21.442, MASE = 0.642, MAPE = 21.745
 STGCN_subway_in__e500_h1_bis4:   All Steps RMSE = 37.564, MAE = 21.503, MASE = 0.644, MAPE = 21.215
 STGCN_subway_in__e500_h1_bis5:   All Steps RMSE = 36.774, MAE = 21.306, MASE = 0.638, MAPE = 22.624
+
 STAEformer_subway_in__e500_h1_bis1:   All Steps RMSE = 36.249, MAE = 20.943, MASE = 0.627, MAPE = 21.859
 STAEformer_subway_in__e500_h1_bis2:   All Steps RMSE = 36.474, MAE = 20.984, MASE = 0.628, MAPE = 21.756
 STAEformer_subway_in__e500_h1_bis3:   All Steps RMSE = 36.230, MAE = 20.924, MASE = 0.626, MAPE = 21.910

@@ -85,23 +85,23 @@ SANITY_CHECKER = False # True
 # --- Init ---  (set horizon, freq, ...)
 # Set seed : NO 
 
-init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp6_subway_netmob'
-device = torch.device('cuda:1')
+init_save_folder = 'K_fold_validation/training_wo_HP_tuning/Exp6_subway_netmob' # Exp6_subway_netmob
+device = torch.device('cuda:0')
 
 freq = '15min' #'15min'  
 horizons = [1] # [4]  #[1,4]
 target_data = 'subway_in' 
 contextual_dataset_names = ['netmob_POIs']
-add_name_save = '_clipping'  # ''  # '_trial2'
+add_name_save = '' #'_clipping'  # ''  # '_trial2'
 
 model_name = 'STAEformer'
 config_backbone_model = model_configurations[model_name]
-config_backbone_model['epochs'] = 20 # 150 # 150 #80
+config_backbone_model['epochs'] = 150 # 150 # 150 #80
 # config_backbone_model['batch_size'] = 128 # 150 #80
-compilation_modification['torch_compile'] = False #'compile' # 'compile' # 'compile'  # False 
+compilation_modification['torch_compile'] = 'compile' #'compile' # 'compile' # 'compile'  # False 
 compilation_modification['device'] = device
-compilation_modification['grad_clipping_norm'] = 1.0
-# REPEAT_TRIAL  = 1 
+# compilation_modification['grad_clipping_norm'] = 1.0
+REPEAT_TRIAL  = 10
 
 dic_configs = {}
 
@@ -112,7 +112,7 @@ weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['
 # ------ Possible configurations :
 L_input_embedding_dim = [24] # [12,24] # [24,48] # [8,24]
 L_adaptive_embedding_dim = [16] # [16,32] # [0,16,32] 
-L_init_adaptive_query_dim = [24] # [0,24] #  [0,24,48] #  [0,8,24]
+L_init_adaptive_query_dim = [24,0] # [0,24] #  [0,24,48] #  [0,8,24]
 L_contextual_input_embedding_dim = [24] #[8,12,24,48] # [8,12,24] #  [24,48] # [8,24] # [8,24,32,48]
 L_agg_iris_target_n = [100] # [None, 100]
 adp_initquery_inputemb = list(itertools.product(L_adaptive_embedding_dim,L_init_adaptive_query_dim,L_contextual_input_embedding_dim,L_input_embedding_dim,L_agg_iris_target_n))
@@ -143,12 +143,13 @@ for adp_emb, init_adp_q, context_input_emb,input_emb,agg_iris_target_n in adp_in
     else:
         name_i = f"CrossAttnBackBone_InEmb{input_emb}_ctxInEmb{context_input_emb}_adp{adp_emb}_adpQ{init_adp_q}"
 
-    for apps in [['Google_Maps', 'Web_Weather'],
-                    # ['Google_Maps', 'Deezer'],
-                    # ['Instagram', 'Deezer'],
+    for apps in [
+                    # ['Google_Maps', 'Web_Weather'],
+                    ['Google_Maps', 'Deezer'],
+                    ['Instagram', 'Deezer'],
                     # ['Instagram'],
                     # ['Deezer'],
-                    # ['Instagram','Google_Maps','Deezer'],
+                    ['Instagram','Google_Maps','Deezer'],
                     # ['Instagram','Google_Maps','Deezer','Web_Weather']
                     ]:
         contextual_kwargs_i['NetMob_selected_apps'] = apps

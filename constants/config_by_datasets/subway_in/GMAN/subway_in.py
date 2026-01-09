@@ -11,9 +11,10 @@ config =  {'target_data': 'subway_in',
             'use_target_as_context': False,
             'loss_function_type':'MSE',
 
+            # GMAN parameters:
             'nb_STAttblocks': 1,
-            'K': 8,
-            'd': 8,
+            'num_heads': 8,  # 'num_heads = K = 8' in the paper
+            'head_dim': 8,   # 'head_dim = d = 8' in the paper
             'bn_decay': 0.1,
             'adj_type': 'dist',
 

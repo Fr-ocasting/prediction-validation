@@ -32,6 +32,7 @@ def read_graph(edgelist):
 
 
     
+benchmark_datasets = ['PEMS04','PEMS07','PEMS08','PEMS03','PEMS-BAY', 'PeMS04_flow','PeMS07_flow','PeMS08_flow','PeMS03_flow','PeMS-BAY_flow']
 
 # Added function to load or generate SE using node2vec
 def load_SE_GMAN(dataset,args):
@@ -51,7 +52,7 @@ def load_SE_GMAN(dataset,args):
             return
 
         if args.adj_type in ['dist','adj']:
-            if args.target_data in ['PEMS04','PEMS07','PEMS08','PEMS03','PEMS-BAY']:
+            if args.target_data in benchmark_datasets:
                 is_directed = True
             elif args.target_data in ['subway_in','subway_out','bike_in','bike_out']:
                 is_directed = False
@@ -64,15 +65,20 @@ def load_SE_GMAN(dataset,args):
 
 
 
-        file_extension = args.adj_type.split('.')[-1]
         Adj_file = f'{save_folder_path}/{args.adj_type}'
+        
         if os.path.exists(f'{Adj_file}.csv'):
             df = pd.read_csv(f'{Adj_file}.csv',index_col = 0)
             nx_G = nx.from_pandas_adjacency(df, create_using=nx.DiGraph())
-        elif os.path.exists(f'{Adj_file}.pkl'):
-            Adj_file = f'{Adj_file}.pkl'
-            with open(f'{Adj_file}.pkl', 'rb') as f:
+
+        elif 'pkl' in dataset.adj_mx_path  and os.path.exists(dataset.adj_mx_path):
+            with open(dataset.adj_mx_path, 'rb') as f:
                 nx_G = pickle.load(f)
+                nx_G = nx.from_pandas_adjacency(pd.DataFrame(nx_G), create_using=nx.DiGraph())
+
+        elif 'txt' in dataset.adj_mx_path  and os.path.exists(dataset.adj_mx_path):
+            nx_G = read_graph(dataset.adj_mx_path)  
+
         elif os.path.exists(f'{Adj_file}.txt'):
             Adj_file = f'{Adj_file}.txt'
             nx_G = read_graph(Adj_file)

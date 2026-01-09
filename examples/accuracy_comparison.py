@@ -702,7 +702,10 @@ def get_model_args(save_folder_name = 'optim/subway_in_STGCN', save_folder_name_
 
 
 def get_desagregated_comparison_plot(trial_id1,trial_id2,
-                                     model_args,model_args_bis,path_model_args,path_model_args_bis,
+                                     model_args,
+                                     model_args_bis,
+                                     path_model_args,
+                                     path_model_args_bis,
                                      range_k = range(1,6),
                                     trial_id1_in_bis=False,
                                     trial_id2_in_bis=False,
