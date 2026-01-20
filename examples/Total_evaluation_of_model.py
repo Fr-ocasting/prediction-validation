@@ -140,11 +140,11 @@ if __name__ == '__main__':
                             dataset_for_coverage=dataset_for_coverage,
                             modification = {'target_data' :target_data,
                                             'ray':True,
-                                            'grace_period':20,
-                                            'HP_max_epochs':200, #1000, #300,
+                                            'grace_period':10,
+                                            'HP_max_epochs': 100, # 100, #1000, #300,
                                             'K_fold': 2,
                                             'evaluate_complete_ds' : True,
-                                            'expanding_train': 0.2,
+                                            # 'expanding_train': 0.2,
 
                                             'standardize': False,
                                             'minmaxnorm': True,
@@ -152,17 +152,19 @@ if __name__ == '__main__':
 
                                             # Architecture 
                                             'nb_STAttblocks': 3,
-                                            'K': 8,
-                                            'd': 8,
+                                            'num_heads': 8,
+                                            'head_dim': 8,
                                             'bn_decay': 0.1,
                                             'adj_type': 'dist',
 
                                             # Optimization
                                             'loss_function_type':'HuberLoss',
                                             'optimizer': 'adamw',
-                                            'torch_scheduler_type': 'MultiStepLR',
-                                            'torch_scheduler_milestone': [25, 45, 65],
-                                            'torch_scheduler_gamma':0.1,
+
+                                            'torch_scheduler': None,
+                                            # 'torch_scheduler_type': 'MultiStepLR',
+                                            # 'torch_scheduler_milestone': [25, 45, 65],
+                                            # 'torch_scheduler_gamma':0.1,
 
                                             'batch_size': 128,
                                             'freq': '15min',
@@ -172,20 +174,16 @@ if __name__ == '__main__':
                                             'H':6,
                                             'D':1,
                                             'W':0,
-                                            'step_ahead': 1,
+                                            'step_ahead': 4,
                                             'horizon_step' : 1,
                                             'unormalize_loss' : True,
-                                            'torch_scheduler': None,
 
 
                                             'temporal_graph_transformer_encoder': False, # False # True
                                             'need_global_attn' : False, # False # True
                                             'data_augmentation': False, #True,  #False
                                             'use_target_as_context': False,
-
-
                  
-
                                             'contextual_kwargs' : {},
                                
                                             'num_workers' : 0, #4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB
@@ -199,15 +197,14 @@ if __name__ == '__main__':
                                              })
 
 
-        epochs_validation = 200 #1000
-        num_samples = 200#200
+        epochs_validation = 100 # 200 #1000
+        num_samples =300 # 300#200
+        HP_and_valid_one_config(args,epochs_validation,num_samples)
 
-        if False: 
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
-        if True:
-            trial_id = 'subway_in_calendar_GMAN_HuberLossLoss_2025_11_30_18_01_76652'
-            modification = {'epochs':epochs_validation}
-            train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+        # if False:
+        #     trial_id = 'subway_in_calendar_GMAN_HuberLossLoss_2025_11_30_18_01_76652'
+        #     modification = {'epochs':epochs_validation}
+        #     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
         
     if False:

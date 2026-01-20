@@ -15,7 +15,8 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
                             save_path=None,
                             palette= None,
                             legend_groups = None,
-                            title = None
+                            title = None,
+                            bool_show=True
                             ):
     
     if title is None:
@@ -150,14 +151,19 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
         # Attach the callback to it.
         item.renderers[0].js_on_change('visible', callback)
 
-    output_notebook()
-    show(p)
+
 
     if save_path is not None:
         reset_output()
         output_file(save_path)
         save(p)
         reset_output()
+
+    if bool_show:
+        output_notebook()
+        show(p)
+    else:
+        return p
 
 
 

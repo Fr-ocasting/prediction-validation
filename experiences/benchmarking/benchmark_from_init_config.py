@@ -32,7 +32,7 @@ init_save_folder = 'K_fold_validation/training_wo_HP_tuning/BenchmarkInitConfig'
 device = torch.device('cuda:1')
 
 freq = '15min'  
-horizons = [4,1]  #[1,4]
+horizons = [1,4]  #[1,4]
 target_data = 'subway_in' 
 BATCH_SIZE = 128
 EPOCHS = 100
@@ -42,13 +42,14 @@ dataset_for_coverage = target_data
 
 
 dic_configs = {}
-for dataset_names in [[target_data] + ['calendar'],[target_data]]:
+for model_name in ['STAEformer']: # ,'STAEformer','STGCN'
     for horizon in horizons:
-        for model_name in ['DCRNN','STGCN','STAEformer']: 
-        # Fonctionnels                      : 'DCRNN','RNN','LSTM','GRU','STGCN','STAEformer'
+        for dataset_names in [[target_data]]:  # ,[target_data,'calendar']
+    
+         
+        # Fonctionnels                      : 'DCRNN','RNN','LSTM','GRU','STGCN','STAEformer','GMAN'
         # Surprenants parmi fonctionnel     : 'DCRNN'
-
-        # A faire                            : 'GMAN', 'MTGNN', 'ASTGCN','CNN'
+        # A faire                            : 'MTGNN', 'ASTGCN','CNN'
             
             if 'calendar' == dataset_names[-1] and not(model_name in ['STAEformer','GMAN']):
                 updated_dataset_names = dataset_names.copy()

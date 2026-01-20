@@ -23,7 +23,6 @@ config = {'model_name': 'RNN',
         'keep_best_weights': False,
  
         'denoising_names': [],
-        'denoiser_names': ['median'],
         'contextual_kwargs': {},
         'ray': False,
         'alpha': None,

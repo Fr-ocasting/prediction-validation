@@ -5,8 +5,8 @@ parser = argparse.ArgumentParser(description='GMAN')
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--nb_STAttblocks', type=int, default=1, help='number of STAtt Blocks')
-parser.add_argument('--K', type=int, default=8, help='number of attention heads')
-parser.add_argument('--d', type=int, default=8, help='dims of each head attention outputs')
+parser.add_argument('--num_heads', type=int, default=8, help='number of attention heads')
+parser.add_argument('--head_dim', type=int, default=8, help='dims of each head attention outputs')
 parser.add_argument('--bn_decay', type=float, default=0.1, help='batch normalization decay rate')
 parser.add_argument('--adj_type', default='dist', help="Type of adjacency matrix")
 
