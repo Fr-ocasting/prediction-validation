@@ -11,7 +11,7 @@ from examples.accuracy_comparison import get_model_args,get_desagregated_compari
 from experiences.common_results import find_baseline
 from pipeline.utils.metrics import evaluate_metrics
 
-def get_desagregated_gains(dic_exp_to_names,dic_trials,horizons,comparison_on_rainy_events,range_k,station_clustering,folder_path,save_bool = True):
+def get_desagregated_gains(dic_exp_to_names,dic_trials,horizons,comparison_on_rainy_events,range_k,station_clustering,folder_path,save_bool = True,heatmap= False,daily_profile= False,dendrogram= False):
     issue_while_loading_saved_weights,log = '', ''
     init_folder_path = f"{folder_path}/plot"
     for exp_i,target_model_name in dic_exp_to_names.items():
@@ -60,6 +60,10 @@ def get_desagregated_gains(dic_exp_to_names,dic_trials,horizons,comparison_on_ra
                                                                 station_clustering = station_clustering,
                                                                 folder_path = folder_path,
                                                                 save_name = save_name,
+                                                                heatmap = heatmap,
+                                                                daily_profile = daily_profile,
+                                                                dendrogram = dendrogram
+
                                                                 )
                     clusterer,full_predict1,full_predict2,train_input,X,Y_true,L_trainers_1,L_trainers_2,ds1,ds2,args_init1,args_init2,rainy_indices,rainy_mask = outputs
 

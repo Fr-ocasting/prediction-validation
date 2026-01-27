@@ -42,7 +42,7 @@ dataset_for_coverage = target_data
 
 
 dic_configs = {}
-for model_name in ['RNN']: 
+for model_name in ['STGCN']: 
     for dataset_names in [[target_data],[target_data,'calendar']]: # ,[target_data]]:
         for horizon in horizons:
 

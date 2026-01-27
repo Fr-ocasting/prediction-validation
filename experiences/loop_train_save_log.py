@@ -44,7 +44,8 @@ def train_one_config(loger,config_i,init_save_folder,trial_id):
     save_folder = f"{weights_save_folder}/{trial_id}"
     save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
     print(f"    Save folder: {save_folder_with_root}")
-
+    if not os.path.exists(f"{SAVE_DIRECTORY}/{init_save_folder}"):
+        os.mkdir(f"{SAVE_DIRECTORY}/{init_save_folder}")
     if not os.path.exists(f"{SAVE_DIRECTORY}/{weights_save_folder}"):
         os.mkdir(f"{SAVE_DIRECTORY}/{weights_save_folder}")
     if not os.path.exists(save_folder_with_root):
