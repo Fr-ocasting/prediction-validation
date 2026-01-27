@@ -23,22 +23,29 @@ def tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_
     metric_i = []
     for n_bis in n_bis_range:
         df_j_all, metric_i = load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,metrics)
+    print('len(metric_i): ',len(metric_i))
     
     if len(metric_i) > 0: 
         metric_i = pd.DataFrame(metric_i)
-        metric_i.index = [f"{trial_j}_bis{n_bis}" for n_bis in range(1,6)]
+        metric_i.index = [f"{trial_j}_bis{n_bis}" for n_bis in n_bis_range]
         L_metrics.append(metric_i)
 
     return L_metrics
 
-def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,dic_exp_to_names,save_path):
+def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,dic_exp_to_names,save_path,n_bis_range):
+    L_metrics = []
+    print(f"\nProcessing Experiment: {exp_i}")
+    print("-----------------------")
+    print(f"Trials to process: {trials}")
     for trial_j in trials:
-        L_metrics = tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics)
+        L_metrics = tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics,n_bis_range)
 
     df_metrics_all = pd.concat(L_metrics)
 
     horizons = list(set([c.split('_')[-1][1:] for c in df_metrics_all.columns]))
     if save_path is not None:
+        if not os.path.exists(save_path):
+            os.mkdir(save_path)
         if not os.path.exists(f"{save_path}/boxplot"):
                 os.mkdir(f"{save_path}/boxplot")
     for horizon in horizons:

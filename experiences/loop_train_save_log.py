@@ -23,7 +23,8 @@ from examples.train_model_on_k_fold_validation import save_model_metrics,get_con
 def loop_train_save_log(loger,dic_configs,init_save_folder = 'K_fold_validation/training_wo_HP_tuning/optim'):
     for trial_id,config_i in dic_configs.items():
         print('\n---------------------------------------------\nSTART TRIAL ID:',trial_id)
-        trainer,ds,model,args = train_one_config(loger,config_i,init_save_folder,trial_id)
+        trainer,ds,model,args,loger = train_one_config(loger,config_i,init_save_folder,trial_id)
+    return loger
 
 
 def train_one_config(loger,config_i,init_save_folder,trial_id):
@@ -70,4 +71,4 @@ def train_one_config(loger,config_i,init_save_folder,trial_id):
 
     loger.add_log(test_metrics,['rmse','mae','mase','mape'],trial_id, args.step_ahead,args.horizon_step)
     loger.display_log()
-    return trainer,ds,model,args
+    return trainer,ds,model,args,loger

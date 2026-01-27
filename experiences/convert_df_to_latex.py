@@ -201,11 +201,13 @@ def load_csv(folder_path,dic_exp_to_names,exp_i,trial_j,n_bis,df_j_all,metric_i,
     metrics_ij = pd.read_csv(f"{local_folder_path}/METRICS_{trial_j}_bis{n_bis}.csv",index_col = 0)
     re._pattern = re.compile(r'_h(\d+)$')
     horizons = list(set([re._pattern.findall(c)[0] for c in metrics_ij.columns if len(re._pattern.findall(c)) > 0]))
+
     if len(horizons) > 1:
         raise ValueError(f"Multiple horizons found in columns_metrics : {horizons}")
     else:
         horizon = horizons[0]
-        columns_metrics = [f"{m}_h{horizon}" for m in metrics]
+        columns_metrics = [f"{m.lower()}_h{horizon}" for m in metrics]
+
     if set(columns_metrics).issubset(metrics_ij.columns) :
         metrics_ij = metrics_ij.loc['test',columns_metrics].copy()
     else:

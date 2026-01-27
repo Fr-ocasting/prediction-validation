@@ -130,30 +130,29 @@ dic_configs = baselineconfigbuilder.build_config_single_contextual(dic_configs,p
 
 # ==================================================
 # TRAIN ALL CONFIGURATIONS WITH CONTEXTUAL AND BASELINE: 
-loop_train_save_log(loger,dic_configs,init_save_folder = training_save_folder) 
+loger = loop_train_save_log(loger,dic_configs,init_save_folder = training_save_folder) 
 
 
 # ==================================================
 # SAVE RESULTS OF EXPERIMENTS IN A .PY FILE WITH FORMAT SUITABLE FOR ANALYSIS:
 '''
 save the string loger.display_log() in a f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}.py" file to be imported after
-
 Expected format: 
-results = loger.display_log()
+results = loger.log_final
 '''
 if not os.path.exists(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}"):
     os.mkdir(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}")
 if not os.path.exists(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py"):
     with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
-        f.write(f'results = """{repr(loger.display_log())}"""')
+        f.write(f'results = {repr(loger.log_final)}')
 else:
     # If file already exists, reload module and append new results to it
-    module_path = f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}"
+    module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
     module = importlib.import_module(module_path)
     importlib.reload(module)
     results_saved = module.results
     with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
-        f.write(f'results = """{repr(results_saved + loger.display_log())}"""')
+        f.write(f'results = {repr(results_saved + loger.log_final)}')
 
 
 # ==================================================
@@ -162,7 +161,7 @@ else:
 Load saved results from f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}.py"
 '''
 
-module_path = f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}"
+module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
 module = importlib.import_module(module_path)
 importlib.reload(module)
 results_saved = module.results
@@ -173,8 +172,9 @@ plotting_boxplot_of_trials(trials,
                            exp_i,
                            metrics,
                            folder_path,
-                           dic_exp_to_names={exp_i:exp_i},
-                           save_path = save_path_figures
+                           dic_exp_to_names={exp_i:f'{target_data}_{model_name}'} ,# {exp_i:exp_i},
+                           save_path = save_path_figures,
+                           n_bis_range = range(1,REPEAT_TRIAL+1)
                            )
 # dic_df_horizons_init,dic_df_horizons =  local_plot_boxplot_metrics(experiences,metrics,folder_path,dic_exp_to_names,palette,legend_groups,configs_to_keep=configs_to_keep,fusion_type_to_keep =fusion_type_to_keep)
 
