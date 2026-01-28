@@ -10,25 +10,46 @@ if parent_dir not in sys.path:
 from examples.accuracy_comparison import get_model_args,get_desagregated_comparison_plot,get_previous
 from experiences.common_results import find_baseline
 from pipeline.utils.metrics import evaluate_metrics
-
-def get_desagregated_gains(dic_exp_to_names,dic_trials,horizons,comparison_on_rainy_events,range_k,station_clustering,folder_path,save_bool = True,heatmap= False,daily_profile= False,dendrogram= False):
+from experiences.common_parameter import convertion_exp_name
+def get_desagregated_gains(dic_exp_to_names,
+                           dic_trials,
+                           horizons,
+                           comparison_on_rainy_events,
+                           range_k,
+                           station_clustering,
+                           folder_path,
+                           save_bool = True,
+                           heatmap= False,
+                           daily_profile= False,
+                           dendrogram= False,
+                           dataset_names = None,
+                           ):
     issue_while_loading_saved_weights,log = '', ''
     init_folder_path = f"{folder_path}/plot"
     for exp_i,target_model_name in dic_exp_to_names.items():
         target_data = '_'.join(target_model_name.split('_')[:-1])
         model_name = target_model_name.split('_')[-1]
-        print(exp_i)
         configs = dic_trials[exp_i]
+
+        if dataset_names is not None:
+            exp_tmp = convertion_exp_name(target_data,dataset_names)
+        else:
+            exp_tmp = exp_i
+
+        print('exp_i: ',exp_i)
+        print('exp_tmp: ',exp_tmp)
+
+
         for h in horizons:
             print('   Horizon: ',h)
-            baseline = find_baseline(exp_i,h=h)
+            baseline = find_baseline(exp_tmp,exp_i,configs,h=h)
             if (baseline in configs) and baseline.endswith(f"_h{h}"):
                 print('   Baseline: ',baseline)
                 trial_ids2 = [f"{config}_bis" for config in configs if (config.endswith(f"_h{h}")) and not(baseline == config)]
                 trial_ids1 = [f"{baseline}_bis"]*len(trial_ids2)
 
-                if exp_i == 'Exp4_15min_h1':
-                    exp_i = 'Exp4_15min'
+                if exp_tmp == 'Exp4_15min_h1':
+                    exp_tmp = 'Exp4_15min'
                 save_folder_name = f'{exp_i}/{target_data}_{model_name}'
                 save_folder_name_bis = None
 

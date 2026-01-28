@@ -54,34 +54,47 @@ dic_exp_to_h = {
 # -----
 
 
-def find_baseline(exp_i,h=None):
-    if exp_i == 'Exp1':
-        return 'STAEformer_subway_out_calendar__e200_h4'
-    elif exp_i == 'Exp1_subway_in':
-        return f'STAEformer_subway_in_calendar__e80_h{h}'
-    elif exp_i == 'Exp1_subway_out':
-        return f'STAEformer_subway_out_calendar__e80_h{h}'
-    elif exp_i == 'Exp2':
-        return 'STAEformer_bike_out_calendar__e200_h4'
-    elif exp_i == 'Exp2_rainy':
-        return 'STAEformer_bike_out_calendar__e200_h4'
-    elif exp_i == 'Exp3_bike_15min_h4':
-        return 'STAEformer_bike_out_calendar__e200_h4'
-        # return 'STAEformer_bike_out_calendar__e80_h4'
-    elif exp_i == 'Exp3':
-        return 'STAEformer_bike_out_calendar__e200_h1'
-    elif exp_i == 'Exp4_15min':
-        return 'STAEformer_bike_out_calendar__e80_h4'
-    elif exp_i == 'Exp4':
-        return 'STAEformer_bike_out_calendar__e120_h1'
-    elif exp_i == 'Exp4_15min_h1':
-        return 'STAEformer_bike_out_calendar__e80_h1'
-    elif exp_i == 'Exp6_subway_netmob':
-        return f'STAEformer_subway_in_calendar__e150_h{h}'
-    elif exp_i == 'Exp6_bike_netmob':
-        return f'STAEformer_bike_out_calendar__e150_h{h}'
+def find_baseline(exp_tmp,exp_i,configs,h=None):
+    if exp_tmp != exp_i: 
+        # fin baseline which correspond to the experiment with 'calendar__' inside : 
+        config_potential = []
+        for config in configs:
+            if 'calendar__' in config:
+                config_potential.append(config)
+        if len(config) == 0:
+            raise ValueError(f'No baseline found in {configs}')
+        elif len(config_potential) > 1:
+            raise ValueError(f'Multiple baseline found: {config_potential}')
+        else:
+            return config_potential[0]
     else:
-        raise NotImplementedError
+        if exp_i == 'Exp1':
+            return 'STAEformer_subway_out_calendar__e200_h4'
+        elif exp_i == 'Exp1_subway_in':
+            return f'STAEformer_subway_in_calendar__e80_h{h}'
+        elif exp_i == 'Exp1_subway_out':
+            return f'STAEformer_subway_out_calendar__e80_h{h}'
+        elif exp_i == 'Exp2':
+            return 'STAEformer_bike_out_calendar__e200_h4'
+        elif exp_i == 'Exp2_rainy':
+            return 'STAEformer_bike_out_calendar__e200_h4'
+        elif exp_i == 'Exp3_bike_15min_h4':
+            return 'STAEformer_bike_out_calendar__e200_h4'
+            # return 'STAEformer_bike_out_calendar__e80_h4'
+        elif exp_i == 'Exp3':
+            return 'STAEformer_bike_out_calendar__e200_h1'
+        elif exp_i == 'Exp4_15min':
+            return 'STAEformer_bike_out_calendar__e80_h4'
+        elif exp_i == 'Exp4':
+            return 'STAEformer_bike_out_calendar__e120_h1'
+        elif exp_i == 'Exp4_15min_h1':
+            return 'STAEformer_bike_out_calendar__e80_h1'
+        elif exp_i == 'Exp6_subway_netmob':
+            return f'STAEformer_subway_in_calendar__e150_h{h}'
+        elif exp_i == 'Exp6_bike_netmob':
+            return f'STAEformer_bike_out_calendar__e150_h{h}'
+        else:
+            raise NotImplementedError
 
 
 re._pattern = r'STAEformer.*?bis'

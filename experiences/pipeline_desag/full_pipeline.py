@@ -81,78 +81,78 @@ if TRIVIAL_TEST:
 # --- if save training folder path does not existe, mkdir:
 
 
-    
-# ==================================================
-# LOAD CONFIGURATIONS TO TEST:
-if (target_data == 'subway_in') or (target_data == 'subway_out'):
-    if contextual_dataset_names == ['netmob_POIs']:
-        from experiences.pipeline_desag.subway_in_pred.netmob_POIs_contextual import get_possible_contextual_kwarg
-        possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
+if True:
+    # ==================================================
+    # LOAD CONFIGURATIONS TO TEST:
+    if (target_data == 'subway_in') or (target_data == 'subway_out'):
+        if contextual_dataset_names == ['netmob_POIs']:
+            from experiences.pipeline_desag.subway_in_pred.netmob_POIs_contextual import get_possible_contextual_kwarg
+            possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
 
-    elif contextual_dataset_names == ['subway_out']:
-        from experiences.pipeline_desag.subway_in_pred.subway_out_contextual import get_possible_contextual_kwarg
-        possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
+        elif contextual_dataset_names == ['subway_out']:
+            from experiences.pipeline_desag.subway_in_pred.subway_out_contextual import get_possible_contextual_kwarg
+            possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
+        else:
+            raise NotImplementedError(f'Contextual dataset {contextual_dataset_names} not implemented for target_data {target_data} ')
     else:
-        raise NotImplementedError(f'Contextual dataset {contextual_dataset_names} not implemented for target_data {target_data} ')
-else:
-    raise NotImplementedError(f'Target data {target_data} not implemented yet. ')
+        raise NotImplementedError(f'Target data {target_data} not implemented yet. ')
 
-if TRIVIAL_TEST:
-    k0 = list(possible_contextual_kwargs.keys())[0]
-    k1 = list(possible_contextual_kwargs[k0].keys())[0]
-    v1 = possible_contextual_kwargs[k0][k1]
-    possible_contextual_kwargs = {k0 : {k1:v1}}
+    if TRIVIAL_TEST:
+        k0 = list(possible_contextual_kwargs.keys())[0]
+        k1 = list(possible_contextual_kwargs[k0].keys())[0]
+        v1 = possible_contextual_kwargs[k0][k1]
+        possible_contextual_kwargs = {k0 : {k1:v1}}
 
-print('\n------------------------------- CONFIGURATIONS ----------------------------------\n')
-for fusion_type in possible_contextual_kwargs.keys():
-    print(f'--- Fusion type: {fusion_type} ---')
-    for trial_id in possible_contextual_kwargs[fusion_type].keys():
-        print(f'    {trial_id}')
-print('\n---------------------------------------------------------------------------------\n')
-# ==================================================
-# LOAD CONFIG DICTIONARY: 
-configbuilder = ConfigBuilder(target_data,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification)
-dic_configs = configbuilder.build_config_single_contextual(
-                                             dic_configs = {},
-                                             possible_target_kwargs=possible_target_kwargs,
-                                             config_backbone_model=config_backbone_model,
-                                             contextual_dataset_names=contextual_dataset_names,
-                                             possible_contextual_kwargs=possible_contextual_kwargs,
-                                             weather_contextual_kwargs=weather_contextual_kwargs,
-                                             netmob_preprocessing_kwargs=netmob_preprocessing_kwargs
-                                             )
+    print('\n------------------------------- CONFIGURATIONS ----------------------------------\n')
+    for fusion_type in possible_contextual_kwargs.keys():
+        print(f'--- Fusion type: {fusion_type} ---')
+        for trial_id in possible_contextual_kwargs[fusion_type].keys():
+            print(f'    {trial_id}')
+    print('\n---------------------------------------------------------------------------------\n')
+    # ==================================================
+    # LOAD CONFIG DICTIONARY: 
+    configbuilder = ConfigBuilder(target_data,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification)
+    dic_configs = configbuilder.build_config_single_contextual(
+                                                dic_configs = {},
+                                                possible_target_kwargs=possible_target_kwargs,
+                                                config_backbone_model=config_backbone_model,
+                                                contextual_dataset_names=contextual_dataset_names,
+                                                possible_contextual_kwargs=possible_contextual_kwargs,
+                                                weather_contextual_kwargs=weather_contextual_kwargs,
+                                                netmob_preprocessing_kwargs=netmob_preprocessing_kwargs
+                                                )
 
 
-baselineconfigbuilder = BaselineConfigBuilder(target_data,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save)
-dic_configs = baselineconfigbuilder.build_config_single_contextual(dic_configs,possible_target_kwargs,
-                                                                   config_backbone_model)
+    baselineconfigbuilder = BaselineConfigBuilder(target_data,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save)
+    dic_configs = baselineconfigbuilder.build_config_single_contextual(dic_configs,possible_target_kwargs,
+                                                                    config_backbone_model)
 
 
-# ==================================================
-# TRAIN ALL CONFIGURATIONS WITH CONTEXTUAL AND BASELINE: 
-loger = loop_train_save_log(loger,dic_configs,init_save_folder = training_save_folder) 
+    # ==================================================
+    # TRAIN ALL CONFIGURATIONS WITH CONTEXTUAL AND BASELINE: 
+    loger = loop_train_save_log(loger,dic_configs,init_save_folder = training_save_folder) 
 
 
-# ==================================================
-# SAVE RESULTS OF EXPERIMENTS IN A .PY FILE WITH FORMAT SUITABLE FOR ANALYSIS:
-'''
-save the string loger.display_log() in a f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}.py" file to be imported after
-Expected format: 
-results = loger.log_final
-'''
-if not os.path.exists(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}"):
-    os.mkdir(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}")
-if not os.path.exists(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py"):
-    with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
-        f.write(f'results = {repr(loger.log_final)}')
-else:
-    # If file already exists, reload module and append new results to it
-    module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
-    module = importlib.import_module(module_path)
-    importlib.reload(module)
-    results_saved = module.results
-    with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
-        f.write(f'results = {repr(results_saved + loger.log_final)}')
+    # ==================================================
+    # SAVE RESULTS OF EXPERIMENTS IN A .PY FILE WITH FORMAT SUITABLE FOR ANALYSIS:
+    '''
+    save the string loger.display_log() in a f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}.py" file to be imported after
+    Expected format: 
+    results = loger.log_final
+    '''
+    if not os.path.exists(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}"):
+        os.mkdir(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}")
+    if not os.path.exists(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py"):
+        with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
+            f.write(f'results = {repr(loger.log_final)}')
+    else:
+        # If file already exists, reload module and append new results to it
+        module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
+        module = importlib.import_module(module_path)
+        importlib.reload(module)
+        results_saved = module.results
+        with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
+            f.write(f'results = {repr(results_saved + loger.log_final)}')
 
 
 # ==================================================
@@ -172,7 +172,9 @@ plotting_boxplot_of_trials(trials,
                            exp_i,
                            metrics,
                            folder_path,
-                           dic_exp_to_names={exp_i:f'{target_data}_{model_name}'} ,# {exp_i:exp_i},
+                           target_data= target_data,
+                           model_name= model_name,
+                           dataset_names = contextual_dataset_names,
                            save_path = save_path_figures,
                            n_bis_range = range(1,REPEAT_TRIAL+1)
                            )
@@ -191,31 +193,33 @@ plotting_boxplot_of_trials(trials,
 '''
 
 # -- ON NON RAINY
-get_desagregated_gains(dic_exp_to_names={exp_i:exp_i},
+get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
                        dic_trials = {exp_i:trials},
                        horizons=horizons,
                        comparison_on_rainy_events=False,
                        range_k=range(1,REPEAT_TRIAL+1),
                        station_clustering=station_clustering,
-                       save_folder_path=save_path_figures,
+                       folder_path=save_path_figures,
                        save_bool=True,
                        heatmap= True,
                        daily_profile=True,
                        dendrogram=True,
+                       dataset_names =contextual_dataset_names,
                        )
 
 # -- ON RAINY 
-get_desagregated_gains(dic_exp_to_names={exp_i:exp_i},
+get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
                        dic_trials = {exp_i:trials},
                        horizons=horizons,
                        comparison_on_rainy_events=True,
                        range_k=range(1,REPEAT_TRIAL+1),
                        station_clustering=station_clustering,
-                       save_folder_path=save_path_figures,
+                       folder_path=save_path_figures,
                        save_bool=True,
                        heatmap= True,
                        daily_profile=True,
                        dendrogram=True,
+                       dataset_names =contextual_dataset_names,
                        )
 
 # ==================================================

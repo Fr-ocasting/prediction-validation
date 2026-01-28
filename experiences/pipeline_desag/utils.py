@@ -13,6 +13,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from experiences.convert_df_to_latex import update_df_metrics,load_csv
+from experiences.common_parameter import convertion_exp_name
 from jupyter_ipynb.NetMob_training_analysis.plotting import plot_boxplot_on_metric
 
 
@@ -32,11 +33,13 @@ def tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_
 
     return L_metrics
 
-def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,dic_exp_to_names,save_path,n_bis_range):
+def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
+                               target_data,model_name,dataset_names,save_path,n_bis_range):
     L_metrics = []
     print(f"\nProcessing Experiment: {exp_i}")
     print("-----------------------")
     print(f"Trials to process: {trials}")
+    dic_exp_to_names = {exp_i: f'{target_data}_{model_name}'}
     for trial_j in trials:
         L_metrics = tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics,n_bis_range)
 
@@ -56,7 +59,15 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,dic_exp_to_names
                 os.mkdir(f"{save_path}/boxplot/h{horizon}")
         df_horizon = df_metrics_all[[c for c in df_metrics_all.columns if c.endswith(f"_h{horizon}")]].dropna()
 
-        df_horizon = update_df_metrics(df_horizon,exp_i)
+        # ----- Determine experiment name based on target_data and dataset_names
+
+            
+        exp_tmp = convertion_exp_name(target_data,dataset_names)
+        # ------------
+
+ 
+        df_horizon = update_df_metrics(df_horizon,exp_tmp)
 
         for metric in metrics: 
-            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/h{horizon}/{metric}")
+            metric = metric.lower()
+            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/h{horizon}/{metric}",bool_show=False,)
