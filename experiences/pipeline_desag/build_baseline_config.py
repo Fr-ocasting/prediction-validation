@@ -1,6 +1,7 @@
 class BaselineConfigBuilder(object):
-    def __init__(self,target_data,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save):
+    def __init__(self,target_data,contextual_dataset_names, model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save):
         self.target_data = target_data
+        self.contextual_dataset_names = contextual_dataset_names
         self.model_name = model_name
         self.horizons = horizons
         self.freq = freq
@@ -22,7 +23,7 @@ class BaselineConfigBuilder(object):
                 config_i =  {'target_data': self.target_data,
                             'dataset_names': dataset_names,
                             'model_name': self.model_name,
-                            'dataset_for_coverage': [self.target_data,'netmob_POIs'],
+                            'dataset_for_coverage': [self.target_data]+self.contextual_dataset_names,
                             'freq': self.freq,
                             'horizon_step': horizon,
                             'step_ahead': horizon,

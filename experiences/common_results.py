@@ -54,12 +54,13 @@ dic_exp_to_h = {
 # -----
 
 
-def find_baseline(exp_tmp,exp_i,configs,h=None):
-    if exp_tmp != exp_i: 
+def find_baseline(exp_i,h=None,exp_tmp=None,configs=None,):
+    if (exp_tmp is not None) and (exp_tmp != exp_i): 
         # fin baseline which correspond to the experiment with 'calendar__' inside : 
         config_potential = []
         for config in configs:
-            if 'calendar__' in config:
+            # if 'calendar__' in config:
+            if re.search(rf'calendar__e\d+_h{h}',config):
                 config_potential.append(config)
         if len(config) == 0:
             raise ValueError(f'No baseline found in {configs}')

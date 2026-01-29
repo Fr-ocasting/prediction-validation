@@ -521,6 +521,10 @@ def get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse'
     -----
     
     '''
+    print('real.size():',real.size())
+    print('predict1.size():',predict1.size())
+    print('predict2.size():',predict2.size())
+
     dic_gain,dic_error = {},{}
     real = real.detach().clone().reshape(-1)
     previous = previous.detach().clone().reshape(-1)  

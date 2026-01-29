@@ -70,4 +70,4 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
 
         for metric in metrics: 
             metric = metric.lower()
-            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/h{horizon}/{metric}",bool_show=False,)
+            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/h{horizon}/{metric}.html",bool_show=False,)

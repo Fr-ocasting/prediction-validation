@@ -316,7 +316,10 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
     # Get mean of Error Metrics (MAE, MSE, RMSE, MASE, ...): 
     L_dic_error = []
     for k in range(predict1.size(-1)):
-        _,dic_error = get_gain_from_mod1(real,predict1[...,k],predict2[...,k],previous,
+        _,dic_error = get_gain_from_mod1(real,
+                                         predict1[...,k],
+                                         predict2[...,k],
+                                         previous,
                                          min_flow= min_flow,
                                          metrics = ['mse','mae','mape'],
                                          acceptable_error= 0,
@@ -352,10 +355,27 @@ def comparison_plotting(dic_error_agg_h,full_predict1,full_predict2,ds1,Y_true,X
 
 
 
-def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_predict2,Y_true,X,ds1,args_init1,
-                                      stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
-                                      clustered_stations = None,folder_path = None, save_name = None,
-                                      bool_plot = True, dates = None,comparison_on_rainy_events = False):
+def plot_analysis_comparison_2_config(trial_id1,
+                                      trial_id2,
+                                      full_predict1,
+                                      full_predict2,
+                                      Y_true,
+                                      X,
+                                      ds1,
+                                      args_init1,
+                                      stations,
+                                      temporal_aggs,
+                                      training_mode,
+                                      metric_list,
+                                      min_flow = 20,
+                                      station = None,
+                                      clustered_stations = None,
+                                      folder_path = None, 
+                                      save_name = None,
+                                      bool_plot = True, 
+                                      dates = None,
+                                      comparison_on_rainy_events = False
+                                      ):
     """
     args : 
     ------
@@ -376,7 +396,8 @@ def plot_analysis_comparison_2_config(trial_id1,trial_id2,full_predict1,full_pre
             if comparison_on_rainy_events:
                 save_name_i += "_rainy"
             
-        dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,full_predict1,
+        dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,    
+                                                   full_predict1,
                                                    full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,
                                                    h_idx,stations,training_mode,metric_list,clustered_stations,
                                                    folder_path = folder_path,
@@ -557,7 +578,9 @@ class ComparisonPlotter:
         
 
 
-    def plot_gain_between_models_with_temporal_agg(self,ds,dic_error, training_mode,stations, dates,temporal_aggs,
+    def plot_gain_between_models_with_temporal_agg(self,
+                                                   ds,
+                                                   dic_error, training_mode,stations, dates,temporal_aggs,
                                                    metric_list,
                                                    bool_plot=True,
                                                    save_name = None,
@@ -611,7 +634,15 @@ class ComparisonPlotter:
                 layouts = [ax1,ax2] if ax3 is None else [ax1,ax2,ax3]
 
                 if save_name is not None:
-                    save_path = f"{folder_path}/{metric}/{save_name}_gain"
+                    if 'rainy' in save_name:
+                        desag_name = 'desag_rainy'
+                    else:
+                        desag_name = 'desag'
+                    save_path = f"{folder_path}/{desag_name}/{metric}/{save_name}_gain"
+                    if not os.path.exists(f"{folder_path}/{desag_name}/"):
+                        os.mkdir(f"{folder_path}/{desag_name}/")
+                    if not os.path.exists(f"{folder_path}/{desag_name}/{metric}/"):
+                        os.mkdir(f"{folder_path}/{desag_name}/{metric}/")
                 else:
                     save_path = None
                 self.deal_with_subplots(layouts,title,save_path,save_name)
@@ -676,15 +707,34 @@ def get_rainy_indices(args,ds,training_mode = 'test'):
   return rainy_mask,rainy_indices,df_weather,total_indices
 
 
-def get_cluster(df,temporal_agg='business_day', normalisation_type ='minmax',index= 'Station',city='Lyon',
-                n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
-                heatmap= True, daily_profile=True, dendrogram=True):
+def get_cluster(df,
+                temporal_agg='business_day', 
+                normalisation_type ='minmax',
+                index='Station',
+                city='Lyon',
+                n_clusters=5, 
+                linkage_method='complete', 
+                metric='precomputed',
+                min_samples=2,
+                heatmap= True, 
+                daily_profile=True, 
+                dendrogram=True,
+                bool_plot = False,
+                folder_path= None,
+                save_name = None,
+                ):
     # Get Clustering of stations from these inputs: 
     clusterer = TimeSeriesClusterer(df)
     clusterer.preprocess(temporal_agg=temporal_agg, normalisation_type =normalisation_type,index= index,city=city) # 'morning','evening','morning_peak','evening_peak','off_peak','non_business_day','business_day'
     clusterer.run_agglomerative(n_clusters=n_clusters, linkage_method=linkage_method, metric=metric,min_samples=min_samples)
     # clusterer.run_agglomerative(n_clusters=None, linkage_method='complete', metric='precomputed',min_samples=4,distance_threshold = 0.35)
-    clusterer.plot_clusters(heatmap= heatmap, daily_profile=daily_profile, dendrogram=dendrogram)
+    clusterer.plot_clusters(heatmap= heatmap, 
+                            daily_profile=daily_profile,
+                            dendrogram=dendrogram,
+                            bool_plot = bool_plot,
+                            folder_path= folder_path,
+                            save_name = save_name,
+                            )
     return clusterer
 
 def get_model_args(save_folder_name = 'optim/subway_in_STGCN', save_folder_name_bis = 'optim/config/subway_in_STGCN' ):
@@ -716,7 +766,8 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     save_name = None,
                                     heatmap = False,
                                     daily_profile = False,
-                                    dendrogram = False
+                                    dendrogram = False,
+                                    bool_plot = True
                                     ):
 
 
@@ -732,15 +783,19 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
     for k in range_k:
         trial_id1_updated = f"_{trial_id1}{k}_f5"
         trial_id2_updated = f"_{trial_id2}{k}_f5"
-        trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(trial_id1_updated,trial_id2_updated,modification = modification,
-                                                                                        model_args=model_args,
-                                                                                        path_model_args=path_model_args,
-                                                                                        path_model_args_bis = path_model_args_bis,
-                                                                                        ds1_init=ds1,ds2_init=ds2,
-                                                                                        args_init1=args_init1,args_init2=args_init2,
-                                                                                        model_args_bis = model_args_bis,
-                                                                                        trial_id1_in_bis = trial_id1_in_bis, trial_id2_in_bis = trial_id2_in_bis
-                                                                                        )
+        trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(
+            trial_id1_updated,
+            trial_id2_updated,
+            modification = modification,
+            model_args=model_args,
+            path_model_args=path_model_args,
+            path_model_args_bis = path_model_args_bis,
+            ds1_init=ds1,ds2_init=ds2,
+            args_init1=args_init1,args_init2=args_init2,
+            model_args_bis = model_args_bis,
+            trial_id1_in_bis = trial_id1_in_bis, 
+            trial_id2_in_bis = trial_id2_in_bis
+            )
         
         if trainer2 is not None:                                             
             full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
@@ -771,9 +826,22 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
         train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init2.freq))
         train_input.columns.name = colmumn_name
         # Get Clustering of stations from these inputs:
-        clusterer = get_cluster(train_input,temporal_agg='business_day', normalisation_type ='minmax',index= colmumn_name,city=ds2.city,
-                        n_clusters=5, linkage_method='complete', metric='precomputed',min_samples=2,
-                        heatmap= heatmap, daily_profile=daily_profile, dendrogram=dendrogram)
+        clusterer = get_cluster(train_input,
+                                temporal_agg='business_day',
+                                normalisation_type ='minmax',
+                                index= colmumn_name,
+                                city=ds2.city,
+                                n_clusters=5, 
+                                linkage_method='complete', 
+                                metric='precomputed',
+                                min_samples=2,
+                                heatmap= heatmap, 
+                                daily_profile=daily_profile, 
+                                dendrogram=dendrogram,
+                                bool_plot = bool_plot,
+                                folder_path= folder_path,
+                                save_name = save_name,
+                                )
     else:
         clusterer = lambda : None
         clusterer.clusters = None
@@ -792,7 +860,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                       clustered_stations = clusterer.clusters,
                                       folder_path = folder_path,
                                       save_name = save_name,
-                                      comparison_on_rainy_events = comparison_on_rainy_events
+                                      comparison_on_rainy_events = False # comparison_on_rainy_events
                                         )   
     
 

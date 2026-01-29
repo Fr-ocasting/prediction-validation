@@ -2,6 +2,7 @@ import os
 import sys
 import torch 
 import importlib
+import glob
 import torch._dynamo as dynamo; dynamo.graph_break()
 torch._dynamo.config.verbose=True
 
@@ -51,24 +52,39 @@ def train_one_config(loger,config_i,init_save_folder,trial_id):
         os.mkdir(f"{SAVE_DIRECTORY}/{weights_save_folder}")
     if not os.path.exists(save_folder_with_root):
         os.mkdir(save_folder_with_root)
-        
-    # Train Model
-    trainer,ds,model,args = main(fold_to_evaluate,
-                                    save_folder = weights_save_folder,
-                                    args_init = args_init,
-                                    modification ={},
-                                    trial_id = trial_id)
+
+    # savoir si il existe un fichier qui commence par  f"{save_folder_with_root}/{trial_id}_f" et qui est déja sauvegardé
+    if os.path.exists(f"{save_folder_with_root}/METRICS_{trial_id}.csv"):
+        print(f"    Trial ID: {trial_id} ALREADY DONE, SKIPPING...")
+        return None,None,None,None,loger
+    
+    else:
+        # Train Model
+        trainer,ds,model,args = main(fold_to_evaluate,
+                                        save_folder = weights_save_folder,
+                                        args_init = args_init,
+                                        modification ={},
+                                        trial_id = trial_id)
 
 
-    condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
-    valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
-    df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,
-                                                                fold_to_evaluate,fold,condition1,condition2,
-                                                                training_mode_list,metric_list)
+        condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
+        valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)
+        df_loss, valid_losses,dic_results = keep_track_on_metrics(trainer,
+                                                                  args,
+                                                                  df_loss, 
+                                                                  valid_losses,
+                                                                  dic_results,
+                                                                  fold_to_evaluate,
+                                                                  fold,
+                                                                  condition1,
+                                                                  condition2,
+                                                                  training_mode_list,
+                                                                  metric_list
+                                                                  )
 
-    save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
-    test_metrics = trainer.performance['test_metrics']
+        save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
+        test_metrics = trainer.performance['test_metrics']
 
-    loger.add_log(test_metrics,['rmse','mae','mase','mape'],trial_id, args.step_ahead,args.horizon_step)
-    loger.display_log()
-    return trainer,ds,model,args,loger
+        loger.add_log(test_metrics,['rmse','mae','mase','mape'],trial_id, args.step_ahead,args.horizon_step)
+        loger.display_log()
+        return trainer,ds,model,args,loger
