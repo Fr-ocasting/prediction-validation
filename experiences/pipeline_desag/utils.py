@@ -38,7 +38,9 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
     L_metrics = []
     print(f"\nProcessing Experiment: {exp_i}")
     print("-----------------------")
-    print(f"Trials to process: {trials}")
+    print(f"Trials to process:")
+    for trial in trials:
+        print(f'   {trial}')
     dic_exp_to_names = {exp_i: f'{target_data}_{model_name}'}
     for trial_j in trials:
         L_metrics = tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics,n_bis_range)
@@ -51,12 +53,14 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
             os.mkdir(save_path)
         if not os.path.exists(f"{save_path}/boxplot"):
                 os.mkdir(f"{save_path}/boxplot")
+        if not os.path.exists(f"{save_path}/boxplot/{'_'.join(dataset_names)}"):
+                os.mkdir(f"{save_path}/boxplot/{'_'.join(dataset_names)}")
     for horizon in horizons:
         print('\n---------------')
         print(f"Horizon: {horizon}")
         if save_path is not None:
-            if not os.path.exists(f"{save_path}/boxplot/h{horizon}"):
-                os.mkdir(f"{save_path}/boxplot/h{horizon}")
+            if not os.path.exists(f"{save_path}/boxplot/{'_'.join(dataset_names)}/h{horizon}"):
+                os.mkdir(f"{save_path}/boxplot/{'_'.join(dataset_names)}/h{horizon}")
         df_horizon = df_metrics_all[[c for c in df_metrics_all.columns if c.endswith(f"_h{horizon}")]].dropna()
 
         # ----- Determine experiment name based on target_data and dataset_names
@@ -64,12 +68,9 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
             
         exp_tmp = convertion_exp_name(target_data,dataset_names)
         # ------------
-
- 
         df_horizon = update_df_metrics(df_horizon,exp_tmp)
-
         df_horizon['id'] = df_horizon['id'].apply(lambda x: x.replace('late_fusion_','L ').replace('CrossAttnBackBone_','CABB_').replace('BackBone_','BB_').replace('s_proj_t_proj','S-proj T-proj').replace('early_fusion_','E ').replace('independant_embedding','Indep Emb').replace('shared_embedding','Shared Emb').replace('traffic_model_backbone','Traffic Model BackBone').replace('simple_embedding','Simple Emb'))
 
         for metric in metrics: 
             metric = metric.lower()
-            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/h{horizon}/{metric}.html",bool_show=False,)
+            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/{'_'.join(dataset_names)}/h{horizon}/{metric}.html",bool_show=False,)

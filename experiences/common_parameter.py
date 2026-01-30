@@ -418,17 +418,17 @@ def modif_percent_train_size(target_data,freq,percent,modif_percent,dataset_for_
 
 def convertion_exp_name(target_data,dataset_names):
     if target_data == 'subway_in':
-        if 'netmob' in dataset_names:
+        if 'netmob_POIs' in dataset_names:
             exp_tmp = 'Exp6_subway_netmob'
         else:
             exp_tmp = 'Exp1_subway_in'
     if target_data == 'subway_out':
-        if 'netmob' in dataset_names:
+        if 'netmob_POIs' in dataset_names:
             exp_tmp = 'Exp6_subway_netmob'
         else:
             exp_tmp = 'Exp1_subway_out'
     if (target_data == 'bike_out') or (target_data == 'bike_in'):
-        if 'netmob' in dataset_names:
+        if 'netmob_POIs' in dataset_names:
             exp_tmp = 'Exp6_bike_netmob'
         elif ('subway_in' in dataset_names) or ('subway_out' in dataset_names):
             exp_tmp = 'Exp4_15min_h1'

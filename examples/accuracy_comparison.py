@@ -392,7 +392,7 @@ def plot_analysis_comparison_2_config(trial_id1,
     for step_ahead in range(args_init1.horizon_step,step_ahead_max+1,args_init1.horizon_step): # range(1,step_ahead_max+1):   
         h_idx = step_ahead// args_init1.horizon_step
         if save_name is not None:
-            save_name_i = f"{save_name}_h{step_ahead}"
+            save_name_i = save_name.split('_bis')[0]
             if comparison_on_rainy_events:
                 save_name_i += "_rainy"
             
@@ -401,7 +401,7 @@ def plot_analysis_comparison_2_config(trial_id1,
                                                    full_predict2,ds1,Y_true,X,temporal_aggs,step_ahead,
                                                    h_idx,stations,training_mode,metric_list,clustered_stations,
                                                    folder_path = folder_path,
-                                                   save_name = save_name,
+                                                   save_name = save_name_i,
                                                    bool_plot = bool_plot,
                                                    dates = dates,
                                                    min_flow = min_flow,)

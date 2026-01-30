@@ -43,22 +43,68 @@ folder_path = f"{ROOT}/save/{inside_saved_folder}"
 - Do not set seed to have different initialization for each trial
 - SANITY_CHECKER: If True, Keep track of the gradients and the weights during the training to detect possible problems.
 '''
-exp_i = 'pipeline_subway_in_X'
+# ------------------   
+# exp_i = 'pipeline_subway_in'
+    # contextual:
+        # []
+        # ['subway_out']
+    # dataset_for_coverage = ['subway_in','subway_out']
+
+# ------------------
+# exp_i = 'pipeline_subway_in_netmob '
+    # contextual:
+        # []
+        # ['subway_out']
+        # ['subway_out', 'netmob']
+        # ['netmob']
+    # dataset_for_coverage = ['subway_in','subway_out','netmob_POIs']
+
+# ------------------
+# exp_i = 'pipeline_subway_out_netmob'
+    # contextual:
+        # []
+        # ['subway_in']
+        # ['subway_in', 'netmob']
+        # ['netmob']
+    # dataset_for_coverage = ['subway_in','subway_out','netmob_POIs']
+    
+# ------------------
+# exp_i = 'pipeline_bike_out' 
+    # contextual:
+        # []
+        # ['bike_in'], 
+        # ['bike_in','subway_in_subway_out'], 
+        # ['subway_in_subway_out'],
+    # dataset_for_coverage = ['bike_out','subway_in','subway_out']
+
+# ------------------
+# exp_i = 'pipeline_bike_out_netmob'
+    # contextual:   
+        # []
+        # ['bike_in']
+        # ['bike_in', 'netmob']
+        # ['bike_in', 'subway_in_subway_out']
+        # ['bike_in', 'subway_in_subway_out', 'netmob']   
+        # ['netmob']
+        # ['netmob', 'subway_in_subway_out']
+        # ['subway_in_subway_out']
+        # dataset_for_coverage = ['bike_out','subway_in','subway_out','netmob_POIs']
+
+# ------------------------------------------
+exp_i = 'pipeline_subway_in_netmob'
+freq = '15min' #'15min'  
+horizons = [1,4] # [4]  #[1,4]
+model_name = 'STAEformer'
+target_data = 'subway_in' 
+dataset_for_coverage = ['subway_in','subway_out','netmob_POIs']
+contextual_dataset_names = ['netmob_POIs'] # ['netmob_POIs'] #['subway_out']
+TRIVIAL_TEST = False
+# ------------------------------------------
 
 training_save_folder = f'{inside_saved_folder}/{exp_i}' # f'K_fold_validation/training_wo_HP_tuning/{exp_i}' 
 save_path_figures = f'{current_file_path}/results/plot/{exp_i}'
 device = torch.device('cuda:1')
 add_name_save = '' #'_clipping'  # ''  # '_trial2'
-
-
-# ------------------------------------------
-freq = '15min' #'15min'  
-horizons = [1,4] # [4]  #[1,4]
-model_name = 'STAEformer'
-target_data = 'subway_in' 
-dataset_for_coverage = ['subway_in','subway_out']
-contextual_dataset_names = ['subway_out'] # ['netmob_POIs'] #['subway_out']
-# ------------------------------------------
 
 station_clustering = True
 assert len(contextual_dataset_names) == 1, "Only one contextual dataset at a time is allowed for this pipeline. Otherwise, update 'build_config_single_contextual.py' accordingly. "
@@ -75,7 +121,6 @@ compilation_modification['device'] = device
 # compilation_modification['grad_clipping_norm'] = 1.0
 
 # -----If small run if needed: 
-TRIVIAL_TEST = True
 if TRIVIAL_TEST:
     config_backbone_model['epochs'] = 1 # 150 # 150 #80
     config_backbone_model['batch_size'] = 256 # 150 #80
@@ -89,7 +134,6 @@ if TRIVIAL_TEST:
 # --- if save training save path already exist, display error & do not overwrite & continue next training
 
 # --- if save training folder path does not existe, mkdir:
-
 
 if True:
     # ==================================================
@@ -121,7 +165,7 @@ if True:
     print('\n---------------------------------------------------------------------------------\n')
     # ==================================================
     # LOAD CONFIG DICTIONARY: 
-    configbuilder = ConfigBuilder(target_data,contextual_dataset_names,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification)
+    configbuilder = ConfigBuilder(target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification)
     dic_configs = configbuilder.build_config_single_contextual(
                                                 dic_configs = {},
                                                 possible_target_kwargs=possible_target_kwargs,
@@ -133,7 +177,7 @@ if True:
                                                 )
 
 
-    baselineconfigbuilder = BaselineConfigBuilder(target_data,contextual_dataset_names,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save,)
+    baselineconfigbuilder = BaselineConfigBuilder(target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save,)
     dic_configs = baselineconfigbuilder.build_config_single_contextual(dic_configs, possible_target_kwargs, config_backbone_model)
 
 
@@ -164,7 +208,6 @@ if True:
         with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
             f.write(f'results = {repr(results_saved + loger.log_final)}')
 
-
 # ==================================================
 # BOXPLOT FIGURE :
 ''' 
@@ -175,8 +218,14 @@ module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
 module = importlib.import_module(module_path)
 importlib.reload(module)
 results_saved = module.results
-re._pattern = rf'{model_name}.*?bis'
+# re._pattern = rf'{model_name}_{target_data}.*?bis'
+re._pattern = rf"{model_name}_{target_data}_(?:{'_'.join(contextual_dataset_names)}|calendar).*?bis"
 trials = [c[:-4] for c in list(set(re.findall(re._pattern, results_saved)))]
+
+print('re._pattern: ',re._pattern)
+print('trials found: ',len(trials))
+for trial in trials:
+    print(f"   {trial}")
 
 
 exporter = MetricExporter(results_saved, contextual_dataset_names)
@@ -219,6 +268,7 @@ if True:
                                     'step_ahead': 1,
                                     'horizon_step': 1,
                                     'target_data': target_data,
+                                    'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
                                     })
         print(args_init)
         fold_to_evaluate=[args_init.K_fold-1]

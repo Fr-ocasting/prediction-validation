@@ -415,6 +415,7 @@ def update_df_metrics_exp4_15min(df_metrics_all):
 def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
     df_index = df_metrics_all.reset_index()['index']
     extracted_info = df_index.apply(_extract_model_info)
+
     df_metrics_all['id'] = [info[0] for info in extracted_info]
     df_metrics_all['legend_group'] = [info[1] for info in extracted_info]
     

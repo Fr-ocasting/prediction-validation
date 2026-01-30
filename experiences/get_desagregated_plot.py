@@ -129,8 +129,8 @@ def get_desagregated_gains(dic_exp_to_names,
 
 
                     if log == '':
-                        log += f"{trial_id1[:-3]}:   All Steps RMSE = {RMSE1:.5f}, MAE = {MAE1:.5f}, MASE = {MASE1:.5f}, MAPE = {MAPE1:.5f}\n"
-                    log += f"{trial_id2[:-3]}:   All Steps RMSE = {RMSE2:.5f}, MAE = {MAE2:.5f}, MASE = {MASE2:.5f}, MAPE = {MAPE2:.5f}\n"
+                        log += f"{trial_id1[:-4]}:   All Steps RMSE = {RMSE1:.5f}, MAE = {MAE1:.5f}, MASE = {MASE1:.5f}, MAPE = {MAPE1:.5f}\n"
+                    log += f"{trial_id2[:-4]}:   All Steps RMSE = {RMSE2:.5f}, MAE = {MAE2:.5f}, MASE = {MASE2:.5f}, MAPE = {MAPE2:.5f}\n"
                     print(log)
             else:
                 issue_while_loading_saved_weights +=  f"\nBaseline {baseline} not found in configs\n{configs}\nfor horizon {h} in {exp_i}\n or does not end with _h{h}"

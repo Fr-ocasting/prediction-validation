@@ -1,8 +1,9 @@
 class ConfigBuilder(object):
-    def __init__(self,target_data,contextual_dataset_names,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification):
+    def __init__(self,target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification):
         self.target_data = target_data
         self.model_name = model_name
         self.contextual_dataset_names = contextual_dataset_names
+        self.dataset_for_coverage = dataset_for_coverage
         self.horizons = horizons
         self.freq = freq
         self.REPEAT_TRIAL = REPEAT_TRIAL
@@ -35,7 +36,7 @@ class ConfigBuilder(object):
                         config_i =  {'target_data': self.target_data,
                                     'dataset_names': dataset_names,
                                     'model_name': self.model_name,
-                                    'dataset_for_coverage': [self.target_data]+self.contextual_dataset_names,
+                                    'dataset_for_coverage': self.dataset_for_coverage,
                                     'freq': self.freq,
                                     'horizon_step': horizon,
                                     'step_ahead': horizon,
