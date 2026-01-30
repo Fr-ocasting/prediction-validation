@@ -30,6 +30,9 @@ from experiences.pipeline_desag.build_config_single_contextual import ConfigBuil
 from experiences.pipeline_desag.build_baseline_config import BaselineConfigBuilder
 from experiences.pipeline_desag.utils import plotting_boxplot_of_trials
 from experiences.pipeline_desag.MetricExporter import MetricExporter
+from examples.accuracy_comparison import get_cluster
+from examples.train_model import load_init_model_trainer_ds
+from examples.benchmark import local_get_args
 from constants.paths import ROOT
 inside_saved_folder = 'K_fold_validation/training_wo_HP_tuning'
 folder_path = f"{ROOT}/save/{inside_saved_folder}"
@@ -40,19 +43,24 @@ folder_path = f"{ROOT}/save/{inside_saved_folder}"
 - Do not set seed to have different initialization for each trial
 - SANITY_CHECKER: If True, Keep track of the gradients and the weights during the training to detect possible problems.
 '''
-exp_i = 'pipeline_subway_in'
+exp_i = 'pipeline_subway_in_X'
 
 training_save_folder = f'{inside_saved_folder}/{exp_i}' # f'K_fold_validation/training_wo_HP_tuning/{exp_i}' 
 save_path_figures = f'{current_file_path}/results/plot/{exp_i}'
-device = torch.device('cuda:0')
+device = torch.device('cuda:1')
 add_name_save = '' #'_clipping'  # ''  # '_trial2'
 
+
+# ------------------------------------------
 freq = '15min' #'15min'  
 horizons = [1,4] # [4]  #[1,4]
 model_name = 'STAEformer'
 target_data = 'subway_in' 
-station_clustering = True
+dataset_for_coverage = ['subway_in','subway_out']
 contextual_dataset_names = ['subway_out'] # ['netmob_POIs'] #['subway_out']
+# ------------------------------------------
+
+station_clustering = True
 assert len(contextual_dataset_names) == 1, "Only one contextual dataset at a time is allowed for this pipeline. Otherwise, update 'build_config_single_contextual.py' accordingly. "
 weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['repeat_t_proj']
 
@@ -67,7 +75,7 @@ compilation_modification['device'] = device
 # compilation_modification['grad_clipping_norm'] = 1.0
 
 # -----If small run if needed: 
-TRIVIAL_TEST = False
+TRIVIAL_TEST = True
 if TRIVIAL_TEST:
     config_backbone_model['epochs'] = 1 # 150 # 150 #80
     config_backbone_model['batch_size'] = 256 # 150 #80
@@ -171,7 +179,7 @@ re._pattern = rf'{model_name}.*?bis'
 trials = [c[:-4] for c in list(set(re.findall(re._pattern, results_saved)))]
 
 
-exporter = MetricExporter(results_saved)
+exporter = MetricExporter(results_saved, contextual_dataset_names)
 exporter.export_all(folder_path=save_path_figures, exp_i=exp_i)
 
 
@@ -186,7 +194,6 @@ plotting_boxplot_of_trials(trials,
                            save_path = save_path_figures,
                            n_bis_range = range(1,REPEAT_TRIAL+1)
                            )
-# dic_df_horizons_init,dic_df_horizons =  local_plot_boxplot_metrics(experiences,metrics,folder_path,dic_exp_to_names,palette,legend_groups,configs_to_keep=configs_to_keep,fusion_type_to_keep =fusion_type_to_keep)
 
 # ==================================================
 # DESAGREGATED VISUALISATION & SAVE OF FIGURES: 
@@ -199,21 +206,51 @@ plotting_boxplot_of_trials(trials,
         - Print les performances
         - Sauvegarde les figures dans f"{folder_path}/plot/{exp_i}{rainy}"
 '''
+
 if True:
-    # # -- ON NON RAINY
-    # get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
-    #                     dic_trials = {exp_i:trials},
-    #                     horizons=horizons,
-    #                     comparison_on_rainy_events=False,
-    #                     range_k=range(1,REPEAT_TRIAL+1),
-    #                     station_clustering=station_clustering,
-    #                     folder_path=f'{current_file_path}/results',
-    #                     save_bool=True,
-    #                     heatmap= True,
-    #                     daily_profile=True,
-    #                     dendrogram=True,
-    #                     dataset_names =contextual_dataset_names,
-    #                     )
+    # -- Get clusters for station clustering desagregated plots:
+    if station_clustering:
+        # Load ds from Target Data 
+        args_init = local_get_args(model_name,
+                    args_init = None,
+                    dataset_names=[target_data],
+                    dataset_for_coverage=dataset_for_coverage,
+                    modification = {'freq': freq,
+                                    'step_ahead': 1,
+                                    'horizon_step': 1,
+                                    'target_data': target_data,
+                                    })
+        print(args_init)
+        fold_to_evaluate=[args_init.K_fold-1]
+        trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,None,args_init,{},None)
+
+        colmumn_name = 'Station'
+        train_input = ds.train_input
+        train_time_slots = ds.tensor_limits_keeper.df_verif_train.stack().unique()
+        train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds.spatial_unit)
+        train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init.freq))
+        train_input.columns.name = colmumn_name
+        # Get Clustering of stations from these inputs:
+        clusterer = get_cluster(train_input,
+                                temporal_agg='business_day',
+                                normalisation_type ='minmax',
+                                index= colmumn_name,
+                                city=ds.city,
+                                n_clusters=5, 
+                                linkage_method='complete', 
+                                metric='precomputed',
+                                min_samples=2,
+                                heatmap= True, 
+                                daily_profile=True, 
+                                dendrogram=True,
+                                bool_plot = False,
+                                folder_path= save_path_figures,
+                                save_name = exp_i,
+                                )
+        clusters = clusterer.clusters
+        print('Clusters: ',clusterer.clusters)
+    else:
+        clusters = None
 
     # -- ON RAINY & NON RAINY : 
     get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
@@ -228,5 +265,21 @@ if True:
                         daily_profile=True,
                         dendrogram=True,
                         dataset_names =contextual_dataset_names,
-                        bool_plot = False
+                        bool_plot = False,
+                        clusters = clusters
                         )
+
+    # # -- ON NON RAINY
+    # get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
+    #                     dic_trials = {exp_i:trials},
+    #                     horizons=horizons,
+    #                     comparison_on_rainy_events=False,
+    #                     range_k=range(1,REPEAT_TRIAL+1),
+    #                     station_clustering=station_clustering,
+    #                     folder_path=f'{current_file_path}/results',
+    #                     save_bool=True,
+    #                     heatmap= True,
+    #                     daily_profile=True,
+    #                     dendrogram=True,
+    #                     dataset_names =contextual_dataset_names,
+    #                     )

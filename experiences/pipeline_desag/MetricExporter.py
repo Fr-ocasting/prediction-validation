@@ -4,9 +4,10 @@ import pandas as pd
 import sys
 
 class MetricExporter:
-    def __init__(self, results_str, known_targets=None):
+    def __init__(self, results_str, contextual_dataset_names, known_targets=None):
         self.metrics = ['RMSE', 'MAE', 'MASE', 'MAPE']
         self.targets = known_targets or ['subway_in', 'subway_out', 'bike_out', 'bike_in', 'PeMS']
+        self.contextual_dataset_names = contextual_dataset_names
         self.df = self._process_data(results_str)
 
     def _parse_id(self, full_id):
@@ -16,6 +17,13 @@ class MetricExporter:
         
         # Identification Target
         target = next((t for t in self.targets if config_part.startswith(f"{model}_{t}")), "unknown")
+
+        if len(self.contextual_dataset_names) == 0:
+            ctx = ""
+        elif len(self.contextual_dataset_names) == 1:
+            ctx = self.contextual_dataset_names[0]
+        else:
+            raise NotImplementedError("Multiple contextual datasets parsing not implemented.")
         
         # Extraction Contexte et Horizon
         raw_context = config_part.replace(f"{model}_{target}_", "")
@@ -35,11 +43,11 @@ class MetricExporter:
         clean_ctx = raw_context.replace('_', ' ').strip()
         if clean_ctx and clean_ctx != "":
             if clean_ctx == 'calendar':
-                display_id = 'Baseline'
+                cli_id = 'Baseline'
             else:
-                display_id = clean_ctx  
+                cli_id = clean_ctx  
         else:
-            display_id = "Baseline"
+            cli_id = "Baseline"
         # ============ ========== ==========
 
         horizon_match = re.search(r'_h(\d+)_', full_id)
@@ -47,9 +55,9 @@ class MetricExporter:
 
         
         # ID unique sans le suffixe 'bis' pour le groupage
-        unique_config_id = f"{model}_{target}_{display_id}_h{horizon}"
+        unique_config_id = f"{model}_{target}_{cli_id}_h{horizon}"
         
-        return model, target, display_id, horizon, unique_config_id
+        return model, target, cli_id, horizon, unique_config_id,ctx
 
     def _process_data(self, results_str):
         data = []
@@ -61,11 +69,11 @@ class MetricExporter:
             
             groups = match.groups()
             full_id = groups[0]
-            model, target, ctx, hor, config_id = self._parse_id(full_id)
+            model, target, cli_id, hor, config_id, ctx = self._parse_id(full_id)
             
             row = {
                 'config_id': config_id, 'Model': model, 'Target': target, 
-                'Id': ctx, 'Horizon': hor
+                'Id': cli_id, 'Horizon': hor, 'Context': ctx
             }
             row.update({self.metrics[i]: float(groups[i+1]) for i in range(len(self.metrics))})
             data.append(row)
@@ -78,15 +86,15 @@ class MetricExporter:
         # df = df.groupby(['config_id', 'Model', 'Target', 'Context', 'Horizon'])[numeric_cols].mean().reset_index()
         # ============ modification ==========
         agg_dict = {m: ['mean', 'std'] for m in self.metrics}
-        df_grouped = df.groupby(['config_id', 'Model', 'Target', 'Id', 'Horizon']).agg(agg_dict).reset_index()
+        df_grouped = df.groupby(['config_id', 'Model', 'Target', 'Id','Context','Horizon']).agg(agg_dict).reset_index()
         df_grouped.columns = [f"{col[0]}_{col[1]}" if col[1] else col[0] for col in df_grouped.columns]
         # ============ ========== ==========
         return df_grouped
 
     def export_all(self, folder_path, exp_i):
         # Un tableau par Horizon et par Target
-        for (target, horizon), group in self.df.groupby(['Target', 'Horizon']):
-            self._generate_table(group, folder_path, f"{exp_i}_h{horizon}")
+        for (target, horizon,context), group in self.df.groupby(['Target', 'Horizon','Context']):
+            self._generate_table(group, folder_path, f"{target}_{context}_h{horizon}")
 
 
     def _generate_table(self, df_group, folder_path, exp_id):
@@ -118,9 +126,14 @@ class MetricExporter:
         if df.empty: return
         
         t_data = df['Target'].iloc[0]
+        t_data.replace('subway_in', 'Subway-In').replace('subway_out', 'Subway-Out').replace('bike_in', 'Bike-In').replace('bike_out', 'Bike-Out').replace('_',' ')
         h = df['Horizon'].iloc[0]
-        
-        caption = (f"Disaggregated analysis on \\textbf{{\\textit{{{t_data.replace('_', ' ')}}} (h{h})}}.")
+        if len(self.contextual_dataset_names)>1:
+            raise NotImplementedError("Multiple contextual datasets LaTeX export not implemented.")
+        else:
+            context_data = df['Context'].iloc[0].replace('subway_in', 'Subway-In').replace('subway_out', 'Subway-Out').replace('bike_in', 'Bike-In').replace('bike_out', 'Bike-Out').replace('_',' ')
+
+        caption = (f"\\textbf{{Prediction {t_data.replace('_', ' ')} }} using contextual data {context_data.replace('_',' ')} according to different integration strategies at horizon (h{h}).")
         label = f"desag_{t_data}_h{h}"
 
         # --- MODIFICATION : Calcul des meilleurs (min) pour le gras ---
