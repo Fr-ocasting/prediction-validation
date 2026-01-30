@@ -68,6 +68,8 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
  
         df_horizon = update_df_metrics(df_horizon,exp_tmp)
 
+        df_horizon['id'] = df_horizon['id'].apply(lambda x: x.replace('late_fusion_','L ').replace('CrossAttnBackBone_','CABB_').replace('BackBone_','BB_').replace('s_proj_t_proj','S-proj T-proj').replace('early_fusion_','E ').replace('independant_embedding','Indep Emb').replace('shared_embedding','Shared Emb').replace('traffic_model_backbone','Traffic Model BackBone').replace('simple_embedding','Simple Emb'))
+
         for metric in metrics: 
             metric = metric.lower()
             plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/h{horizon}/{metric}.html",bool_show=False,)

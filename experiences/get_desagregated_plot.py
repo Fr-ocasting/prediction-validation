@@ -24,6 +24,7 @@ def get_desagregated_gains(dic_exp_to_names,
                            dendrogram= False,
                            dataset_names = None,
                            bool_plot = True,
+                           clusters = None,
                            ):
     issue_while_loading_saved_weights,log = '', ''
     init_folder_path = f"{folder_path}/plot"
@@ -85,6 +86,7 @@ def get_desagregated_gains(dic_exp_to_names,
                                 daily_profile = daily_profile,
                                 dendrogram = dendrogram,
                                 bool_plot = bool_plot,
+                                clusters = clusters,
                             )
                     clusterer,full_predict1,full_predict2,train_input,X,Y_true,L_trainers_1,L_trainers_2,ds1,ds2,args_init1,args_init2,rainy_indices,rainy_mask = outputs
 

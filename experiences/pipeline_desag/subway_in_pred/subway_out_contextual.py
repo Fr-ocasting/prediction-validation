@@ -54,7 +54,7 @@ def get_possible_contextual_kwarg(add_name_save):
                 end_trial_id= f'{feature_extractor_type}'
             
             
-            trial_id = f'{fusion_type}_{end_trial_id}{add_name_save}'
+            trial_id = f'{end_trial_id}{add_name_save}'
 
             possible_contextual_kwargs[fusion_type][trial_id] = potential_config
 

@@ -1,0 +1,28 @@
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{llcccccccc}
+        \toprule
+        Model & Id & \multicolumn{2}{c}{RMSE} & \multicolumn{2}{c}{MAE} & \multicolumn{2}{c}{MASE} & \multicolumn{2}{c}{MAPE} \\
+        & & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std \\
+        \midrule
+        STAEformer & subway out calendar L  simple embedding & \textbf{68.867 (+6.9\%)} & \textbf{nan} & \textbf{41.819 (+11.3\%)} & \textbf{nan} & \textbf{1.252 (+11.3\%)} & \textbf{nan} & \textbf{56.878 (+23.0\%)} & \textbf{nan} \\
+        STAEformer & subway out calendar E  shared embedding & 71.215 (+3.7\%) & nan & 43.819 (+7.0\%) & nan & 1.312 (+7.0\%) & nan & 65.738 (+11.0\%) & nan \\
+        STAEformer & subway out calendar E  S-proj T-proj & 71.873 (+2.8\%) & nan & 44.035 (+6.6\%) & nan & 1.318 (+6.6\%) & nan & 62.186 (+15.8\%) & nan \\
+        STAEformer & subway out calendar L  BB InEmb24 adp16 & 72.053 (+2.6\%) & nan & 43.731 (+7.2\%) & nan & 1.309 (+7.2\%) & nan & 62.504 (+15.4\%) & nan \\
+        STAEformer & subway out calendar E  E  shared embedding & 72.785 (+1.6\%) & nan & 44.678 (+5.2\%) & nan & 1.338 (+5.2\%) & nan & 61.971 (+16.1\%) & nan \\
+        STAEformer & subway out calendar E  E  independant embedding & 73.379 (+0.8\%) & nan & 44.711 (+5.1\%) & nan & 1.338 (+5.2\%) & nan & 59.810 (+19.0\%) & nan \\
+        STAEformer & subway out calendar L  L  simple embedding & 74.110 (-0.2\%) & nan & 44.868 (+4.8\%) & nan & 1.343 (+4.8\%) & nan & 57.698 (+21.9\%) & nan \\
+        STAEformer & subway out calendar E  independant embedding & 77.043 (-4.2\%) & nan & 47.203 (-0.1\%) & nan & 1.413 (-0.1\%) & nan & 65.639 (+11.1\%) & nan \\
+        STAEformer & subway out calendar L  L  BB InEmb24 adp16 & 79.014 (-6.9\%) & nan & 47.382 (-0.5\%) & nan & 1.419 (-0.6\%) & nan & 63.348 (+14.2\%) & nan \\
+        STAEformer & subway out calendar E  E  S-proj T-proj & 82.868 (-12.1\%) & nan & 49.578 (-5.2\%) & nan & 1.484 (-5.2\%) & nan & 63.492 (+14.0\%) & nan \\
+        STAEformer & subway out calendar E  E  BB InEmb24 adp16 & 96.500 (-30.5\%) & nan & 62.584 (-32.8\%) & nan & 1.874 (-32.8\%) & nan & 121.031 (-63.9\%) & nan \\
+        STAEformer & subway out calendar E  BB InEmb24 adp16 & 98.077 (-32.6\%) & nan & 60.652 (-28.7\%) & nan & 1.816 (-28.7\%) & nan & 90.812 (-23.0\%) & nan \\
+        \midrule
+        STAEformer & Baseline & 73.947 & nan & 47.135 & nan & 1.411 & nan & 73.850 & nan \\
+        \bottomrule
+    \end{tabular}
+}
+    \caption{\textbf{Prediction subway in } using contextual data Subway-Out according to different integration strategies at horizon (h4).}
+    \label{tab:desag_subway_in_h4}
+\end{table}

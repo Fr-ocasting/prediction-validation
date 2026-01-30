@@ -170,6 +170,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     else: raise NotImplementedError(f"loss function {config['loss_function_type']} has not been implemented")
     config['out_dim_factor'] = out_dim_factor
     config['metrics'] = metrics
+    config['use_target_as_context'] = False
     # ...
 
     # Temporal Graph Transformer Encoder: 

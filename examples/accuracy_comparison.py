@@ -767,7 +767,8 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     heatmap = False,
                                     daily_profile = False,
                                     dendrogram = False,
-                                    bool_plot = True
+                                    bool_plot = True,
+                                    clusters = None,
                                     ):
 
 
@@ -819,7 +820,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
     # ---- 
 
     # --- Get Cluster : 
-    if station_clustering:
+    if (station_clustering) and (clusters is None):
         train_input = ds2.train_input
         train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
         train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
@@ -842,6 +843,10 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                 folder_path= folder_path,
                                 save_name = save_name,
                                 )
+    elif clusters is not None:
+        clusterer = lambda : None
+        clusterer.clusters = clusters
+        train_input = None
     else:
         clusterer = lambda : None
         clusterer.clusters = None
