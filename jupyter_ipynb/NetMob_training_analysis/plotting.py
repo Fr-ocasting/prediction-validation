@@ -105,7 +105,11 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
         group_renderers = [circle_renderer, box_renderer, segment_top_renderer, segment_bottom_renderer, median_renderer,mean_renderer]
         renderers.append(group_renderers)
         
-    p.xaxis.major_label_text_font_size = "10pt"
+    p.xaxis.major_label_text_font_size = "14pt"
+    p.yaxis.major_label_text_font_size = "14pt"
+    p.xaxis.axis_label_text_font_size = "14pt"
+    p.yaxis.axis_label_text_font_size = "14pt"
+    p.title.text_font_size = "12pt"
     p.xaxis.axis_label = xaxis_label 
     p.yaxis.axis_label = metric_i
     p.xaxis.major_label_orientation = np.pi/3 #np.pi/7
@@ -164,6 +168,4 @@ def plot_boxplot_on_metric(df, metric_i='mse', xaxis_label="App", legend_group='
         show(p)
     else:
         return p
-
-
 
