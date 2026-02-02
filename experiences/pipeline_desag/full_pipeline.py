@@ -99,6 +99,7 @@ target_data = 'subway_in'
 dataset_for_coverage = ['subway_in','subway_out','netmob_POIs']
 contextual_dataset_names = ['netmob_POIs'] # ['netmob_POIs'] #['subway_out']
 TRIVIAL_TEST = False
+REPEAT_TRIAL = 10 #5 
 # ------------------------------------------
 
 training_save_folder = f'{inside_saved_folder}/{exp_i}' # f'K_fold_validation/training_wo_HP_tuning/{exp_i}' 

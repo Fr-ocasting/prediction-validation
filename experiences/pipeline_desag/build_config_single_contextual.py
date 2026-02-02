@@ -60,7 +60,9 @@ class ConfigBuilder(object):
                             'subway_in':contextual_kwargs_i,
                             'subway_in_subway_out':contextual_kwargs_i,
                             'weather':weather_contextual_kwargs,
-                            'netmob_POIs':contextual_kwargs_i
+                            'netmob_POIs':contextual_kwargs_i,
+                            'bike_in':contextual_kwargs_i,
+                            'bike_out':contextual_kwargs_i
                             }
         
         if 'weather' not in contextual_dataset_names:
@@ -73,6 +75,10 @@ class ConfigBuilder(object):
             contextual_kwargs.pop('subway_in_subway_out',None) 
         if 'netmob_POIs' not in contextual_dataset_names:
             contextual_kwargs.pop('netmob_POIs',None)
+        if 'bike_in' not in contextual_dataset_names:
+            contextual_kwargs.pop('bike_in',None)
+        if 'bike_out' not in contextual_dataset_names:
+            contextual_kwargs.pop('bike_out',None)
         return contextual_kwargs
     
     def smoothing(self,config_i,netmob_preprocessing_kwargs,contextual_dataset_names):

@@ -209,7 +209,6 @@ subway_possible_contextual_kwargs = {
                     }
 
 
-
 # --- Late Fusions : 
 subway_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = True
 
@@ -227,7 +226,7 @@ subway_possible_contextual_kwargs['late_fusion']['adp_query_cross_attn_traffic_m
 # ---
 
 # --- Early Fusions : 
-subway_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = False
+subway_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = False
 
 subway_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['backbone_model'] = True
 subway_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False
@@ -251,7 +250,7 @@ bike_possible_contextual_kwargs = {
                                                                 'use_only_for_common_dates': False,
                                                                 'agg_iris_target_n':AGG_IRIS_DEFAULT_N,
                                                                 'threshold_volume_min': THRESHOLD_VOLUME_MIN_DEFAULT,
-                                                                'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT,
+                                                                # 'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT,
                                                                 'attn_kwargs': {},
                                                                 },
 
@@ -260,22 +259,54 @@ bike_possible_contextual_kwargs = {
                                                         'stacked_contextual': True,
                                                         'vision_model_name' : None,
                                                         'use_only_for_common_dates': False,
-                                                        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+                                                        'agg_iris_target_n':AGG_IRIS_DEFAULT_N,
+                                                        'threshold_volume_min': THRESHOLD_VOLUME_MIN_DEFAULT,
+                                                        # 'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
                                                         'attn_kwargs': {},
                                                         },  
 
-                                    'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),         
+                                    'feature_extractor': copy.deepcopy(feature_extractor_model_configurations),  
+                                    
+                                    'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),       
                                     },
 
-                    'late_fusion': {'simple_embedding':{'emb_dim' : 12,
-                                                        },  
+                    'late_fusion': { 'simple_embedding':{'need_global_attn':True, 
+                                                    'stacked_contextual': False,
+                                                    'vision_model_name' : None,
+                                                    'use_only_for_common_dates': False,
+                                                    'agg_iris_target_n':AGG_IRIS_DEFAULT_N,
+                                                    'threshold_volume_min': THRESHOLD_VOLUME_MIN_DEFAULT,
+                                                    'attn_kwargs': {
+                                                        'simple_embedding_dim': INPUT_EMBEDDING_DIM,
+                                                        'concatenation_late': True,
+                                                        },
+                                                },
+
 
                                     'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),   
 
-                                    'traffic_model_backbone':{
-                                                            },
+                                    'traffic_model_backbone':copy.deepcopy(feature_extractor_model_configurations),
                     },
 }
+bike_possible_contextual_kwargs['early_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = False
+bike_possible_contextual_kwargs['early_fusion']['feature_extractor']['agg_iris_target_n'] = AGG_IRIS_DEFAULT_N
+bike_possible_contextual_kwargs['early_fusion']['feature_extractor']['threshold_volume_min'] = THRESHOLD_VOLUME_MIN_DEFAULT
+
+bike_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['backbone_model'] = True
+bike_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['attn_kwargs']['concatenation_late'] = False
+bike_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['agg_iris_target_n'] = AGG_IRIS_DEFAULT_N
+bike_possible_contextual_kwargs['early_fusion']['traffic_model_backbone']['threshold_volume_min'] = THRESHOLD_VOLUME_MIN_DEFAULT
+
+bike_possible_contextual_kwargs['late_fusion']['feature_extractor']['attn_kwargs']['concatenation_late'] = True
+bike_possible_contextual_kwargs['late_fusion']['feature_extractor']['agg_iris_target_n'] = AGG_IRIS_DEFAULT_N
+bike_possible_contextual_kwargs['late_fusion']['feature_extractor']['threshold_volume_min'] = THRESHOLD_VOLUME_MIN_DEFAULT
+
+bike_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['backbone_model'] = True
+bike_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['attn_kwargs']['concatenation_late'] = True
+bike_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['agg_iris_target_n'] = AGG_IRIS_DEFAULT_N
+bike_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['threshold_volume_min'] = THRESHOLD_VOLUME_MIN_DEFAULT
+
+
 
 weather_possible_contextual_kwargs = {
 
@@ -430,7 +461,11 @@ def convertion_exp_name(target_data,dataset_names):
     if (target_data == 'bike_out') or (target_data == 'bike_in'):
         if 'netmob_POIs' in dataset_names:
             exp_tmp = 'Exp6_bike_netmob'
-        elif ('subway_in' in dataset_names) or ('subway_out' in dataset_names):
+        elif (('subway_in' in dataset_names) or 
+              ('subway_out' in dataset_names) or 
+              ('bike_out' in dataset_names) or
+              ('bike_in' in dataset_names)
+                ):
             exp_tmp = 'Exp4_15min_h1'
         else:
             raise NotImplementedError

@@ -1,0 +1,22 @@
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{llcccccccc}
+        \toprule
+        Model & Id & \multicolumn{2}{c}{RMSE} & \multicolumn{2}{c}{MAE} & \multicolumn{2}{c}{MASE} & \multicolumn{2}{c}{MAPE} \\
+        & & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std \\
+        \midrule
+        STAEformer & netmob POIs calendar L  Instagram Deezer CABB InEmb24 ctxInEmb24 adp16 adpQ24 aggIris100 & \textbf{36.852 (+1.3\%)} & \textbf{1.028} & \textbf{21.916 (+1.6\%)} & \textbf{0.323} & \textbf{0.701 (+1.5\%)} & \textbf{0.010} & 28.625 (+0.6\%) & 2.564 \\
+        STAEformer & netmob POIs calendar L  Google Maps Deezer CABB InEmb24 ctxInEmb24 adp16 adpQ0 aggIris100 & 37.159 (+0.5\%) & 1.373 & 22.060 (+0.9\%) & 0.802 & 0.705 (+0.9\%) & 0.025 & \textbf{27.829 (+3.3\%)} & \textbf{1.388} \\
+        STAEformer & netmob POIs calendar L  Instagram Google Maps Deezer CABB InEmb24 ctxInEmb24 adp16 adpQ0 aggIris100 & 37.305 (+0.1\%) & 1.085 & 22.075 (+0.9\%) & 0.459 & 0.705 (+0.9\%) & 0.015 & 28.364 (+1.5\%) & 0.897 \\
+        STAEformer & netmob POIs calendar L  Instagram Deezer CABB InEmb24 ctxInEmb24 adp16 adpQ0 aggIris100 & 37.315 (+0.1\%) & 0.899 & 22.247 (+0.1\%) & 0.546 & 0.711 (+0.1\%) & 0.017 & 28.778 (+0.0\%) & 2.105 \\
+        STAEformer & netmob POIs calendar L  Instagram Google Maps Deezer CABB InEmb24 ctxInEmb24 adp16 adpQ24 aggIris100 & 37.315 (+0.1\%) & 0.549 & 22.078 (+0.9\%) & 0.163 & 0.706 (+0.8\%) & 0.005 & 28.168 (+2.2\%) & 0.592 \\
+        STAEformer & netmob POIs calendar L  Google Maps Deezer CABB InEmb24 ctxInEmb24 adp16 adpQ24 aggIris100 & 37.356 (-0.0\%) & 0.884 & 22.090 (+0.8\%) & 0.482 & 0.706 (+0.8\%) & 0.015 & 27.997 (+2.8\%) & 0.872 \\
+        \midrule
+        STAEformer & Baseline & 37.339 & 0.653 & 22.271 & 0.235 & 0.712 & 0.008 & 28.791 & 0.644 \\
+        \bottomrule
+    \end{tabular}
+}
+    \caption{\textbf{Prediction subway in } using contextual data netmob POIs according to different integration strategies at horizon (h1).}
+    \label{tab:desag_subway_in_h1}
+\end{table}
