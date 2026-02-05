@@ -34,7 +34,8 @@ def tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_
     return L_metrics
 
 def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
-                               target_data,model_name,dataset_names,save_path,n_bis_range):
+                               target_data,model_name,dataset_names,save_path,n_bis_range,
+                               bool_show=False):
     L_metrics = []
     print(f"\nProcessing Experiment: {exp_i}")
     print("-----------------------")
@@ -66,11 +67,12 @@ def plotting_boxplot_of_trials(trials,exp_i,metrics,folder_path,
         # ----- Determine experiment name based on target_data and dataset_names
 
             
-        exp_tmp = convertion_exp_name(target_data,dataset_names)
+        # exp_tmp = convertion_exp_name(target_data,dataset_names)
         # ------------
-        df_horizon = update_df_metrics(df_horizon,exp_tmp)
-        df_horizon['id'] = df_horizon['id'].apply(lambda x: x.replace('late_fusion_','L ').replace('CrossAttnBackBone_','CABB_').replace('BackBone_','BB_').replace('s_proj_t_proj','S-proj T-proj').replace('early_fusion_','E ').replace('independant_embedding','Indep Emb').replace('shared_embedding','Shared Emb').replace('traffic_model_backbone','Traffic Model BackBone').replace('simple_embedding','Simple Emb'))
+        df_horizon = update_df_metrics(df_horizon,exp_i,target_data)
 
         for metric in metrics: 
             metric = metric.lower()
-            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,save_path=f"{save_path}/boxplot/{'_'.join(dataset_names)}/h{horizon}/{metric}.html",bool_show=False,)
+            plot_boxplot_on_metric(df_horizon, metric_i=metric, xaxis_label="Config", legend_group='legend_group', width=1200, height=800,
+            save_path=f"{save_path}/boxplot/{'_'.join(dataset_names)}/h{horizon}/{metric}.html" if save_path is not None else None,
+            bool_show=bool_show,)

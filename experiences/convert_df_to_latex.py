@@ -386,28 +386,23 @@ def update_df_metrics_exp1(df_metrics_all,target_data='subway_in'):
     if target_data == 'bike_out':
         df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp2).values
         df_metrics_all['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df_metrics_all.index]
-
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all
 
 
 def update_df_metrics_exp2(df):
     df['legend_group'] = df.reset_index()['index'].apply(build_legend_group_exp2).values
     df['id'] = [c.split('_calendar_')[1].split('__')[0] if ('weather' in c) else 'Baseline' for c in df.index]
-    df = df.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df
 
 def update_df_metrics_exp3(df_metrics_all):
     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp3).values
     df_metrics_all['id'] = [c.split('_fusion_')[1].split('__')[0] if '_fusion_' in c else 'Baseline' for c in df_metrics_all.index]
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all
 
 def update_df_metrics_exp4_15min(df_metrics_all):
     df_metrics_all['legend_group'] = df_metrics_all.reset_index()['index'].apply(build_legend_group_exp4).values
     df_metrics_all['id'] = [c.split('_CrossAttnBackBone_')[1].split('__')[0] if '_CrossAttnBackBone_' in c else 'Baseline' for c in df_metrics_all.index]
     df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
     return df_metrics_all
 
 
@@ -420,14 +415,48 @@ def update_df_metrics_Exp6_subway_netmob(df_metrics_all):
     df_metrics_all['legend_group'] = [info[1] for info in extracted_info]
     
     df_metrics_all['id'] = df_metrics_all['id'].fillna('Baseline')
-    df_metrics_all = df_metrics_all.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
-    
     return df_metrics_all
 
+def update_df_metrics_other_exps(df_metrics_all,target_data):
+    df_index = df_metrics_all.reset_index()
+    def f(x):
+        if 'calendar__e' in x:
+            return None,'Baseline','Baseline'
+        else:
+            parts = x.split('_calendar_')
+            model_part = parts[0]
+            ctx = model_part.split(f"_{target_data}_")[1]
+            strategy = parts[1].split('__')[0]
+            cleaned_strategy = strategy.replace('early_fusion_','E '
+                                       ).replace('late_fusion_','L '
+                                       ).replace('BackBone','BB'
+                                       ).replace('CrossAttnBackBone','CABB'
+                                      ).replace('traffic_model_BB','E Backbone'
+                                      ).replace('s_proj_t_proj','S-proj T-proj'
+                                      ).replace('independant_embedding','Indep Emb'
+                                      ).replace('shared_embedding','Shared Emb'
+                                      ).replace('traffic_model_backbone','Traffic Model BackBone'
+                                      ).replace('simple_embedding','Simple Emb'
+                                      )
+                                    #   ).replace('shared_embedding','shared'
+                                    #   ).replace('independant_embedding','indep'
+            return ctx,cleaned_strategy,'Others'     
+        
+    output = df_index['index'].apply(f)
+    df_output = pd.DataFrame(output.tolist(),
+                             columns=['ctx','id','legend_group'],
+                            #  columns=['id','legend_group'],
+                             index=df_index['index'])
+    df_metrics_all = pd.concat([df_metrics_all,df_output],axis=1)
+    print(df_metrics_all)
+    return df_metrics_all  
+    
 
 
 
-def update_df_metrics(df_metrics_all,exp_i):
+
+
+def update_df_metrics(df_metrics_all,exp_i, target_data = None):
     if exp_i == 'Exp1':
         df =  update_df_metrics_exp1(df_metrics_all)
     elif exp_i == 'Exp1_subway_in':
@@ -451,7 +480,10 @@ def update_df_metrics(df_metrics_all,exp_i):
     elif exp_i == 'Exp6_bike_netmob':
        df = update_df_metrics_Exp6_subway_netmob(df_metrics_all)
     else:
-        raise NotImplementedError
+        df = update_df_metrics_other_exps(df_metrics_all,target_data)
+    # else:
+    #     raise NotImplementedError
+    df = df.rename(columns= {'rmse_h4':'rmse','rmse_h1':'rmse','mae_h4':'mae','mae_h1':'mae','mase_h4':'mase','mase_h1':'mase'})
 
     df.id = df.id.apply(lambda x: x.replace('adp_query_cross_attn_traffic_model_backbone','CABB'))
     df.id = df.id.apply(lambda x: x.replace('InEmb','In'))

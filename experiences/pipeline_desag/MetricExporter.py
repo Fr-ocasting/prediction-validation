@@ -23,7 +23,8 @@ class MetricExporter:
         elif len(self.contextual_dataset_names) == 1:
             ctx = self.contextual_dataset_names[0]
         else:
-            raise NotImplementedError("Multiple contextual datasets parsing not implemented.")
+            # ctx = '_'.join(self.contextual_dataset_names)
+            ctx = config_part.replace(f"{model}_{target}_", "").split('_calendar_')[0]
         
         # Extraction Contexte et Horizon
         raw_context = config_part.replace(f"{model}_{target}_", "")
@@ -56,7 +57,6 @@ class MetricExporter:
         
         # ID unique sans le suffixe 'bis' pour le groupage
         unique_config_id = f"{model}_{target}_{cli_id}_h{horizon}"
-        
         return model, target, cli_id, horizon, unique_config_id,ctx
 
     def _process_data(self, results_str):
@@ -80,7 +80,7 @@ class MetricExporter:
             
         df = pd.DataFrame(data)
         if df.empty: return df
-        
+    
         # Moyenne des essais 'bis' par configuration unique
         # numeric_cols = self.metrics
         # df = df.groupby(['config_id', 'Model', 'Target', 'Context', 'Horizon'])[numeric_cols].mean().reset_index()
@@ -94,19 +94,20 @@ class MetricExporter:
     def export_all(self, folder_path, exp_i):
         # Un tableau par Horizon et par Target
         for (target, horizon,context), group in self.df.groupby(['Target', 'Horizon','Context']):
-            self._generate_table(group, folder_path, f"{target}_{context}_h{horizon}")
+            df_baseline = self.df[(self.df['Horizon'] == horizon)&(self.df['Target'] == target)&(self.df['Id'] == "Baseline")]
+            self._generate_table(group, folder_path, f"{target}_{context}_h{horizon}",df_baseline)
 
 
-    def _generate_table(self, df_group, folder_path, exp_id):
+    def _generate_table(self, df_group, folder_path, exp_id,df_baseline):
         df = df_group.copy()
-        print(df)
         # --- MODIFICATION : Calcul améliorations et Tri ---
         baseline_mask = df['Id'] == "Baseline"
         baseline_row = df[baseline_mask]
         others = df[~baseline_mask].copy()
         
+        if baseline_row.empty:
+            baseline_row = df_baseline.copy() # Si pas de baseline dans ce groupe, on prend celle du même target/horizon
         if not baseline_row.empty:
-            print('baseline not empty')
             for m in self.metrics:
                 base_val = baseline_row.iloc[0][f"{m}_mean"]
                 # Gain = (Base - Trial) / Base * 100
@@ -128,10 +129,8 @@ class MetricExporter:
         t_data = df['Target'].iloc[0]
         t_data.replace('subway_in', 'Subway-In').replace('subway_out', 'Subway-Out').replace('bike_in', 'Bike-In').replace('bike_out', 'Bike-Out').replace('_',' ')
         h = df['Horizon'].iloc[0]
-        if len(self.contextual_dataset_names)>1:
-            raise NotImplementedError("Multiple contextual datasets LaTeX export not implemented.")
-        else:
-            context_data = df['Context'].iloc[0].replace('subway_in', 'Subway-In').replace('subway_out', 'Subway-Out').replace('bike_in', 'Bike-In').replace('bike_out', 'Bike-Out').replace('_',' ')
+
+        context_data = df['Context'].iloc[0].replace('subway_in', 'Subway-In').replace('subway_out', 'Subway-Out').replace('bike_in', 'Bike-In').replace('bike_out', 'Bike-Out').replace('netmob_POIs','NetMob').replace('_',' ')
 
         caption = (f"\\textbf{{Prediction {t_data.replace('_', ' ')} }} using contextual data {context_data.replace('_',' ')} according to different integration strategies at horizon (h{h}).")
         label = f"desag_{t_data}_h{h}"
@@ -185,7 +184,5 @@ class MetricExporter:
         out_dir = os.path.join(folder_path, "latex_tables")
         os.makedirs(out_dir, exist_ok=True)
 
-        # print('latex table: ')
-        # print("\n".join(lines))
         with open(os.path.join(out_dir, f"{exp_id}.tex"), "w") as f:
             f.write("\n".join(lines))

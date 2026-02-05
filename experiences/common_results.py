@@ -62,7 +62,7 @@ def find_baseline(exp_i,h=None,exp_tmp=None,configs=None,):
             # if 'calendar__' in config:
             if re.search(rf'calendar__e\d+_h{h}',config):
                 config_potential.append(config)
-        if len(config) == 0:
+        if len(config_potential) == 0:
             raise ValueError(f'No baseline found in {configs}')
         elif len(config_potential) > 1:
             raise ValueError(f'Multiple baseline found: {config_potential}')

@@ -97,7 +97,15 @@ horizons = [1,4] # [4]  #[1,4]
 model_name = 'STAEformer'
 target_data = 'bike_out' 
 dataset_for_coverage = ['bike_in','bike_out','subway_in','subway_out']
-possible_contextual_dataset_names = [['subway_in_subway_out'],['bike_in']] # ['netmob_POIs'] #['subway_out']
+possible_contextual_dataset_names = [
+                                    # ['bike_in'],
+                                    ['subway_in_subway_out'],
+                                    # ['subway_in_subway_out','bike_in','weather'],
+                                    #  ['subway_in_subway_out','bike_in'],
+                                    #  ['weather'],
+                                    #  ['weather','bike_in'],
+                                    #  ['weather','subway_in_subway_out'],
+                                     ] # ['netmob_POIs'] #['subway_out']
 TRIVIAL_TEST = False
 REPEAT_TRIAL = 5 #5 
 # ------------------------------------------
@@ -109,8 +117,7 @@ add_name_save = '' #'_clipping'  # ''  # '_trial2'
 
 station_clustering = True
 for contextual_dataset_names in possible_contextual_dataset_names:
-    assert len(contextual_dataset_names) == 1, "Only one contextual dataset at a time is allowed for this pipeline. Otherwise, update 'build_config_single_contextual.py' accordingly. "
-    weather_contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['repeat_t_proj']
+    # assert len(contextual_dataset_names) == 1, "Only one contextual dataset at a time is allowed for this pipeline. Otherwise, update 'build_config_single_contextual.py' accordingly. "
 
     loger = LOG()
     SANITY_CHECKER = False # True
@@ -140,43 +147,30 @@ for contextual_dataset_names in possible_contextual_dataset_names:
     if True:
         # ==================================================
         # LOAD CONFIGURATIONS TO TEST:
-        if (target_data == 'subway_in') or (target_data == 'subway_out'):
-            if contextual_dataset_names == ['netmob_POIs']:
-                from experiences.pipeline_desag.subway_in_pred.netmob_POIs_contextual import get_possible_contextual_kwarg
-                possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
+        possible_contextual_kwargs = {}
+        # possible_contextual_kwargs[ds][fusion][feature_extractor]
+        print('contextual_dataset_names:\n ',contextual_dataset_names)
+        for dataset_name in contextual_dataset_names:
+            if 'weather' == dataset_name:
+                contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['repeat_t_proj']
+                possible_contextual_kwargs[dataset_name] = {'early_fusion':{'repeat_t_proj':contextual_kwargs}}
 
-            elif contextual_dataset_names == ['subway_out']:
-                from experiences.pipeline_desag.subway_in_pred.subway_out_contextual import get_possible_contextual_kwarg
-                possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
             else:
-                raise NotImplementedError(f'Contextual dataset {contextual_dataset_names} not implemented for target_data {target_data} ')
-
-        if (target_data == 'bike_out') or (target_data == 'bike_in'):
-            if contextual_dataset_names == ['netmob_POIs']:
-                from experiences.pipeline_desag.bike_out_pred.netmob_POIs_contextual import get_possible_contextual_kwarg
-                possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
-            elif contextual_dataset_names == ['subway_in_subway_out']:
-                from experiences.pipeline_desag.bike_out_pred.subway_in_subway_out_contextual import get_possible_contextual_kwarg
-                possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
-            elif contextual_dataset_names == ['bike_in']:
-                from experiences.pipeline_desag.bike_out_pred.bike_in_contextual import get_possible_contextual_kwarg
-                possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
-            else:
-                raise NotImplementedError(f'Contextual dataset {contextual_dataset_names} not implemented for target_data {target_data}')
-        else:
-            raise NotImplementedError(f'Target data {target_data} not implemented yet. ')
-
-        # if TRIVIAL_TEST:
-        #     k0 = list(possible_contextual_kwargs.keys())[0]
-        #     k1 = list(possible_contextual_kwargs[k0].keys())[0]
-        #     v1 = possible_contextual_kwargs[k0][k1]
-        #     possible_contextual_kwargs = {k0 : {k1:v1}}
+                path = f"experiences.pipeline_desag.{target_data}_pred.{dataset_name}_contextual"
+                module = importlib.import_module(path)
+                importlib.reload(module)
+                contextual_kwargs = module.get_possible_contextual_kwarg(add_name_save)     
+                possible_contextual_kwargs[dataset_name] = contextual_kwargs
+        
 
         print('\n------------------------------- CONFIGURATIONS ----------------------------------\n')
-        for fusion_type in possible_contextual_kwargs.keys():
-            print(f'--- Fusion type: {fusion_type} ---')
-            for trial_id in possible_contextual_kwargs[fusion_type].keys():
-                print(f'    {trial_id}')
+        print(possible_contextual_kwargs)
+        for predictive_data in possible_contextual_kwargs.keys():
+            print(f'±n--- Predictive data: {predictive_data} ---')
+            for fusion_type in possible_contextual_kwargs[predictive_data].keys():
+                print(f'  -- Fusion type: {fusion_type} ---')
+                for trial_id in possible_contextual_kwargs[predictive_data][fusion_type].keys():
+                    print(f'    {trial_id}')
         print('\n---------------------------------------------------------------------------------\n')
         # ==================================================
         # LOAD CONFIG DICTIONARY: 
@@ -187,13 +181,16 @@ for contextual_dataset_names in possible_contextual_dataset_names:
                                                     config_backbone_model=config_backbone_model,
                                                     contextual_dataset_names=contextual_dataset_names,
                                                     possible_contextual_kwargs=possible_contextual_kwargs,
-                                                    weather_contextual_kwargs=weather_contextual_kwargs,
                                                     netmob_preprocessing_kwargs=netmob_preprocessing_kwargs
                                                     )
 
 
         baselineconfigbuilder = BaselineConfigBuilder(target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save,)
         dic_configs = baselineconfigbuilder.build_config_single_contextual(dic_configs, possible_target_kwargs, config_backbone_model)
+
+        print(f"Total configurations to test: {len(dic_configs)}")
+        for key in dic_configs.keys():
+            print(f"  {key}")
 
 
         # ==================================================
@@ -223,13 +220,12 @@ for contextual_dataset_names in possible_contextual_dataset_names:
             with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
                 f.write(f'results = {repr(results_saved + loger.log_final)}')
 
-    if False:
+    if True:
         # ==================================================
         # BOXPLOT FIGURE :
         ''' 
         Load saved results from f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}.py"
         '''
-
         module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
         module = importlib.import_module(module_path)
         importlib.reload(module)
@@ -274,63 +270,73 @@ for contextual_dataset_names in possible_contextual_dataset_names:
 
         if True:
             # -- Get clusters for station clustering desagregated plots:
-            if station_clustering:
-                # Load ds from Target Data 
-                args_init = local_get_args(model_name,
-                            args_init = None,
-                            dataset_names=[target_data],
-                            dataset_for_coverage=dataset_for_coverage,
-                            modification = {'freq': freq,
-                                            'step_ahead': 1,
-                                            'horizon_step': 1,
-                                            'target_data': target_data,
-                                            'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                            })
-                print(args_init)
-                fold_to_evaluate=[args_init.K_fold-1]
-                trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,None,args_init,{},None)
+            for topk_percent in [None,0.8]:
+                if station_clustering:
+                    # Load ds from Target Data 
+                    args_init = local_get_args(model_name,
+                                args_init = None,
+                                dataset_names=[target_data],
+                                dataset_for_coverage=dataset_for_coverage,
+                                modification = {'freq': freq,
+                                                'step_ahead': 1,
+                                                'horizon_step': 1,
+                                                'target_data': target_data,
+                                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                                                })
+                    print(args_init)
+                    fold_to_evaluate=[args_init.K_fold-1]
+                    trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,None,args_init,{},None)
 
-                colmumn_name = 'Station'
-                train_input = ds.train_input
-                train_time_slots = ds.tensor_limits_keeper.df_verif_train.stack().unique()
-                train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds.spatial_unit)
-                train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init.freq))
-                train_input.columns.name = colmumn_name
-                # Get Clustering of stations from these inputs:
-                clusterer = get_cluster(train_input,
-                                        temporal_agg='business_day',
-                                        normalisation_type ='minmax',
-                                        index= colmumn_name,
-                                        city=ds.city,
-                                        n_clusters=5, 
-                                        linkage_method='complete', 
-                                        metric='precomputed',
-                                        min_samples=2,
-                                        heatmap= True, 
-                                        daily_profile=True, 
-                                        dendrogram=True,
-                                        bool_plot = False,
-                                        folder_path= save_path_figures,
-                                        save_name = exp_i,
-                                        )
-                clusters = clusterer.clusters
-                print('Clusters: ',clusterer.clusters)
-            else:
-                clusters = None
+                    colmumn_name = 'Station'
+                    train_input = ds.train_input
+                    train_time_slots = ds.tensor_limits_keeper.df_verif_train.stack().unique()
+                    train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds.spatial_unit)
+                    train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init.freq))
+                    train_input.columns.name = colmumn_name
 
-            # -- ON RAINY & NON RAINY : 
-            get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
-                                dic_trials = {exp_i:trials},
-                                horizons=horizons,
-                                comparison_on_rainy_events=True,
-                                range_k=range(1,REPEAT_TRIAL+1),
-                                station_clustering=station_clustering,
-                                folder_path=f'{current_file_path}/results',
-                                save_bool=True,
-                                heatmap= True,
-                                daily_profile=True,
-                                dendrogram=True,
-                                dataset_names =contextual_dataset_names,
-                                bool_plot = False,
-                                clusters = clusters
-                                )
+                    if topk_percent is not None: 
+                        s = train_input.sum()
+                        threshold = s.quantile(1-topk_percent)
+                        top_ids = s[s>=threshold].index.tolist()
+                        train_input = train_input[top_ids]
+                    # Get Clustering of stations from these inputs:
+                    clusterer = get_cluster(train_input,
+                                            temporal_agg='business_day',
+                                            normalisation_type ='minmax',
+                                            index= colmumn_name,
+                                            city=ds.city,
+                                            n_clusters=5, 
+                                            linkage_method='complete', 
+                                            metric='precomputed',
+                                            min_samples=2,
+                                            heatmap= True, 
+                                            daily_profile=True, 
+                                            dendrogram=True,
+                                            bool_plot = False,
+                                            folder_path= save_path_figures,
+                                            save_name = f"{exp_i}_topk{int(topk_percent*100)}_clusters" if topk_percent is not None else f"{exp_i}",
+                                            )
+                    clusters = clusterer.clusters
+                    print('Clusters: ',clusterer.clusters)
+                else:
+                    clusters = None
+
+                # -- ON RAINY & NON RAINY : 
+                get_desagregated_gains(dic_exp_to_names={
+                                            exp_i:f'{target_data}_{model_name}'
+                                            },
+                                    dic_trials = {exp_i:trials},
+                                    horizons=horizons,
+                                    comparison_on_rainy_events=True,
+                                    range_k=range(1,REPEAT_TRIAL+1),
+                                    station_clustering=station_clustering,
+                                    folder_path=f'{current_file_path}/results',
+                                    save_bool=True,
+                                    heatmap= True,
+                                    daily_profile=True,
+                                    dendrogram=True,
+                                    dataset_names =contextual_dataset_names,
+                                    bool_plot = False,
+                                    clusters = clusters,
+                                    topk_percent = topk_percent
+                                    )

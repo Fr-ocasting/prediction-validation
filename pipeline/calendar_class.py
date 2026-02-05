@@ -164,7 +164,48 @@ BANK_HOLIDAYS = {
         "2019-11-11",  # Veterans Day
         "2019-11-28",  # Thanksgiving Day
         "2019-12-25",  # Christmas Day
-    ]
+    ],
+        'Manhattan': [
+            # 2020
+            "2020-01-01",  # New Year's Day
+            "2020-01-20",  # MLK Jr. Day
+            "2020-02-17",  # Presidents Day
+            "2020-04-10",  # Good Friday
+            "2020-05-25",  # Memorial Day
+            "2020-07-03",  # Independence Day (Observed)
+            "2020-09-07",  # Labor Day
+            "2020-10-12",  # Columbus Day
+            "2020-11-11",  # Veterans Day
+            "2020-11-26",  # Thanksgiving Day
+            "2020-12-25",  # Christmas Day
+
+            # 2021
+            "2021-01-01",  # New Year's Day
+            "2021-01-18",  # MLK Jr. Day
+            "2021-02-15",  # Presidents Day
+            "2021-04-02",  # Good Friday
+            "2021-05-31",  # Memorial Day
+            "2021-06-18",  # Juneteenth (Observed - Fed only)
+            "2021-07-05",  # Independence Day (Observed)
+            "2021-09-06",  # Labor Day
+            "2021-10-11",  # Columbus Day
+            "2021-11-11",  # Veterans Day
+            "2021-11-25",  # Thanksgiving Day
+            "2021-12-24",  # Christmas Day (Observed)
+
+            # 2022
+            "2022-01-17",  # MLK Jr. Day
+            "2022-02-21",  # Presidents Day
+            "2022-04-15",  # Good Friday
+            "2022-05-30",  # Memorial Day
+            "2022-06-20",  # Juneteenth (Observed)
+            "2022-07-04",  # Independence Day
+            "2022-09-05",  # Labor Day
+            "2022-10-10",  # Columbus Day
+            "2022-11-11",  # Veterans Day
+            "2022-11-24",  # Thanksgiving Day
+            "2022-12-26",  # Christmas Day (Observed)
+        ]
 }
 
 

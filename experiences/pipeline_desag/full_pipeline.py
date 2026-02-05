@@ -91,15 +91,15 @@ folder_path = f"{ROOT}/save/{inside_saved_folder}"
         # dataset_for_coverage = ['bike_out','subway_in','subway_out','netmob_POIs']
 
 # ------------------------------------------
-exp_i = 'pipeline_subway_in_netmob'
+exp_i = 'pipeline_subway_out'
 freq = '15min' #'15min'  
 horizons = [1,4] # [4]  #[1,4]
 model_name = 'STAEformer'
-target_data = 'subway_in' 
-dataset_for_coverage = ['subway_in','subway_out','netmob_POIs']
-contextual_dataset_names = ['netmob_POIs'] # ['netmob_POIs'] #['subway_out']
+target_data = 'subway_out' 
+dataset_for_coverage = ['subway_in','subway_out'] #['subway_in','subway_out','netmob_POIs']
+contextual_dataset_names = ['subway_in'] # ['netmob_POIs'] #['subway_out']
 TRIVIAL_TEST = False
-REPEAT_TRIAL = 10 #5 
+REPEAT_TRIAL = 5 # 10
 # ------------------------------------------
 
 training_save_folder = f'{inside_saved_folder}/{exp_i}' # f'K_fold_validation/training_wo_HP_tuning/{exp_i}' 
@@ -139,30 +139,30 @@ if TRIVIAL_TEST:
 if True:
     # ==================================================
     # LOAD CONFIGURATIONS TO TEST:
-    if (target_data == 'subway_in') or (target_data == 'subway_out'):
-        if contextual_dataset_names == ['netmob_POIs']:
-            from experiences.pipeline_desag.subway_in_pred.netmob_POIs_contextual import get_possible_contextual_kwarg
-            possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
+    possible_contextual_kwargs = {}
+    # possible_contextual_kwargs[ds][fusion][feature_extractor]
+    print('contextual_dataset_names:\n ',contextual_dataset_names)
+    for dataset_name in contextual_dataset_names:
+        if 'weather' == dataset_name:
+            contextual_kwargs = weather_possible_contextual_kwargs['early_fusion']['repeat_t_proj']
+            possible_contextual_kwargs[dataset_name] = {'early_fusion':{'repeat_t_proj':contextual_kwargs}}
 
-        elif contextual_dataset_names == ['subway_out']:
-            from experiences.pipeline_desag.subway_in_pred.subway_out_contextual import get_possible_contextual_kwarg
-            possible_contextual_kwargs = get_possible_contextual_kwarg(add_name_save)
         else:
-            raise NotImplementedError(f'Contextual dataset {contextual_dataset_names} not implemented for target_data {target_data} ')
-    else:
-        raise NotImplementedError(f'Target data {target_data} not implemented yet. ')
-
-    # if TRIVIAL_TEST:
-    #     k0 = list(possible_contextual_kwargs.keys())[0]
-    #     k1 = list(possible_contextual_kwargs[k0].keys())[0]
-    #     v1 = possible_contextual_kwargs[k0][k1]
-    #     possible_contextual_kwargs = {k0 : {k1:v1}}
+            path = f"experiences.pipeline_desag.{target_data}_pred.{dataset_name}_contextual"
+            module = importlib.import_module(path)
+            importlib.reload(module)
+            contextual_kwargs = module.get_possible_contextual_kwarg(add_name_save)     
+            possible_contextual_kwargs[dataset_name] = contextual_kwargs
+    
 
     print('\n------------------------------- CONFIGURATIONS ----------------------------------\n')
-    for fusion_type in possible_contextual_kwargs.keys():
-        print(f'--- Fusion type: {fusion_type} ---')
-        for trial_id in possible_contextual_kwargs[fusion_type].keys():
-            print(f'    {trial_id}')
+    print(possible_contextual_kwargs)
+    for predictive_data in possible_contextual_kwargs.keys():
+        print(f'±n--- Predictive data: {predictive_data} ---')
+        for fusion_type in possible_contextual_kwargs[predictive_data].keys():
+            print(f'  -- Fusion type: {fusion_type} ---')
+            for trial_id in possible_contextual_kwargs[predictive_data][fusion_type].keys():
+                print(f'    {trial_id}')
     print('\n---------------------------------------------------------------------------------\n')
     # ==================================================
     # LOAD CONFIG DICTIONARY: 
@@ -173,13 +173,16 @@ if True:
                                                 config_backbone_model=config_backbone_model,
                                                 contextual_dataset_names=contextual_dataset_names,
                                                 possible_contextual_kwargs=possible_contextual_kwargs,
-                                                weather_contextual_kwargs=weather_contextual_kwargs,
                                                 netmob_preprocessing_kwargs=netmob_preprocessing_kwargs
                                                 )
 
 
     baselineconfigbuilder = BaselineConfigBuilder(target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save,)
     dic_configs = baselineconfigbuilder.build_config_single_contextual(dic_configs, possible_target_kwargs, config_backbone_model)
+
+    print(f"Total configurations to test: {len(dic_configs)}")
+    for key in dic_configs.keys():
+        print(f"  {key}")
 
 
     # ==================================================
@@ -208,6 +211,7 @@ if True:
         results_saved = module.results
         with open(f"{ROOT}/experiences/pipeline_desag/results/{exp_i}/{exp_i}.py",'w') as f:
             f.write(f'results = {repr(results_saved + loger.log_final)}')
+
 
 # ==================================================
 # BOXPLOT FIGURE :

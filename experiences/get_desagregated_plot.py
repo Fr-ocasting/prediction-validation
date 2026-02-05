@@ -25,9 +25,10 @@ def get_desagregated_gains(dic_exp_to_names,
                            dataset_names = None,
                            bool_plot = True,
                            clusters = None,
+                           topk_percent = None,
                            ):
     issue_while_loading_saved_weights,log = '', ''
-    init_folder_path = f"{folder_path}/plot"
+    init_folder_path = f"{folder_path}/plot"  if folder_path is not None else None
     for exp_i,target_model_name in dic_exp_to_names.items():
         target_data = '_'.join(target_model_name.split('_')[:-1])
         model_name = target_model_name.split('_')[-1]
@@ -37,10 +38,6 @@ def get_desagregated_gains(dic_exp_to_names,
             exp_tmp = convertion_exp_name(target_data,dataset_names)
         else:
             exp_tmp = exp_i
-
-        print('exp_i: ',exp_i)
-        print('exp_tmp: ',exp_tmp)
-
 
         for h in horizons:
             print('   Horizon: ',h)
@@ -63,7 +60,17 @@ def get_desagregated_gains(dic_exp_to_names,
                     print(trial_id)
 
                 for trial_id1,trial_id2 in zip(trial_ids1,trial_ids2):
-                    folder_path = f"{init_folder_path}/{exp_i}"
+                    if init_folder_path is not None :
+                        folder_path_i = f"{init_folder_path}/{exp_i}" 
+                        if topk_percent is not None:
+                            folder_path_i += f"_top{int(topk_percent*100)}"
+                            if not os.path.exists(folder_path_i):
+                                os.mkdir(folder_path_i)
+                    else:
+                        folder_path_i = None
+
+                                    
+                    
                     if save_bool:
                         save_name = f"desag_{trial_id2}"
                     else:
@@ -80,7 +87,7 @@ def get_desagregated_gains(dic_exp_to_names,
                                 trial_id2_in_bis=False,
                                 comparison_on_rainy_events = comparison_on_rainy_events,
                                 station_clustering = station_clustering,
-                                folder_path = folder_path,
+                                folder_path = folder_path_i,
                                 save_name = save_name,
                                 heatmap = heatmap,
                                 daily_profile = daily_profile,

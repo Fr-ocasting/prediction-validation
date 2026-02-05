@@ -13,6 +13,7 @@ from bokeh.palettes import Plasma256
 from bokeh.palettes import Turbo256 as palette
 import itertools
 from pipeline.utils.metrics import load_fun
+import datetime
 
 current_path = os.getcwd()
 parent_dir = os.path.abspath(os.path.join(current_path, '..'))
@@ -395,6 +396,8 @@ def plot_analysis_comparison_2_config(trial_id1,
             save_name_i = save_name.split('_bis')[0]
             if comparison_on_rainy_events:
                 save_name_i += "_rainy"
+        else:
+            save_name_i = None
             
         dic_error_agg_h,real = comparison_plotting(dic_error_agg_h,    
                                                    full_predict1,
@@ -591,6 +594,11 @@ class ComparisonPlotter:
         self.dic_error_agg = {metric: {} for metric in metric_list}
         self.dic_gain_agg_per_cluster = {metric: {} for metric in metric_list}
 
+
+
+        # ---- Plot Error metric but no gain: 
+        self._plot_error_per_day(ds,dic_error,metric_list,training_mode,temporal_agg='date',stations=stations,dates=dates,folder_path=folder_path,save_name=save_name)
+
         # self._init_fig_axes_sizes(temporal_aggs, len(stations))
         for metric in metric_list:
             for i, temporal_agg in enumerate(temporal_aggs):
@@ -661,6 +669,63 @@ class ComparisonPlotter:
                 except:
                     print(f"Figure saved in {save_name}.pdf")
                     fig.savefig(f"{save_name}.pdf", bbox_inches='tight')
+
+
+    def _plot_error_per_day(self,ds,dic_error,metric_list,training_mode,temporal_agg,stations,dates=None,folder_path = None,save_name = None):
+
+        for metric in metric_list:
+            dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg ='date',stations=stations,dates = dates)
+            df_mae = pd.DataFrame(pd.DataFrame(error_pred2_agg).mean(axis=1), columns = [metric])
+            df_mae.index = pd.to_datetime(df_mae.index)
+
+            df_mae['weekday_name'] = df_mae.index.day_name()
+            iso_calendar = df_mae.index.isocalendar()
+            df_mae['week_of_year_year'] = iso_calendar.year.astype(str) + ' - ' + iso_calendar.week.astype(str)
+            df_mae_pivot = df_mae.pivot(index='week_of_year_year', columns='weekday_name', values='mae')
+            df_mae_pivot =  df_mae_pivot[['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+
+            def convert_week_to_date(str_week):
+                # Correction : inversion de l'ordre et conversion en int
+                year_num, week_num  = str_week.split(' - ')
+                date_obj = datetime.date.fromisocalendar(int(year_num), int(week_num), 1)
+                return date_obj.strftime("%d %B %Y")
+
+            df_mae_pivot =  df_mae_pivot[['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']]
+            df_mae_pivot = df_mae_pivot.sort_index(ascending=True)
+            df_mae_pivot.index = df_mae_pivot.index.map(convert_week_to_date)
+
+            fig, ax = plt.subplots(1, 1, 
+                        figsize=(6, 10),
+                        )
+            
+            ax = plot_coverage_matshow(
+                            df_mae_pivot,
+                            cmap='cool', save=None, 
+                            bool_reversed=False,
+                            # v_min=0, 
+                            # v_max=10, 
+                            display_values=False, 
+                            cbar_magic_args = self.cbar_magic_args,
+                            size_colorbar = self.size_colorbar,
+                            xaxis = "Weekday",
+                            yaxis = "Day - Month", 
+                            ax = ax
+                        )
+            ax.set_title(f"{metric.upper()} on each day")
+            plt.show()
+            if save_name is not None:
+                if 'rainy' in save_name:
+                    desag_name = f'error_per_day_rainy'
+                else:
+                    desag_name = f'error_per_day'
+                save_path = f"{folder_path}/{desag_name}/{save_name}"
+                if not os.path.exists(f"{folder_path}/{desag_name}/"):
+                    os.mkdir(f"{folder_path}/{desag_name}/")
+
+                save_path_i = f"{save_path}_{metric}"
+                print(f"Figure saved in {save_path_i}.pdf")
+                fig.savefig(f"{save_path_i}.pdf", bbox_inches='tight')
+        # ------
 
 
 

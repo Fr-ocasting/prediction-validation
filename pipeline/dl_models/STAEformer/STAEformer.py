@@ -259,6 +259,7 @@ class ContextualInputEmbedding(nn.Module):
             return x
         else: 
             x = torch.cat([x, features], dim=-1)
+
             return x
 
 

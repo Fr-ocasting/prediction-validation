@@ -463,10 +463,12 @@ def convertion_exp_name(target_data,dataset_names):
             exp_tmp = 'Exp6_bike_netmob'
         elif (('subway_in' in dataset_names) or 
               ('subway_out' in dataset_names) or 
+              ('subway_in_subway_out' in dataset_names) or
               ('bike_out' in dataset_names) or
               ('bike_in' in dataset_names)
                 ):
             exp_tmp = 'Exp4_15min_h1'
         else:
+            print(f"Error: {dataset_names} not recognized for target_data {target_data}")
             raise NotImplementedError
     return exp_tmp

@@ -29,8 +29,8 @@ def get_possible_contextual_kwarg(add_name_save):
         'early_fusion':[
                         # 's_proj_t_proj',
                         'shared_embedding', 
-                        'independant_embedding',
-                        'traffic_model_backbone',
+                        # 'independant_embedding',
+                        # 'traffic_model_backbone',
                         # 'adp_query_cross_attn_traffic_model_backbone',
                         ],
         'late_fusion':[
