@@ -156,7 +156,7 @@ def error_along_ts(predict,real,metric,min_flow,normalize):
         real = real.detach().clone().reshape(-1)
         predict = predict.detach().clone().reshape(-1)            
 
-       mask = real>min_flow
+       mask = real>min_flow if min_flow is not None else torch.ones_like(real).bool()
        error = torch.full(real.shape, -1.0)  # Remplir avec -1 par défaut
        if metric == 'mape':
               error[mask] = 100 * (torch.abs(real[mask] - predict[mask]) / real[mask]) 

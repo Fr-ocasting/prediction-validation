@@ -28,8 +28,6 @@ from constants.paths import FOLDER_PATH
 RANGE = 3*60  # +/- range (min) supposed to be affected around the event 
 WIDTH = 1000
 HEIGHT = 300
-MIN_FLOW = 40
-
 
 
 def evaluate_config(args_init = None,
@@ -116,7 +114,9 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
                                        expanded = '',
                                        station = 'BON',
                                        individual_poi = True,
-                                       sum_ts_pois = True
+                                       sum_ts_pois = True,
+                                       min_flow = None,
+                                       metrics = ['mae'],
                                        ):
     '''
     individual_poi: if True then each Time-Serie of each POIs is visualised
@@ -134,7 +134,7 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         netmob_consumption = get_netmob_consumption_on_specifics_tags_apps(df_true.index,apps,type_POIs,spatial_units,POI_or_stations,transfer_modes,expanded, individual_poi, sum_ts_pois)
     else:
         netmob_consumption = None
-    visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,WIDTH,HEIGHT,MIN_FLOW,training_mode = training_mode,netmob_consumption = netmob_consumption)
+    visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,WIDTH,HEIGHT,training_mode = training_mode,netmob_consumption = netmob_consumption,min_flow = min_flow,metrics = metrics)
 
 def get_netmob_consumption_on_specifics_tags_apps(s_dates,apps,type_POIs,spatial_units,POI_or_stations,transfer_modes,expanded, individual_poi = True, sum_ts_pois = True):
     # Load gdf for POIs:
@@ -207,7 +207,7 @@ def get_df_for_visualisation(ds,Preds,Y_true,training_mode,out_dim_factor,statio
     #df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
     return(df_true,df_predictions)
 
-def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time=[],Range=None,width=1200,height=300,min_flow=None,training_mode='test',netmob_consumption=None):
+def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time=[],Range=None,width=1200,height=300,min_flow=None,training_mode='test',netmob_consumption=None,metrics = ['mae']):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
     p1 = plot_single_point_prediction(df_true,df_prediction,station,
                                       title= f'{training_mode} Trafic variable Prediction at each spatial units ',
@@ -224,7 +224,7 @@ def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_t
     p2 = plot_TS(netmob_consumption,width=width,height=height,bool_show=False) if netmob_consumption is not None else None
 
     if (df_prediction is not None) and (len(df_prediction)==1):
-        p3 = plot_prediction_error(df_true,df_prediction[0],station,metrics =['mae','mse','mape'],title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
+        p3 = plot_prediction_error(df_true,df_prediction[0],station,metrics =metrics,title = 'Prediction Error',width=width,height=height,bool_show=False,min_flow = min_flow)
     else:
         p3=None
 

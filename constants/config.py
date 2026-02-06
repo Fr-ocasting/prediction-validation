@@ -145,7 +145,7 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['track_pi'] = False #True
 
     # --- Keep track on grad through training : 
-    config['track_grad_norm'] = True # True # False  # If True then track the gradient norm of the model through training.
+    config['track_grad_norm'] = False # True # False  # If True then track the gradient norm of the model through training.
 
     # Validation, K-fold
     config['validation_split_method'] = 'forward_chaining_cv'  # Choices =  ['custom_blocked_cv','forward_chaining_cv']. Design the way we split the data and compute the metrics.

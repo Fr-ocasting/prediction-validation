@@ -42,22 +42,26 @@ def train_one_config(loger,config_i,init_save_folder,trial_id):
 
 
     # Run the script
-    weights_save_folder = f"{init_save_folder}/{subfolder}"
-    save_folder = f"{weights_save_folder}/{trial_id}"
-    save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
-    print(f"    Save folder: {save_folder_with_root}")
-    if not os.path.exists(f"{SAVE_DIRECTORY}/{init_save_folder}"):
-        os.mkdir(f"{SAVE_DIRECTORY}/{init_save_folder}")
-    if not os.path.exists(f"{SAVE_DIRECTORY}/{weights_save_folder}"):
-        os.mkdir(f"{SAVE_DIRECTORY}/{weights_save_folder}")
-    if not os.path.exists(save_folder_with_root):
-        os.mkdir(save_folder_with_root)
+    if init_save_folder is not None: 
+        weights_save_folder = f"{init_save_folder}/{subfolder}"
+        save_folder = f"{weights_save_folder}/{trial_id}"
+        save_folder_with_root = f"{SAVE_DIRECTORY}/{save_folder}"
+        print(f"    Save folder: {save_folder_with_root}")
+        if not os.path.exists(f"{SAVE_DIRECTORY}/{init_save_folder}"):
+            os.mkdir(f"{SAVE_DIRECTORY}/{init_save_folder}")
+        if not os.path.exists(f"{SAVE_DIRECTORY}/{weights_save_folder}"):
+            os.mkdir(f"{SAVE_DIRECTORY}/{weights_save_folder}")
+        if not os.path.exists(save_folder_with_root):
+            os.mkdir(save_folder_with_root)
+    else:
+        weights_save_folder = None
+        save_folder = None
 
     # savoir si il existe un fichier qui commence par  f"{save_folder_with_root}/{trial_id}_f" et qui est déja sauvegardé
-    if os.path.exists(f"{save_folder_with_root}/METRICS_{trial_id}.csv"):
+    if weights_save_folder is not None and os.path.exists(f"{save_folder_with_root}/METRICS_{trial_id}.csv"):
         print(f"    Trial ID: {trial_id} ALREADY DONE, SKIPPING...")
         return None,None,None,None,loger
-    
+
     else:
         # Train Model
         trainer,ds,model,args = main(fold_to_evaluate,

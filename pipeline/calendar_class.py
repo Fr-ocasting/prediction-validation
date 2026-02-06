@@ -227,6 +227,39 @@ def is_school_holidays(timestamp,city):
         ]
     elif 'California' in city:
         school_holidays = []
+    
+    elif 'Manhattan' in city:
+        school_holidays = [
+            # Année scolaire 2018-2019 (Partie 2019)
+            ("2019-02-18", "2019-02-22"),  # Mid-winter Recess
+            ("2019-04-19", "2019-04-26"),  # Spring Recess
+            
+            # Année scolaire 2019-2020
+            ("2019-12-23", "2020-01-01"),  # Winter Recess
+            ("2020-02-17", "2020-02-21"),  # Mid-winter Recess
+            ("2020-03-16", "2020-06-26"),  # FERMETURE COVID (Bâtiments fermés / Remote)
+            ("2020-04-09", "2020-04-17"),  # Spring Recess (Inclus dans fermeture COVID)
+            
+            # Année scolaire 2020-2021
+            ("2020-12-24", "2021-01-01"),  # Winter Recess
+            ("2021-02-15", "2021-02-19"),  # Mid-winter Recess
+            ("2021-03-29", "2021-04-02"),  # Spring Recess
+            
+            # Année scolaire 2021-2022
+            ("2021-12-24", "2022-01-02"),  # Winter Recess
+            ("2022-02-21", "2022-02-25"),  # Mid-winter Recess
+            ("2022-04-15", "2022-04-22"),  # Spring Recess
+            
+            # Année scolaire 2022-2023
+            ("2022-12-26", "2023-01-02"),  # Winter Recess
+            ("2023-02-20", "2023-02-24"),  # Mid-winter Recess
+            ("2023-04-10", "2023-04-14"),  # Spring Recess
+            
+            # Année scolaire 2023-2024
+            ("2023-12-25", "2024-01-01"),  # Winter Recess
+            ("2024-02-19", "2024-02-23"),  # Mid-winter Recess
+            ("2024-04-22", "2024-04-30"),  # Spring Recess (Pessah)
+        ]
 
     for start, end in school_holidays:
         start_date = datetime.datetime.strptime(start, "%Y-%m-%d")
@@ -241,9 +274,6 @@ def is_school_holidays(timestamp,city):
 def calendar_inputs(df_dates,
                     calendar_type=['timeofday','dayofweek', 'hour', 'minute', 'bank_holidays', 'school_holidays', 'remaining_holidays'],
                     city = 'Lyon'):
-    if not('California' in city) and (city != 'Lyon'): 
-        if ('bank_holidays' in calendar_type) or ('school_holidays' in calendar_type) or ('remaining_holidays' in calendar_type) :
-            raise NotImplementedError(f'The holidays are not designed for another city than Lyon or districts in California (here city is {city})')
         
     df = pd.DataFrame({'date': df_dates})
     df['date'] = pd.to_datetime(df['date'])

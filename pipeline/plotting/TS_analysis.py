@@ -161,13 +161,18 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
        legend_it = []
        p = figure(x_axis_type="datetime", title= title,
                      width=width,height=height)
-
+       
+       
        if type(station) != list:
              station = [station]
 
 
-       for k,spatial_unit_i in enumerate(df_true.columns):
-              c = p.line(x=df_true.index, line_width = 2.5, y=df_true[spatial_unit_i], alpha=0.8,color = Plasma256[int(k*255/len(station))])
+       for k,spatial_unit_i in enumerate(station):
+              c = p.line(x=df_true.index, 
+                         line_width = 2.5, 
+                         y=df_true[spatial_unit_i], 
+                         alpha=0.8,
+                         color = Plasma256[int(k*255/len(station))])
               legend_it.append((f'True_{spatial_unit_i}', [c]))
 
        if df_prediction is None:
@@ -175,7 +180,10 @@ def plot_single_point_prediction(df_true,df_prediction,station,title = '',kick_o
        if not type(df_prediction) == list:
               df_prediction = [df_prediction]
 
-       if 'min' in freq:
+       if freq == 'H' or freq == 'h' or freq == '1H' or freq == '1h':
+             freq_num = 1
+             freq_label = 'h'
+       elif 'min' in freq:
              freq_num = int(freq.replace('min','')) 
              freq_label = 'min'
        elif ('h' in freq) or ('H' in freq):

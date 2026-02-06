@@ -28,6 +28,10 @@ possible_target_kwargs = {
      'bike_in': {'agg_iris_target_n':AGG_IRIS_DEFAULT_N,
                   'threshold_volume_min': THRESHOLD_VOLUME_MIN_DEFAULT},
      'PeMS08_flow': {},
+     'citibike_in': {'threshold_volume_min': THRESHOLD_VOLUME_MIN_DEFAULT},
+     'citibike_out': {'threshold_volume_min': THRESHOLD_VOLUME_MIN_DEFAULT},
+     'MTA_in': {},
+         
       }
 
 

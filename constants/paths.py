@@ -81,7 +81,9 @@ DATASET_IMPORT_PATHS = {
     'PeMS08_flow': 'load_inputs.Manhattan.PeMS08_flow',
     'PeMS08_occupancy': 'load_inputs.Manhattan.PeMS08_occupancy',
     'PeMS08_speed': 'load_inputs.Manhattan.PeMS08_speed',
-    
+    'citibike_in': 'load_inputs.Manhattan.bike.citibike_in',
+    'citibike_out': 'load_inputs.Manhattan.bike.citibike_out',
+    'MTA_in': 'load_inputs.Manhattan.pt.MTA_in',
     }
 
 ''' NetMob Parameters: '''

@@ -2,9 +2,11 @@ import torch
 import pandas as pd 
 import numpy as np 
 import time
+import sys 
 from torch.cuda.amp import autocast,GradScaler
 import torch.nn as nn 
 from datetime import datetime
+from collections import deque
 if torch.cuda.is_available():
    torch.backends.cuda.matmul.allow_tf32 = True
    torch.backends.cudnn.allow_tf32  = True
@@ -263,6 +265,21 @@ class Trainer(object):
     
     def train_and_valid(self,normalizer = None,df_verif_test = None,mod = None, mod_plot = None,station = 0,unormalize_loss = True):
         print(f'\nstart training')
+        checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
+
+        # Plot Init Latent Space and Accuracy (from random initialization) 
+        if mod_plot is not None: 
+            results_df = self.plot_bokeh_and_save_results(normalizer,df_verif_test,pd.DataFrame(),-1,station)
+        else:
+            results_df = None
+
+        self.chrono = Chronometer()
+        self.chrono.start()
+        max_memory = 0
+
+
+
+
         checkpoint = {'epoch':0, 'state_dict':self.model.state_dict()}
 
         # Plot Init Latent Space and Accuracy (from random initialization) 

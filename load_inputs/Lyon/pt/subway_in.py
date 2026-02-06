@@ -133,7 +133,9 @@ def load_subway_in_df(args,FOLDER_PATH,filename,coverage_period,name=NAME):
 
 
     if args.freq != FREQ :
-        if args.freq[-1] == 'H': 
+        if args.freq == 'H' or args.freq == 'h':
+            freq_i = 60
+        elif args.freq[-1] == 'H': 
             freq_i = int(args.freq.replace('H',''))*60
         else:
             freq_i = int(args.freq.replace('min',''))

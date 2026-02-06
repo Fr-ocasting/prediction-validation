@@ -76,7 +76,11 @@ def get_INVALID_DATES(list_of_invalid_period,freq):
     return INVALID_DATES
 
 def get_time_step_per_hour(freq):
-    if 'min' in freq:
+    if (freq == 'H') or (freq == 'h'):
+        return 1
+    elif (freq == 'd') or (freq == 'D'):
+        return 1/24
+    elif 'min' in freq:
         freq_i = int(freq.split('min')[0])
         return 60/freq_i
     elif ('h' in freq):
