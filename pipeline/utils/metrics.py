@@ -180,5 +180,3 @@ def error_along_ts(predict,real,metric,min_flow,normalize):
        return(error)
 
 
-
-

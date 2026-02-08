@@ -1,10 +1,10 @@
 from ray import tune
 
 config = {
-    # "input_embedding_dim": tune.choice([8,12,24,32,48]),
-    # "tod_embedding_dim": tune.choice([4, 8, 12, 16, 24, 32]),
-    # "dow_embedding_dim": tune.choice([4, 8, 12, 16, 24, 32]),
-    # #"adaptive_embedding_dim": tune.choice([12, 16, 24, 32]),
+    "input_embedding_dim": tune.choice([16,32,64]),
+    "tod_embedding_dim": tune.choice([4,12,24]),
+    "dow_embedding_dim": tune.choice([4,12,24]),
+    "adaptive_embedding_dim": tune.choice([16,32,64]),
     # # "spatial_embedding_dim": tune.choice([4, 8, 12, 16,32]),
     
     # # Attention

@@ -1,0 +1,1 @@
+results = 'STAEformer_subway_out_calendar__e100_h1_bis1:   All Steps RMSE = 20.770, MAE = 14.683, MASE = 0.901, MAPE = 16.688\nSTAEformer_subway_out_subway_in_calendar_early_fusion_BackBone_InEmb24_adp16__e100_h1_bis1:   All Steps RMSE = 27.627, MAE = 17.222, MASE = 1.057, MAPE = 19.158\n'

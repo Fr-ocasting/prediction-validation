@@ -251,3 +251,18 @@ class CPU_Unpickler(pickle.Unpickler):
         if module == 'torch.storage' and name == '_load_from_bytes':
             return lambda b: torch.load(io.BytesIO(b), map_location='cpu')
         else: return super().find_class(module, name)
+
+
+def get_topk(train_input,topk_percent):
+    if topk_percent is not None: 
+        s = train_input.sum()
+        if topk_percent > 0:
+            threshold = s.quantile(1-topk_percent)
+            top_ids = s[s>=threshold].index.tolist()
+        else:
+            threshold = s.quantile(-topk_percent)
+            top_ids = s[s<=threshold].index.tolist()
+        filtered_train_input = train_input[top_ids].copy()
+        return filtered_train_input, top_ids
+    else:
+        return train_input, train_input.columns.tolist()

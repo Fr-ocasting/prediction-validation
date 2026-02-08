@@ -127,7 +127,10 @@ class KFoldSplitter(object):
         coverage_period_init = df_verif_init[t_step_ahead]
 
         # Get number of added samples for each next fold :
-        N1 = len(target_ds_init.tensor_limits_keeper.df_verif_train)//self.args.K_fold
+        if self.args.K_fold ==1:
+            N1 = len(target_ds_init.tensor_limits_keeper.df_verif_train)
+        else:
+            N1 = len(target_ds_init.tensor_limits_keeper.df_verif_train)//(self.args.K_fold-1)
         N_valid = len(target_ds_init.tensor_limits_keeper.df_verif_valid)
         N_test = len(target_ds_init.tensor_limits_keeper.df_verif_test)
 
@@ -137,12 +140,15 @@ class KFoldSplitter(object):
             print(f'Loading the dataset for fold n°{k}')
             if k == self.args.K_fold-1:
                 print('  add last fold : the initil one')
-                K_ds.append(target_ds_init)
+                target_ds_init.init_invalid_dates = target_ds_init.invalid_dates
+                K_ds.append(target_ds_init)   
             else:
+                if k == 0:
+                    new_nb_samples = nb_samples-int((self.args.K_fold-1)*N1*args.min_fold_size_proportion)
+                else:
+                    new_nb_samples = nb_samples-int((self.args.K_fold-k)*N1*args.min_fold_size_proportion)
                 args_copy = Namespace(**vars(args))
-
                 args_copy.set_spatial_units = target_ds_init.spatial_unit
-                new_nb_samples = nb_samples-int((self.args.K_fold-(k+1))*N1*args.min_fold_size_proportion)
                 coverage_period_tmps =pd.date_range(df_verif_init.min().min(), df_verif_init.iloc[:new_nb_samples].max().max(), freq=f'{60 // target_ds_init.time_step_per_hour}min')# coverage_period_init.iloc[:new_nb_samples]
                 # Modify local 'args':
                 args_copy.train_prop = 1 - (N_valid+N_test)/new_nb_samples

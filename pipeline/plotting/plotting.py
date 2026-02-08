@@ -521,10 +521,6 @@ def get_gain_from_mod1(real,predict1,predict2,previous,min_flow,metrics = ['mse'
     -----
     
     '''
-    print('real.size():',real.size())
-    print('predict1.size():',predict1.size())
-    print('predict2.size():',predict2.size())
-
     dic_gain,dic_error = {},{}
     real = real.detach().clone().reshape(-1)
     previous = previous.detach().clone().reshape(-1)  
@@ -885,17 +881,16 @@ def plot_attn_weight(trainer,nb_calendar_data,ds= None,training_mode = None,temp
 
 
 
-def get_df_error(ds1,dic_error,metric,error_name,training_mode,dates = None):
+def get_df_error(ds1,dic_error,metric,error_name,training_mode,stations, dates = None):
     #Init
     if dates is None:
         df_verif = getattr(ds1.tensor_limits_keeper,f"df_verif_{training_mode}")
         dates = df_verif.iloc[:,-1]
-    n_units = len(ds1.spatial_unit)
     # Get df of time-serie of a metric: 
     if metric == 'rmse':
         metric = 'mse'
-    error_per_stations = dic_error[metric][error_name].reshape(-1,n_units)
-    dict_for_df = {column: error_per_stations[:,i] for i,column in enumerate(ds1.spatial_unit)}
+    error_per_stations = dic_error[metric][error_name].reshape(-1,len(stations))
+    dict_for_df = {column: error_per_stations[:,i] for i,column in enumerate(stations)}
     dict_for_df.update({'datetime':dates})
     df_error_station = pd.DataFrame(dict_for_df)
 
@@ -956,10 +951,10 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow,metric = None
         df_agg = np.sqrt(df_agg)
     return df_agg 
 
-def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations,dates = None):
-    df_naiv_error = get_df_error(ds1,dic_error,metric = 'mae_naiv',error_name = 'error_naiv',training_mode=training_mode,dates = dates)
-    df_mae_error1 = get_df_error(ds1,dic_error,metric = 'mae',error_name = 'error_pred1',training_mode=training_mode,dates = dates)
-    df_mae_error2 = get_df_error(ds1,dic_error,metric = 'mae',error_name = 'error_pred2',training_mode=training_mode,dates = dates)
+def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations,dates = None,n_units = None):
+    df_naiv_error = get_df_error(ds1,dic_error,metric = 'mae_naiv',error_name = 'error_naiv',training_mode=training_mode,stations=stations,dates = dates)
+    df_mae_error1 = get_df_error(ds1,dic_error,metric = 'mae',error_name = 'error_pred1',training_mode=training_mode,stations=stations,dates = dates)
+    df_mae_error2 = get_df_error(ds1,dic_error,metric = 'mae',error_name = 'error_pred2',training_mode=training_mode,stations=stations,dates = dates)
 
     df_mase1,df_mase2,df_gain21 = {},{},{}
 
@@ -977,9 +972,9 @@ def get_df_mase_and_gains(ds1,dic_error,training_mode,temporal_agg,stations,date
         df_gain21.update({column:gain_mase[column]})
     return df_gain21,df_mase1,df_mase2
 
-def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations,dates = None):
-    df_error1 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred1',training_mode=training_mode,dates = dates)
-    df_error2 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred2',training_mode=training_mode,dates = dates)
+def get_df_gains(ds1,dic_error,metric,training_mode,temporal_agg,stations,dates = None,n_units = None):
+    df_error1 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred1',training_mode=training_mode,stations=stations,dates = dates)
+    df_error2 = get_df_error(ds1,dic_error,metric =metric,error_name = 'error_pred2',training_mode=training_mode,stations=stations,dates = dates)
     df_gain21 = {}
     df_error_pred1_agg,df_error_pred2_agg = {},{}
 
