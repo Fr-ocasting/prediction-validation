@@ -1,0 +1,17 @@
+\begin{table}[H]
+    \centering
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{llcccccccc}
+        \toprule
+        Model & Id & \multicolumn{2}{c}{RMSE} & \multicolumn{2}{c}{MAE} & \multicolumn{2}{c}{MASE} & \multicolumn{2}{c}{MAPE} \\
+        & & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std & Mean (Err. Red. \%) & Std \\
+        \midrule
+        STAEformer & STAEformer citibike out calendar & \textbf{2.779 (+0.0\%)} & \textbf{0.022} & \textbf{1.820 (+0.0\%)} & \textbf{0.011} & \textbf{0.647 (+0.0\%)} & \textbf{0.004} & 36.772 (+0.0\%) & 0.765 \\
+        STAEformer & STAEformer citibike out MTA in calendar L  CABB InEmb24 ctxInEmb24 adp16 adpQ0 & 2.784 (+0.0\%) & 0.012 & 1.834 (+0.0\%) & 0.015 & 0.652 (+0.0\%) & 0.005 & 37.215 (+0.0\%) & 0.171 \\
+        STAEformer & STAEformer citibike out MTA in calendar L  CABB InEmb24 ctxInEmb24 adp16 adpQ24 & 2.794 (+0.0\%) & 0.012 & 1.835 (+0.0\%) & 0.007 & 0.652 (+0.0\%) & 0.002 & \textbf{36.306 (+0.0\%)} & \textbf{0.548} \\
+        \bottomrule
+    \end{tabular}
+}
+    \caption{\textbf{Prediction unknown } using contextual data MTA in according to different integration strategies at horizon (h1).}
+    \label{tab:desag_unknown_h1}
+\end{table}
