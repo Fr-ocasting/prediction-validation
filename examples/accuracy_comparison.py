@@ -25,6 +25,7 @@ from pipeline.calendar_class import get_temporal_mask
 from examples.load_best_config import load_trainer_ds_from_saved_trial
 from pipeline.plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
 from examples.train_model import load_init_model_trainer_ds
+from pipeline.utils.utilities import get_topk
 import numpy as np 
 import pandas as pd
 import torch
@@ -37,6 +38,7 @@ from load_inputs.Lyon.weather import START as START_weather
 from load_inputs.Lyon.weather import END as END_weather
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 from pipeline.clustering.clustering import TimeSeriesClusterer
+from pipeline.utils.metrics import evaluate_metrics
 ##### ==================================================
 
 ##### ==================================================
@@ -599,6 +601,8 @@ class ComparisonPlotter:
         # ---- Plot Error metric but no gain: 
         self._plot_error_per_day(ds,dic_error,metric_list,training_mode,temporal_agg='date',stations=stations,dates=dates,folder_path=folder_path,save_name=save_name)
 
+        # ---- Save .csv metrics on specific temporal aggs:  
+
         # self._init_fig_axes_sizes(temporal_aggs, len(stations))
         for metric in metric_list:
             for i, temporal_agg in enumerate(temporal_aggs):
@@ -674,7 +678,14 @@ class ComparisonPlotter:
     def _plot_error_per_day(self,ds,dic_error,metric_list,training_mode,temporal_agg,stations,dates=None,folder_path = None,save_name = None):
 
         for metric in metric_list:
-            dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(ds,dic_error,metric,training_mode,temporal_agg ='date',stations=stations,dates = dates)
+            dic_gain21,error_pred1_agg,error_pred2_agg = get_df_gains(
+                                ds,
+                                dic_error,
+                                metric,
+                                training_mode,
+                                temporal_agg ='date',
+                                stations=stations,
+                                dates = dates)
             df_mae = pd.DataFrame(pd.DataFrame(error_pred2_agg).mean(axis=1), columns = [metric])
             df_mae.index = pd.to_datetime(df_mae.index)
 
@@ -834,6 +845,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     dendrogram = False,
                                     bool_plot = True,
                                     clusters = None,
+                                    list_top_k_percent = [None],
                                     ):
 
 
@@ -846,6 +858,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
 
     ds1,ds2,args_init1,args_init2 = None, None, None, None
 
+    # -------- Load trainers, datasets, predictions and real values for each k in range_k:
     for k in range_k:
         trial_id1_updated = f"_{trial_id1}{k}_f5"
         trial_id2_updated = f"_{trial_id2}{k}_f5"
@@ -874,93 +887,164 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
         else:
             break
     if trainer2 is None:
-        return None,None,None,None,None,None,None,None,None,None,None
-
+        return None,None,None,None,None,None,None,None,None,None,None,None,None
+    # -------
 
     full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k],-1)
     full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k],-1)
-    metric_list   = ['mae'] # ['mae','mase','rmse']
-    temporal_aggs = ['working_day_hour']
-    stations      = list(ds1.spatial_unit) 
-    # ---- 
 
-    # --- Get Cluster : 
-    if (station_clustering) and (clusters is None):
-        train_input = ds2.train_input
+
+    dic_bd_metrics = {trial_id1: {int(topk_percent*100) if topk_percent is not None else 100 : {} for topk_percent in list_top_k_percent},
+                      trial_id2: {int(topk_percent*100) if topk_percent is not None else 100 : {} for topk_percent in list_top_k_percent},
+                                }
+    # --- For Each Top K Percent: 
+    for topk_percent in list_top_k_percent :
+        # 1. --- For each top-k percent, filter train_input to keep only the top-k percent of stations with the highest flow:
+        train_input = ds2.train_input.clone()
         train_time_slots = ds2.tensor_limits_keeper.df_verif_train.stack().unique()
         train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds2.spatial_unit)
         train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init2.freq))
         train_input.columns.name = colmumn_name
-        # Get Clustering of stations from these inputs:
-        clusterer = get_cluster(train_input,
-                                temporal_agg='business_day',
-                                normalisation_type ='minmax',
-                                index= colmumn_name,
-                                city=ds2.city,
-                                n_clusters=5, 
-                                linkage_method='complete', 
-                                metric='precomputed',
-                                min_samples=2,
-                                heatmap= heatmap, 
-                                daily_profile=daily_profile, 
-                                dendrogram=dendrogram,
-                                bool_plot = bool_plot,
-                                folder_path= folder_path,
-                                save_name = save_name,
-                                )
-    elif clusters is not None:
-        clusterer = lambda : None
-        clusterer.clusters = clusters
-        train_input = None
-    else:
-        clusterer = lambda : None
-        clusterer.clusters = None
-        train_input = None
-    # ---
+        filtered_train_input,top_ids = get_topk(train_input,topk_percent)
+
+        # ---- Set save path: ---
+        if topk_percent is not None:
+            folder_path_i = f"{folder_path}/top{int(topk_percent*100)}percent" if folder_path is not None else None
+        else:
+            folder_path_i = folder_path
+            
+        if folder_path_i is not None and not os.path.exists(folder_path_i):
+            os.mkdir(folder_path_i)
+        # ----
+        
+        # 2. --- If clustering, Get Cluster : 
+        if station_clustering :
+
+            # Get Clustering of stations from these inputs:
+            clusterer = get_cluster(filtered_train_input,
+                                    temporal_agg='business_day',
+                                    normalisation_type ='minmax',
+                                    index= colmumn_name,
+                                    city=ds2.city,
+                                    n_clusters=5, 
+                                    linkage_method='complete', 
+                                    metric='precomputed',
+                                    min_samples=2,
+                                    heatmap= heatmap, 
+                                    daily_profile=daily_profile, 
+                                    dendrogram=dendrogram,
+                                    bool_plot = bool_plot,
+                                    folder_path= folder_path_i,
+                                    save_name = save_name,
+                                    )
+        elif clusters is not None:
+            clusterer = lambda : None
+            clusterer.clusters = clusters
+            train_input = None
+        else:
+            clusterer = lambda : None
+            clusterer.clusters = None
+            train_input = None
+        # ------------------
+
+        list_rainy = [True, False] if comparison_on_rainy_events else [False]
+
+        for bool_rainy in list_rainy:
+            # Temporal agg : rainy or not rainy (by default business day on desag)
+
+            if bool_rainy: 
+                print("\nComparison on between models across all time-slots followed by comparison on Rainy Events Only")
+                _,train_rainy_indices,_,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'train')
+                print(f"Number of rainy time-slots in the train set: {len(train_rainy_indices)}, i.e {len(train_rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_train)*100:.2f} % of the train set")
+                # ---- Plot Accuracy comparison on rainy moments only ----
+                mask,temporal_agg_indices,df_weather,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'test')
+                print(f"Number of rainy time-slots in the test set: {len(temporal_agg_indices)}, i.e {len(temporal_agg_indices)/len(ds2.tensor_limits_keeper.df_verif_test)*100:.2f} % of the test set\n")
+                dates_i = mask[mask].index
+            else:
+                temporal_agg_indices = None
+                dates_i = getattr(ds2.tensor_limits_keeper,f"df_verif_{training_mode}").iloc[:,-1]
 
 
-    # ---- Plot Accuracy Comparison ---- 
-    plot_analysis_comparison_2_config(trial_id1,trial_id2,
-                                      full_predict1,
-                                      full_predict2,
-                                      Y_true,
-                                      X,
-                                      ds1,args_init1,stations,temporal_aggs,
-                                      training_mode,metric_list,min_flow = 20,station = None,
-                                      clustered_stations = clusterer.clusters,
-                                      folder_path = folder_path,
-                                      save_name = save_name,
-                                      comparison_on_rainy_events = False # comparison_on_rainy_events
-                                        )   
+            specific_nodes = torch.Tensor([list(ds1.spatial_unit).index(station) for station in top_ids]).long() if top_ids is not None else None
+
+            full_predict1_i,full_predict2_i,Y_true_i,_,X_i = filter_predictions_and_real_values(full_predict1,full_predict2,Y_true,
+                                                                                        specific_indices = temporal_agg_indices,
+                                                                                        specific_nodes = specific_nodes,
+                                                                                        X = X,
+                                                                                        )
+
+            metric_list   = ['mae'] # ['mae','mase','rmse']
+            temporal_aggs = ['working_day_hour']
+
+            plot_analysis_comparison_2_config(trial_id1,trial_id2,
+                                            full_predict1_i,
+                                            full_predict2_i,
+                                            Y_true_i,
+                                            X_i,
+                                            ds1,
+                                            args_init1,
+                                            top_ids,  # (old) stations 
+                                            temporal_aggs,
+                                            training_mode,
+                                            metric_list,
+                                            min_flow = 20,
+                                            station = None,
+                                            clustered_stations = clusterer.clusters,
+                                            dates = dates_i,
+                                            folder_path = folder_path_i,
+                                            save_name = save_name,
+                                            comparison_on_rainy_events = bool_rainy
+                                            )
+
+            for local_temporal_agg in [None, 'business_day']:
+                if local_temporal_agg is not None: 
+                    s_dates = ds2.tensor_limits_keeper.df_verif_test.iloc[:,-1].reset_index(drop=True)
+                    dates_ii = pd.Series(dates_i).reset_index(drop=True)
+                    local_temporal_agg_indices = get_temporal_mask(s_dates = dates_ii, # s_dates,
+                                    start = datetime.time(0, 00),
+                                    end=datetime.time(23, 59),
+                                    temporal_agg = local_temporal_agg,
+                                    city = ds2.city,
+                    )
+                    local_temporal_agg_indices = torch.Tensor(local_temporal_agg_indices.values).long()
+                else:
+                    local_temporal_agg_indices = temporal_agg_indices
+
+
+                RMSE1,MAE1,MASE1,MAPE1,RMSE2,MAE2,MASE2,MAPE2 = get_str_metrics(
+                        args_init2,
+                        X,
+                        Y_true,
+                        full_predict1,
+                        full_predict2,
+                        specific_indices=local_temporal_agg_indices,
+                        specific_nodes = specific_nodes,
+                    )
+                
+                # ----- Fill dic_bd_metrics :
+                key_topk = 100 if topk_percent is None else int(topk_percent*100)
+                key_temporal_agg = local_temporal_agg if local_temporal_agg is not None else 'all'
+                if bool_rainy:
+                    if not 'rainy' in dic_bd_metrics[trial_id1][key_topk].keys():
+                        dic_bd_metrics[trial_id1][key_topk]['rainy'] = {}
+                    dic_bd_metrics[trial_id1][key_topk]['rainy'][key_temporal_agg] = {'RMSE': RMSE1, 'MAE': MAE1, 'MASE': MASE1, 'MAPE': MAPE1}
+
+                    if not 'rainy' in dic_bd_metrics[trial_id2][key_topk].keys():
+                        dic_bd_metrics[trial_id2][key_topk]['rainy'] = {}
+                    dic_bd_metrics[trial_id2][key_topk]['rainy'][key_temporal_agg] = {'RMSE': RMSE2, 'MAE': MAE2, 'MASE': MASE2, 'MAPE': MAPE2}
+                else:
+                    if not 'all' in dic_bd_metrics[trial_id1][key_topk].keys():
+                        dic_bd_metrics[trial_id1][key_topk]['all'] = {}
+                    dic_bd_metrics[trial_id1][key_topk]['all'][key_temporal_agg] = {'RMSE': RMSE1, 'MAE': MAE1, 'MASE': MASE1, 'MAPE': MAPE1}
+                    
+                    if not 'all' in dic_bd_metrics[trial_id2][key_topk].keys():
+                        dic_bd_metrics[trial_id2][key_topk]['all'] = {}
+                    dic_bd_metrics[trial_id2][key_topk]['all'][key_temporal_agg] = {'RMSE': RMSE2, 'MAE': MAE2, 'MASE': MASE2, 'MAPE': MAPE2}
+                # -----
+
     
 
-    if comparison_on_rainy_events:
-        print("\nComparison on between models across all time-slots followed by comparison on Rainy Events Only")
-        _,train_rainy_indices,_,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'train')
-        print(f"Number of rainy time-slots in the train set: {len(train_rainy_indices)}, i.e {len(train_rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_train)*100:.2f} % of the train set")
-        # ---- Plot Accuracy comparison on rainy moments only ----
-        mask,rainy_indices,df_weather,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'test')
-        print(f"Number of rainy time-slots in the test set: {len(rainy_indices)}, i.e {len(rainy_indices)/len(ds2.tensor_limits_keeper.df_verif_test)*100:.2f} % of the test set\n")
-        # Analysis on these specific rainy time-slots: 
-        plot_analysis_comparison_2_config(trial_id1,trial_id2,
-                                        torch.index_select(full_predict1,0,rainy_indices),
-                                        torch.index_select(full_predict2,0,rainy_indices),
-                                        torch.index_select(Y_true,0,rainy_indices),
-                                        torch.index_select(X,0,rainy_indices),
-                                        ds1,args_init1,stations,temporal_aggs,
-                                        training_mode,metric_list,min_flow = 20,station = None,
-                                        clustered_stations = clusterer.clusters,
-                                        dates = mask[mask].index,
-                                        folder_path = folder_path,
-                                        save_name = save_name,
-                                        comparison_on_rainy_events = comparison_on_rainy_events
-                                        )
-    else:
-        rainy_indices = None
-        mask = None
- 
-
-    return clusterer,full_predict1,full_predict2,train_input,X,Y_true,[globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k], ds1,ds2,args_init1,args_init2,rainy_indices,mask
+    return clusterer,full_predict1,full_predict2,train_input,X,Y_true,[globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k], ds1,ds2,args_init1,args_init2,dic_bd_metrics
 
 
 if __name__ == '__main__':
@@ -1110,3 +1194,74 @@ if __name__ == '__main__':
                                                     stations,temporal_aggs,training_mode,metric_list,min_flow = 20,station = None,
                                                     clustered_stations = clusterer.clusters,folder_path = INIT_SAVE_PATH, save_name = save_name,bool_plot = False)
                 # ----
+
+
+
+def filter_predictions_and_real_values(full_predict1,full_predict2,Y_true,
+                                       specific_indices=None,
+                                       specific_nodes = None,
+                                       previous = None,
+                                       X = None,
+                                       ):
+    """
+    Select specific time slots (specific_indices) and/or specific nodes (specific_nodes) in differnt tensors: 
+    - full_predict1 : (time_slots, nodes, 1, n_bis)
+    - full_predict2 : (time_slots, nodes, 1, n_bis)
+    - Y_true : (time_slots, nodes, 1)
+    - previous : (time_slots, nodes, 1)
+    """
+    full_predict1_i = full_predict1.clone()
+    full_predict2_i = full_predict2.clone()
+    Y_true_i = Y_true.clone()
+    previous_i = previous.clone() if previous is not None else None
+    X_i = X.clone() if X is not None else None
+
+    if specific_indices is not None :
+        if type(specific_indices) == list:
+            specific_indices = torch.Tensor(specific_indices).long()
+        full_predict1_i = torch.index_select(full_predict1_i,0,specific_indices)
+        full_predict2_i = torch.index_select(full_predict2_i,0,specific_indices)
+        Y_true_i = torch.index_select(Y_true_i,0,specific_indices)
+        previous_i = torch.index_select(previous_i,0,specific_indices) if previous_i is not None else None
+        X_i = torch.index_select(X_i,0,specific_indices) if X_i is not None else None
+    
+
+    if specific_nodes is not None :  
+        if type(specific_nodes) == list:
+            specific_nodes = torch.Tensor(specific_nodes).long()
+        full_predict1_i = torch.index_select(full_predict1_i,1,specific_nodes)
+        full_predict2_i = torch.index_select(full_predict2_i,1,specific_nodes)
+        Y_true_i = torch.index_select(Y_true_i,1,specific_nodes)
+        previous_i = torch.index_select(previous_i,1,specific_nodes) if previous_i is not None else None
+        X_i = torch.index_select(X_i,1,specific_nodes) if X_i is not None else None
+
+    return full_predict1_i,full_predict2_i,Y_true_i,previous_i,X_i
+
+def get_str_metrics(args_init2,X,Y_true,full_predict1,full_predict2,
+                    specific_indices=None,
+                    specific_nodes = None,):
+    h_idx = args_init2.step_ahead // args_init2.horizon_step
+    assert h_idx == 1, "Error: the function get_str_metrics is currently only implemented for only one step ahead (h_idx = 1), please set step_ahead equal to horizon_step in the model args or implement the get_str_metrics function for h_idx > 1"
+
+    previous = get_previous(X,Y_true,h_idx)
+    full_predict1_i,full_predict2_i,Y_true_i,previous_i,_ = filter_predictions_and_real_values(full_predict1,full_predict2,Y_true,specific_indices,specific_nodes,previous=previous)
+
+
+    RMSE1,MAE1,MASE1,MAPE1 = [],[],[],[]
+    RMSE2,MAE2,MASE2,MAPE2 = [],[],[],[]
+
+    for n_bis in range(full_predict1_i.size(-1)):
+        full_predict1_i_bis = full_predict1_i[...,n_bis] 
+        full_predict2_i_bis = full_predict2_i[...,n_bis] 
+        dic_metric1_i = evaluate_metrics(full_predict1_i_bis,Y_true_i,metrics = ['rmse','mse','mae','mase','mape'], previous = previous_i,horizon_step = h_idx)
+        dic_metric2_i = evaluate_metrics(full_predict2_i_bis,Y_true_i,metrics = ['rmse','mse','mae','mase','mape'], previous = previous_i,horizon_step = h_idx)
+        RMSE1.append(dic_metric1_i['rmse_all'])
+        MAE1.append(dic_metric1_i['mae_all'])
+        MASE1.append(dic_metric1_i['mase_all'])
+        MAPE1.append(dic_metric1_i['mape_all'])
+        RMSE2.append(dic_metric2_i['rmse_all'])
+        MAE2.append(dic_metric2_i['mae_all'])
+        MASE2.append(dic_metric2_i['mase_all'])
+        MAPE2.append(dic_metric2_i['mape_all'])
+
+    return RMSE1,MAE1,MASE1,MAPE1,RMSE2,MAE2,MASE2,MAPE2

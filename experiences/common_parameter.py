@@ -314,59 +314,56 @@ bike_possible_contextual_kwargs['late_fusion']['traffic_model_backbone']['thresh
 
 weather_possible_contextual_kwargs = {
 
-                    'late_fusion': {  'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
+    'late_fusion': {  
+        'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),
+        's_proj_t_proj': {'emb_dim' : 8,
+        'need_global_attn':False, 
+        'stacked_contextual': False,
+        'vision_model_name' : None,
+        'use_only_for_common_dates': False,
+        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+        'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+        'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
+        'attn_kwargs': {'concatenation_late':True},
+        }, 
 
-                                       's_proj_t_proj': {'emb_dim' : 8,
-                                                            'need_global_attn':False, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
-                                                            'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
-                                                            'attn_kwargs': {'concatenation_late':True},
-                                                           }, 
+        'repeat_t_proj': {'emb_dim' : 8,
+        'need_global_attn':False, 
+        'stacked_contextual': False,
+        'vision_model_name' : None,
+        'use_only_for_common_dates': False,
+        'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+        'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+        'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+        'attn_kwargs': {'concatenation_late':True},
+        },  
+        }, 
 
-                                                           
-                                        'repeat_t_proj': {'emb_dim' : 8,
-                                                            'need_global_attn':False, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
-                                                            'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
-                                                            'attn_kwargs': {'concatenation_late':True},
-                                                      },  
-                                    }, 
+    'early_fusion': {         
+        'repeat_t_proj': {'emb_dim' : 8,
+            'need_global_attn':False, 
+            'stacked_contextual': False,
+            'vision_model_name' : None,
+            'use_only_for_common_dates': False,
+            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+            'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
+            'attn_kwargs': {},
+                            }, 
+        's_proj_t_proj': {'emb_dim' : 8,
+            'need_global_attn':False, 
+            'stacked_contextual': False,
+            'vision_model_name' : None,
+            'use_only_for_common_dates': False,
+            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
+            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
+            'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
+            'attn_kwargs': {},
+                }, 
 
-                    'early_fusion': {         
-
-                                     'repeat_t_proj': {'emb_dim' : 8,
-                                                            'need_global_attn':False, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
-                                                            'repeat_spatial': True,  # If true then repeat the weather serie for each node of the target data
-                                                            'attn_kwargs': {},
-                                                         }, 
-                                        's_proj_t_proj': {'emb_dim' : 8,
-                                                            'need_global_attn':False, 
-                                                            'stacked_contextual': False,
-                                                            'vision_model_name' : None,
-                                                            'use_only_for_common_dates': False,
-                                                            'quantile_filter_outliers': QUANTILE_FILTER_OUTLIERS_DEFAULT ,
-                                                            'unique_serie': True,   # If true then agregate all (2) weather stations into one unique serie
-                                                            'repeat_spatial': False,  # If true then repeat the weather serie for each node of the target data
-                                                            'attn_kwargs': {},
-                                                         }, 
-
-                                     'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),  
-                                    }, 
-
-                        }
+        'feature_extractor':copy.deepcopy(feature_extractor_model_configurations),  
+                    }, 
+         }
 
 # ---- Modify Feature Extractor parameter for weather data: (make it simple) ----
 weather_possible_contextual_kwargs['early_fusion']['feature_extractor']['unique_serie'] = True
@@ -457,12 +454,12 @@ def convertion_exp_name(target_data,dataset_names):
             exp_tmp = 'Exp6_subway_netmob'
         else:
             exp_tmp = 'Exp1_subway_in'
-    if target_data == 'subway_out':
+    elif target_data == 'subway_out':
         if 'netmob_POIs' in dataset_names:
             exp_tmp = 'Exp6_subway_netmob'
         else:
             exp_tmp = 'Exp1_subway_out'
-    if (target_data == 'bike_out') or (target_data == 'bike_in'):
+    elif (target_data == 'bike_out') or (target_data == 'bike_in'):
         if 'netmob_POIs' in dataset_names:
             exp_tmp = 'Exp6_bike_netmob'
         elif (('subway_in' in dataset_names) or 
@@ -472,7 +469,8 @@ def convertion_exp_name(target_data,dataset_names):
               ('bike_in' in dataset_names)
                 ):
             exp_tmp = 'Exp4_15min_h1'
-        else:
-            print(f"Error: {dataset_names} not recognized for target_data {target_data}")
-            raise NotImplementedError
+    else:
+        # print(f"Error: {dataset_names} not recognized for target_data {target_data}")
+        # raise NotImplementedError
+        exp_tmp = '_'.join(dataset_names)
     return exp_tmp

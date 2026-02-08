@@ -429,8 +429,12 @@ def update_df_metrics_other_exps(df_metrics_all,target_data):
             strategy = parts[1].split('__')[0]
             cleaned_strategy = strategy.replace('early_fusion_','E '
                                        ).replace('late_fusion_','L '
-                                       ).replace('BackBone','BB'
+                                       ).replace('CrossAttnBackBone_In24_ctxIn8_adp16_adpQ0','CABB_Q0'
+                                       ).replace('CrossAttnBackBone_In24_ctxIn8_adp16_adpQ24','CABB_Q24'
                                        ).replace('CrossAttnBackBone','CABB'
+                                       ).replace('BackBone_InEmb24_adp16', 'BB'
+                                       ).replace('BackBone','BB'
+
                                       ).replace('traffic_model_BB','E Backbone'
                                       ).replace('s_proj_t_proj','S-proj T-proj'
                                       ).replace('independant_embedding','Indep Emb'

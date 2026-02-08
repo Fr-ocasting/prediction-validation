@@ -25,12 +25,12 @@ if __name__ == '__main__':
                     'ray':True,
 
                     # Expanding Train & Graph Subset: 
-                    'expanding_train': None,
-                    'graph_subset': None, #0.5,
+                    'expanding_train': None, # None, #0.5,
+                    'graph_subset': None,  #0.5, # None,
                     'batch_size': 128, # 16
                         # ----
 
-                    'grace_period':5,
+                    'grace_period':10,
                     'HP_max_epochs':epochs, #1000, #300,
                     'epochs':epochs,
                     'K_fold': 1,
@@ -64,17 +64,17 @@ if __name__ == '__main__':
                     'optimizer': 'adam',
                     'lr': 0.001, # 0.001
                     'weight_decay': 0.0015,
-                    'torch_scheduler_type': 'warmup', #'MultiStepLR', 'warmup'
+                    'torch_scheduler_type': 'MultiStepLR', #'MultiStepLR', 'warmup'
                     'loss_function_type':'HuberLoss',
 
-                    # # if torch_scheduler_type == 'MultiStepLR' :
-                    # 'torch_scheduler_milestone': [25, 45, 65],
-                    # 'torch_scheduler_gamma':0.1,
+                    # if torch_scheduler_type == 'MultiStepLR' :
+                    'torch_scheduler_milestone': [25, 45, 65],
+                    'torch_scheduler_gamma':0.1,
 
-                    # if torch_scheduler_type == 'warmup' :
-                    'torch_scheduler_gamma':0.99,
-                    'torch_scheduler_lr_start_factor' : 0.1,
-                    'torch_scheduler_milestone' : 5,
+                    # # if torch_scheduler_type == 'warmup' :
+                    # 'torch_scheduler_gamma':0.99,
+                    # 'torch_scheduler_lr_start_factor' : 0.1,
+                    # 'torch_scheduler_milestone' : 5,
                     
 
                     'train_prop': 0.6,
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
 
     if True:
-        if False:
+        if True:
             from examples.HP_parameter_choice import hyperparameter_tuning
             from examples.benchmark import local_get_args
 
@@ -124,7 +124,7 @@ if __name__ == '__main__':
                         )
 
             epochs_validation = epochs #1000
-            num_samples = 100 # 300 # 200
+            num_samples = 400 # 100 # 300 # 200
             HP_and_valid_one_config(args,epochs_validation,num_samples)
 
         # If HPO worked by need to compute again the 'train_valid_k_models':
@@ -162,11 +162,32 @@ if __name__ == '__main__':
 
             # ------- ONLY WARMUP 
             # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_29_07_04_62976' # expanding_train = None, graph_subset = None, samples =100 
+
+
+            # --- Parameter: 
+            # optimizer: adam 
+            # standardize : True
+            # minmaxnorm : False
+            # 'torch_scheduler_type': 'MultiStepLR',
+            # 'torch_scheduler_milestone': [25, 45, 65],
+            # 'torch_scheduler_gamma':0.1,
+            # 'expanding_train' : 0.3  (!)
+            # 'graph_subset': O.5  (!)
+            # HPO: 11h 
+            # Training full model with B = 16 : 69min (Troughput: 299.35 sequences / s )
+            # Training full model with B = 128 : 42 min (Troughput: 530.14 sequences / s )
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
+
+
+            # HPO: 18hr 43min
+            # Training full model with B = 16 : 69min (Troughput: 299.35 sequences / s )
+            # Training full model with B = 128 : 22min (Troughput: 961.86 sequences / s )
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586:'
             
 
 
 
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_29_07_04_62976'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -177,6 +198,43 @@ if __name__ == '__main__':
                                 }
                 train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
+    # Results HPO 08 - Février - 2026 :
+        # --- Parameter: 
+        # optimizer: adam 
+        # batch-size : 128
+        # standardize : True
+        # minmaxnorm : False
+        # 'torch_scheduler_type': 'MultiStepLR',
+        # 'torch_scheduler_milestone': [25, 45, 65],
+        # 'torch_scheduler_gamma':0.1,
+        # HPO: 11h
+        # 'expanding_train' : 0.3  (!)
+        # 'graph_subset': O.5  (!)
+        # search space: 
+        #   "lr": tune.loguniform(5e-5, 5e-3)
+        #   "weight_decay" : tune.loguniform(5e-4, 1e-2)
+        #   "input_embedding_dim": tune.choice([16,32,64]),
+        #   "tod_embedding_dim": tune.choice([4,12,24]),
+        #   "dow_embedding_dim": tune.choice([4,12,24]),
+        #   "adaptive_embedding_dim": tune.choice([16,32,64]),
+        
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
+        # All Steps RMSE = 23.376, MAE = 13.497, MASE = 0.849, MAPE = 8.896  (B = 16)
+        # All Steps RMSE = 24.037, MAE = 14.846, MASE = 0.934, MAPE = 10.032 (B = 128)
+
+        # ----- 
+        # HPO: 18hr 43min
+        # 'expanding_train' : 0.3  (!)
+        # 'graph_subset': None  (!)
+
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586'  
+        # All Steps RMSE = 23.528, MAE = 13.449, MASE = 0.846, MAPE = 8.839  (B = 16)
+        # All Steps RMSE = 23.870, MAE = 14.713, MASE = 0.926, MAPE = 10.014 (B = 128)
+
+
+        
+    # ===================================================================================================================        
+    # ===================================================================================================================
     # Results HPO avec MULTISTEP LR : 
         # 'batch_size': 128, 
         # 'epochs' : 100,
@@ -236,6 +294,11 @@ if __name__ == '__main__':
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_28_21_15_41764:   All Steps RMSE = 23.200, MAE = 13.501, MASE = 0.850, MAPE = 8.883
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_28_21_15_41764:   All Steps RMSE = 24.896, MAE = 15.522, MASE = 0.977, MAPE = 11.027 (B = 128)
 
+
+
+
+
+
         # ------------------------------------------------------------------
         # SPECIAL LR SCHEDULER:  warmup [lr start factor : 0.1 / Milestone = 5]
         # 'expanding_train': None,
@@ -243,6 +306,8 @@ if __name__ == '__main__':
         #  Time: ~ 11h
         # PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_29_07_04_62976:   All Steps RMSE = 23.247, MAE = 13.739, MASE = 0.865, MAPE = 9.279
         #  PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_29_07_04_62976:   All Steps RMSE = 23.770, MAE = 13.746, MASE = 0.865, MAPE = 9.016 (B = 128)
+
+
 
 
 

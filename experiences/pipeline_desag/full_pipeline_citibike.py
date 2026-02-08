@@ -52,15 +52,16 @@ model_name = 'STAEformer'
 target_data = 'citibike_out' 
 dataset_for_coverage = ['citibike_out','MTA_in'] 
 possible_contextual_dataset_names = [
-                                    # ['bike_in'],
-                                    ['MTA_in'],
-                                    # ['citibike_in'],
-                                    # ['subway_in_subway_out','bike_in','weather'],
-                                    #  ['subway_in_subway_out','bike_in'],
-                                    #  ['weather'],
-                                    #  ['weather','bike_in'],
-                                    #  ['weather','subway_in_subway_out'],
-                                     ] # ['netmob_POIs'] #['subway_out']
+                # ['bike_in'],
+                ['MTA_in'],
+                # ['citibike_in'],
+                # ['subway_in_subway_out','bike_in','weather'],
+                #  ['subway_in_subway_out','bike_in'],
+                #  ['weather'],
+                #  ['weather','bike_in'],
+                #  ['weather','subway_in_subway_out'],
+                    ] 
+# ['netmob_POIs'] #['subway_out']
 TRIVIAL_TEST = False
 REPEAT_TRIAL = 5 
 THRESHOLD_VOLUME_MIN = 5
@@ -138,13 +139,13 @@ for contextual_dataset_names in possible_contextual_dataset_names:
         # LOAD CONFIG DICTIONARY: 
         configbuilder = ConfigBuilder(target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification)
         dic_configs = configbuilder.build_config_single_contextual(
-                                                    dic_configs = {},
-                                                    possible_target_kwargs=possible_target_kwargs,
-                                                    config_backbone_model=config_backbone_model,
-                                                    contextual_dataset_names=contextual_dataset_names,
-                                                    possible_contextual_kwargs=possible_contextual_kwargs,
-                                                    netmob_preprocessing_kwargs=netmob_preprocessing_kwargs
-                                                    )
+             dic_configs = {},
+            possible_target_kwargs=possible_target_kwargs,
+            config_backbone_model=config_backbone_model,
+            contextual_dataset_names=contextual_dataset_names,
+            possible_contextual_kwargs=possible_contextual_kwargs,
+            netmob_preprocessing_kwargs=netmob_preprocessing_kwargs
+            )
 
 
         baselineconfigbuilder = BaselineConfigBuilder(target_data,contextual_dataset_names,dataset_for_coverage,model_name,horizons,freq,REPEAT_TRIAL,SANITY_CHECKER,compilation_modification,add_name_save,)
@@ -207,16 +208,17 @@ for contextual_dataset_names in possible_contextual_dataset_names:
 
 
 
-        plotting_boxplot_of_trials(trials,
-                                exp_i,
-                                metrics,
-                                folder_path,
-                                target_data= target_data,
-                                model_name= model_name,
-                                dataset_names = contextual_dataset_names,
-                                save_path = save_path_figures,
-                                n_bis_range = range(1,REPEAT_TRIAL+1)
-                                )
+        plotting_boxplot_of_trials(
+            trials,
+            exp_i,
+            metrics,
+            folder_path,
+            target_data= target_data,
+            model_name= model_name,
+            dataset_names = contextual_dataset_names,
+            save_path = save_path_figures,
+            n_bis_range = range(1,REPEAT_TRIAL+1)
+            )
 
         # ==================================================
         # DESAGREGATED VISUALISATION & SAVE OF FIGURES: 
@@ -235,16 +237,18 @@ for contextual_dataset_names in possible_contextual_dataset_names:
             for topk_percent in [None,0.8]:
                 if station_clustering:
                     # Load ds from Target Data 
-                    args_init = local_get_args(model_name,
-                                args_init = None,
-                                dataset_names=[target_data],
-                                dataset_for_coverage=dataset_for_coverage,
-                                modification = {'freq': freq,
-                                                'step_ahead': 1,
-                                                'horizon_step': 1,
-                                                'target_data': target_data,
-                                                'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                                })
+                    args_init = local_get_args(
+                        model_name,
+                        args_init = None,
+                        dataset_names=[target_data],
+                        dataset_for_coverage=dataset_for_coverage,
+                        modification = {
+                            'freq': freq,
+                            'step_ahead': 1,
+                            'horizon_step': 1,
+                            'target_data': target_data,
+                            'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
+                                    })
                     print(args_init)
                     fold_to_evaluate=[args_init.K_fold-1]
                     trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,None,args_init,{},None)
@@ -262,43 +266,44 @@ for contextual_dataset_names in possible_contextual_dataset_names:
                         top_ids = s[s>=threshold].index.tolist()
                         train_input = train_input[top_ids]
                     # Get Clustering of stations from these inputs:
-                    clusterer = get_cluster(train_input,
-                                            temporal_agg='business_day',
-                                            normalisation_type ='minmax',
-                                            index= colmumn_name,
-                                            city=ds.city,
-                                            n_clusters=5, 
-                                            linkage_method='complete', 
-                                            metric='precomputed',
-                                            min_samples=2,
-                                            heatmap= True, 
-                                            daily_profile=True, 
-                                            dendrogram=True,
-                                            bool_plot = False,
-                                            folder_path= save_path_figures,
-                                            save_name = f"{exp_i}_topk{int(topk_percent*100)}_clusters" if topk_percent is not None else f"{exp_i}",
-                                            )
+                    clusterer = get_cluster(
+                        train_input,
+                        temporal_agg='business_day',
+                        normalisation_type ='minmax',
+                        index= colmumn_name,
+                        city=ds.city,
+                        n_clusters=5, 
+                        linkage_method='complete', 
+                        metric='precomputed',
+                        min_samples=2,
+                        heatmap= True, 
+                        daily_profile=True, 
+                        dendrogram=True,
+                        bool_plot = False,
+                        folder_path= save_path_figures,
+                        save_name = f"{exp_i}_topk{int(topk_percent*100)}_clusters" if topk_percent is not None else f"{exp_i}",
+                        )
                     clusters = clusterer.clusters
                     print('Clusters: ',clusterer.clusters)
                 else:
                     clusters = None
 
                 # -- ON RAINY & NON RAINY : 
-                get_desagregated_gains(dic_exp_to_names={
-                                            exp_i:f'{target_data}_{model_name}'
-                                            },
-                                    dic_trials = {exp_i:trials},
-                                    horizons=horizons,
-                                    comparison_on_rainy_events=True,
-                                    range_k=range(1,REPEAT_TRIAL+1),
-                                    station_clustering=station_clustering,
-                                    folder_path=f'{current_file_path}/results',
-                                    save_bool=True,
-                                    heatmap= True,
-                                    daily_profile=True,
-                                    dendrogram=True,
-                                    dataset_names =contextual_dataset_names,
-                                    bool_plot = False,
-                                    clusters = clusters,
-                                    topk_percent = topk_percent
-                                    )
+                get_desagregated_gains(
+                    dic_exp_to_names={
+                        exp_i:f'{target_data}_{model_name}'},
+                    dic_trials = {exp_i:trials},
+                    horizons=horizons,
+                    comparison_on_rainy_events=False,
+                    range_k=range(1,REPEAT_TRIAL+1),
+                    station_clustering=station_clustering,
+                    folder_path=f'{current_file_path}/results',
+                    save_bool=True,
+                    heatmap= True,
+                    daily_profile=True,
+                    dendrogram=True,
+                    dataset_names =contextual_dataset_names,
+                    bool_plot = False,
+                    clusters = clusters,
+                    topk_percent = topk_percent
+                    )

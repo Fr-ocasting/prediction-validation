@@ -7,7 +7,7 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.accuracy_comparison import get_model_args,get_desagregated_comparison_plot,get_previous
+from examples.accuracy_comparison import get_model_args,get_desagregated_comparison_plot,get_previous,get_str_metrics
 from experiences.common_results import find_baseline
 from pipeline.utils.metrics import evaluate_metrics
 from experiences.common_parameter import convertion_exp_name
@@ -25,11 +25,13 @@ def get_desagregated_gains(dic_exp_to_names,
                            dataset_names = None,
                            bool_plot = True,
                            clusters = None,
-                           topk_percent = None,
+                           list_top_k_percent = None,
                            ):
-    issue_while_loading_saved_weights,log = '', ''
+    issue_while_loading_saved_weights = ''
+    dic_bd_metrics_all = {}
     init_folder_path = f"{folder_path}/plot"  if folder_path is not None else None
     for exp_i,target_model_name in dic_exp_to_names.items():
+        dic_bd_metrics_all[exp_i] = {}
         target_data = '_'.join(target_model_name.split('_')[:-1])
         model_name = target_model_name.split('_')[-1]
         configs = dic_trials[exp_i]
@@ -41,6 +43,7 @@ def get_desagregated_gains(dic_exp_to_names,
 
         for h in horizons:
             print('   Horizon: ',h)
+            dic_bd_metrics_all[exp_i][h] = {}
             baseline = find_baseline(exp_i,h=h,exp_tmp=exp_tmp,configs=configs)
             if (baseline in configs) and baseline.endswith(f"_h{h}"):
                 print('   Baseline: ',baseline)
@@ -60,16 +63,7 @@ def get_desagregated_gains(dic_exp_to_names,
                     print(trial_id)
 
                 for trial_id1,trial_id2 in zip(trial_ids1,trial_ids2):
-                    if init_folder_path is not None :
-                        folder_path_i = f"{init_folder_path}/{exp_i}" 
-                        if topk_percent is not None:
-                            folder_path_i += f"_top{int(topk_percent*100)}"
-                            if not os.path.exists(folder_path_i):
-                                os.mkdir(folder_path_i)
-                    else:
-                        folder_path_i = None
-
-                                    
+                    folder_path_i = f"{init_folder_path}/{exp_i}"
                     
                     if save_bool:
                         save_name = f"desag_{trial_id2}"
@@ -94,54 +88,24 @@ def get_desagregated_gains(dic_exp_to_names,
                                 dendrogram = dendrogram,
                                 bool_plot = bool_plot,
                                 clusters = clusters,
+                                list_top_k_percent = list_top_k_percent,
                             )
-                    clusterer,full_predict1,full_predict2,train_input,X,Y_true,L_trainers_1,L_trainers_2,ds1,ds2,args_init1,args_init2,rainy_indices,rainy_mask = outputs
+                    clusterer,full_predict1,full_predict2,train_input,X,Y_true,L_trainers_1,L_trainers_2,ds1,ds2,args_init1,args_init2, dic_bd_metrics = outputs
+
+                    # ====== SAVE ALL TOP K METRICS  ====
+                    dic_bd_metrics_all[exp_i][h] = dic_bd_metrics
+
+                    print('   Keys within dic_bd_metrics:\n',dic_bd_metrics.keys())
+
 
                     if full_predict1 is None:
                         issue_while_loading_saved_weights +=  f"\nProblem for {trial_id1} vs {trial_id2} in {exp_i}"
                     print(issue_while_loading_saved_weights)
 
-                    h_idx = args_init2.step_ahead // args_init2.horizon_step
-                    previous = get_previous(X,Y_true,h_idx)
-
-                    if comparison_on_rainy_events :
-                        full_predict1 = torch.index_select(full_predict1,0,rainy_indices)
-                        full_predict2 = torch.index_select(full_predict2,0,rainy_indices)
-                        Y_true = torch.index_select(Y_true,0,rainy_indices)
-                        previous = torch.index_select(previous,0,rainy_indices)
-
-                    RMSE1,MAE1,MASE1,MAPE1 = [],[],[],[]
-                    RMSE2,MAE2,MASE2,MAPE2 = [],[],[],[]
-                    for n_bis in range(full_predict1.size(-1)):
-                        full_predict1_i = full_predict1[...,n_bis] 
-                        full_predict2_i = full_predict2[...,n_bis] 
-                        dic_metric1_i = evaluate_metrics(full_predict1_i,Y_true,metrics = ['rmse','mse','mae','mase','mape'], previous = previous,horizon_step = h_idx)
-                        dic_metric2_i = evaluate_metrics(full_predict2_i,Y_true,metrics = ['rmse','mse','mae','mase','mape'], previous = previous,horizon_step = h_idx)
-                        RMSE1.append(dic_metric1_i['rmse_all'])
-                        MAE1.append(dic_metric1_i['mae_all'])
-                        MASE1.append(dic_metric1_i['mase_all'])
-                        MAPE1.append(dic_metric1_i['mape_all'])
-                        RMSE2.append(dic_metric2_i['rmse_all'])
-                        MAE2.append(dic_metric2_i['mae_all'])
-                        MASE2.append(dic_metric2_i['mase_all'])
-                        MAPE2.append(dic_metric2_i['mape_all'])
-                    RMSE1 = np.mean(np.array(RMSE1))
-                    MAE1 = np.mean(np.array(MAE1))
-                    MASE1 = np.mean(np.array(MASE1))
-                    MAPE1 = np.mean(np.array(MAPE1))
-                    RMSE2 = np.mean(np.array(RMSE2))
-                    MAE2 = np.mean(np.array(MAE2))
-                    MASE2 = np.mean(np.array(MASE2))
-                    MAPE2 = np.mean(np.array(MAPE2))
-
-
-                    if log == '':
-                        log += f"{trial_id1[:-4]}:   All Steps RMSE = {RMSE1:.5f}, MAE = {MAE1:.5f}, MASE = {MASE1:.5f}, MAPE = {MAPE1:.5f}\n"
-                    log += f"{trial_id2[:-4]}:   All Steps RMSE = {RMSE2:.5f}, MAE = {MAE2:.5f}, MASE = {MASE2:.5f}, MAPE = {MAPE2:.5f}\n"
-                    print(log)
             else:
                 issue_while_loading_saved_weights +=  f"\nBaseline {baseline} not found in configs\n{configs}\nfor horizon {h} in {exp_i}\n or does not end with _h{h}"
                 print(issue_while_loading_saved_weights)
+    return dic_bd_metrics_all
             
 
 

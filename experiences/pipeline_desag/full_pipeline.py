@@ -100,6 +100,8 @@ dataset_for_coverage = ['subway_in','subway_out'] #['subway_in','subway_out','ne
 contextual_dataset_names = ['subway_in'] # ['netmob_POIs'] #['subway_out']
 TRIVIAL_TEST = False
 REPEAT_TRIAL = 5 # 10
+list_top_k_percent = [0.2,-0.2,None,0.8] # [-0.2,None, 0.2, 0.8]
+comparison_on_rainy_events = True
 # ------------------------------------------
 
 training_save_folder = f'{inside_saved_folder}/{exp_i}' # f'K_fold_validation/training_wo_HP_tuning/{exp_i}' 
@@ -136,7 +138,7 @@ if TRIVIAL_TEST:
 
 # --- if save training folder path does not existe, mkdir:
 
-if True:
+if False:
     # ==================================================
     # LOAD CONFIGURATIONS TO TEST:
     possible_contextual_kwargs = {}
@@ -227,27 +229,15 @@ results_saved = module.results
 re._pattern = rf"{model_name}_{target_data}_(?:{'_'.join(contextual_dataset_names)}|calendar).*?bis"
 trials = [c[:-4] for c in list(set(re.findall(re._pattern, results_saved)))]
 
+if TRIVIAL_TEST:
+    trials = [t for t in trials if 'calendar__e' in t and '_h1' in t][:2] + [t for t in trials if '_h1' in t and not 'calendar__e' in t][:1]
+    horizons = [1]
+
+
 print('re._pattern: ',re._pattern)
 print('trials found: ',len(trials))
 for trial in trials:
     print(f"   {trial}")
-
-
-exporter = MetricExporter(results_saved, contextual_dataset_names)
-exporter.export_all(folder_path=save_path_figures, exp_i=exp_i)
-
-
-
-plotting_boxplot_of_trials(trials,
-                           exp_i,
-                           metrics,
-                           folder_path,
-                           target_data= target_data,
-                           model_name= model_name,
-                           dataset_names = contextual_dataset_names,
-                           save_path = save_path_figures,
-                           n_bis_range = range(1,REPEAT_TRIAL+1)
-                           )
 
 # ==================================================
 # DESAGREGATED VISUALISATION & SAVE OF FIGURES: 
@@ -261,80 +251,96 @@ plotting_boxplot_of_trials(trials,
         - Sauvegarde les figures dans f"{folder_path}/plot/{exp_i}{rainy}"
 '''
 
+
 if True:
-    # -- Get clusters for station clustering desagregated plots:
-    if station_clustering:
-        # Load ds from Target Data 
-        args_init = local_get_args(model_name,
-                    args_init = None,
-                    dataset_names=[target_data],
-                    dataset_for_coverage=dataset_for_coverage,
-                    modification = {'freq': freq,
-                                    'step_ahead': 1,
-                                    'horizon_step': 1,
-                                    'target_data': target_data,
-                                    'target_kwargs' : {target_data: possible_target_kwargs[target_data]},
-                                    })
-        print(args_init)
-        fold_to_evaluate=[args_init.K_fold-1]
-        trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,None,args_init,{},None)
-
-        colmumn_name = 'Station'
-        train_input = ds.train_input
-        train_time_slots = ds.tensor_limits_keeper.df_verif_train.stack().unique()
-        train_input = pd.DataFrame(train_input.numpy(),index = train_time_slots,columns = ds.spatial_unit)
-        train_input = train_input.reindex(pd.date_range(start=train_input.index.min(),end=train_input.index.max(),freq=args_init.freq))
-        train_input.columns.name = colmumn_name
-        # Get Clustering of stations from these inputs:
-        clusterer = get_cluster(train_input,
-                                temporal_agg='business_day',
-                                normalisation_type ='minmax',
-                                index= colmumn_name,
-                                city=ds.city,
-                                n_clusters=5, 
-                                linkage_method='complete', 
-                                metric='precomputed',
-                                min_samples=2,
-                                heatmap= True, 
-                                daily_profile=True, 
-                                dendrogram=True,
-                                bool_plot = False,
-                                folder_path= save_path_figures,
-                                save_name = exp_i,
-                                )
-        clusters = clusterer.clusters
-        print('Clusters: ',clusterer.clusters)
-    else:
-        clusters = None
-
     # -- ON RAINY & NON RAINY : 
-    get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
-                        dic_trials = {exp_i:trials},
-                        horizons=horizons,
-                        comparison_on_rainy_events=True,
-                        range_k=range(1,REPEAT_TRIAL+1),
-                        station_clustering=station_clustering,
-                        folder_path=f'{current_file_path}/results',
-                        save_bool=True,
-                        heatmap= True,
-                        daily_profile=True,
-                        dendrogram=True,
-                        dataset_names =contextual_dataset_names,
-                        bool_plot = False,
-                        clusters = clusters
-                        )
+    dic_bd_metrics_all = get_desagregated_gains( 
+        dic_exp_to_names={ 
+                exp_i:f'{target_data}_{model_name}'
+                },
+        dic_trials = {exp_i:trials},
+        horizons=horizons,
+        comparison_on_rainy_events=comparison_on_rainy_events,
+        range_k=range(1,REPEAT_TRIAL+1),
+        station_clustering=station_clustering,
+        folder_path=f'{current_file_path}/results',
+        save_bool=True,
+        heatmap= True,
+        daily_profile=True,
+        dendrogram=True,
+        dataset_names =contextual_dataset_names,
+        bool_plot = False,
+        list_top_k_percent = list_top_k_percent,
+        )
 
-    # # -- ON NON RAINY
-    # get_desagregated_gains(dic_exp_to_names={exp_i:f'{target_data}_{model_name}'},
-    #                     dic_trials = {exp_i:trials},
-    #                     horizons=horizons,
-    #                     comparison_on_rainy_events=False,
-    #                     range_k=range(1,REPEAT_TRIAL+1),
-    #                     station_clustering=station_clustering,
-    #                     folder_path=f'{current_file_path}/results',
-    #                     save_bool=True,
-    #                     heatmap= True,
-    #                     daily_profile=True,
-    #                     dendrogram=True,
-    #                     dataset_names =contextual_dataset_names,
-    #                     )
+    list_rainy = [True, False] if comparison_on_rainy_events else [False]
+    trial_id0 = list(dic_bd_metrics_all[exp_i][horizons[0]].keys())[0]
+    key_topk0 = list(dic_bd_metrics_all[exp_i][horizons[0]][trial_id0].keys())[0]
+    key_rainy0 = list(dic_bd_metrics_all[exp_i][horizons[0]][trial_id0][key_topk0].keys())[0]
+    local_temporal_aggs = list(dic_bd_metrics_all[exp_i][horizons[0]][trial_id0][key_topk0][key_rainy0].keys())
+    for topk_percent in list_top_k_percent:
+        key_topk = int(topk_percent*100) if topk_percent is not None else 100
+        for bool_rainy in list_rainy:
+            for temporal_agg_i in local_temporal_aggs:
+                key_rainy = 'rainy' if bool_rainy else 'all'
+
+
+                # ---- Get save path :
+                path_within_sys = "experiences/pipeline_desag/results"
+                base_path = f"{ROOT}/{path_within_sys}"
+                if not os.path.exists(f"{base_path}/{exp_i}"):
+                    print(f"Creating folder for experiment {exp_i} at path: {base_path}/{exp_i}")
+                    os.mkdir(f"{base_path}/{exp_i}")
+                if not os.path.exists(f"{base_path}/{exp_i}/{key_rainy}"):
+                    print(f"Creating folder for {'rainy events' if bool_rainy else 'all events'} at path: {base_path}/{exp_i}/{key_rainy}")
+                    os.mkdir(f"{base_path}/{exp_i}/{key_rainy}")
+                if not os.path.exists(f"{base_path}/{exp_i}/{key_rainy}/topk{key_topk}"):
+                    print(f"Creating folder for top-{key_topk} at path: {base_path}/{exp_i}/{key_rainy}/topk{key_topk}")
+                    os.mkdir(f"{base_path}/{exp_i}/{key_rainy}/topk{key_topk}")
+                exp_results_name = f"{exp_i}/{key_rainy}/topk{key_topk}/{temporal_agg_i}"
+
+                saved_results_path= f"{base_path}/{exp_results_name}"
+                # ---
+
+                # Load already saved results if exist: 
+                py_path = f"{saved_results_path}.py"
+                if os.path.exists(py_path):
+                    saved_results_path_within_sys = f"{path_within_sys}/{exp_results_name}".replace('/','.')
+                    module = importlib.import_module(saved_results_path_within_sys)
+                    importlib.reload(module)
+                    results_saved = module.results
+
+                else:
+                    results_saved = ''
+                # -----
+                # ---- 
+                for trial_id in trials:
+                    for h in horizons:
+                        dic_metrics = dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i]
+                        rmse_i, mae_i, mase_i, mape_i = dic_metrics['RMSE'], dic_metrics['MAE'], dic_metrics['MASE'], dic_metrics['MAPE']
+                        for k_bis in range(1,len(rmse_i)+1):
+                            if not f"{trial_id}_bis{k_bis}" in results_saved:
+                                str_to_add = f"{trial_id}_bis{k_bis}:   All Steps RMSE = {'{:.3f}'.format(rmse_i[k_bis-1])}, MAE = {'{:.3f}'.format(mae_i[k_bis-1])}, MASE = {'{:.3f}'.format(mase_i[k_bis-1])}, MAPE = {'{:.3f}'.format(mape_i[k_bis-1])}\n"
+                                results_saved += str_to_add
+                    # ----
+
+                # --- Save results in the .py with format """results = <results_saved>""""
+                with open(f"{saved_results_path}.py",'w') as f:
+                    f.write(f'results = {repr(results_saved)}')
+
+if True:
+    exporter = MetricExporter(results_saved, contextual_dataset_names)
+    exporter.export_all(folder_path=save_path_figures, exp_i=exp_i)
+
+
+
+    plotting_boxplot_of_trials(trials,
+                            exp_i,
+                            metrics,
+                            folder_path,
+                            target_data= target_data,
+                            model_name= model_name,
+                            dataset_names = contextual_dataset_names,
+                            save_path = save_path_figures,
+                            n_bis_range = range(1,REPEAT_TRIAL+1)
+                            )
