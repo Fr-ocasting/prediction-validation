@@ -459,6 +459,7 @@ def load_trainer_ds_from_2_trials(trial_id1,trial_id2,modification,model_args,pa
     model_save_path = f"{path}/{trial_id1}.pkl"
     print('model_save_path for trial id1: ',model_save_path)
     trainer1, ds1, args_init1 = load_trainer_ds_from_saved_trial(args,model_save_path,modification = modification,ds_init=ds1_init,args_init = args_init1)
+    
 
     # Trial id dans model_args_bis : 
     if trial_id2_in_bis :

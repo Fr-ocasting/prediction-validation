@@ -107,92 +107,92 @@ def load_best_config(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_50_2810',
     return(args)
 
 
-def load_trainer_ds_from_saved_trial(args,model_save_path,modification={},ds_init = None,args_init= None):
+def load_trainer_ds_from_saved_trial(args=None,
+                                     model_save_path=None,
+                                     modification={},
+                                     ds_init = None,
+                                     args_init= None,
+                                     trial_id = None,
+                                     add_name_id = '',
+                                     save_folder = None,
+                                     fold_to_evaluate = None
+                                     ):
+    """
+    
+    Examples:
+    Either args_init is None: 
+    >>> args_init = Namespace(**args)
 
+    Either args_init is not None:
+
+    """
+
+    # Choice 1: args_init & ds_init is None: ---
     if ds_init is None: 
-        try: 
-            fold_to_evaluate = [args['K_fold']-1]
-            args_init = Namespace(**args)
-        except:
-            fold_to_evaluate = [args.K_fold-1]
-            args_init = Namespace(**vars(args)) 
+        # ----
+        if trial_id is not None:
+                # Load Data and Init Model:
+                if fold_to_evaluate is None:
+                    fold_name = 'complete_dataset'
+                    fold_to_evaluate = [args.K_fold-1]
+                else:
+                    fold_name = fold_to_evaluate[0]
+
+                if args is None: 
+                    args_init = load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name)
+                else:
+                    if type(args) == dict:
+                        args_init = Namespace(**args)
+                    else:
+                        args_init = Namespace(**vars(args))
+
+                if save_folder is not None:
+                    model_save_path = f"{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl"
+                else: 
+                    raise NotImplementedError("Either 'save_folder' or 'model_save_path' must be provided to load the model parameters.")
+        # ----
+        else:
+            if type(args) == dict:
+                args_init = Namespace(**args)
+            else:
+                args_init = Namespace(**vars(args))
+
+        fold_to_evaluate = [args.K_fold-1] if fold_to_evaluate is None else fold_to_evaluate
         args_init.ray = False
 
         ds,args_updated,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)
-    else:
+    # -----
+
+    # Choice 3: args_init & ds_init are defined : ---
+    elif (ds_init is not None) and (args_init is not None):
         ds = ds_init
         args_updated = args_init
         for key,values in modification.items():
             setattr(args_updated,key,values)
+    # -----
+   
+    else:
+        raise NotImplementedError("Either 'ds_init' and 'args_init' or 'trial_id' must be provided to load the model parameters.")
 
+
+    # Load Model: 
     model = full_model(ds, 
                        args_updated
-                    #    args_init
                        ).to(args_updated.device)
 
 
     model_param = torch.load(f"{model_save_path}")
 
-    ## Load state dict : 
+    # --- Load state dict : 
     prefix = "_orig_mod."
     model_param['state_dict'] = {k[len(prefix):] if k.startswith(prefix) else k: v    #Needed here to remove the prefix added by torch.compile
                 for k, v in model_param['state_dict'].items()}
     
     model.load_state_dict(model_param['state_dict'],strict=True)
     model = model.to(args_updated.device)
-    ## 
+    # ---
     
     optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args_updated)
     trainer = Trainer(ds,model,args_updated,optimizer,loss_function,scheduler = scheduler)
 
     return trainer, ds, args_updated
-
-
-def get_trainer_and_ds_from_saved_trial(trial_id = None,
-                                        add_name_id = '',
-                                        args = None,
-                                        save_folder = None,
-                                        model_save_path = None,
-                                        modification = {},fold_to_evaluate = None):
-    
-
-
-
-
-    
-    # Load Data and Init Model:
-    if fold_to_evaluate is None:
-        fold_name = 'complete_dataset'
-    else:
-        fold_name = fold_to_evaluate[0]
-
-    if args is None: 
-        args = load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name)
-    else:
-        args = Namespace(**args)
-        args.ray = False
-    
-
-    if fold_to_evaluate is None:  fold_to_evaluate = [args.K_fold-1]
-
-           
-    ds,_,_,_,_ =  get_ds(args_init=args,modification = modification,fold_to_evaluate=fold_to_evaluate)
-    model = full_model(ds, args).to(args.device)
-
-
-    # Load Trained Weights 
-    if save_folder is not None:
-        model_param = torch.load(f"{SAVE_DIRECTORY}/{save_folder}/best_models/{trial_id}{add_name_id}_f{fold_name}.pkl")
-    elif model_save_path is not None:
-        model_param = torch.load(f"{model_save_path}")
-    else: 
-        raise NotImplementedError("Either 'save_folder' or 'model_save_path' must be provided to load the model parameters.")
-    
-    model.load_state_dict(model_param['state_dict'],strict=True)
-
-
-    # Load Trainer : 
-    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler)
-
-    return trainer,ds,args
