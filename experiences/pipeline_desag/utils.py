@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 
 from experiences.convert_df_to_latex import update_df_metrics,load_csv
 from experiences.common_parameter import convertion_exp_name
-from jupyter_ipynb.NetMob_training_analysis.plotting import plot_boxplot_on_metric
+from pipeline.plotting.plotting_boxplot_metrics import plot_boxplot_on_metric
 
 
 def tackle_trial_for_distrib(folder_path,dic_exp_to_names,L_metrics,exp_i,trial_j,metrics,
