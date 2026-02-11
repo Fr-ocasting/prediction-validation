@@ -13,14 +13,14 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.benchmark import local_get_args
+from constants.config import local_get_args
 from examples.train_and_visu_non_recurrent import evaluate_config,train_the_config,get_ds
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
 from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.trainer import Trainer
 from pipeline.utils.loger import LOG
 from pipeline.utils.rng import set_seed
-from examples.train_model import main 
+from pipeline.high_level_DL_method import model_loading_and_training 
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 
@@ -34,25 +34,33 @@ modification_compute = {'use_target_as_context': False,
                             'torch_compile' : 'compile' , #'compile', # 'compile' # 'jit_script' #'trace' # False
                             'device': torch.device('cuda:1')
                             }
+
+
+# Random % in train: 
+# ------------------------
 # modifications = {
-#     '10p': {'train_pourcent' : 10,
+#     '10p': {'expanding_train' : 0.1,
 #             'batch_size':16},
-#     '15p': {'train_pourcent' : 15,
+#     '15p': {'expanding_train' : 0.15,
 #             'batch_size':16},
-#     '25p':  {'train_pourcent' : 25,
+#     '25p':  {'expanding_train' : 0.25,
 #              'batch_size':16},
-#     '35p':  {'train_pourcent' : 35,
+#     '35p':  {'expanding_train' : 0.35,
 #              'batch_size':32},
-#     '50p':  {'train_pourcent' : 50,
+#     '50p':  {'expanding_train' : 0.5,
 #             'batch_size':64},
-#     '75p':  {'train_pourcent' : 75,
+#     '75p':  {'expanding_train' : 0.75,
 #             'batch_size':64},
-#     '80p':  {'train_pourcent' : 80},
-#     '85p':  {'train_pourcent' : 85},
-#     '90p':  {'train_pourcent' : 90},
-#     '95p':  {'train_pourcent' : 95},
-#     '100p': {'train_pourcent': 100},
+#     '80p':  {'expanding_train' : 0.8},
+#     '85p':  {'expanding_train' : 0.85},
+#     '90p':  {'expanding_train' : 0.9},
+#     '95p':  {'expanding_train' : 0.95},
+#     '100p': {'expanding_train': 0.1},
 #                  }
+
+
+# Random % in train: 
+# ------------------------
 
 # modifications = {
 #     '10p': {'calib_prop' : 0.90,
@@ -141,7 +149,7 @@ if __name__ == "__main__":
                 
                 fold_to_evaluate=[args_init.K_fold-1]
 
-                trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification,trial_id)
+                trainer,ds,model,args = model_loading_and_training(fold_to_evaluate,weights_save_folder,args_init,modification,trial_id)
 
                 condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
                 valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)

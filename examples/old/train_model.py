@@ -12,60 +12,8 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.benchmark import local_get_args
-from examples.train_and_visu_non_recurrent import evaluate_config,train_the_config,get_ds
-from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.Flex_MDI.Flex_MDI import full_model
-from pipeline.trainer import Trainer
-from pipeline.ML_trainer import ML_trainer
-from pipeline.utils.loger import LOG
-from pipeline.utils.rng import set_seed
 
-
-def load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modification,trial_id):
-    ds,args,_,_,_ = get_ds(modification=modification,args_init=args_init,fold_to_evaluate=fold_to_evaluate)
-    print('Loaded dataset with args:')
-    for key,value in vars(args).items():
-        print(f"{key}: {value}")
-
-    if args.model_name in ['SARIMAX','XGBoost']:
-        trainer,model = ML_trainer(ds,args)
-    else:
-        model = full_model(ds, args).to(args.device)
-        optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-        if len(fold_to_evaluate) == 1: 
-            fold = fold_to_evaluate[0]
-        else:
-            raise ValueError("fold_to_evaluate should contain only one fold cause only one training will be done here.")
-        
-
-        trainer = Trainer(ds,model,args,optimizer,loss_function,
-                          scheduler = scheduler,
-                          show_figure = False,
-                          trial_id = trial_id, 
-                          fold=fold,
-                          save_folder = save_folder)
-    return trainer,ds,model,args
-
-def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):
-    trainer,ds,model,args = load_init_model_trainer_ds(fold_to_evaluate,save_folder,args_init,modification,trial_id)
-    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None,unormalize_loss = args.unormalize_loss) 
-    return trainer,ds,model,args
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+from pipeline.high_level_DL_method import model_loading_and_training
 
 
 
@@ -76,6 +24,10 @@ def main(fold_to_evaluate,save_folder,args_init,modification,trial_id):
 
 
 if __name__ == "__main__":
+
+    from constants.config import local_get_args
+    from pipeline.utils.loger import LOG
+    from pipeline.utils.rng import set_seed
 
     import numpy as np 
     import random 
@@ -267,7 +219,7 @@ if __name__ == "__main__":
 
 
 
-    trainer,ds,model,args = main(fold_to_evaluate,weights_save_folder,args_init,modification)
+    trainer,ds,model,args = model_loading_and_training(fold_to_evaluate,weights_save_folder,args_init,modification)
 
     condition1,condition2,fold = get_conditions(args,fold_to_evaluate,[ds])
     valid_losses,df_loss,training_mode_list,metric_list,dic_results= init_metrics(args)

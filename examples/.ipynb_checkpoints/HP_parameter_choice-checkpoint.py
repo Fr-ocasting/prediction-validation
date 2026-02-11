@@ -21,7 +21,7 @@ from pipeline.HP_tuning.hyperparameter_tuning_ray import HP_tuning
 
 
 # === Train and Evaluate Model: 
-def hyperparameter_tuning(args,vision_model_name,num_samples):
+def HPO_fold0_MACARON(args,vision_model_name,num_samples):
     # Load K-fold subway-ds 
     folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
 
@@ -54,4 +54,4 @@ if __name__ == '__main__':
     # Choose DataSet and VisionModel if needed: 
     num_samples = 1000
     vision_model_name = None #'FeatureExtractor_ResNetInspired'  # 'ImageAvgPooling'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
-    analysis,trial_id = hyperparameter_tuning(args,vision_model_name,num_samples)
+    analysis,trial_id = HPO_fold0_MACARON(args,vision_model_name,num_samples)

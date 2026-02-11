@@ -31,8 +31,8 @@ from experiences.pipeline_desag.build_baseline_config import BaselineConfigBuild
 from experiences.pipeline_desag.utils import plotting_boxplot_of_trials
 from experiences.pipeline_desag.MetricExporter import MetricExporter
 from examples.accuracy_comparison import get_cluster
-from examples.train_model import load_init_model_trainer_ds
-from examples.benchmark import local_get_args
+from pipeline.high_level_DL_method import load_init_model_trainer_ds
+from constants.config import local_get_args
 from constants.paths import ROOT
 inside_saved_folder = 'K_fold_validation/training_wo_HP_tuning'
 folder_path = f"{ROOT}/save/{inside_saved_folder}"

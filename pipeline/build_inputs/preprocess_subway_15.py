@@ -182,37 +182,38 @@ if __name__ == '__main__':
         invalid_dates = pd.date_range(datetime(2019,4,23,14),datetime(2019,4,28,14),freq = f'{60/time_step_per_hour}min')
 
 
-    # Load Adj, Dist or Corr matrix : 
-    from constants.paths import FOLDER_PATH
-    from examples.benchmark import local_get_args,get_inputs
+        # Load Adj, Dist or Corr matrix : 
+        from constants.paths import FOLDER_PATH
+        from examples.train_and_visu_non_recurrent import get_inputs
+        from constants.config import local_get_args
 
 
-    station_location_name = 'ref_subway.csv'
-    df_locations = load_subway_shp(FOLDER_PATH,station_location_name)
+        station_location_name = 'ref_subway.csv'
+        df_locations = load_subway_shp(FOLDER_PATH,station_location_name)
 
-    dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
-    dataset_for_coverage = ['subway_in','netmob'] #  ['data_bidon','netmob'] #  ['subway_in','netmob'] 
-    vision_model_name = None
+        dataset_names = ["subway_in"] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon']
+        dataset_for_coverage = ['subway_in','netmob'] #  ['data_bidon','netmob'] #  ['subway_in','netmob'] 
+        vision_model_name = None
 
-    init_model_name ='STGCN' # start with # STGCN #CNN
-    args= local_get_args(init_model_name,
-                                                           dataset_names=dataset_names,
-                                                           dataset_for_coverage=dataset_for_coverage,
-                                                           modification = {})
-    K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,folds=[0])
+        init_model_name ='STGCN' # start with # STGCN #CNN
+        args= local_get_args(init_model_name,
+                                                            dataset_names=dataset_names,
+                                                            dataset_for_coverage=dataset_for_coverage,
+                                                            modification = {})
+        K_fold_splitter,K_subway_ds,dic_class2rpz = get_inputs(args,folds=[0])
 
-    dataset = K_subway_ds[0]
+        dataset = K_subway_ds[0]
 
 
-    adj = load_adjacency_matrix(dataset, type = 'adjacent')
-    corr =  load_adjacency_matrix(dataset, type = 'correlation')
-    dist = load_adjacency_matrix(dataset, type = 'distance', df_locations = df_locations, treshold = 1e-4)
+        adj = load_adjacency_matrix(dataset, type = 'adjacent')
+        corr =  load_adjacency_matrix(dataset, type = 'correlation')
+        dist = load_adjacency_matrix(dataset, type = 'distance', df_locations = df_locations, treshold = 1e-4)
 
-    if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{args.target_data}'):
-        raise 'Folder not find'
-    else:
-        if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/'):
-            os.mkdir(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/')
-        adj.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/adj.csv')
-        corr.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/corr.csv')
-        dist.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/dist.csv')
+        if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{args.target_data}'):
+            raise 'Folder not find'
+        else:
+            if not os.path.exists(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/'):
+                os.mkdir(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/')
+            adj.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/adj.csv')
+            corr.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/corr.csv')
+            dist.to_csv(f'{ROOT}/{FOLDER_PATH}/{args.target_data}/adj/dist.csv')

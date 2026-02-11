@@ -37,7 +37,6 @@ def get_config(model_name,dataset_names,dataset_for_coverage,config = {}):
     config['single_station']= False
     config['loss_function_type'] = 'HuberLoss' # 'HuberLoss' # 'MSE' #'quantile' # 'masked_mae' 
     config['freq'] = '15min'
-    config['train_pourcent'] = 100 # Int between ]0:100]. Determine the pourcentage of remaining training set. Has to be 100% by default.
 
     config['minmaxnorm'] = True   # If True: apply MinMax Normalisation on each time-series
     config['standardize'] = False  # If True: apply Zscore Normalisation on each time-series
@@ -234,28 +233,43 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
         args.args_embedding = argparse.ArgumentParser(description='TimeEmbedding').parse_args(args=[])
     return(args)
 
-def convert_into_parameters(config):
-    parser = argparse.ArgumentParser()
 
-    for key in config.keys():
-        default = config[key]
-        parser.add_argument(f'--{key}', type=type(default), default=default)
+def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
+    ''' Load args for tramodificationining, but also allow to '''
+    # Load base args
+    args = get_args(model_name,dataset_names,dataset_for_coverage)
+    args.ray = False
 
-    args = parser.parse_args(args=[])
-    return(args)
+    #  evaluation on the first fold only :
+    args.evaluate_complete_ds = True  # True # False // if True, then evaluation also on the entiere ds 
 
-def update_out_dim(args):
-    if args.loss_function_type in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']: 
-        args.out_dim_factor = 1
-        args.alpha = None
-    elif args.loss_function_type == 'quantile': 
-        args.out_dim_factor = 2
-        args.metrics  = ['MPIW','PICP']
-    else: 
-        raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    if args_init is not None:
+        args.args_vision = args_init.args_vision
+        args.args_embedding = args_init.args_embedding 
+        args.contextual_positions = args_init.contextual_positions
+        args.vision_input_type = args_init.vision_input_type
+
+    # Modification :
+    for key,value in modification.items():
+        setattr(args,key,value)
+
+        if key == 'HP_max_epochs':
+            if hasattr(args,'epochs'):
+                if args.epochs < value:
+                    args.epochs = value
+            else:
+                args.epochs = value
+            
+        if 'TE_' in key :
+            key = key.replace('TE_','')
+            setattr(args.args_embedding,key,value)
     
-    args.out_dim = args.out_dim_factor * (args.step_ahead // args.horizon_step)
-    return args 
+
+    # update each modif
+    args = update_modif(args)
+
+    return args
+
 
 def update_modif(args):
     #Update modification:
@@ -342,3 +356,27 @@ def modification_contextual_args(args,modification):
         else:
             setattr(args,key,value)
     return(args)
+
+
+def convert_into_parameters(config):
+    parser = argparse.ArgumentParser()
+
+    for key in config.keys():
+        default = config[key]
+        parser.add_argument(f'--{key}', type=type(default), default=default)
+
+    args = parser.parse_args(args=[])
+    return(args)
+
+def update_out_dim(args):
+    if args.loss_function_type in ['MSE','HuberLoss','masked_mae','masked_mse','huber_loss','masked_huber_loss']: 
+        args.out_dim_factor = 1
+        args.alpha = None
+    elif args.loss_function_type == 'quantile': 
+        args.out_dim_factor = 2
+        args.metrics  = ['MPIW','PICP']
+    else: 
+        raise NotImplementedError(f'loss function {args.loss_function_type} has not been implemented')
+    
+    args.out_dim = args.out_dim_factor * (args.step_ahead // args.horizon_step)
+    return args 

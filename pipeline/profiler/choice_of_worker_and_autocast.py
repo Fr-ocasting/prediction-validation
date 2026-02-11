@@ -1,10 +1,10 @@
 """
 quick_bench.py
 --------------
-Micro‑benchmark pour choisir rapidement :
+Micro-benchmark pour choisir rapidement:
 
-* type de précision (FP32, TF32, AMP‑BF16)
-* DataLoader : num_workers, pin_memory, persistent_workers, prefetch_factor
+* type de précision(FP32, TF32, AMP-BF16)
+* DataLoader: num_workers, pin_memory, persistent_workers, prefetch_factor
 * accélération torch.compile / torch.jit ou aucune
 
 Résultats enregistrés dans benchmark_results.csv

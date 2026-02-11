@@ -16,10 +16,10 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.benchmark import local_get_args
+from constants.config import local_get_args
 from pipeline.utils.loger import LOG
 from pipeline.utils.rng import set_seed
-from examples.train_model import main 
+from pipeline.high_level_DL_method import model_loading_and_training 
 from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
 
@@ -385,7 +385,7 @@ if __name__ == "__main__":
             os.makedirs(save_folder_with_root)
             
         # Train Model
-        trainer,ds,model,args = main(fold_to_evaluate,
+        trainer,ds,model,args = model_loading_and_training(fold_to_evaluate,
                                         save_folder = weights_save_folder,
                                         args_init = args_init,
                                         modification =config,

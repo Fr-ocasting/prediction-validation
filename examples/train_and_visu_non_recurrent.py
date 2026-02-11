@@ -16,7 +16,11 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
     
-from examples.benchmark import local_get_args,get_inputs,train_on_ds
+from constants.config import local_get_args,get_inputs,train_on_ds
+from pipeline.high_level_DL_method import load_optimizer_and_scheduler
+from pipeline.Flex_MDI.Flex_MDI import full_model
+from pipeline.trainer import Trainer
+from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from pipeline.utils.save_results import get_trial_id
 from constants.config import modification_contextual_args,update_modif
 from pipeline.plotting.TS_analysis import drag_selection_box,plot_single_point_prediction,plot_prediction_error,plot_loss_from_trainer,plot_TS
@@ -80,6 +84,21 @@ def train_the_config(args_init,modification,fold_to_evaluate):
     trainer,df_loss = train_on_ds(ds,args,trial_id,save_folder,df_loss)
 
     return trainer,ds,args,trial_id,df_loss
+
+
+def train_on_ds(ds,args,trial_id,save_folder,df_loss):
+    print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
+    print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
+    model = full_model(ds, args).to(args.device)
+    
+    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
+    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
+    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
+    df_loss[f"{args.model_name}_train_loss"] = trainer.train_loss
+    df_loss[f"{args.model_name}_valid_loss"] = trainer.valid_loss
+
+    return(trainer,df_loss)
+
 
 def get_ds_without_shuffling_on_train_set(trainer,modification,args_init, fold_to_evaluate):
     modification.update({'shuffle':False,
@@ -266,6 +285,18 @@ def get_ds(model_name=None,dataset_names=None,dataset_for_coverage=None,
     df_loss= pd.DataFrame()
 
     return(ds,args_with_contextual,trial_id,save_folder,df_loss)
+
+def get_inputs(args,folds):
+    K_fold_splitter = KFoldSplitter(args,folds)
+    K_subway_ds,args = K_fold_splitter.split_k_fold()
+
+    ## Specific case if we want to validate on the init entiere dataset:
+    if (args.evaluate_complete_ds and args.validation_split_method == 'custom_blocked_cv'): 
+        subway_ds,_,_ = K_fold_splitter.load_init_ds(normalize = True)
+        K_subway_ds.append(subway_ds)
+
+    
+    return(K_fold_splitter,K_subway_ds,args)
 
 def get_multi_ds(model_name,
                  dataset_names,

@@ -7,7 +7,7 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from examples.benchmark import local_get_args
+from constants.config import local_get_args
 
 default_args = dict(model_name='STGCN',
                     args_init = None,

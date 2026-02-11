@@ -12,14 +12,14 @@ if working_dir not in sys.path:
 # ...
 
 # Personnal import 
-from examples.HP_parameter_choice import hyperparameter_tuning
+from examples.HP_parameter_choice import HPO_fold0_MACARON
 from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
 
 
 
-def HP_and_valid_one_config(args,epochs_validation,num_samples):
+def MACARON_pipeline(args,epochs_validation,num_samples):
     # HP Tuning on the first fold
-    analysis,trial_id = hyperparameter_tuning(args,num_samples)
+    analysis,trial_id = HPO_fold0_MACARON(args,num_samples)
 
     # K-fold validation with best config: 
     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',epochs=epochs_validation)
@@ -31,7 +31,7 @@ if __name__ == '__main__':
     #from file00 import *
     #vision_model_name = 'FeatureExtractorEncoderDecoder'  # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
-    from examples.benchmark import local_get_args
+    from constants.config import local_get_args
 
     model_name = 'STGCN' #'CNN'
     dataset_for_coverage = ['subway_in','netmob_POIs'] 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         epochs_validation = 20
         num_samples = 50
         
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+        MACARON_pipeline(args,epochs_validation,num_samples)
     if False:
         for dataset_names,vision_model_name in zip([['subway_in','netmob_POIs']], #['subway_in','subway_out'] # ['subway_in']
                                                    ['VariableSelectionNetwork']): #'VariableSelectionNetwork' # None
@@ -79,4 +79,4 @@ if __name__ == '__main__':
             num_samples = 500
 
             # HP and evaluate K-fold best config
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
+            MACARON_pipeline(args,epochs_validation,num_samples)

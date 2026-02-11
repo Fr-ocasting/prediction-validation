@@ -15,7 +15,7 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.benchmark import local_get_args
+from constants.config import local_get_args
 from examples.train_and_visu_non_recurrent import evaluate_config,train_the_config,get_ds
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
 from pipeline.Flex_MDI.Flex_MDI import full_model

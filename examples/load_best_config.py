@@ -166,7 +166,6 @@ def get_trainer_and_ds_from_saved_trial(trial_id = None,
     else:
         fold_name = fold_to_evaluate[0]
 
-    #args,_ = load_configuration(trial_id1,load_config=True)
     if args is None: 
         args = load_args_of_a_specific_trial(trial_id,add_name_id,save_folder,fold_name)
     else:

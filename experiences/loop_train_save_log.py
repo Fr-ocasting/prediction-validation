@@ -16,9 +16,9 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.benchmark import local_get_args
+from constants.config import local_get_args
 from constants.paths import SAVE_DIRECTORY
-from examples.train_model import main 
+from pipeline.high_level_DL_method import model_loading_and_training 
 from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
 
 def loop_train_save_log(loger,dic_configs,init_save_folder = 'K_fold_validation/training_wo_HP_tuning/optim'):
@@ -64,7 +64,7 @@ def train_one_config(loger,config_i,init_save_folder,trial_id):
 
     else:
         # Train Model
-        trainer,ds,model,args = main(fold_to_evaluate,
+        trainer,ds,model,args = model_loading_and_training(fold_to_evaluate,
                                         save_folder = weights_save_folder,
                                         args_init = args_init,
                                         modification ={},

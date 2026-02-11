@@ -24,7 +24,7 @@ if parent_dir not in sys.path:
 from pipeline.calendar_class import get_temporal_mask
 from examples.load_best_config import load_trainer_ds_from_saved_trial
 from pipeline.plotting.plotting import plot_coverage_matshow,get_df_mase_and_gains,get_df_gains,get_gain_from_mod1
-from examples.train_model import load_init_model_trainer_ds
+from pipeline.high_level_DL_method import load_init_model_trainer_ds
 from pipeline.utils.utilities import get_topk
 import numpy as np 
 import pandas as pd
@@ -749,7 +749,7 @@ def get_rainy_indices(args,ds,training_mode = 'test'):
 
   # Test time slots: 
   time_slots = getattr(ds.tensor_limits_keeper,f"df_verif_{training_mode}").iloc[:,-1]
-  if (training_mode=='train') and hasattr(args,'expanding_train') and (args.expanding_train is not None) and (args.expanding_train != 100):
+  if (training_mode=='train') and hasattr(args,'expanding_train') and (args.expanding_train is not None) and (args.expanding_train != 1):
     n = len(time_slots)
     split = int(n * args.expanding_train)
     time_slots = time_slots.iloc[-split:]

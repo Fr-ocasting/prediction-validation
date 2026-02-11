@@ -98,22 +98,9 @@ if __name__ == '__main__':
 
 
     if True:
-        if False:
-            from examples.HP_parameter_choice import hyperparameter_tuning
-            from examples.benchmark import local_get_args
-
-            def HP_and_valid_one_config(args,epochs_validation,num_samples):
-                # HP Tuning on the first fold
-                analysis,trial_id = hyperparameter_tuning(args,num_samples)
-
-                # K-fold validation with best config: 
-                modification = {'epochs':epochs_validation,
-                                'expanding_train': None,
-                                'graph_subset': None,
-                                'batch_size' : 16,
-                                }
-                train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
-                return trial_id
+        if True:
+            from pipeline.HP_tuning.Subset_HPO import MACARON_pipeline
+            from constants.config import local_get_args
 
             
             args = local_get_args(model_name,
@@ -125,7 +112,13 @@ if __name__ == '__main__':
 
             epochs_validation = epochs #1000
             num_samples = 400 # 100 # 300 # 200
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
+            modification = {'epochs':epochs_validation,
+                            'expanding_train': None,
+                            'graph_subset': None,
+                            'batch_size' : 16,
+                            }
+            
+            MACARON_pipeline(args,epochs_validation,num_samples)
 
         # If HPO worked by need to compute again the 'train_valid_k_models':
         # Or if we need to compute with B = 128 

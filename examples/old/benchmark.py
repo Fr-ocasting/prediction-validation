@@ -10,75 +10,18 @@ if parent_dir not in sys.path:
 import pandas as pd
 import numpy as np 
 from constants.config import get_args,update_modif, modification_contextual_args
-from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
-from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.Flex_MDI.Flex_MDI import full_model
+
+
 from pipeline.utils.save_results import get_trial_id
-from pipeline.trainer import Trainer
+
 import matplotlib.pyplot as plt 
 import importlib
 
-def local_get_args(model_name,args_init,dataset_names,dataset_for_coverage,modification):
-    ''' Load args for tramodificationining, but also allow to '''
-    # Load base args
-    args = get_args(model_name,dataset_names,dataset_for_coverage)
-    args.ray = False
 
-    #  evaluation on the first fold only :
-    args.evaluate_complete_ds = True  # True # False // if True, then evaluation also on the entiere ds 
 
-    if args_init is not None:
-        args.args_vision = args_init.args_vision
-        args.args_embedding = args_init.args_embedding 
-        args.contextual_positions = args_init.contextual_positions
-        args.vision_input_type = args_init.vision_input_type
 
-    # Modification :
-    for key,value in modification.items():
-        setattr(args,key,value)
 
-        if key == 'HP_max_epochs':
-            if hasattr(args,'epochs'):
-                if args.epochs < value:
-                    args.epochs = value
-            else:
-                args.epochs = value
-            
-   
-        if 'TE_' in key :
-            key = key.replace('TE_','')
-            setattr(args.args_embedding,key,value)
-    
 
-    # update each modif
-    args = update_modif(args)
-
-    return args
-
-def get_inputs(args,folds):
-    K_fold_splitter = KFoldSplitter(args,folds)
-    K_subway_ds,args = K_fold_splitter.split_k_fold()
-
-    ## Specific case if we want to validate on the init entiere dataset:
-    if (args.evaluate_complete_ds and args.validation_split_method == 'custom_blocked_cv'): 
-        subway_ds,_,_ = K_fold_splitter.load_init_ds(normalize = True)
-        K_subway_ds.append(subway_ds)
-
-    
-    return(K_fold_splitter,K_subway_ds,args)
-
-def train_on_ds(ds,args,trial_id,save_folder,df_loss):
-    print(f">>>>Model: {args.model_name}; K_fold = {args.K_fold}; Loss function: {args.loss_function_type} ") 
-    print(">>>> Prediction sur une UNIQUE STATION et non pas les 40 ") if args.single_station else None
-    model = full_model(ds, args).to(args.device)
-    
-    optimizer,scheduler,loss_function = load_optimizer_and_scheduler(model,args)
-    trainer = Trainer(ds,model,args,optimizer,loss_function,scheduler = scheduler,show_figure = False,trial_id = trial_id, fold=0,save_folder = save_folder)
-    trainer.train_and_valid(normalizer = ds.normalizer, mod = 1000,mod_plot = None) 
-    df_loss[f"{args.model_name}_train_loss"] = trainer.train_loss
-    df_loss[f"{args.model_name}_valid_loss"] = trainer.valid_loss
-
-    return(trainer,df_loss)
 
 def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metrics):
     performance = trainer.performance
@@ -98,19 +41,48 @@ def keep_track_on_model_metrics(trainer,df_results,model_name,performance,metric
     df_results = pd.concat([df_results,row])
     return df_results
 
-def plot_gradient(trainer):
-    gradient_metrics = trainer.gradient_metrics
-    for module in gradient_metrics.keys():
-        df_to_plot = pd.DataFrame()
-        for metric_grad in gradient_metrics[module].keys():
-            df_to_plot[f"{module}_{metric_grad}"] = gradient_metrics[module][metric_grad]
-        if len(df_to_plot) > 0: 
-            if len(df_to_plot)> 3:
-                df_to_plot.iloc[3:].plot()
-            else:
-                df_to_plot.plot()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
 
+    def plot_gradient(trainer):
+        gradient_metrics = trainer.gradient_metrics
+        for module in gradient_metrics.keys():
+            df_to_plot = pd.DataFrame()
+            for metric_grad in gradient_metrics[module].keys():
+                df_to_plot[f"{module}_{metric_grad}"] = gradient_metrics[module][metric_grad]
+            if len(df_to_plot) > 0: 
+                if len(df_to_plot)> 3:
+                    df_to_plot.iloc[3:].plot()
+                else:
+                    df_to_plot.plot()
     for dataset_names,vision_model_name in zip([['subway_in','calendar']],[None]): # zip([['subway_in','netmob_POIs','calendar'],['subway_in']],['VariableSelectionNetwork',None]):
         # GET PARAMETERS
         #dataset_names = ['subway_in','netmob_POIs'] # ["subway_in","calendar"] # ["subway_in"] # ['data_bidon'] # ['METR_LA'] # ['PEMS_BAY']  # ['data_bidon','netmob_bidon'] #['netmob_POIs']

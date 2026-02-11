@@ -11,7 +11,7 @@ parent_dir = os.path.abspath(os.path.join(current_path, '..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration,train_valid_1_model
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
 
 
 """Evaluation de qualité des série temporelle NetMob de manière individuelle."""

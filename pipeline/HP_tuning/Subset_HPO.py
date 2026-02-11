@@ -1,117 +1,79 @@
 import pandas as pd  # if not, I get this error while running a .py from terminal: 
 # ImportError: /lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by /root/anaconda3/envs/pytorch-2.0.1_py-3.10.5/lib/python3.10/site-packages/pandas/_libs/window/aggregations.cpython-310-x86_64-linux-gnu.so)
 import torch 
+import sys 
+import os 
+import numpy as np 
+
 if torch.cuda.is_available():
     torch.backends.cuda.matmul.allow_tf32 = True
     torch.backends.cudnn.allow_tf32  = True
 
-# Relative path:
-import sys 
-import os 
 current_path = os.path.abspath(os.path.dirname(__file__))
 working_dir = os.path.abspath(os.path.join(current_path,'..'))
-#parent_dir = f"{parent_dir}/prediction_validation/"  # A utiliser sur .ipynb notebook
 if working_dir not in sys.path:
     sys.path.insert(0,working_dir)
-# ...
 
 # Personnal import 
-from examples.HP_parameter_choice import hyperparameter_tuning
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
-import numpy as np 
+from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
+from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
+from pipeline.HP_tuning.hyperparameter_tuning_ray import HP_tuning
 
-def HP_and_valid_one_config(args,epochs_validation,num_samples):
+def Subset_HPO_pipeline(args,modification,num_samples):
+
+    return MACARON_pipeline(args,modification,num_samples)
+
+
+def HPO_fold0_MACARON(args,num_samples):
+    """ 
+    Load dataset from an initial (forward chaining) K-fold split and perform HP tuning on the first fold.
+    """
+    # Load K-fold subway-ds 
+    folds = [0] # Here we use the first fold for HP-tuning. In case we need to compute the Sliding K-fold validation: folds = np.arange(1,args.K_fold)
+
+    # Split in K-fold : 
+    K_fold_splitter = KFoldSplitter(args,folds)
+    K_subway_ds,_ = K_fold_splitter.split_k_fold()
+
+    # Train on the first fold: 
+    subway_ds = K_subway_ds[0]
+    analysis,trial_id = HP_tuning(subway_ds,args,num_samples,working_dir=working_dir)
+    return(analysis,trial_id)
+
+
+def MACARON_pipeline(args,modification,num_samples):
     # HP Tuning on the first fold
-    analysis,trial_id = hyperparameter_tuning(args,num_samples)
+    analysis,trial_id = HPO_fold0_MACARON(args,num_samples)
 
     # K-fold validation with best config: 
-    modification = {'epochs':epochs_validation}
     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
     return trial_id
 
-def set_one_hp_tuning_and_evaluate_DA(args=None,epochs_validation=None,num_samples=None):
+def set_one_hp_tuning_and_evaluate_DA(args=None,
+                                      epochs_validation=None,
+                                      num_samples=None,
+                                      config_diffs={},
+                                      save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'):
+    """
+    Perform MACARON pipeline but then also train & evaluate the models on some configurations while keeping hyperparameters selected from HPO
 
-    # HP tuning and return the trial-id : 
-    trial_id = HP_and_valid_one_config(args,epochs_validation,num_samples)
-
-    #trial_id = 'subway_in_subway_out_STGCN_VariableSelectionNetwork_MSELoss_2025_01_20_05_38_87836'
-    #trial_id = 'subway_in_STGCN_MSELoss_2025_01_17_18_25_95152'  -> 
-
-
-    save_folder = 'K_fold_validation/training_with_HP_tuning/re_validation'
-
-    if True:
-        modification ={'keep_best_weights':True,
-                        'epochs':epochs_validation,
+    Examples:
+    >>>> config_diffs = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
+                                    'DA_method':'noise', # 'noise' # 'interpolation
+                                    'DA_min_count': 5,
+                                    'DA_alpha' : 1,
+                                    'DA_prop' : 1, # 1 #0.005
+                                    'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
+                                    },
+                                    ...
                         }
 
-        config_diffs = {'maps_deezer_insta_DL_iris_rich_interpolation':{'DA_method' : ['rich_interpolation'],
-                        'data_augmentation' : True
-                          },                                         
-                        'maps_deezer_insta_DL_iris_magnitude_warping0075':{'DA_method' : ['magnitude_warping'],
-                        'data_augmentation' : True,
-                        'DA_magnitude_max_scale':0.075
-                                                },
-                        'maps_deezer_insta_DL_iris_rich_interpolation_and_magnitude_warping0075':{'DA_method' : ['rich_interpolation','magnitude_warping'],
-                        'data_augmentation' : True,
-                        'DA_magnitude_max_scale':0.075
-                                                }
-                                    }
-
-
-        if False:
-            config_diffs = {'DA_Homogenous_1':{'data_augmentation': True, #True,  #False
-                            'DA_method':'noise', # 'noise' # 'interpolation
-                            'DA_min_count': 5,
-                            'DA_alpha' : 1,
-                            'DA_prop' : 1, # 1 #0.005
-                            'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
-                            },
-                        'DA_Homogenous_0.2':{'data_augmentation': True, #True,  #False
-                            'DA_method':'noise', # 'noise' # 'interpolation
-                            'DA_min_count': 5,
-                            'DA_alpha' : 0.2,
-                            'DA_prop' : 1, # 1 #0.005
-                            'DA_noise_from': 'Homogenous' # 'MSTL' # 'Homogenous'
-                            },
-                        'DA_MSTL_02':{'data_augmentation': True, #True,  #False
-                            'DA_method':'noise', # 'noise' # 'interpolation
-                            'DA_min_count': 5,
-                            'DA_alpha' : 0.2,
-                            'DA_prop' : 1, # 1 #0.005
-                            'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
-                            },
-                        'DA_MSTL_1':{'data_augmentation': True, #True,  #False
-                            'DA_method':'noise', # 'noise' # 'interpolation
-                            'DA_min_count': 5,
-                            'DA_alpha' : 1,
-                            'DA_prop' : 1, # 1 #0.005
-                            'DA_noise_from': 'MSTL' # 'MSTL' # 'Homogenous'
-                            },
-                        'No_DA':{'data_augmentation': False, #True,  #False
-                            },
-                        'DA_interpolation':{'data_augmentation': True, #True,  #False
-                            'DA_method':'interpolation', # 'noise' # 'interpolation
-                            }
-                        }
- 
-    if False:
-        modification ={'keep_best_weights':True,
-                        'epochs':1,
-                        'DA_moment_to_focus' : None
-                        }
-
-
-        config_diffs = {'lr1':{'data_augmentation': False, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'lr':0.1},
-                    'lr2':{'data_augmentation': False, #True,  #False
-                        'DA_method':'noise', # 'noise' # 'interpolation
-                        'lr':0.01},
-                    'lr3':{'data_augmentation': False, #True,  #False
-                                            'DA_method':'noise', # 'noise' # 'interpolation
-                                            'lr':0.001}
+    """
+    modification = {'epochs':epochs_validation,
+                    'keep_best_weights':True,
                     }
+    # HP tuning and return the trial-id : 
+    trial_id = MACARON_pipeline(args,modification,num_samples)
 
                   
     for add_name_id,config_diff in config_diffs.items():
@@ -127,7 +89,7 @@ if __name__ == '__main__':
     #from file00 import *
     #vision_model_name = 'FeatureExtractorEncoderDecoder'  # 'ImageAvgPooling'  # 'FeatureExtractor_ResNetInspired_bis'  #'FeatureExtractor_ResNetInspired' #'MinimalFeatureExtractor',
     # 'AttentionFeatureExtractor' # 'FeatureExtractorEncoderDecoder' # 'VideoFeatureExtractorWithSpatialTemporalAttention'
-    from examples.benchmark import local_get_args
+    from constants.config import local_get_args
 
     if True:
         model_name = 'GMAN' #'CNN'
@@ -199,7 +161,9 @@ if __name__ == '__main__':
 
         epochs_validation = 100 # 200 #1000
         num_samples =300 # 300#200
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+        MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
 
         # if False:
         #     trial_id = 'subway_in_calendar_GMAN_HuberLossLoss_2025_11_30_18_01_76652'
@@ -316,7 +280,9 @@ if __name__ == '__main__':
 
         epochs_validation = 1000 #1000
         num_samples = 200#200
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+        MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
 
         
 
@@ -373,7 +339,9 @@ if __name__ == '__main__':
     #     # Init 
     #     epochs_validation =1 # 500
     #     num_samples = 2 #300
-    #     HP_and_valid_one_config(args,epochs_validation,num_samples)
+    #     MACARON_pipeline(args,
+                        #  modification = {'epochs':epochs_validation},
+                        #  num_samples=num_samples)
     #     #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
         
 
@@ -441,7 +409,9 @@ if __name__ == '__main__':
         # Init 
         epochs_validation = 1000#300
         num_samples = 300#200
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+        MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
         
     if False:
@@ -518,7 +488,9 @@ if __name__ == '__main__':
         # Init 
         epochs_validation = 300#300
         num_samples = 200#200
-        HP_and_valid_one_config(args,epochs_validation,num_samples)
+        MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
         #set_one_hp_tuning_and_evaluate_DA(args,epochs_validation,num_samples)
         
     if False:
@@ -565,7 +537,9 @@ if __name__ == '__main__':
                                 modification =modif_bis
                                 )
             args.calendar_types = ['dayofweek', 'timeofday']
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
+            MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
 
     if False:
 
@@ -705,7 +679,9 @@ if __name__ == '__main__':
                                 modification =modif_bis
                                 )
             args.calendar_types = ['dayofweek', 'timeofday']
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
+            MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
 
 
     if False:
@@ -801,5 +777,7 @@ if __name__ == '__main__':
                                 dataset_for_coverage=dataset_for_coverage,
                                 modification =modif_bis
                                 )
-            HP_and_valid_one_config(args,epochs_validation,num_samples)
+            MACARON_pipeline(args,
+                         modification = {'epochs':epochs_validation},
+                         num_samples=num_samples)
 
