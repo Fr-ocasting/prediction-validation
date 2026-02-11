@@ -6,3 +6,5 @@ data/
 .pyc"
 experiences/pipeline_desag/results/
 jupyter_ipynb/
+cache/
+.vscode/
