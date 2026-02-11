@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
 
     if True:
-        if True:
+        if False:
             from examples.HP_parameter_choice import hyperparameter_tuning
             from examples.benchmark import local_get_args
 
@@ -183,11 +183,16 @@ if __name__ == '__main__':
             # Training full model with B = 16 : 69min (Troughput: 299.35 sequences / s )
             # Training full model with B = 128 : 22min (Troughput: 961.86 sequences / s )
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586:'
-            
+
+
+            # HPO: 20h ( PAS FINI ! ! !! !! !!!)
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_09_18_40_69906'
+            # Training full model with B = 16 : 69min (Troughput: 358 sequences / s )
+            # Training full model with B = 128 : 22min (Troughput: 961.86 sequences / s )
 
 
 
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_09_18_40_69906'
                              ]:
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -230,6 +235,14 @@ if __name__ == '__main__':
         # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586'  
         # All Steps RMSE = 23.528, MAE = 13.449, MASE = 0.846, MAPE = 8.839  (B = 16)
         # All Steps RMSE = 23.870, MAE = 14.713, MASE = 0.926, MAPE = 10.014 (B = 128)
+
+        # ----- 
+        # HPO: 20h ( PAS FINI ! ! !! !! !!  - - SEULEMENT 200 TRIALS SUR 400)
+        # 'expanding_train' : None  (!)
+        # 'graph_subset': None  (!)
+        # trial_id = ''PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_09_18_40_69906'
+        # All Steps RMSE = 23.417, MAE = 13.479, MASE = 0.848, MAPE = 8.884  (B = 16)
+        # All Steps RMSE = 23.411, MAE = 14.120, MASE = 0.889, MAPE = 9.655  (B = 128) 
 
 
         
