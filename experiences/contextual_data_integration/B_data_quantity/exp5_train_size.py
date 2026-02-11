@@ -23,7 +23,7 @@ from experiences.loop_train_save_log import loop_train_save_log
 from examples.benchmark import local_get_args
 from examples.train_and_visu_non_recurrent import evaluate_config,train_the_config,get_ds
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.dl_models.full_model import full_model
+from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.trainer import Trainer
 from pipeline.utils.loger import LOG
 from pipeline.utils.rng import set_seed

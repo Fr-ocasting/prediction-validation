@@ -26,7 +26,7 @@ from constants.config import optimizer_specific_lr, convert_into_parameters
 from pipeline.DL_class import QuantileLoss
 from pipeline.dataset import  DataSet
 from pipeline.TE_transfer_learning import TE_transfer
-from pipeline.dl_models.full_model import full_model
+from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.utils.losses import masked_mse, masked_mae, masked_rmse, masked_mape
 
 

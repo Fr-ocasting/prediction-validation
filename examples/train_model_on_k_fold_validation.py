@@ -14,7 +14,7 @@ from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from constants.paths import SAVE_DIRECTORY
 from pipeline.trainer import Trainer
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.dl_models.full_model import full_model
+from pipeline.Flex_MDI.Flex_MDI import full_model
 from examples.train_and_visu_non_recurrent import get_multi_ds
 import numpy as np 
 from pipeline.utils.loger import LOG

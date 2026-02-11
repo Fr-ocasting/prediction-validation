@@ -17,7 +17,7 @@ from pipeline.trainer import Trainer
 from pipeline.HP_tuning.ray_search_space import get_search_space_ray 
 from pipeline.HP_tuning.ray_config import get_ray_config
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.dl_models.full_model import full_model
+from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.utils.save_results import get_date_id,load_json_file,update_json
 
 

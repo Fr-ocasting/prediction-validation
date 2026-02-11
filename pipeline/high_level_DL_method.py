@@ -1,4 +1,4 @@
-from pipeline.dl_models.full_model import full_model
+from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.plotting.plotting_bokeh import plot_bokeh
 from pipeline.trainer import Trainer
 from pipeline.utils.utilities_DL import choose_optimizer, load_scheduler,get_loss

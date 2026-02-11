@@ -16,7 +16,7 @@ from constants.paths import SAVE_DIRECTORY
 from examples.train_and_visu_non_recurrent import get_ds
 from constants.paths import SAVE_DIRECTORY
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.dl_models.full_model import full_model
+from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.trainer import Trainer
 
 def parse_lists_in_series(pd_serie: pd.Series):
