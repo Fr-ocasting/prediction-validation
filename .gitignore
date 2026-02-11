@@ -4,3 +4,5 @@ _pycache_/
 __pycache__/
 data/
 .pyc"
+experiences/pipeline_desag/results/
+jupyter_ipynb/
