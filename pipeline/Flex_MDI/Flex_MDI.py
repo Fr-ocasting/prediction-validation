@@ -21,30 +21,30 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal import:
-from pipeline.dl_models.TimeEmbedding.time_embedding import TE_module
-from pipeline.dl_models.CNN.CNN_based_model import CNN
-from pipeline.dl_models.MTGNN.MTGNN import MTGNN
-from pipeline.dl_models.RNN.RNN import RNN
-from pipeline.dl_models.STGCN.STGCN import STGCN
-from pipeline.dl_models.DCRNN.DCRNN import DCRNN
-from pipeline.dl_models.TFT.TFT import TFT
-from pipeline.dl_models.ASTGCN.ASTGCN import ASTGCN
-from pipeline.dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
-from pipeline.dl_models.STGformer.STGformer import STGformer
-from pipeline.dl_models.STAEformer.STAEformer import STAEformer
-from pipeline.dl_models.DSTRformer.DSTRformer import DSTRformer
-from pipeline.dl_models.SARIMAX.SARIMAX import SARIMAX
-from pipeline.dl_models.XGBoost.XGBoost import XGBoost
-from pipeline.dl_models.GMAN.GMAN import GMAN
-from pipeline.dl_models.GMAN.generate_SE import load_SE_GMAN
-from pipeline.dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
+from pipeline.Flex_MDI.dl_models.TimeEmbedding.time_embedding import TE_module
+from pipeline.Flex_MDI.dl_models.CNN.CNN_based_model import CNN
+from pipeline.Flex_MDI.dl_models.MTGNN.MTGNN import MTGNN
+from pipeline.Flex_MDI.dl_models.RNN.RNN import RNN
+from pipeline.Flex_MDI.dl_models.STGCN.STGCN import STGCN
+from pipeline.Flex_MDI.dl_models.DCRNN.DCRNN import DCRNN
+from pipeline.Flex_MDI.dl_models.TFT.TFT import TFT
+from pipeline.Flex_MDI.dl_models.ASTGCN.ASTGCN import ASTGCN
+from pipeline.Flex_MDI.dl_models.ASTGCN.lib.utils import cheb_polynomial,scaled_Laplacian
+from pipeline.Flex_MDI.dl_models.STGformer.STGformer import STGformer
+from pipeline.Flex_MDI.dl_models.STAEformer.STAEformer import STAEformer
+from pipeline.Flex_MDI.dl_models.DSTRformer.DSTRformer import DSTRformer
+from pipeline.Flex_MDI.dl_models.SARIMAX.SARIMAX import SARIMAX
+from pipeline.Flex_MDI.dl_models.XGBoost.XGBoost import XGBoost
+from pipeline.Flex_MDI.dl_models.GMAN.GMAN import GMAN
+from pipeline.Flex_MDI.dl_models.GMAN.generate_SE import load_SE_GMAN
+from pipeline.Flex_MDI.dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
 from pipeline.utils.utilities import filter_args
 from pipeline.build_inputs.load_adj import load_adj
 from pipeline.utils.SanityCheck import SanityCheck
 import importlib
 
 # def load_feature_extractor_model(args_vision):
-#     script = importlib.import_module(f"pipeline.dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}")
+#     script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.vision_models.{args_vision.model_name}.{args_vision.model_name}")
 #     importlib.reload(script)  
 #     func = script.model
 #     filered_args = filter_args(func, args_vision)
@@ -78,7 +78,7 @@ def load_spatial_attn_model(dataset,args,ds_name,sanity_checker):
 
     # --- If feature extractor if Backbone model STAEformer : 
     elif ('backbone_model' in args.contextual_kwargs[ds_name].keys()) and (args.contextual_kwargs[ds_name]['backbone_model']):
-        script = importlib.import_module(f"pipeline.dl_models.{args.model_name}.{args.model_name}")
+        script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.{args.model_name}.{args.model_name}")
         added_dim_input, _, _, _ = get_added_dim(args)
 
         if args.model_name == 'STAEformer':
@@ -184,7 +184,7 @@ def load_spatial_attn_model(dataset,args,ds_name,sanity_checker):
 
     # ---- If feature extractor is our own spatial-attn module : 
     elif ('attn_kwargs' in args.contextual_kwargs[ds_name].keys()) and len(args.contextual_kwargs[ds_name]['attn_kwargs']) > 0:
-        script = importlib.import_module(f"pipeline.dl_models.STAEformer.STAEformer")
+        script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.STAEformer.STAEformer")
         args_ds_i = {'steps_per_day' : 24*args.time_step_per_hour,
                         'pos_tod' : args.contextual_positions.get("calendar_timeofday", None),
                         'pos_dow' : args.contextual_positions.get("calendar_dayofweek", None),
@@ -786,7 +786,7 @@ def load_model(dataset, args,sanity_checker = None):
     if args.model_name == 'DSTRformer':
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
-        from pipeline.dl_models.DSTRformer.DSTRformer_utilities import normalize_adj_mx
+        from pipeline.Flex_MDI.dl_models.DSTRformer.DSTRformer_utilities import normalize_adj_mx
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(DSTRformer.__init__).parameters.keys())}
 
         adj_mx,_ = load_adj(dataset,adj_type = args.adj_type, threshold=args.threshold)
@@ -798,7 +798,7 @@ def load_model(dataset, args,sanity_checker = None):
     if args.model_name == 'STGformer':
         if TE_concatenation_late or vision_concatenation_late:
             raise NotImplementedError(f'{args.model_name} with TE_concatenation_late has not been implemented')
-        from pipeline.dl_models.STGformer.STGformer_utilities import normalize_adj_mx
+        from pipeline.Flex_MDI.dl_models.STGformer.STGformer_utilities import normalize_adj_mx
         filtered_args = {k: v for k, v in vars(args).items() if (k in inspect.signature(STGformer.__init__).parameters.keys())}
 
         # Useless in this version :
@@ -843,7 +843,7 @@ def load_model(dataset, args,sanity_checker = None):
         model = DCRNN(adj, **vars(args)).to(args.device)
         
     if args.model_name == 'STGCN':
-        from pipeline.dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
+        from pipeline.Flex_MDI.dl_models.STGCN.get_gso import get_output_kernel_size, get_block_dims, get_gso_from_adj
         former_L = None
         for key in args.contextual_kwargs.keys():
             if 'stack_consistent_datasets' in args.contextual_kwargs[key].keys() and args.contextual_kwargs[key]['stack_consistent_datasets']:
@@ -871,7 +871,7 @@ def load_model(dataset, args,sanity_checker = None):
         model = RNN(args).to(args.device)
 
     if args.model_name == 'MLP':
-        from pipeline.dl_models.MLP.MLP import MLP_output 
+        from pipeline.Flex_MDI.dl_models.MLP.MLP import MLP_output 
         print('\n>>>>Model == MLP, keep in mind Concatenation Late DOES NOT WORK here. Only Concatenation Early')
         print(f'>>>>Also Stupid model. Input_dim = h_dim = L+L_add. Output_dim = {args.out_dim}')
         input_dim = args.L+added_dim_output

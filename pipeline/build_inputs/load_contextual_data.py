@@ -167,7 +167,7 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
         if (args_vision.dataset_name == 'netmob_POIs_per_station') or (args_vision.dataset_name == 'subway_out_per_station') :
             List_input_sizes = [contextual_ds[k].U_train.size(2) for k in range(len(contextual_ds)) ]
             List_nb_channels = [contextual_ds[k].U_train.size(1) for k in range(len(contextual_ds)) ]
-            script = importlib.import_module(f"pipeline.dl_models.vision_models.{args_vision.model_name}.load_config")
+            script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.vision_models.{args_vision.model_name}.load_config")
             importlib.reload(script) 
             config_vision =script.get_config(List_input_sizes,List_nb_channels)# script.get_config(C_netmob)
             args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
@@ -175,13 +175,13 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
             input_size = contextual_ds.U_train.size(2)
             nb_channels = contextual_ds.U_train.size(1)
             # if args_vision.model_name == 'SpatialAttn':
-            #     script = importlib.import_module(f"pipeline.dl_models.SpatialAttn.{args_vision.model_name}.load_config")
+            #     script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.SpatialAttn.{args_vision.model_name}.load_config")
             #     importlib.reload(script) 
             #     config_vision =script.args# script.get_config(C_netmob)
             #     dic_config_vision = vars(config_vision)
             #     dic_config_vision.update(vars(args_vision))
             #     args_vision = Namespace(**dic_config_vision)
-            script = importlib.import_module(f"pipeline.dl_models.vision_models.{args_vision.model_name}.load_config")
+            script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.vision_models.{args_vision.model_name}.load_config")
             importlib.reload(script) 
             config_vision =script.get_config(input_size,nb_channels)# script.get_config(C_netmob)
             args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})
@@ -190,7 +190,7 @@ def tackle_config_of_feature_extractor_module(contextual_ds,args_vision):
             raise NotImplementedError(f"args_vision.dataset_name '{args_vision.dataset_name}' n'est probabelment pas importé correctement. Modifier le code.")
             C_netmob = NetMob_ds.U_train.size(2) if len(NetMob_ds.U_train.size())==6 else  NetMob_ds.U_train.size(1)# [B,N,C,H,W,L]  or [B,C,H,W,L] 
             H,W,L = NetMob_ds.U_train.size(-3),NetMob_ds.U_train.size(-2),NetMob_ds.U_train.size(-1)
-            script = importlib.import_module(f"pipeline.dl_models.vision_models.{args_vision.model_name}.load_config")
+            script = importlib.import_module(f"pipeline.Flex_MDI.dl_models.vision_models.{args_vision.model_name}.load_config")
             importlib.reload(script) 
             config_vision = script.get_config(H,W,L)
             args_vision = Namespace(**{**vars(config_vision),**vars(args_vision)})

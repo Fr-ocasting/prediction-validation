@@ -7,7 +7,7 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from pipeline.Evaluation.accuracy_comparison import get_model_args,get_desagregated_comparison_plot
+from pipeline.Evaluation.STDA2.accuracy_comparison import get_model_args,get_desagregated_comparison_plot
 from experiences.common_results import find_baseline
 from experiences.common_parameter import convertion_exp_name
 

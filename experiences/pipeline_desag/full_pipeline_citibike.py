@@ -30,7 +30,7 @@ from experiences.pipeline_desag.build_config_single_contextual import ConfigBuil
 from experiences.pipeline_desag.build_baseline_config import BaselineConfigBuilder
 from experiences.pipeline_desag.utils import plotting_boxplot_of_trials
 from experiences.pipeline_desag.MetricExporter import MetricExporter
-from pipeline.Evaluation.accuracy_comparison import get_cluster
+from pipeline.Evaluation.STDA2.accuracy_comparison import get_cluster
 from pipeline.high_level_DL_method import load_init_model_trainer_ds
 from constants.config import local_get_args
 from constants.paths import ROOT

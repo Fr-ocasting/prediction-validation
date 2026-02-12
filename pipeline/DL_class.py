@@ -14,7 +14,7 @@ working_dir = os.path.abspath(os.path.join(current_path,'..'))
 if working_dir not in sys.path:
     sys.path.insert(0,working_dir)
 # ...
-from pipeline.denoising import DenoisingManager
+from pipeline.preprocessing.denoising import DenoisingManager
 from constants.paths import DATASET_IMPORT_PATHS
 
 class QuantileLoss(nn.Module):

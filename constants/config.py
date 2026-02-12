@@ -206,7 +206,7 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
 
     # Load Config associated to the Model: 
     if model_name is not None:
-        module_path = f"pipeline.dl_models.{args.model_name}.load_config"
+        module_path = f"pipeline.Flex_MDI.dl_models.{args.model_name}.load_config"
         module = importlib.import_module(module_path)
         importlib.reload(module)
         locals()[f"args_{args.model_name}"] = module.args
@@ -224,7 +224,7 @@ def get_args(model_name,dataset_names,dataset_for_coverage):
         args.scheduler=None
 
     if 'calendar_embedding' in args.dataset_names:
-        module_path_TE = f"pipeline.dl_models.TimeEmbedding.load_config"
+        module_path_TE = f"pipeline.Flex_MDI.dl_models.TimeEmbedding.load_config"
         module_TE = importlib.import_module(module_path_TE)
         importlib.reload(module_TE)
         args_embedding = module_TE.args

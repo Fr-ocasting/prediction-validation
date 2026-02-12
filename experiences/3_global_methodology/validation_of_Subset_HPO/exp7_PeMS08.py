@@ -13,7 +13,7 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..','..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation
+from pipeline.MACARON.train_model_on_k_fold_validation import train_model_on_k_fold_validation
 
 if __name__ == '__main__':
     model_name = 'STAEformer'
@@ -99,7 +99,7 @@ if __name__ == '__main__':
 
     if True:
         if True:
-            from pipeline.HP_tuning.Subset_HPO import MACARON_pipeline
+            from pipeline.Subset_HPO.Subset_HPO import MACARON_pipeline
             from constants.config import local_get_args
 
             

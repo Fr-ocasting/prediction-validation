@@ -10,9 +10,9 @@ if torch.cuda.is_available():
 # Personnal Import 
 from pipeline.DL_class import FeatureVectorBuilder,DatesVerifFeatureVect,TensorLimitsKeeper
 from pipeline.DataSet.train_valid_test_split import iterative_method, similar_length_method
-from pipeline.loader import DictDataLoader
+from pipeline.trainer.loader import DictDataLoader
 from pipeline.utils.save_results import save_object,read_object
-from pipeline.data_augmentation.data_augmentation import DataAugmenter
+from pipeline.preprocessing.data_augmentation.data_augmentation import DataAugmenter
 from pipeline.utils.utilities import load_inputs_from_dataloader
 from pipeline.DataSet.Normalizer import Normalizer
 from pipeline.DataSet.SplitterTrainValidTest import SplitterTrainValidTest

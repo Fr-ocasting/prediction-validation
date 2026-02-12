@@ -12,8 +12,8 @@ if parent_dir not in sys.path:
 from pipeline.utils.utilities import restrain_df_to_specific_period
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from typing import Tuple
-from pipeline.calendar_class import BANK_HOLIDAYS
-from pipeline.denoising.exponential import ExponentialSmoother
+from pipeline.utils.calendar_class import BANK_HOLIDAYS
+from pipeline.preprocessing.denoising.exponential import ExponentialSmoother
 
 ''' This file has to :
  - return a DataSet object, with specified data, and spatial_units.
