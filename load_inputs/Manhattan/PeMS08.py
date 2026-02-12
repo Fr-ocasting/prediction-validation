@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # Personnal import
-from pipeline.dataset import DataSet, PersonnalInput
+from pipeline.DataSet.dataset import DataSet, PersonnalInput
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from pipeline.utils.utilities import restrain_df_to_specific_period
 """

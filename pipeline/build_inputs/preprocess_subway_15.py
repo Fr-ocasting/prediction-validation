@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
         # Load Adj, Dist or Corr matrix : 
         from constants.paths import FOLDER_PATH
-        from examples.train_and_visu_non_recurrent import get_inputs
+        from pipeline.DataSet.load_datasets import get_inputs
         from constants.config import local_get_args
 
 

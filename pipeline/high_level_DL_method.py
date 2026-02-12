@@ -19,7 +19,7 @@ from pipeline.utils.utilities_DL import choose_optimizer, load_scheduler,get_los
 from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from torchinfo import summary
 from pipeline.profiler.profiler import model_memory_cost
-from examples.train_and_visu_non_recurrent import get_ds
+from pipeline.DataSet.load_datasets import get_ds
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
 from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.trainer import Trainer

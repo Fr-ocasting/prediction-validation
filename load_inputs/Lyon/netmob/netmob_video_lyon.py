@@ -8,8 +8,8 @@ parent_dir = os.path.abspath(os.path.join(current_file_path,'..'))
 if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 from datetime import datetime 
-from pipeline.dataset import DataSet
-from pipeline.dataset import PersonnalInput
+from pipeline.DataSet.dataset import DataSet
+from pipeline.DataSet.dataset import PersonnalInput
 import pickle 
 from pipeline.build_inputs.load_contextual_data import find_positions,replace_heure_d_ete
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess

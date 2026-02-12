@@ -11,7 +11,7 @@ if ROOT not in sys.path:
 # ...
 
 # Personnal inputs:
-from pipeline.dataset import PersonnalInput,DataSet
+from pipeline.DataSet.dataset import PersonnalInput,DataSet
 from constants.paths import FOLDER_PATH,DATASET_IMPORT_PATHS
 from pipeline.utils.utilities import filter_args,get_INVALID_DATES
 from pipeline.utils.seasonal_decomposition import fill_and_decompose_df

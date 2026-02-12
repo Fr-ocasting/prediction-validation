@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 
 import argparse 
 import  importlib
-from pipeline.dataset import TrainValidTest_Split_Normalize
+from pipeline.DataSet.splitter import SplitterTrainValidTest
 from pipeline.calendar_class import calendar_inputs,one_hot_encode_dataframe
 
 def load_calendar(subway_ds):
@@ -76,7 +76,7 @@ def load_calendar(subway_ds):
 def update_dict_calendar(dict_calendar_U_train, dict_calendar_U_valid,dict_calendar_U_test,
                           calendar_tensor,tensor_limits_keeper, calendar_type):
 
-    splitter = TrainValidTest_Split_Normalize(calendar_tensor,
+    splitter = SplitterTrainValidTest(calendar_tensor,
                         first_train = tensor_limits_keeper.first_train_U, last_train= tensor_limits_keeper.last_train_U,
                         first_valid= tensor_limits_keeper.first_valid_U, last_valid = tensor_limits_keeper.last_valid_U,
                         first_test = tensor_limits_keeper.first_test_U, last_test = tensor_limits_keeper.last_test_U)

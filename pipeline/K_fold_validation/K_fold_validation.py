@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 # Personnal imports: 
 
 from pipeline.build_inputs.load_preprocessed_dataset import load_complete_ds
-from pipeline.dataset import TensorDataset
+from pipeline.DataSet.dataset import TensorDataset
 from constants.paths import FOLDER_PATH
 from argparse import Namespace
 

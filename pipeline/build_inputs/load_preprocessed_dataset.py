@@ -17,8 +17,8 @@ from pipeline.build_inputs.load_datasets_to_predict import load_datasets_to_pred
 from pipeline.build_inputs.load_calendar import load_calendar,update_args_embedding
 from pipeline.utils.utilities import filter_args
 from pipeline.utils.utilities import get_time_step_per_hour
-from pipeline.dataset import DataSet
-from pipeline.dataset import PersonnalInput
+from pipeline.DataSet.dataset import DataSet
+from pipeline.DataSet.dataset import PersonnalInput
 from pipeline.utils.seasonal_decomposition import fill_and_decompose_df
 
 

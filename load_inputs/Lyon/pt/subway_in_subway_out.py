@@ -9,7 +9,7 @@ if parent_dir not in sys.path:
 from datetime import datetime 
 import torch
 from load_inputs.Lyon.pt.subway_in import load_DataSet 
-from pipeline.dataset import DataSet
+from pipeline.DataSet.dataset import DataSet
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from pipeline.utils.utilities import filter_args
 ''' This file has to :

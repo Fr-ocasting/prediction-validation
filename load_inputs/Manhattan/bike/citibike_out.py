@@ -11,7 +11,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # --- Importations personnalisées ---
-from pipeline.dataset import DataSet, PersonnalInput
+from pipeline.DataSet.dataset import DataSet, PersonnalInput
 from pipeline.utils.utilities import filter_args # Assurez-vous que ce chemin est correct
 from pipeline.build_inputs.load_preprocessed_dataset import load_input_and_preprocess
 from load_inputs.Manhattan.bike.citibike_in import load_data as load_data_in

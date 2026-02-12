@@ -14,15 +14,11 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from constants.config import local_get_args
-from examples.train_and_visu_non_recurrent import evaluate_config,train_the_config,get_ds
-from pipeline.high_level_DL_method import load_optimizer_and_scheduler
-from pipeline.Flex_MDI.Flex_MDI import full_model
-from pipeline.trainer import Trainer
 from pipeline.utils.loger import LOG
 from pipeline.utils.rng import set_seed
 from pipeline.high_level_DL_method import model_loading_and_training 
-from examples.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
-from constants.paths import SAVE_DIRECTORY, FOLDER_PATH
+from pipeline.MACARON.train_model_on_k_fold_validation import save_model_metrics,get_conditions,keep_track_on_metrics,init_metrics
+from constants.paths import SAVE_DIRECTORY
 
 modification_compute = {'use_target_as_context': False,
     'num_workers' : 4, # 0,1,2, 4, 6, 8 ... A l'IDRIS ils bossent avec 6 num workers par A100 80GB

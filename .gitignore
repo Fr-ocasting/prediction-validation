@@ -7,4 +7,5 @@ data/
 experiences/pipeline_desag/results/
 jupyter_ipynb/
 cache/
+old/
 .vscode/

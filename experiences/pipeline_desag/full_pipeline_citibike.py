@@ -21,7 +21,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from pipeline.utils.loger import LOG
-from experiences.common_parameter import possible_target_kwargs, weather_possible_contextual_kwargs, model_configurations,feature_extractor_model_configurations
+from experiences.common_parameter import possible_target_kwargs, weather_possible_contextual_kwargs, model_configurations
 from experiences.common_parameter import REPEAT_TRIAL,netmob_preprocessing_kwargs
 from experiences.get_desagregated_plot import get_desagregated_gains
 from experiences.compilation_parameter import compilation_modification
@@ -30,7 +30,7 @@ from experiences.pipeline_desag.build_config_single_contextual import ConfigBuil
 from experiences.pipeline_desag.build_baseline_config import BaselineConfigBuilder
 from experiences.pipeline_desag.utils import plotting_boxplot_of_trials
 from experiences.pipeline_desag.MetricExporter import MetricExporter
-from examples.accuracy_comparison import get_cluster
+from pipeline.Evaluation.accuracy_comparison import get_cluster
 from pipeline.high_level_DL_method import load_init_model_trainer_ds
 from constants.config import local_get_args
 from constants.paths import ROOT

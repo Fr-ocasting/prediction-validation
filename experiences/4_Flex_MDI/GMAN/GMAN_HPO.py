@@ -17,7 +17,8 @@ if working_dir not in sys.path:
 # ...
 
 # Personnal import 
-from examples.train_model_on_k_fold_validation import train_model_on_k_fold_validation,load_configuration
+from pipeline.MACARON.train_model_on_k_fold_validation import train_model_on_k_fold_validation
+from pipeline.HP_tuning.load_best_config import load_best_config_from_HPO
 from experiences.loop_train_save_log import loop_train_save_log
 from pipeline.utils.loger import LOG
 loger = LOG()
@@ -58,7 +59,7 @@ for i,lr in enumerate([0.001,0.0005,0.0003,0.0001]):
                     'loss_function_type':'HuberLoss',
                     'optimizer': 'adamw',
                     }
-    args,folds = load_configuration(trial_id,load_config= True)
+    args,folds = load_best_config_from_HPO(trial_id)
     for key in modification:
         setattr(args,key,modification[key])
     

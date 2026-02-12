@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal inputs:
-from pipeline.dataset import PersonnalInput
+from pipeline.DataSet.dataset import PersonnalInput
 from constants.paths import FOLDER_PATH,DATASET_IMPORT_PATHS
 from pipeline.utils.utilities import get_time_step_per_hour
 
