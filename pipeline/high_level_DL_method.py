@@ -14,16 +14,15 @@ if parent_dir not in sys.path:
 
 from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.plotting.plotting_bokeh import plot_bokeh
-from pipeline.trainer import Trainer
+from pipeline.trainer.trainer import Trainer
 from pipeline.utils.utilities_DL import choose_optimizer, load_scheduler,get_loss
 from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from torchinfo import summary
 from pipeline.profiler.profiler import model_memory_cost
 from pipeline.DataSet.load_datasets import get_ds
-from pipeline.high_level_DL_method import load_optimizer_and_scheduler
 from pipeline.Flex_MDI.Flex_MDI import full_model
-from pipeline.trainer import Trainer
-from pipeline.ML_trainer import ML_trainer
+from pipeline.trainer.trainer import Trainer
+from pipeline.trainer.ML_trainer import ML_trainer
 
 
 def model_loading_and_training(fold_to_evaluate,

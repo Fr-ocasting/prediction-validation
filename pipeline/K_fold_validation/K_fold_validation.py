@@ -12,7 +12,7 @@ if parent_dir not in sys.path:
 # Personnal imports: 
 
 from pipeline.build_inputs.load_preprocessed_dataset import load_complete_ds
-from pipeline.DataSet.dataset import TensorDataset
+from pipeline.DataSet.splitter import subclassTensorDataset
 from constants.paths import FOLDER_PATH
 from argparse import Namespace
 
@@ -35,10 +35,10 @@ class KFoldSplitter(object):
 
     def add_U_test_and_Utarget_test(self,subway_ds_tmps,subway_ds):
         ''' Tackle U_test and Utarget_test'''
-        U_test_tmps = TensorDataset(subway_ds.U_test, normalized = False, normalizer=subway_ds_tmps.normalizer)
+        U_test_tmps = subclassTensorDataset(subway_ds.U_test, normalized = False, normalizer=subway_ds_tmps.normalizer)
         U_test_tmps.normalize(feature_vect = True)
 
-        Utarget_test_tmps = TensorDataset(subway_ds.Utarget_test, normalized = False, normalizer=subway_ds_tmps.normalizer)
+        Utarget_test_tmps = subclassTensorDataset(subway_ds.Utarget_test, normalized = False, normalizer=subway_ds_tmps.normalizer)
         Utarget_test_tmps.normalize(feature_vect = True)
 
         subway_ds_tmps.U_test = U_test_tmps.tensor
@@ -57,7 +57,7 @@ class KFoldSplitter(object):
                 else:
                     normalizer = NetMob_ds_tmps.normalizer
 
-                U_context_tmps = TensorDataset(subway_ds.contextual_tensors[name]['test'], normalized = False, normalizer=normalizer)
+                U_context_tmps = subclassTensorDataset(subway_ds.contextual_tensors[name]['test'], normalized = False, normalizer=normalizer)
                 U_context_tmps.normalize(feature_vect = True)
                 subway_ds_tmps.contextual_tensors[name]['test'] = U_context_tmps.tensor
             elif 'calendar' in name:

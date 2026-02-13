@@ -1,5 +1,4 @@
 
-from pipeline.DataSet.dataset import TensorDataset
 
 class SplitterTrainValidTest(object):
     def __init__(self,data,
@@ -41,21 +40,21 @@ class SplitterTrainValidTest(object):
         
 
     def split_normalize_tensor_datasets(self,normalizer = None):
-        '''Load TensorDataset (train_dataset) object from data_train.
-        Define TensorDataset object from valid (valid_dataset) and test (test_dataset). 
+        '''Load subclassTensorDataset (train_dataset) object from data_train.
+        Define subclassTensorDataset object from valid (valid_dataset) and test (test_dataset). 
         Associate statistics from train dataset to valid and test dataset
         Normalize them according to their statistics 
         '''
-        train_dataset = TensorDataset(self.data_train, normalized = False, normalizer=normalizer)
+        train_dataset = subclassTensorDataset(self.data_train, normalized = False, normalizer=normalizer)
 
 
         if hasattr(self,'first_valid'): 
-            valid_dataset = TensorDataset(self.data_valid, normalized = False, normalizer=normalizer)
+            valid_dataset = subclassTensorDataset(self.data_valid, normalized = False, normalizer=normalizer)
         else:
             valid_dataset = None
 
         if hasattr(self,'first_test'):  
-            test_dataset = TensorDataset(self.data_test,normalized = False, normalizer=normalizer)
+            test_dataset = subclassTensorDataset(self.data_test,normalized = False, normalizer=normalizer)
         else : 
             test_dataset = None
 
@@ -70,3 +69,19 @@ class SplitterTrainValidTest(object):
         
         return(train_dataset,valid_dataset,test_dataset)
 
+
+class subclassTensorDataset(object):
+    def __init__(self,tensor,normalized,normalizer):
+        super(subclassTensorDataset,self).__init__()
+        self.tensor = tensor 
+        self.normalized = normalized
+        self.normalizer = normalizer
+    
+    def normalize(self,feature_vect):
+        assert not(self.normalized), 'TensorDataset already normalized'
+        self.tensor = self.normalizer.normalize_tensor(self.tensor,reverse=False,feature_vect=feature_vect)
+        self.normalized = True
+
+    def unormalize(self,feature_vect):
+        assert (self.normalized), 'TensorDataset already Un-normalized'
+        self.tensor = self.normalizer.unormalize_tensor(self.tensor,feature_vect=feature_vect)    

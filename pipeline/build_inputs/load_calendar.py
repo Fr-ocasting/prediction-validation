@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
 import argparse 
 import  importlib
 from pipeline.DataSet.splitter import SplitterTrainValidTest
-from pipeline.calendar_class import calendar_inputs,one_hot_encode_dataframe
+from pipeline.utils.calendar_class import calendar_inputs,one_hot_encode_dataframe
 
 def load_calendar(subway_ds):
     """

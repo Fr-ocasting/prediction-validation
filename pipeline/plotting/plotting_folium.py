@@ -13,7 +13,7 @@ if parent_dir not in sys.path:
     sys.path.insert(0,parent_dir)
 
 from pipeline.plotting.plotting import set_attention_weights_agregated_per_daily_period
-from pipeline.calendar_class import get_temporal_mask
+from pipeline.utils.calendar_class import get_temporal_mask
 
 def load_subway_gdf(FOLDER_PATH,sptial_unit):
     ref_subway = pd.read_csv(f"{FOLDER_PATH}/ref_subway.csv",index_col =0 ).rename(columns={'MEAN_X':'lon','MEAN_Y':'lat','LIB_STA_SIFO':'Nom'})[['lon','lat','COD_TRG','Nom']]

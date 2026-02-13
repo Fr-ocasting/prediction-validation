@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 # ...
 
 # Personnal imports: 
-from pipeline.trainer import Trainer
+from pipeline.trainer.trainer import Trainer
 from pipeline.utils.utilities_DL import get_loss,choose_optimizer
 from pipeline.PI.PI_object import PI_object
 

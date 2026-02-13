@@ -10,7 +10,7 @@ if torch.cuda.is_available():
     torch.backends.cudnn.allow_tf32  = True
 
 current_path = os.path.abspath(os.path.dirname(__file__))
-working_dir = os.path.abspath(os.path.join(current_path,'..'))
+working_dir = os.path.abspath(os.path.join(current_path,'..','..'))
 if working_dir not in sys.path:
     sys.path.insert(0,working_dir)
 
@@ -18,11 +18,6 @@ if working_dir not in sys.path:
 from pipeline.MACARON.train_model_on_k_fold_validation import train_model_on_k_fold_validation
 from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from pipeline.Subset_HPO.hyperparameter_tuning_ray import HP_tuning
-
-def Subset_HPO_pipeline(args,modification,num_samples):
-
-    return MACARON_pipeline(args,modification,num_samples)
-
 
 def HPO_fold0_MACARON(args,num_samples):
     """ 
@@ -46,7 +41,7 @@ def MACARON_pipeline(args,modification,num_samples):
     analysis,trial_id = HPO_fold0_MACARON(args,num_samples)
 
     # K-fold validation with best config: 
-    train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+    train_model_on_k_fold_validation(trial_id,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
     return trial_id
 
 def set_one_hp_tuning_and_evaluate_DA(args=None,
@@ -168,7 +163,7 @@ if __name__ == '__main__':
         # if False:
         #     trial_id = 'subway_in_calendar_GMAN_HuberLossLoss_2025_11_30_18_01_76652'
         #     modification = {'epochs':epochs_validation}
-        #     train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+        #     train_model_on_k_fold_validation(trial_id,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
         
     if False:

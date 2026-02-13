@@ -18,7 +18,7 @@ if working_dir not in sys.path:
 
 # Personnal import 
 from pipeline.MACARON.train_model_on_k_fold_validation import train_model_on_k_fold_validation
-from pipeline.HP_tuning.load_best_config import load_best_config_from_HPO
+from pipeline.Subset_HPO.load_best_config import load_best_config_from_HPO
 from experiences.loop_train_save_log import loop_train_save_log
 from pipeline.utils.loger import LOG
 loger = LOG()

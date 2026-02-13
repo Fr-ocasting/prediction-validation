@@ -116,6 +116,8 @@ add_name_save = '' #'_clipping'  # ''  # '_trial2'
 
 station_clustering = True
 for contextual_dataset_names in possible_contextual_dataset_names:
+
+    print('\n-----------------\n-----------------\n   contextual_dataset_names: ',contextual_dataset_names)
     # assert len(contextual_dataset_names) == 1, "Only one contextual dataset at a time is allowed for this pipeline. Otherwise, update 'build_config_single_contextual.py' accordingly. "
 
     loger = LOG()
@@ -244,6 +246,9 @@ print('re._pattern: ',re._pattern)
 print('trials found: ',len(trials))
 for trial in trials:
     print(f"   {trial}")
+
+
+
 # ==================================================
 # DESAGREGATED VISUALISATION & SAVE OF FIGURES: 
 ''' Pour chaque expérience `exp_i` et pour chaque horizon `horizon`: 
@@ -257,7 +262,7 @@ for trial in trials:
 '''
 
 if True:
-    # -- ON RAINY & NON RAINY : 
+
     dic_bd_metrics_all = get_desagregated_gains( 
         dic_exp_to_names={ 
                 exp_i:f'{target_data}_{model_name}'
@@ -276,6 +281,8 @@ if True:
         bool_plot = False,
         list_top_k_percent = list_top_k_percent,
         )
+
+
 
     list_rainy = [True, False] if comparison_on_rainy_events else [False]
     trial_id0 = list(dic_bd_metrics_all[exp_i][horizons[0]].keys())[0]
@@ -317,16 +324,29 @@ if True:
                 else:
                     results_saved = ''
                 # -----
+                
                 # ---- 
+                print('trials: ',trials)
                 for trial_id in trials:
-                    for h in horizons:
-                        dic_metrics = dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i]
-                        rmse_i, mae_i, mase_i, mape_i = dic_metrics['RMSE'], dic_metrics['MAE'], dic_metrics['MASE'], dic_metrics['MAPE']
-                        for k_bis in range(1,len(rmse_i)+1):
-                            if not f"{trial_id}_bis{k_bis}" in results_saved:
-                                str_to_add = f"{trial_id}_bis{k_bis}:   All Steps RMSE = {'{:.3f}'.format(rmse_i[k_bis-1])}, MAE = {'{:.3f}'.format(mae_i[k_bis-1])}, MASE = {'{:.3f}'.format(mase_i[k_bis-1])}, MAPE = {'{:.3f}'.format(mape_i[k_bis-1])}\n"
-                                results_saved += str_to_add
-                    # ----
+                    h = int(trial_id.split('_h')[1])
+                    print('exp_i: ',exp_i)
+                    print('horizon: ',h)
+                    print('trial_id: ',trial_id)
+                    print('dic_bd_metrics_all[exp_i].keys(): ',dic_bd_metrics_all[exp_i].keys())
+                    print('dic_bd_metrics_all[exp_i][h].keys(): ',dic_bd_metrics_all[exp_i][h].keys())
+                    print("dic_bd_metrics_all[exp_i][h][trial_id+'_bis'].keys():",dic_bd_metrics_all[exp_i][h][trial_id+'_bis'].keys())
+                    print("dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk].keys(): ",dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk].keys())
+                    print("dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy].keys(): ",dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy].keys())
+                    print("dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i].keys(): ",dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i].keys())
+
+
+                    dic_metrics = dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i]
+                    rmse_i, mae_i, mase_i, mape_i = dic_metrics['RMSE'], dic_metrics['MAE'], dic_metrics['MASE'], dic_metrics['MAPE']
+                    for k_bis in range(1,len(rmse_i)+1):
+                        if not f"{trial_id}_bis{k_bis}" in results_saved:
+                            str_to_add = f"{trial_id}_bis{k_bis}:   All Steps RMSE = {'{:.3f}'.format(rmse_i[k_bis-1])}, MAE = {'{:.3f}'.format(mae_i[k_bis-1])}, MASE = {'{:.3f}'.format(mase_i[k_bis-1])}, MAPE = {'{:.3f}'.format(mape_i[k_bis-1])}\n"
+                            results_saved += str_to_add
+                # ----
 
                 # --- Save results in the .py with format """results = <results_saved>""""
                 with open(f"{saved_results_path}.py",'w') as f:

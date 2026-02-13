@@ -109,7 +109,7 @@ if __name__ == '__main__':
                             dataset_for_coverage=dataset_for_coverage,
                             modification = modification
                         )
-
+            # args.epochs = 1 
             epochs_validation = epochs #1000
             num_samples = 400 # 100 # 300 # 200
             modification = {'epochs':epochs_validation,
@@ -118,7 +118,7 @@ if __name__ == '__main__':
                             'batch_size' : 16,
                             }
             
-            MACARON_pipeline(args,epochs_validation,num_samples)
+            MACARON_pipeline(args,modification,num_samples)
 
         # If HPO worked by need to compute again the 'train_valid_k_models':
         # Or if we need to compute with B = 128 
@@ -194,7 +194,7 @@ if __name__ == '__main__':
                                 'device' : torch.device('cuda:1'),
                                 'torch_compile' :'compile'
                                 }
-                train_model_on_k_fold_validation(trial_id,load_config=True,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
+                train_model_on_k_fold_validation(trial_id,save_folder='K_fold_validation/training_with_HP_tuning',modification=modification)
 
     # Results HPO 08 - Février - 2026 :
         # --- Parameter: 

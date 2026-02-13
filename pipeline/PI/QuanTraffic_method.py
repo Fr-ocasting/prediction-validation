@@ -4,7 +4,7 @@ import pandas as pd
 import os 
 
 from pipeline.utils.utilities_DL import get_MultiModel_loss_args_emb_opts,load_init_trainer
-from pipeline.trainer import MultiModelTrainer
+from pipeline.trainer.trainer import MultiModelTrainer
 
 from constants.config import convert_into_parameters
 from constants.paths import FOLDER_PATH,FILE_NAME,save_folder

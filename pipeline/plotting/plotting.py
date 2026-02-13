@@ -18,7 +18,7 @@ if parent_dir not in sys.path:
 # Personnal imports:
 from pipeline.PI.PI_object import PI_object
 from pipeline.utils.metrics import error_along_ts
-from pipeline.calendar_class import is_morning_peak,is_evening_peak,is_weekday,get_temporal_mask,is_bank_holidays,is_school_holidays
+from pipeline.utils.calendar_class import is_morning_peak,is_evening_peak,is_weekday,get_temporal_mask,is_bank_holidays,is_school_holidays
 
 
 def plot_k_fold_split(Datasets,invalid_dates,figsize=(14,14),save_path = None,hpo = True):

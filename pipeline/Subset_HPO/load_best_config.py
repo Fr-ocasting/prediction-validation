@@ -7,7 +7,7 @@ import torch
 import ast 
 import numpy as np 
 current_path = os.path.dirname(__file__)
-working_dir = os.path.abspath(os.path.join(current_path, '..'))
+working_dir = os.path.abspath(os.path.join(current_path, '..','..'))
 if working_dir not in sys.path:
     sys.path.insert(0, working_dir)
 
@@ -172,7 +172,7 @@ def load_trainer_ds_from_saved_trial(args=None,
             else:
                 args_init = Namespace(**vars(args))
 
-        fold_to_evaluate = [args.K_fold-1] if fold_to_evaluate is None else fold_to_evaluate
+        fold_to_evaluate = [args_init.K_fold-1] if fold_to_evaluate is None else fold_to_evaluate
         args_init.ray = False
 
         ds,args_updated,_,_,_ =  get_ds(args_init=args_init,modification = modification,fold_to_evaluate=fold_to_evaluate)

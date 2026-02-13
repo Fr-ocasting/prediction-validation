@@ -9,16 +9,16 @@ if parent_dir not in sys.path:
 
 import pandas as pd
 import numpy as np 
-from pipeline.trainer import Trainer
+from pipeline.trainer.trainer import Trainer
 from pipeline.K_fold_validation.K_fold_validation import KFoldSplitter
 from constants.paths import SAVE_DIRECTORY
-from pipeline.trainer import Trainer
+from pipeline.trainer.trainer import Trainer
 from pipeline.high_level_DL_method import load_optimizer_and_scheduler
 from pipeline.Flex_MDI.Flex_MDI import full_model
 from pipeline.DataSet.load_datasets import get_multi_ds
 import numpy as np 
 from pipeline.utils.loger import LOG
-from pipeline.HP_tuning.load_best_config import load_best_config_from_HPO
+from pipeline.Subset_HPO.load_best_config import load_best_config_from_HPO
 
 def load_k_fold_dataset(args,folds):
     K_fold_splitter = KFoldSplitter(args, folds=folds)
@@ -119,7 +119,10 @@ def keep_track_on_metrics(trainer,args,df_loss,valid_losses,dic_results,fold_i,f
 
     return df_loss, valid_losses,dic_results 
 
-def train_valid_K_models(args,trial_id,save_folder,modification={}):
+def train_valid_K_models(args,
+                         trial_id,
+                         save_folder,
+                         modification={}):
     '''
     args:
     ------
@@ -225,7 +228,7 @@ def save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,
     #print('df metrics: ',df_metrics)
 
 
-def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modification={},add_name_id=''):
+def train_model_on_k_fold_validation(trial_id,save_folder,modification={},add_name_id=''):
     '''
     1. Load the best config according to our HP-Tuning
     2. Apply the K-fold validation to split inputs
@@ -238,7 +241,12 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modificati
 
     trial_id = f"{trial_id}{add_name_id}"
     # 2. 3. 4. 
-    trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results = train_valid_K_models(args,trial_id,save_folder,modification)
+    trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results = train_valid_K_models(
+                                                                            args=args,
+                                                                            trial_id=trial_id,
+                                                                            save_folder=save_folder,
+                                                                            modification=modification
+                                                                            )
     # 5.
     save_model_metrics(trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results,save_folder,trial_id)
 
@@ -249,33 +257,8 @@ def train_model_on_k_fold_validation(trial_id,load_config,save_folder,modificati
 if __name__ == '__main__':
     # Case 1. HP tuning have been computed on the first fold. We are training on the K-1 other folds
     # ----------
-    if False:
-        save_folder = 'K_fold_validation/training_with_HP_tuning'
-        load_config = True
-        trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
-        epochs = 500
-        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,hp_tuning_on_first_fold = True)
-
-
-    # Case 2. We just need to test some configuration, where we set the configuration from 'load_random_config.py:
-    # ----------
-    if False: 
-        save_folder = 'K_fold_validation/traing_without_HP_tuning'
-        if not os.path.exists(f"{SAVE_DIRECTORY}/{save_folder}"):
-            os.mkdir(f"{SAVE_DIRECTORY}/{save_folder}")
-
-        load_config = False
-        trial_id = 'train_random_config'
-        epochs = 200
-        train_model_on_k_fold_validation(trial_id,load_config,save_folder,epochs,hp_tuning_on_first_fold=False)
-    # Case 2. We just need to test some configuration, where we set the configuration from 'load_random_config.py:
-
-    # ----------
-    if True: 
-        save_folder = 'K_fold_validation/training_with_HP_tuning'
-        load_config = True
-        trial_id = 'subway_in_calendar_embedding_RNN_HuberLossLoss_2025_07_04_21_04_52162'
-        epochs = 1000
-        train_model_on_k_fold_validation(trial_id,load_config,save_folder,modification={'epochs':epochs},add_name_id='')
-
+    save_folder = 'K_fold_validation/training_with_HP_tuning'
+    trial_id = 'subway_in_STGCN_MSELoss_2024_08_25_18_05_25229'
+    epochs = 500
+    train_model_on_k_fold_validation(trial_id,save_folder,epochs,hp_tuning_on_first_fold = True)
 

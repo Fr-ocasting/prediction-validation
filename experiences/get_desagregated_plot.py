@@ -95,7 +95,9 @@ def get_desagregated_gains(dic_exp_to_names,
                     clusterer,full_predict1,full_predict2,train_input,X,Y_true,L_trainers_1,L_trainers_2,ds1,ds2,args_init1,args_init2, dic_bd_metrics = outputs
 
                     # ====== SAVE ALL TOP K METRICS  ====
-                    dic_bd_metrics_all[exp_i][h] = dic_bd_metrics
+                    dic_bd_metrics_all[exp_i][h][trial_id1] = dic_bd_metrics[trial_id1]
+                    dic_bd_metrics_all[exp_i][h][trial_id2] = dic_bd_metrics[trial_id2]
+
 
                     print('   Keys within dic_bd_metrics:\n',dic_bd_metrics.keys())
 

@@ -312,14 +312,14 @@ if True:
                 # -----
                 # ---- 
                 for trial_id in trials:
-                    for h in horizons:
-                        dic_metrics = dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i]
-                        rmse_i, mae_i, mase_i, mape_i = dic_metrics['RMSE'], dic_metrics['MAE'], dic_metrics['MASE'], dic_metrics['MAPE']
-                        for k_bis in range(1,len(rmse_i)+1):
-                            if not f"{trial_id}_bis{k_bis}" in results_saved:
-                                str_to_add = f"{trial_id}_bis{k_bis}:   All Steps RMSE = {'{:.3f}'.format(rmse_i[k_bis-1])}, MAE = {'{:.3f}'.format(mae_i[k_bis-1])}, MASE = {'{:.3f}'.format(mase_i[k_bis-1])}, MAPE = {'{:.3f}'.format(mape_i[k_bis-1])}\n"
-                                results_saved += str_to_add
-                    # ----
+                    h = int(trial_id.split('_h')[1])
+                    dic_metrics = dic_bd_metrics_all[exp_i][h][trial_id+'_bis'][key_topk][key_rainy][temporal_agg_i]
+                    rmse_i, mae_i, mase_i, mape_i = dic_metrics['RMSE'], dic_metrics['MAE'], dic_metrics['MASE'], dic_metrics['MAPE']
+                    for k_bis in range(1,len(rmse_i)+1):
+                        if not f"{trial_id}_bis{k_bis}" in results_saved:
+                            str_to_add = f"{trial_id}_bis{k_bis}:   All Steps RMSE = {'{:.3f}'.format(rmse_i[k_bis-1])}, MAE = {'{:.3f}'.format(mae_i[k_bis-1])}, MASE = {'{:.3f}'.format(mase_i[k_bis-1])}, MAPE = {'{:.3f}'.format(mape_i[k_bis-1])}\n"
+                            results_saved += str_to_add
+                # ----
 
                 # --- Save results in the .py with format """results = <results_saved>""""
                 with open(f"{saved_results_path}.py",'w') as f:

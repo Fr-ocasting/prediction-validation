@@ -5,7 +5,7 @@ import os
 
 # Get Parent folder : 
 current_path = os.getcwd()
-parent_dir = os.path.abspath(os.path.join(current_path, '..'))
+parent_dir = os.path.abspath(os.path.join(current_path, '..','..'))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 

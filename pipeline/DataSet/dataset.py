@@ -15,25 +15,8 @@ from pipeline.utils.save_results import save_object,read_object
 from pipeline.preprocessing.data_augmentation.data_augmentation import DataAugmenter
 from pipeline.utils.utilities import load_inputs_from_dataloader
 from pipeline.DataSet.Normalizer import Normalizer
-from pipeline.DataSet.SplitterTrainValidTest import SplitterTrainValidTest
+from pipeline.DataSet.splitter import SplitterTrainValidTest
 # ...
-
-
-class TensorDataset(object):
-    def __init__(self,tensor,normalized,normalizer):
-        super(TensorDataset,self).__init__()
-        self.tensor = tensor 
-        self.normalized = normalized
-        self.normalizer = normalizer
-    
-    def normalize(self,feature_vect):
-        assert not(self.normalized), 'TensorDataset already normalized'
-        self.tensor = self.normalizer.normalize_tensor(self.tensor,reverse=False,feature_vect=feature_vect)
-        self.normalized = True
-
-    def unormalize(self,feature_vect):
-        assert (self.normalized), 'TensorDataset already Un-normalized'
-        self.tensor = self.normalizer.unormalize_tensor(self.tensor,feature_vect=feature_vect)    
 
     
 
