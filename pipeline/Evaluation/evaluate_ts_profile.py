@@ -117,6 +117,9 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
                                        sum_ts_pois = True,
                                        min_flow = None,
                                        metrics = ['mae'],
+                                       width = WIDTH,
+                                       height = HEIGHT,
+                                       title = None,
                                        ):
     '''
     individual_poi: if True then each Time-Serie of each POIs is visualised
@@ -134,7 +137,7 @@ def analysis_on_specific_training_mode(trainer,ds,training_mode,transfer_modes= 
         netmob_consumption = get_netmob_consumption_on_specifics_tags_apps(df_true.index,apps,type_POIs,spatial_units,POI_or_stations,transfer_modes,expanded, individual_poi, sum_ts_pois)
     else:
         netmob_consumption = None
-    visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,WIDTH,HEIGHT,training_mode = training_mode,netmob_consumption = netmob_consumption,min_flow = min_flow,metrics = metrics)
+    visualisation_special_event(trainer,df_true,df_predictions,station,kick_off_time,RANGE,width,height,training_mode = training_mode,netmob_consumption = netmob_consumption,min_flow = min_flow,metrics = metrics, title=title)
 
 def get_netmob_consumption_on_specifics_tags_apps(s_dates,apps,type_POIs,spatial_units,POI_or_stations,transfer_modes,expanded, individual_poi = True, sum_ts_pois = True):
     # Load gdf for POIs:
@@ -207,10 +210,22 @@ def get_df_for_visualisation(ds,Preds,Y_true,training_mode,out_dim_factor,statio
     #df_predictions = [pd.DataFrame(Preds[:,:,output_i],columns = ds.spatial_unit,index = df_verif.iloc[:,-1]) for output_i in range(Preds.size(-1))]
     return(df_true,df_predictions)
 
-def visualisation_special_event(trainer,df_true,df_prediction,station,kick_off_time=[],Range=None,width=1200,height=300,min_flow=None,training_mode='test',netmob_consumption=None,metrics = ['mae']):
+def visualisation_special_event(trainer,
+                                df_true,
+                                df_prediction,
+                                station,
+                                kick_off_time=[],
+                                Range=None,
+                                width=1200,
+                                height=300,
+                                min_flow=None,
+                                training_mode='test',
+                                netmob_consumption=None,
+                                metrics = ['mae'],
+                                title = None):
     ''' Specific interactiv visualisation for Prediction, True Value, Error and loss function '''
     p1 = plot_single_point_prediction(df_true,df_prediction,station,
-                                      title= f'{training_mode} Trafic variable Prediction at each spatial units ',
+                                      title= f'{training_mode} Trafic variable Prediction at each spatial units ' if title is None else title,
                                       kick_off_time=kick_off_time, 
                                       range=Range,
                                       width=width,

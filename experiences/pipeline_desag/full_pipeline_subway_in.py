@@ -30,6 +30,7 @@ from experiences.pipeline_desag.build_config_single_contextual import ConfigBuil
 from experiences.pipeline_desag.build_baseline_config import BaselineConfigBuilder
 from experiences.pipeline_desag.utils import plotting_boxplot_of_trials
 from experiences.pipeline_desag.MetricExporter import MetricExporter
+from pipeline.utils.utilities import load_saved_trials
 from constants.paths import ROOT
 inside_saved_folder = 'K_fold_validation/training_wo_HP_tuning'
 folder_path = f"{ROOT}/save/{inside_saved_folder}"
@@ -218,23 +219,12 @@ if False:
 Load saved results from f"{ROOT}/experiences.pipeline_desag.results.{exp_i}.{exp_i}.py"
 '''
 
-module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
-module = importlib.import_module(module_path)
-importlib.reload(module)
-results_saved = module.results
-# re._pattern = rf'{model_name}_{target_data}.*?bis'
-re._pattern = rf"{model_name}_{target_data}_(?:{'_'.join(contextual_dataset_names)}|calendar).*?bis"
-trials = [c[:-4] for c in list(set(re.findall(re._pattern, results_saved)))]
+
+trials = load_saved_trials(exp_i, model_name, target_data, contextual_dataset_names)
 
 if TRIVIAL_TEST:
     trials = [t for t in trials if 'calendar__e' in t and '_h1' in t][:2] + [t for t in trials if '_h1' in t and not 'calendar__e' in t][:1]
     horizons = [1]
-
-
-print('re._pattern: ',re._pattern)
-print('trials found: ',len(trials))
-for trial in trials:
-    print(f"   {trial}")
 
 # ==================================================
 # DESAGREGATED VISUALISATION & SAVE OF FIGURES: 

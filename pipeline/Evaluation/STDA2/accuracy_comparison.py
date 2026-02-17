@@ -838,13 +838,13 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     trial_id2_in_bis=False,
                                     colmumn_name = 'Station',
                                     comparison_on_rainy_events = False,
-                                    station_clustering = True,
+                                    station_clustering = False,
                                     folder_path = None,
                                     save_name = None,
                                     heatmap = False,
                                     daily_profile = False,
                                     dendrogram = False,
-                                    bool_plot = True,
+                                    bool_plot = False,
                                     clusters = None,
                                     list_top_k_percent = [None],
                                     ):
@@ -919,8 +919,9 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
         # ----
         
         # 2. --- If clustering, Get Cluster : 
+        print('station_clustering: ',station_clustering)
         if station_clustering :
-
+            print('CLUSTERING IN PROGRESS...')
             # Get Clustering of stations from these inputs:
             clusterer = get_cluster(filtered_train_input,
                                     temporal_agg='business_day',

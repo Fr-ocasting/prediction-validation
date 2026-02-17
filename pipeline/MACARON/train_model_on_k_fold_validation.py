@@ -239,6 +239,9 @@ def train_model_on_k_fold_validation(trial_id,save_folder,modification={},add_na
     # 1. Load the best config according to our HP-Tuning / Or Load random config :
     args,_ = load_best_config_from_HPO(trial_id)
 
+    dic_args = vars(args)
+    for k,v in dic_args.items():
+        print(f'{k} : {v}')
     trial_id = f"{trial_id}{add_name_id}"
     # 2. 3. 4. 
     trainer,args,valid_losses,training_mode_list,metric_list,df_loss,dic_results = train_valid_K_models(

@@ -42,8 +42,13 @@ def load_best_config_from_HPO(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_
     best_model = df_hp_tuning.sort_values(metric).iloc[0] 
     best_model = parse_lists_in_series(best_model)   # Avoid Ray saving  list of float/int as str. 
 
+    print(f"Best model for trial {trial_id} : ")
+    print(best_model)
+
     # Set tuned parameter from best config to 'args':
     HP_args = [indx.replace('config/', '') for indx in best_model.index if 'config/' in indx]
+    print('HP agrs: ')
+    print(HP_args)
     
     print('\n----- Load best CONFIG')
     for arg in HP_args:
@@ -71,6 +76,9 @@ def load_best_config_from_HPO(trial_id = 'subway_in_STGCN_MSELoss_2024_08_21_14_
 
         else :
             args[arg] = best_model[f'config/{arg}']
+    
+    for k,v in args.items():
+        print(f"{k} : {v}")
 
     # Transform 'dict' to 'Namespace' object: 
     args = Namespace(**args)

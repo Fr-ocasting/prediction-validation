@@ -27,7 +27,7 @@ DATA_SUBFOLDER = f'agg_data/{FILE_BASE_NAME}' # Sous-dossier dans FOLDER_PATH
 # Couverture théorique
 START = '2019-01-01'
 END = '2020-01-01'
-USELESS_DATES = {'hour':[1,2,3,4,5,6], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
+USELESS_DATES = {'hour':[], #[1,2,3,4,5,6], #[1,2,3,4,5,6],  #[] if no useless (i.e removed) hours
                  'weekday':[]#[5,6],
                  }
 # Liste des périodes invalides

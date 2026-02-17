@@ -25,8 +25,8 @@ if __name__ == '__main__':
                     'ray':True,
 
                     # Expanding Train & Graph Subset: 
-                    'expanding_train': None, # None, #0.5,
-                    'graph_subset': None,  #0.5, # None,
+                    'expanding_train': 0.05, # None, #0.5,
+                    'graph_subset': 0.25,  #0.5, # None,
                     'batch_size': 128, # 16
                         # ----
 
@@ -109,7 +109,18 @@ if __name__ == '__main__':
                             dataset_for_coverage=dataset_for_coverage,
                             modification = modification
                         )
+            
+            
             # args.epochs = 1 
+            # modification = {'epochs':1,
+            #     'expanding_train': 0.1,
+            #     'graph_subset': 0.25,
+            #     'batch_size' : 128,
+            #     }
+            # epochs_validation = 1 #epochs #1000
+            # num_samples = 4 #400 # 100 # 300 # 200
+
+
             epochs_validation = epochs #1000
             num_samples = 400 # 100 # 300 # 200
             modification = {'epochs':epochs_validation,
@@ -153,6 +164,8 @@ if __name__ == '__main__':
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_28_21_15_41764' # expanding_train = None, graph_subset = None, samples =100 
 
 
+
+
             # ------- ONLY WARMUP 
             # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2025_11_29_07_04_62976' # expanding_train = None, graph_subset = None, samples =100 
 
@@ -164,29 +177,112 @@ if __name__ == '__main__':
             # 'torch_scheduler_type': 'MultiStepLR',
             # 'torch_scheduler_milestone': [25, 45, 65],
             # 'torch_scheduler_gamma':0.1,
+            # batch_size : 128
+
+
+            # ------------------------------
+            # HPO: 11h   (743k parameters)
             # 'expanding_train' : 0.3  (!)
             # 'graph_subset': O.5  (!)
-            # HPO: 11h 
+            # ___________
+            # Best Config : 
+            # input_embedding_dim : 16
+            # tod_embedding_dim : 24
+            # dow_embedding_dim : 12
+            # adaptive_embedding_dim : 64
+            # weight_decay : 0.0005880209579506
+            # lr : 0.0005561265032212
+
             # Training full model with B = 16 : 69min (Troughput: 299.35 sequences / s )
             # Training full model with B = 128 : 42 min (Troughput: 530.14 sequences / s )
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
 
 
-            # HPO: 18hr 43min
+            # ------------------------------
+            # HPO: 18hr 43min  (468k parameters)
+            # 'expanding_train' : 0.3  (!)
+            # 'graph_subset': None  (!)
+            # ___________
+            # input_embedding_dim : 16
+            # tod_embedding_dim : 24
+            # dow_embedding_dim : 12
+            # adaptive_embedding_dim : 32
+            # weight_decay : 0.0005005022741246
+            # lr : 0.0009234529676736
+
             # Training full model with B = 16 : 69min (Troughput: 299.35 sequences / s )
             # Training full model with B = 128 : 22min (Troughput: 961.86 sequences / s )
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_21_59_97586:'
 
 
-            # HPO: 20h ( PAS FINI ! ! !! !! !!!)
+            # ------------------------------
+            # HPO: 20h ( PAS FINI ! ! !! !! !!!)  (591k parameters)
+            # 'expanding_train' : None  (!)
+            # 'graph_subset': None  (!)
+            # ___________
+            # Best Config : 
+            # input_embedding_dim : 32
+            # tod_embedding_dim : 24
+            # dow_embedding_dim : 12
+            # adaptive_embedding_dim : 32
+            # weight_decay : 0.0010980027240064
+            # lr : 0.0034023831057781
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_09_18_40_69906'
             # Training full model with B = 16 : 69min (Troughput: 358 sequences / s )
             # Training full model with B = 128 : 22min (Troughput: 961.86 sequences / s )
 
 
+            # ------------------------------
+            # HPO: 44H   (500k parameters)
+            # 'expanding_train' : None  (!)
+            # 'graph_subset': None  (!)
+            # ___________
+            # Best Config : 
+            # input_embedding_dim : 16
+            # tod_embedding_dim : 12
+            # dow_embedding_dim : 4
+            # adaptive_embedding_dim : 64
+            # weight_decay : 0.0005389048619166
+            # lr : 0.0038491324533086
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_15_14_29_94761'
+            # Training full model with B = 16 : 69min (Troughput: 396 sequences / s )
 
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_09_18_40_69906'
+
+            # ------------------------------
+            # HPO: 11h 23min (1 GPU)   (1.135M parameters)
+            # 'expanding_train' : 0.1  (!)
+            # 'graph_subset': 0.5  (!)
+            # 'expanding_train' : None  (!)
+            # ___________
+            # Best Config : 
+            # 'graph_subset': None  (!)
+            # input_embedding_dim : 64
+            # tod_embedding_dim : 24
+            # dow_embedding_dim : 4
+            # adaptive_embedding_dim : 64
+            # weight_decay : 0.0006565792307498
+            # lr : 0.0010620169449714
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_02_05_53084'
+
+
+            # ------------------------------
+            # HPO: 4h 23min (2 GPU)  (1.135M parameters)
+            # 'expanding_train' : 0.1  (!)
+            # 'graph_subset': 0.25  (!)
+            # ___________
+            # Best Config : 
+            # input_embedding_dim : 64
+            # tod_embedding_dim : 24
+            # dow_embedding_dim : 4
+            # adaptive_embedding_dim : 64
+            # weight_decay : 0.0005004664539453
+            # lr : 0.0011779455909637
+            trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_15_07_27731'
+
+
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_18_21_15681'
                              ]:
+                
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
                                 'graph_subset': None,
@@ -205,9 +301,7 @@ if __name__ == '__main__':
         # 'torch_scheduler_type': 'MultiStepLR',
         # 'torch_scheduler_milestone': [25, 45, 65],
         # 'torch_scheduler_gamma':0.1,
-        # HPO: 11h
-        # 'expanding_train' : 0.3  (!)
-        # 'graph_subset': O.5  (!)
+
         # search space: 
         #   "lr": tune.loguniform(5e-5, 5e-3)
         #   "weight_decay" : tune.loguniform(5e-4, 1e-2)
@@ -215,13 +309,28 @@ if __name__ == '__main__':
         #   "tod_embedding_dim": tune.choice([4,12,24]),
         #   "dow_embedding_dim": tune.choice([4,12,24]),
         #   "adaptive_embedding_dim": tune.choice([16,32,64]),
+
+        # ---- - 1GPU A100
+        # HPO: 
+        # 'expanding_train' : 0.1  (!)
+        # 'graph_subset': O.5  (!)
+        
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
+
+        #  (B = 16)
+        #  (B = 128)
+
+        # ---- - 2GPU A100
+        # HPO: 11h
+        # 'expanding_train' : 0.3  (!)
+        # 'graph_subset': O.5  (!)
         
         # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
         # All Steps RMSE = 23.376, MAE = 13.497, MASE = 0.849, MAPE = 8.896  (B = 16)
         # All Steps RMSE = 24.037, MAE = 14.846, MASE = 0.934, MAPE = 10.032 (B = 128)
 
         # ----- 
-        # HPO: 18hr 43min
+        # HPO: 18hr 43min   - 2GPU A100
         # 'expanding_train' : 0.3  (!)
         # 'graph_subset': None  (!)
 
@@ -230,15 +339,54 @@ if __name__ == '__main__':
         # All Steps RMSE = 23.870, MAE = 14.713, MASE = 0.926, MAPE = 10.014 (B = 128)
 
         # ----- 
-        # HPO: 20h ( PAS FINI ! ! !! !! !!  - - SEULEMENT 200 TRIALS SUR 400)
-        # 'expanding_train' : None  (!)
+        # HPO: 20h ( PAS FINI ! ! !! !! !!  - - SEULEMENT 200 TRIALS SUR 400)   - 2GPU A100
+        # 'expanding_train' : None  (!) 
         # 'graph_subset': None  (!)
         # trial_id = ''PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_09_18_40_69906'
         # All Steps RMSE = 23.417, MAE = 13.479, MASE = 0.848, MAPE = 8.884  (B = 16)
         # All Steps RMSE = 23.411, MAE = 14.120, MASE = 0.889, MAPE = 9.655  (B = 128) 
 
+        # ----- 
+        # HPO: 44h   - 2GPU A100
+        # 'expanding_train' : None  (!)
+        # 'graph_subset': None  (!)
+        # trial_id = ''PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_15_14_29_94761'
+        # All Steps RMSE = 23.433, MAE = 13.591, MASE = 0.855, MAPE = 9.183 (B = 16)
+        # All Steps RMSE = 58.143, MAE = 44.711, MASE = 2.814, MAPE = 87.604 (B = 128)   !!! MAUVAIS INIT VAL EPOCH 1 >>> 1 ->  CONVERGE PAS -> ON TENTE UN 2nd ESSAIE
+        # All Steps RMSE = 23.798, MAE = 14.882, MASE = 0.937, MAPE = 11.276 (B = 128)  
+
+        # ----- 
+        # HPO:  11h 23min - 1GPU A100  (parfois 0.5)
+        # 'expanding_train' : 0.1  (!)
+        # 'graph_subset': 0.5  (!)
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_02_05_53084'
+        # All Steps RMSE = 23.333, MAE = 13.441, MASE = 0.846, MAPE = 8.806  (B = 16)
+         
+        # ----- 
+        # HPO: 4h  -  2GPU A100 
+        # 'expanding_train' : 0.1  (!)  1069 train samples 
+        # 'graph_subset': 0.25  (!)   42/170  nodes 
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_15_07_27731'
+        # All Steps RMSE = 23.351, MAE = 13.448, MASE = 0.846, MAPE = 8.789  (B = 16)
+        
 
         
+        # ----- 
+        # HPO:   -  2GPU A100   --> B = 128 // Training Samples = 535 (pas ouf)
+        # 'expanding_train' : 0.05  (!)
+        # 'graph_subset': 0.25  (!)
+        # trial_id = '
+        # 
+
+
+
+
+
+
+
+
+
+
     # ===================================================================================================================        
     # ===================================================================================================================
     # Results HPO avec MULTISTEP LR : 

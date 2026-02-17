@@ -4,6 +4,9 @@ from ray.tune.search.hyperopt import HyperOptSearch
 import torch
 import importlib
 
+import os
+
+
 def get_scheduler(HP_max_epochs,name='ASHA', metric= 'Loss_model', mode = 'min',grace_period=2):
     if HP_max_epochs<=grace_period:
          grace_period = HP_max_epochs
@@ -59,17 +62,21 @@ def choose_ray_metric():
 
 
 def get_ray_config(args):
+
+    # IF RESTRICT TO ONLY ONE GPU:
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+    available_gpus = torch.cuda.device_count() if torch.cuda.is_available() else 0
+    gpu_fraction = 0.5 
     metric = choose_ray_metric()
     points_to_evaluate = get_point_to_evaluate(args)   
 
     scheduler = get_scheduler(args.HP_max_epochs,args.ray_scheduler, metric= metric, mode = 'min',grace_period = args.grace_period)
     search_alg = get_search_alg(args.ray_search_alg,metric= metric,mode = 'min',points_to_evaluate = points_to_evaluate)
 
-    resources_per_trial = {'gpu':0.5,'cpu':6} if torch.cuda.is_available() else {'cpu':1}
-    num_gpus = 2 if torch.cuda.is_available() else 0
+    resources_per_trial = {'gpu':gpu_fraction,'cpu':6} if torch.cuda.is_available() else {'cpu':1}
+    num_gpus = available_gpus 
     num_cpus = 24 if torch.cuda.is_available() else 6
-    max_concurrent_trials = 12 if torch.cuda.is_available() else 6
-
+    max_concurrent_trials = int(available_gpus / gpu_fraction) if available_gpus > 0 else 6
 
     return(scheduler,search_alg,resources_per_trial,num_gpus,max_concurrent_trials,num_cpus)
     

@@ -10,6 +10,8 @@ from scipy.spatial.distance import cdist
 import pickle 
 import io 
 import inspect
+import importlib
+import re
 
 def restrain_df_to_specific_period(df,coverage_period):
     if coverage_period is not None:
@@ -266,3 +268,19 @@ def get_topk(train_input,topk_percent):
         return filtered_train_input, top_ids
     else:
         return train_input, train_input.columns.tolist()
+    
+
+def load_saved_trials(exp_i, model_name, target_data, contextual_dataset_names):
+    module_path = f"experiences.pipeline_desag.results.{exp_i}.{exp_i}"
+    module = importlib.import_module(module_path)
+    importlib.reload(module)
+    results_saved = module.results
+    # re._pattern = rf'{model_name}_{target_data}.*?bis'
+    re._pattern = rf"{model_name}_{target_data}_(?:{'_'.join(contextual_dataset_names)}|calendar).*?bis"
+    trials = [c[:-4] for c in list(set(re.findall(re._pattern, results_saved)))]
+
+    print('re._pattern: ',re._pattern)
+    print('trials found: ',len(trials))
+    for trial in trials:
+        print(f"   {trial}")
+    return trials
