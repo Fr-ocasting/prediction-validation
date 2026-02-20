@@ -26,9 +26,9 @@ if __name__ == '__main__':
 
                     # Expanding Train & Graph Subset: 
                     'expanding_train': 0.05, # None, #0.5,
-                    'graph_subset': 0.25,  #0.5, # None,
+                    'graph_subset': 0.5,  #0.5, # None,
                     'batch_size': 128, # 16
-                        # ----
+                    # ----
 
                     'grace_period':10,
                     'HP_max_epochs':epochs, #1000, #300,
@@ -98,7 +98,7 @@ if __name__ == '__main__':
 
 
     if True:
-        if True:
+        if False:
             from pipeline.Subset_HPO.Subset_HPO import MACARON_pipeline
             from constants.config import local_get_args
 
@@ -280,8 +280,11 @@ if __name__ == '__main__':
             trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_15_07_27731'
 
 
-            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_18_21_15681'
+            for trial_id in ['PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_02_05_53084'
                              ]:
+                
+                # Terminal 6: Batch-size 32
+                # Terminal 7 : Batch-size 16
                 
                 modification = {'epochs': epochs, #1,
                                 'expanding_train': None,
@@ -310,20 +313,11 @@ if __name__ == '__main__':
         #   "dow_embedding_dim": tune.choice([4,12,24]),
         #   "adaptive_embedding_dim": tune.choice([16,32,64]),
 
-        # ---- - 1GPU A100
-        # HPO: 
-        # 'expanding_train' : 0.1  (!)
-        # 'graph_subset': O.5  (!)
-        
-        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
-
-        #  (B = 16)
-        #  (B = 128)
 
         # ---- - 2GPU A100
         # HPO: 11h
         # 'expanding_train' : 0.3  (!)
-        # 'graph_subset': O.5  (!)
+        # 'graph_subset': 0.5  (!)
         
         # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_08_01_58_94101' 
         # All Steps RMSE = 23.376, MAE = 13.497, MASE = 0.849, MAPE = 8.896  (B = 16)
@@ -360,8 +354,15 @@ if __name__ == '__main__':
         # 'expanding_train' : 0.1  (!)
         # 'graph_subset': 0.5  (!)
         # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_17_02_05_53084'
+        # All Steps RMSE = 23.516, MAE = 13.546, MASE = 0.852, MAPE = 8.841  (B = 8)
         # All Steps RMSE = 23.333, MAE = 13.441, MASE = 0.846, MAPE = 8.806  (B = 16)
+        # All Steps RMSE = 23.401, MAE = 13.435, MASE = 0.845, MAPE = 8.844  (B = 16)
+        # All Steps RMSE = 23.209, MAE = 13.440, MASE = 0.846, MAPE = 8.803  (B = 32)
+        # All Steps RMSE = 23.113, MAE = 13.436, MASE = 0.845, MAPE = 8.922  (B = 64)
+        
          
+
+
         # ----- 
         # HPO: 4h  -  2GPU A100 
         # 'expanding_train' : 0.1  (!)  1069 train samples 
@@ -372,11 +373,44 @@ if __name__ == '__main__':
 
         
         # ----- 
-        # HPO:   -  2GPU A100   --> B = 128 // Training Samples = 535 (pas ouf)
+        # HPO:   -  1GPU A100   --> B = 128 // Training Samples = 535 (pas ouf)
         # 'expanding_train' : 0.05  (!)
         # 'graph_subset': 0.25  (!)
-        # trial_id = '
-        # 
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_18_00_28_86233'
+        # All Steps RMSE = 23.141, MAE = 13.625, MASE = 0.857, MAPE = 8.926
+        
+
+
+        # ----- 
+        # HPO:   -  1GPU A100   --> B = 128 // Training Samples = 1069 (terminal 9)
+        # 'expanding_train' : 0.05  (!)
+        # 'graph_subset': 0.5  (!)
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_18_09_40_72804'
+        # All Steps RMSE = 23.325, MAE = 13.658, MASE = 0.859, MAPE = 8.950  (B= 16)
+
+
+        # ----- 
+        # HPO:   -  1GPU A100   --> B = 128 // Training Samples = 535 (pas ouf)  (terminal 8)
+        # 'expanding_train' : 0.3  (!)
+        # 'graph_subset': 0.25  (!)
+        # trial_id = 'PeMS08_flow_calendar_STAEformer_HuberLossLoss_2026_02_18_17_15_52423'
+        # All Steps RMSE = 23.726, MAE = 13.783, MASE = 0.867, MAPE = 9.018  (B=16)
+
+
+
+        # ---- - 1GPU A100
+        # HPO: 
+        # 'expanding_train' : 0.1  (!)
+        # 'graph_subset': O.5  (!)
+        
+        # trial_id = 
+
+        #  (B = 16)
+        #  (B = 128)
+
+
+
+
 
 
 

@@ -224,6 +224,19 @@ def is_school_holidays(timestamp,city):
             ("2018-12-22", "2019-01-07"),  # Vacances de Noël
             ("2019-02-16", "2019-03-04"),  # Vacances d'hiver
             ("2019-04-13", "2019-04-29"),  # Vacances de printemps
+            ("2019-07-06", "2019-09-02"),  # Vacances d'été
+            ("2019-10-19", "2019-11-04"),  # Vacances de Toussaint
+            ("2019-12-21", "2020-01-06"),  # Vacances de Noël
+            ("2020-02-22", "2020-03-09"),  # Vacances d'hiver
+            ("2020-04-18", "2020-05-04"),  # Vacances de printemps
+            ("2020-07-04", "2020-09-01"),  # Vacances d'été
+            ("2020-10-17", "2020-11-02"),  # Vacances de Toussaint
+            ("2020-12-19", "2021-01-04"),  # Vacances de Noël
+            ("2021-02-06", "2021-02-22"),  # Vacances d'hiver
+            ("2021-04-10", "2021-04-26"),  # Vacances de printemps
+            ("2021-07-06", "2021-09-02"),  # Vacances d'été
+            ("2021-10-23", "2021-11-08"),  # Vacances de Toussaint
+            ("2021-12-18", "2022-01-03"),  # Vacances de Noël
         ]
     elif 'California' in city:
         school_holidays = []
@@ -260,6 +273,8 @@ def is_school_holidays(timestamp,city):
             ("2024-02-19", "2024-02-23"),  # Mid-winter Recess
             ("2024-04-22", "2024-04-30"),  # Spring Recess (Pessah)
         ]
+    else:
+        raise ValueError(f"Unknown city: {city}")
 
     for start, end in school_holidays:
         start_date = datetime.datetime.strptime(start, "%Y-%m-%d")

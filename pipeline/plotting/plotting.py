@@ -899,6 +899,7 @@ def get_df_error(ds1,dic_error,metric,error_name,training_mode,stations, dates =
     return df_error_station
 
 
+
 def temporal_agg_for_matshow(df_error_station,column,index_matshow,metric = None):
     '''
     From pipeline.a df_error_station, return the temporal aggregation of the column
@@ -944,6 +945,8 @@ def temporal_agg_for_matshow(df_error_station,column,index_matshow,metric = None
         df_agg = working_days[[column,'new_hour']].groupby(['new_hour']).mean()
     elif index_matshow == 'working_weekday_weekend_hour':
         df_agg = df_error_station[[column,'is_weekday','new_hour']].groupby(['is_weekday','new_hour']).mean()
+    elif index_matshow == 'working_day_hour_minute':
+        df_agg = df_error_station[[column,'is_weekday','hour']].groupby(['is_weekday','hour']).mean()
     else:
         raise NotImplementedError
     

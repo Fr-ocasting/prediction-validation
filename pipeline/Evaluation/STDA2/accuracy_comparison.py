@@ -826,6 +826,78 @@ def get_model_args(save_folder_name = 'optim/subway_in_STGCN', save_folder_name_
         subfolder_bis,path_model_args_bis,model_args_bis = None, None, None
     return model_args,model_args_bis,path_model_args,path_model_args_bis
 
+def get_full_predict_on_test_set(trial_id1,
+                                 trial_id2,
+                                 training_mode,
+                                 range_k, 
+                                 model_args,
+                                 path_model_args,
+                                 model_args_bis = None,
+                                 path_model_args_bis = None,
+                                 trial_id1_in_bis=False,
+                                 trial_id2_in_bis=False,
+                                 modification = {
+                                        'shuffle':False,
+                                        'data_augmentation':False,
+                                        'torch_compile': False,
+                                        }
+                                ):
+    """
+    Get the full predictions on the test set for two configurations (trial_id1 and trial_id2) on each of the range_k runs.
+
+    args:
+    -----
+    trial_id1: str, trial ID of the first model configuration.
+    trial_id2: str, trial ID of the second model configuration.
+    ds1: DataSet object,  associated to the first model configuration.
+    ds2: DataSet object,  associated to the second model configuration.
+    training_mode: str, mode for training, e.g., 'train', 'val', 'test'.
+    range_k: iterable, range of runs to consider for loading the trainers and datasets (e.g., range(1,6) for runs 1 to 5).
+    modification: if needed. by default, no shuffle, no data augmentation, and no torch compile
+
+
+    return :
+    ------
+    full_predict1: Tensor of shape (n_samples, n_stations, n_horizons, n_runs) containing the predictions of model 1 for each run in range_k.
+    full_predict2: Tensor of shape (n_samples, n_stations, n_horizons, n_runs) containing the predictions of model 2 for each run in range_k.
+    """
+    ds1,ds2,args_init1,args_init2 = None, None, None, None
+
+    # -------- Load trainers, datasets, predictions and real values for each k in range_k:
+    for k in range_k:
+        trial_id1_updated = f"_{trial_id1}{k}_f5"
+        trial_id2_updated = f"_{trial_id2}{k}_f5"
+        trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(
+            trial_id1_updated,
+            trial_id2_updated,
+            modification = modification,
+            model_args=model_args,
+            path_model_args=path_model_args,
+            path_model_args_bis = path_model_args_bis,
+            ds1_init=ds1,ds2_init=ds2,
+            args_init1=args_init1,args_init2=args_init2,
+            model_args_bis = model_args_bis,
+            trial_id1_in_bis = trial_id1_in_bis, 
+            trial_id2_in_bis = trial_id2_in_bis
+            )
+        globals()[f"trainer1_bis{k}"] = trainer1
+        globals()[f"trainer2_bis{k}"] = trainer2
+        globals()[f"ds1_bis{k}"] = ds1
+        globals()[f"ds2_bis{k}"] = ds2
+
+        if trainer2 is not None:                                             
+            full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
+
+            globals()[f"full_predict1_bis{k}"] = full_predict1
+            globals()[f"full_predict2_bis{k}"] = full_predict2
+        else:
+            break
+
+    full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k],-1)
+    full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k],-1)
+
+    return [globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k],full_predict1,full_predict2,ds1,ds2,args_init1,args_init2,Y_true,X
+
 
 
 def get_desagregated_comparison_plot(trial_id1,trial_id2,
@@ -850,54 +922,34 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                                     ):
 
 
-
-    modification = {'shuffle':False,
-                    'data_augmentation':False,
-                    'torch_compile': False,
-                    }
     training_mode = 'test'
 
-    ds1,ds2,args_init1,args_init2 = None, None, None, None
-
-    # -------- Load trainers, datasets, predictions and real values for each k in range_k:
-    for k in range_k:
-        trial_id1_updated = f"_{trial_id1}{k}_f5"
-        trial_id2_updated = f"_{trial_id2}{k}_f5"
-        trainer1,trainer2,ds1,ds2,args_init1,args_init2 = load_trainer_ds_from_2_trials(
-            trial_id1_updated,
-            trial_id2_updated,
-            modification = modification,
-            model_args=model_args,
-            path_model_args=path_model_args,
-            path_model_args_bis = path_model_args_bis,
-            ds1_init=ds1,ds2_init=ds2,
-            args_init1=args_init1,args_init2=args_init2,
-            model_args_bis = model_args_bis,
-            trial_id1_in_bis = trial_id1_in_bis, 
-            trial_id2_in_bis = trial_id2_in_bis
-            )
-        
-        if trainer2 is not None:                                             
-            full_predict1,full_predict2,Y_true,X = get_predict_real_and_inputs(trainer1,trainer2,ds1,ds2,training_mode=training_mode)
-            globals()[f"trainer1_bis{k}"] = trainer1
-            globals()[f"trainer2_bis{k}"] = trainer2
-            globals()[f"ds1_bis{k}"] = ds1
-            globals()[f"ds2_bis{k}"] = ds2
-            globals()[f"full_predict1_bis{k}"] = full_predict1
-            globals()[f"full_predict2_bis{k}"] = full_predict2
-        else:
-            break
+    L_trainer1,L_trainer2,full_predict1,full_predict2,ds1,ds2,args_init1,args_init2,Y_true,X = get_full_predict_on_test_set(
+                                                                                                trial_id1=trial_id1,
+                                                                                                trial_id2=trial_id2,
+                                                                                                training_mode=training_mode,
+                                                                                                range_k=range_k, 
+                                                                                                model_args=model_args,
+                                                                                                path_model_args=path_model_args,
+                                                                                                model_args_bis = model_args_bis,
+                                                                                                path_model_args_bis = path_model_args_bis,
+                                                                                                trial_id1_in_bis= trial_id1_in_bis,
+                                                                                                trial_id2_in_bis = trial_id2_in_bis,
+                                                                                                modification = {
+                                                                                                    'shuffle':False,
+                                                                                                    'data_augmentation':False,
+                                                                                                    'torch_compile': False,
+                                                                                                    }
+                                                                                                )
+    trainer2 = L_trainer2[-1]
     if trainer2 is None:
         return None,None,None,None,None,None,None,None,None,None,None,None,None
-    # -------
-
-    full_predict1 = torch.stack([globals()[f"full_predict1_bis{k}"] for k in range_k],-1)
-    full_predict2 = torch.stack([globals()[f"full_predict2_bis{k}"] for k in range_k],-1)
 
 
     dic_bd_metrics = {trial_id1: {int(topk_percent*100) if topk_percent is not None else 100 : {} for topk_percent in list_top_k_percent},
                       trial_id2: {int(topk_percent*100) if topk_percent is not None else 100 : {} for topk_percent in list_top_k_percent},
                                 }
+    
     # --- For Each Top K Percent: 
     for topk_percent in list_top_k_percent :
         # 1. --- For each top-k percent, filter train_input to keep only the top-k percent of stations with the highest flow:
@@ -919,9 +971,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
         # ----
         
         # 2. --- If clustering, Get Cluster : 
-        print('station_clustering: ',station_clustering)
         if station_clustering :
-            print('CLUSTERING IN PROGRESS...')
             # Get Clustering of stations from these inputs:
             clusterer = get_cluster(filtered_train_input,
                                     temporal_agg='business_day',
@@ -962,6 +1012,8 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
                 mask,temporal_agg_indices,df_weather,_ = get_rainy_indices(args = args_init2,ds = ds2,training_mode = 'test')
                 print(f"Number of rainy time-slots in the test set: {len(temporal_agg_indices)}, i.e {len(temporal_agg_indices)/len(ds2.tensor_limits_keeper.df_verif_test)*100:.2f} % of the test set\n")
                 dates_i = mask[mask].index
+
+
             else:
                 temporal_agg_indices = None
                 dates_i = getattr(ds2.tensor_limits_keeper,f"df_verif_{training_mode}").iloc[:,-1]
@@ -1046,7 +1098,7 @@ def get_desagregated_comparison_plot(trial_id1,trial_id2,
 
     
 
-    return clusterer,full_predict1,full_predict2,train_input,X,Y_true,[globals()[f"trainer1_bis{k}"] for k in range_k],[globals()[f"trainer2_bis{k}"] for k in range_k], ds1,ds2,args_init1,args_init2,dic_bd_metrics
+    return clusterer,full_predict1,full_predict2,train_input,X,Y_true,L_trainer1,L_trainer2, ds1,ds2,args_init1,args_init2,dic_bd_metrics
 
 
 if __name__ == '__main__':
