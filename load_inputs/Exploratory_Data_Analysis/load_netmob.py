@@ -14,7 +14,7 @@ if parent_dir not in sys.path:
 
 from constants.config import local_get_args
 from constants.paths import FOLDER_PATH
-from pipeline.clustering.clustering import filter_by_temporal_agg
+from pipeline.Evaluation.STDA2.clustering.clustering import filter_by_temporal_agg
 from load_inputs.Lyon.netmob.netmob_POIs import load_data,START, END
 
 
